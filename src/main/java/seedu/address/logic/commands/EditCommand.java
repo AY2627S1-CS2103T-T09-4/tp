@@ -203,7 +203,10 @@ public class EditCommand extends Command {
             this.tags = (tags != null) ? new HashSet<>(tags) : null;
         }
 
-        public void setRemark(Remark remark) { this.remark = remark; }
+        public void setRemark(Remark remark) {
+            this.remark = remark;
+        }
+
         public Optional<Remark> getRemark() {
             return Optional.ofNullable(remark);
         }

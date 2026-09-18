@@ -63,7 +63,9 @@ public class Person {
         return Collections.unmodifiableSet(tags);
     }
 
-    public Remark getRemark() { return remark; }
+    public Remark getRemark() {
+        return remark;
+    }
 
     /**
      * Returns true if both persons have the same name.
