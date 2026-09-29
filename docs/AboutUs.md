@@ -11,15 +11,15 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 ## Project team
 
-### John Doe
+### TEE MING SHUN
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/mingshun2005.png" width="200px">
 
-[[homepage](http://www.comp.nus.edu.sg/~damithch)]
-[[github](https://github.com/johndoe)]
-[[portfolio](team/johndoe.md)]
 
-* Role: Project Advisor
+[[github](https://github.com/mingshun2005)]
+
+
+* Role: ProjecT Advisor
 
 ### Jane Doe
 
