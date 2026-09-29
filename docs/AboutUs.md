@@ -50,12 +50,11 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 * Role: Developer
 * Responsibilities: Dev Ops + Threading
 
-### James Doe
+### Kean Lai
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/jameslee5182.png" width="200px">
 
-[[github](http://github.com/johndoe)]
-[[portfolio](team/johndoe.md)]
+[[github](https://github.com/JamesLee5182)]
 
 * Role: Developer
 * Responsibilities: UI
