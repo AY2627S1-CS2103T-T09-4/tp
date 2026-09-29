@@ -1,4 +1,4 @@
----
+    ---
   layout: default.md
   title: "About Us"
 ---
@@ -50,6 +50,12 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 * Role: Developer
 * Responsibilities: Dev Ops + Threading
 
+### Chan Tze Yuon
+
+<img src="images/tzeyuon.png" width="200px">
+
+[[github](http://github.com/tzeyuon)]
+[[portfolio](team/tzeyuon.md)]
 ### Kean Lai
 
 <img src="images/jameslee5182.png" width="200px">
