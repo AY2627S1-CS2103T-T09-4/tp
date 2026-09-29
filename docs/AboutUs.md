@@ -11,31 +11,30 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 ## Project team
 
-### John Doe
+### TEE MING SHUN
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/mingshun2005.png" width="200px">
 
-[[homepage](http://www.comp.nus.edu.sg/~damithch)]
-[[github](https://github.com/johndoe)]
-[[portfolio](team/johndoe.md)]
 
-* Role: Project Advisor
+[[github](https://github.com/mingshun2005)]
 
-### Jane Doe
 
-<img src="images/johndoe.png" width="200px">
+* Role: ProjecT Advisor
 
-[[github](http://github.com/johndoe)]
-[[portfolio](team/johndoe.md)]
+### Hoong Ken
+
+<img src="images/hhkennn.png" width="200px">
+
+[[github](http://github.com/hhkennn)]
 
 * Role: Team Lead
 * Responsibilities: UI
 
-### Johnny Doe
+### Twisha Mehta
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/ahsiwt101.png" width="200px">
 
-[[github](http://github.com/johndoe)] [[portfolio](team/johndoe.md)]
+[[github](https://github.com/ahsiwt101)]
 
 * Role: Developer
 * Responsibilities: Data
@@ -56,6 +55,11 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 [[github](http://github.com/tzeyuon)]
 [[portfolio](team/tzeyuon.md)]
+### Kean Lai
+
+<img src="images/jameslee5182.png" width="200px">
+
+[[github](https://github.com/JamesLee5182)]
 
 * Role: Developer
 * Responsibilities: UI
