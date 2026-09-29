@@ -31,11 +31,11 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 * Role: Team Lead
 * Responsibilities: UI
 
-### Johnny Doe
+### Twisha Mehta
 
-<img src="images/johndoe.png" width="200px">
+<img src="images/ahsiwt101.png" width="200px">
 
-[[github](http://github.com/johndoe)] [[portfolio](team/johndoe.md)]
+[[github](https://github.com/ahsiwt101)]
 
 * Role: Developer
 * Responsibilities: Data
@@ -56,6 +56,11 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 
 [[github](http://github.com/tzeyuon)]
 [[portfolio](team/tzeyuon.md)]
+### Kean Lai
+
+<img src="images/jameslee5182.png" width="200px">
+
+[[github](https://github.com/JamesLee5182)]
 
 * Role: Developer
 * Responsibilities: UI
