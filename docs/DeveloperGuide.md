@@ -290,32 +290,31 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* * *`  | new user                | see the app preloaded with sample patient records                         | try out the commands before entering real patient data                                  |
 | `* * *`  | new user                | see usage instructions                                                    | refer to them when I forget how to use the app                                          |
 | `* * *`  | new user                | purge all sample data                                                     | start entering my own patient records on a clean list                                   |
-| `* * *`  | doctor                  | add a patient record with name, address, phone number and conditions      | keep everything I need for a house visit in one place                                   |
+| `* * *`  | doctor                  | add a patient record with a name, phone number, address and next visit date, with an optional email and notes about medical conditions | keep everything I need for a house visit in one place |
 | `* * *`  | doctor                  | list all my patients                                                      | see my whole caseload at a glance                                                       |
 | `* * *`  | doctor                  | find a patient by name                                                    | pull up their details without scrolling through the entire list                         |
-| `* * *`  | doctor                  | view a patient's full record including their medical conditions           | prepare for a visit before I arrive at their home                                       |
-| `* * *`  | doctor                  | edit a patient's details                                                  | keep their record accurate when their address or condition changes                      |
-| `* * *`  | doctor                  | delete a patient record                                                   | remove patients I no longer treat                                                       |
+| `* * *`  | doctor                  | view a patient's full record including notes about their medical conditions | prepare for a visit before I arrive at their home                                     |
+| `* * *`  | doctor                  | edit a patient's details                                                  | keep their record accurate when their contact information, address, next visit date or medical notes change |
+| `* * *`  | doctor                  | permanently delete an incorrectly created or duplicate patient record     | ensure erroneous records do not remain in my caseload                                   |
 | `* * *`  | doctor                  | record that I visited a patient on a given date                           | know when I last saw each patient                                                       |
 | `* * *`  | doctor                  | set the next visit date for a patient                                     | be reminded when that patient is due for a checkup                                      |
-| `* * *`  | doctor                  | see the patients due to be visited today                                  | know who to see and where to go next                                                    |
-| `* * *`  | doctor                  | have my data saved automatically after every change                       | not lose patient records if the app or my laptop shuts down                             |
-| `* *`    | doctor                  | write a note against a patient after a visit                              | recall what we discussed the last time I saw them                                       |
+| `* * *`  | doctor                  | find patients whose next visit date is today                              | be reminded who is due for a visit                                                      |
+| `* *`    | doctor                  | add or update notes about a patient's medical conditions                  | prepare for future visits                                                               |
 | `* *`    | doctor                  | assign a priority level to a patient                                      | tell at a glance which patients need closer attention                                   |
 | `* *`    | doctor                  | sort my patients by their next visit date                                 | deal with the most overdue visits first                                                 |
-| `* *`    | doctor                  | filter patients by medical condition                                      | review together all the patients I treat for the same condition                         |
+| `* *`    | doctor                  | search patient notes for a medical condition                              | review together all the patients I treat for the same condition                         |
 | `* *`    | doctor                  | filter patients by how long ago they were last visited                    | find patients who have gone too long without a checkup                                  |
 | `* *`    | doctor                  | see the coming week's visits as a schedule                                | plan my week before it starts                                                           |
 | `* *`    | doctor                  | copy a patient's address or phone number in one command                   | paste it into my maps or phone app without retyping it                                  |
 | `* *`    | doctor                  | archive a patient who no longer needs regular visits                      | keep my active list short without losing their history                                  |
 | `* *`    | doctor                  | view my archived patients                                                 | look up the history of a patient who returns after a long gap                           |
-| `* *`    | doctor with many visits | see the estimated travel time between consecutive visits                  | schedule a realistic number of visits in a day                                          |
+| `* *`    | doctor                  | find patients whose next visit date has passed                            | follow up on overdue visits                                                             |
+| `* *`    | doctor                  | find patients due within a specified date range                           | plan visits for the coming days                                                        |
+| `* *`    | doctor                  | undo my most recent record-changing command                               | recover quickly from a typing mistake                                                   |
 | `* *`    | long-time user          | define my own aliases for the commands I use most                         | enter routine commands with fewer keystrokes                                            |
 | `*`      | new user                | import my existing patient records from a file                            | move my caseload into Doc without retyping every record                                 |
 | `*`      | doctor                  | export a patient's record to a file                                       | hand it over to a colleague covering my rounds                                          |
 | `*`      | doctor                  | lock the app behind a password                                            | keep patient data private if someone else uses my laptop                                |
-| `*`      | doctor                  | see my scheduled visits plotted on a map                                  | choose the shortest route between homes                                                 |
-| `*`      | doctor                  | message a patient from within the app                                     | confirm a visit without switching to another app                                        |
 
 ### Use cases
 
