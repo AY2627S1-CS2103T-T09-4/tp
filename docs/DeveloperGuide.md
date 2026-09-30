@@ -492,16 +492,19 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 ### Glossary
 
-* **Mainstream OS**: Windows, Linux, Unix, or macOS
-* **CLI**: Command Line Interface; an interface in which the user types commands rather than clicking on controls
-* **House call**: A medical consultation carried out at the patient's home rather than at a clinic
-* **Patient record**: The set of details Doc holds for one patient, i.e. their contact details, medical conditions, visit history and next visit date
-* **Caseload**: The set of patients a doctor is currently responsible for visiting
-* **Visit**: A single house call to a patient, recorded in Doc with its date and an optional note
-* **Next visit date**: The date on which a patient is next due to be visited
-* **Priority level**: A label on a patient record indicating how closely that patient needs to be followed up, used to order the day's visits
-* **Archived patient**: A patient who no longer needs regular visits, kept in Doc for reference but excluded from the active caseload and from visit planning
-* **MSS**: Main Success Scenario; the sequence of steps of a use case when nothing goes wrong
+* **Active patient record**: A patient record included in the doctor's current caseload and visit planning.
+* **Archived patient record**: A patient record retained for future reference but excluded from the active caseload and visit planning.
+* **Caseload**: The collection of active patient records currently managed by a doctor.
+* **House call**: A medical consultation carried out at the patient's home rather than at a clinic.
+* **House-call doctor**: A doctor who travels to patients' homes to provide medical consultations and follow-up care.
+* **Medical condition**: An ongoing health issue recorded in a patient's notes to help the doctor prepare for future visits.
+* **MSS**: Main Success Scenario; the sequence of steps in a use case when nothing goes wrong.
+* **Next visit date**: The date on which a patient is next scheduled to receive a house call.
+* **Overdue visit**: A scheduled visit whose next visit date has passed without the visit being recorded or rescheduled.
+* **Patient record**: The information Doc stores for one patient, including their contact details, medical conditions, visit history and next visit date.
+* **Priority level**: A label indicating how closely a patient needs to be followed up, used when ordering planned visits.
+* **Visit**: A single house call recorded in Doc with its date and an optional note.
+* **Visit history**: The collection of completed visits recorded for a patient.
 
 --------------------------------------------------------------------------------------------------------------------
 
