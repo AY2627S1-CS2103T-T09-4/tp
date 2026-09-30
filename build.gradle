@@ -45,6 +45,10 @@ task coverage(type: JacocoReport) {
     }
 }
 
+run {
+    enableAssertions = true
+}
+
 dependencies {
     String jUnitVersion = '5.14.4'
     String javaFxVersion = '17.0.7'
