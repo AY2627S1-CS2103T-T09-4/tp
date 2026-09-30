@@ -290,32 +290,31 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* * *`  | new user                | see the app preloaded with sample patient records                         | try out the commands before entering real patient data                                  |
 | `* * *`  | new user                | see usage instructions                                                    | refer to them when I forget how to use the app                                          |
 | `* * *`  | new user                | purge all sample data                                                     | start entering my own patient records on a clean list                                   |
-| `* * *`  | doctor                  | add a patient record with name, address, phone number and conditions      | keep everything I need for a house visit in one place                                   |
+| `* * *`  | doctor                  | add a patient record with a name, phone number, address and next visit date, with an optional email and notes about medical conditions | keep everything I need for a house visit in one place |
 | `* * *`  | doctor                  | list all my patients                                                      | see my whole caseload at a glance                                                       |
 | `* * *`  | doctor                  | find a patient by name                                                    | pull up their details without scrolling through the entire list                         |
-| `* * *`  | doctor                  | view a patient's full record including their medical conditions           | prepare for a visit before I arrive at their home                                       |
-| `* * *`  | doctor                  | edit a patient's details                                                  | keep their record accurate when their address or condition changes                      |
-| `* * *`  | doctor                  | delete a patient record                                                   | remove patients I no longer treat                                                       |
+| `* * *`  | doctor                  | view a patient's full record including notes about their medical conditions | prepare for a visit before I arrive at their home                                     |
+| `* * *`  | doctor                  | edit a patient's details                                                  | keep their record accurate when their contact information, address, next visit date or medical notes change |
+| `* * *`  | doctor                  | permanently delete an incorrectly created or duplicate patient record     | ensure erroneous records do not remain in my caseload                                   |
 | `* * *`  | doctor                  | record that I visited a patient on a given date                           | know when I last saw each patient                                                       |
 | `* * *`  | doctor                  | set the next visit date for a patient                                     | be reminded when that patient is due for a checkup                                      |
-| `* * *`  | doctor                  | see the patients due to be visited today                                  | know who to see and where to go next                                                    |
-| `* * *`  | doctor                  | have my data saved automatically after every change                       | not lose patient records if the app or my laptop shuts down                             |
-| `* *`    | doctor                  | write a note against a patient after a visit                              | recall what we discussed the last time I saw them                                       |
+| `* * *`  | doctor                  | find patients whose next visit date is today                              | be reminded who is due for a visit                                                      |
+| `* *`    | doctor                  | add or update notes about a patient's medical conditions                  | prepare for future visits                                                               |
 | `* *`    | doctor                  | assign a priority level to a patient                                      | tell at a glance which patients need closer attention                                   |
 | `* *`    | doctor                  | sort my patients by their next visit date                                 | deal with the most overdue visits first                                                 |
-| `* *`    | doctor                  | filter patients by medical condition                                      | review together all the patients I treat for the same condition                         |
+| `* *`    | doctor                  | search patient notes for a medical condition                              | review together all the patients I treat for the same condition                         |
 | `* *`    | doctor                  | filter patients by how long ago they were last visited                    | find patients who have gone too long without a checkup                                  |
 | `* *`    | doctor                  | see the coming week's visits as a schedule                                | plan my week before it starts                                                           |
 | `* *`    | doctor                  | copy a patient's address or phone number in one command                   | paste it into my maps or phone app without retyping it                                  |
 | `* *`    | doctor                  | archive a patient who no longer needs regular visits                      | keep my active list short without losing their history                                  |
 | `* *`    | doctor                  | view my archived patients                                                 | look up the history of a patient who returns after a long gap                           |
-| `* *`    | doctor with many visits | see the estimated travel time between consecutive visits                  | schedule a realistic number of visits in a day                                          |
+| `* *`    | doctor                  | find patients whose next visit date has passed                            | follow up on overdue visits                                                             |
+| `* *`    | doctor                  | find patients due within a specified date range                           | plan visits for the coming days                                                        |
+| `* *`    | doctor                  | undo my most recent record-changing command                               | recover quickly from a typing mistake                                                   |
 | `* *`    | long-time user          | define my own aliases for the commands I use most                         | enter routine commands with fewer keystrokes                                            |
 | `*`      | new user                | import my existing patient records from a file                            | move my caseload into Doc without retyping every record                                 |
 | `*`      | doctor                  | export a patient's record to a file                                       | hand it over to a colleague covering my rounds                                          |
 | `*`      | doctor                  | lock the app behind a password                                            | keep patient data private if someone else uses my laptop                                |
-| `*`      | doctor                  | see my scheduled visits plotted on a map                                  | choose the shortest route between homes                                                 |
-| `*`      | doctor                  | message a patient from within the app                                     | confirm a visit without switching to another app                                        |
 
 ### Use cases
 
@@ -325,16 +324,16 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 **MSS**
 
-1.  Doctor requests to add a patient, supplying the patient's name, address, phone number and medical conditions.
-2.  Doc adds the patient to the caseload and shows the newly added record.
+1.  Doctor requests to add a patient, providing the patient's name, address, phone number and medical conditions.
+2.  Doc adds the patient to the caseload and shows the newly added patient record.
 
     Use case ends.
 
 **Extensions**
 
-* 1a. A required detail is missing or in the wrong format.
+* 1a. A required detail is missing or invalid.
 
-    * 1a1. Doc shows an error message describing the expected format.
+    * 1a1. Doc shows an error message describing the expected input.
 
       Use case resumes at step 1.
 
@@ -344,16 +343,17 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case resumes at step 1.
 
-**Use case: UC02 - Record a completed visit and schedule the next one**
+**Use case: UC02 - Update a patient record after a visit**
 
 **MSS**
 
 1.  Doctor requests to list patients.
 2.  Doc shows the caseload.
-3.  Doctor requests to record a visit for a specific patient in the list, supplying the visit date and a note.
-4.  Doc saves the visit against that patient and shows the updated record.
-5.  Doctor requests to set the next visit date for the same patient.
-6.  Doc saves the next visit date and shows the updated record.
+3.  Doctor requests to record a completed visit for a patient identified by their displayed index, providing the
+    visit date and, a note optionally.
+4.  Doc records the visit and shows the updated patient record.
+5.  Doctor requests to schedule the patient's next visit, providing the next visit date.
+6.  Doc records the next visit date and shows the updated patient record.
 
     Use case ends.
 
@@ -363,40 +363,38 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
   Use case ends.
 
-* 3a. The given index is invalid.
+* 3a. The displayed index does not identify a patient in the current list.
 
     * 3a1. Doc shows an error message.
 
       Use case resumes at step 2.
 
-* 3b. The given visit date is in the future.
+* 3b. The visit date is in the future.
 
     * 3b1. Doc shows an error message stating that a completed visit cannot be dated in the future.
 
       Use case resumes at step 3.
 
-* 5a. The given next visit date is in the past.
-
-    * 5a1. Doc shows an error message.
-
-      Use case resumes at step 5.
-
-* 5b. Doctor does not schedule a next visit.
+* 5a. Doctor does not schedule a next visit.
 
   Use case ends.
 
-**Use case: UC03 - Plan the day's visits**
+* 5b. The next visit date is in the past.
+
+    * 5b1. Doc shows an error message stating that the next visit date cannot be in the past.
+
+      Use case resumes at step 5.
+
+**Use case: UC03 - Prepare for the day's visits**
 
 **MSS**
 
 1.  Doctor requests the list of patients due to be visited today.
 2.  Doc shows those patients ordered by priority level, then by next visit date.
-3.  Doctor requests to see a specific patient's full record.
+3.  Doctor requests to see the full record of a patient identified by their displayed index.
 4.  Doc shows the patient's address, contact number, medical conditions and past visit notes.
-5.  Doctor requests to copy that patient's address.
-6.  Doc copies the address to the clipboard.
 
-    Steps 3 to 6 are repeated for each patient the doctor wants to prepare for.
+    Steps 3 and 4 are repeated for each patient the doctor wants to prepare for.
 
     Use case ends.
 
@@ -408,17 +406,17 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case ends.
 
-* 3a. The given index is invalid.
+* 3a. The displayed index does not identify a patient in the current list.
 
     * 3a1. Doc shows an error message.
 
       Use case resumes at step 2.
 
-**Use case: UC04 - Find the patients treated for a condition**
+**Use case: UC04 - Review patients treated for a condition**
 
 **MSS**
 
-1.  Doctor requests the patients matching a given medical condition.
+1.  Doctor requests to find patients treated for a given medical condition.
 2.  Doc shows the patients whose records list that condition.
 3.  Doctor requests to sort the shown patients by next visit date.
 4.  Doc shows the same patients ordered by next visit date.
@@ -445,14 +443,18 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 1.  Doctor requests to list patients.
 2.  Doc shows the caseload.
-3.  Doctor requests to archive a specific patient in the list.
+3.  Doctor requests to archive a patient identified by their displayed index.
 4.  Doc removes the patient from the active caseload and keeps the record, with its visit history, among the archived patients.
 
     Use case ends.
 
 **Extensions**
 
-* 3a. The given index is invalid.
+* 2a. The caseload is empty.
+
+  Use case ends.
+
+* 3a. The displayed index does not identify a patient in the current list.
 
     * 3a1. Doc shows an error message.
 
@@ -474,9 +476,13 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 1.  Should work on any _mainstream OS_ as long as it has Java `25` or above installed.
 2.  Should work without requiring an installer, and without the user having to install any software other than Java.
 3.  Should work fully offline, with no dependency on a remote server or an internet connection, so that it remains usable in homes with poor reception.
-4.  Should be able to hold up to 1000 patient records, each with up to 100 visit notes, without noticeable sluggishness in performance for typical usage.
-5.  Should respond to any command within 2 seconds when holding 1000 patient records.
-6.  A doctor with above average typing speed for regular English text (i.e. not code, not system admin commands) should be able to accomplish most of the tasks faster using commands than using the mouse.
+4. Should support at least 1,000 patient records, with up to 100 visit notes per record.
+5. Should respond to each valid command within 2 seconds when operating on
+   1,000 patient records with up to 100 visit notes each. This excludes the
+   time spent entering the command.
+6. For common tasks such as adding, finding, listing, editing, and archiving
+   patients, a user who types at above-average speed should be able to complete
+   the task faster through the CLI than by using the mouse.
 7.  A doctor who has not used a CLI application before should be able to add a patient and look up that patient's record within 15 minutes of reading the User Guide.
 8.  Should save every change to the local data file before accepting the next command, so that at most one command's worth of data is lost if the app terminates unexpectedly.
 9.  Should store all patient data only on the user's own machine, so that no patient data leaves the doctor's computer.
