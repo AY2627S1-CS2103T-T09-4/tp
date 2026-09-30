@@ -476,9 +476,13 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 1.  Should work on any _mainstream OS_ as long as it has Java `25` or above installed.
 2.  Should work without requiring an installer, and without the user having to install any software other than Java.
 3.  Should work fully offline, with no dependency on a remote server or an internet connection, so that it remains usable in homes with poor reception.
-4.  Should be able to hold up to 1000 patient records, each with up to 100 visit notes, without noticeable sluggishness in performance for typical usage.
-5.  Should respond to any command within 2 seconds when holding 1000 patient records.
-6.  A doctor with above average typing speed for regular English text (i.e. not code, not system admin commands) should be able to accomplish most of the tasks faster using commands than using the mouse.
+4. Should support at least 1,000 patient records, with up to 100 visit notes per record.
+5. Should respond to each valid command within 2 seconds when operating on
+   1,000 patient records with up to 100 visit notes each. This excludes the
+   time spent entering the command.
+6. For common tasks such as adding, finding, listing, editing, and archiving
+   patients, a user who types at above-average speed should be able to complete
+   the task faster through the CLI than by using the mouse.
 7.  A doctor who has not used a CLI application before should be able to add a patient and look up that patient's record within 15 minutes of reading the User Guide.
 8.  Should save every change to the local data file before accepting the next command, so that at most one command's worth of data is lost if the app terminates unexpectedly.
 9.  Should store all patient data only on the user's own machine, so that no patient data leaves the doctor's computer.
