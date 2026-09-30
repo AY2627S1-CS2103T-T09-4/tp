@@ -38,7 +38,7 @@ You can reach us at the email `seer[at]comp.nus.git .sg`
 [[github](https://github.com/ahsiwt101)]
 
 * Role: Developer
-* Responsibilities: Data
+* Responsibilities: Data and Testing
 
 ### Chan Tze Yuon
 
