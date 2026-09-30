@@ -325,16 +325,16 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 **MSS**
 
-1.  Doctor requests to add a patient, supplying the patient's name, address, phone number and medical conditions.
-2.  Doc adds the patient to the caseload and shows the newly added record.
+1.  Doctor requests to add a patient, providing the patient's name, address, phone number and medical conditions.
+2.  Doc adds the patient to the caseload and shows the newly added patient record.
 
     Use case ends.
 
 **Extensions**
 
-* 1a. A required detail is missing or in the wrong format.
+* 1a. A required detail is missing or invalid.
 
-    * 1a1. Doc shows an error message describing the expected format.
+    * 1a1. Doc shows an error message describing the expected input.
 
       Use case resumes at step 1.
 
@@ -344,16 +344,17 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case resumes at step 1.
 
-**Use case: UC02 - Record a completed visit and schedule the next one**
+**Use case: UC02 - Update a patient record after a visit**
 
 **MSS**
 
 1.  Doctor requests to list patients.
 2.  Doc shows the caseload.
-3.  Doctor requests to record a visit for a specific patient in the list, supplying the visit date and a note.
-4.  Doc saves the visit against that patient and shows the updated record.
-5.  Doctor requests to set the next visit date for the same patient.
-6.  Doc saves the next visit date and shows the updated record.
+3.  Doctor requests to record a completed visit for a patient identified by their displayed index, providing the
+    visit date and, a note optionally.
+4.  Doc records the visit and shows the updated patient record.
+5.  Doctor requests to schedule the patient's next visit, providing the next visit date.
+6.  Doc records the next visit date and shows the updated patient record.
 
     Use case ends.
 
@@ -363,40 +364,38 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
   Use case ends.
 
-* 3a. The given index is invalid.
+* 3a. The displayed index does not identify a patient in the current list.
 
     * 3a1. Doc shows an error message.
 
       Use case resumes at step 2.
 
-* 3b. The given visit date is in the future.
+* 3b. The visit date is in the future.
 
     * 3b1. Doc shows an error message stating that a completed visit cannot be dated in the future.
 
       Use case resumes at step 3.
 
-* 5a. The given next visit date is in the past.
-
-    * 5a1. Doc shows an error message.
-
-      Use case resumes at step 5.
-
-* 5b. Doctor does not schedule a next visit.
+* 5a. Doctor does not schedule a next visit.
 
   Use case ends.
 
-**Use case: UC03 - Plan the day's visits**
+* 5b. The next visit date is in the past.
+
+    * 5b1. Doc shows an error message stating that the next visit date cannot be in the past.
+
+      Use case resumes at step 5.
+
+**Use case: UC03 - Prepare for the day's visits**
 
 **MSS**
 
 1.  Doctor requests the list of patients due to be visited today.
 2.  Doc shows those patients ordered by priority level, then by next visit date.
-3.  Doctor requests to see a specific patient's full record.
+3.  Doctor requests to see the full record of a patient identified by their displayed index.
 4.  Doc shows the patient's address, contact number, medical conditions and past visit notes.
-5.  Doctor requests to copy that patient's address.
-6.  Doc copies the address to the clipboard.
 
-    Steps 3 to 6 are repeated for each patient the doctor wants to prepare for.
+    Steps 3 and 4 are repeated for each patient the doctor wants to prepare for.
 
     Use case ends.
 
@@ -408,17 +407,17 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case ends.
 
-* 3a. The given index is invalid.
+* 3a. The displayed index does not identify a patient in the current list.
 
     * 3a1. Doc shows an error message.
 
       Use case resumes at step 2.
 
-**Use case: UC04 - Find the patients treated for a condition**
+**Use case: UC04 - Review patients treated for a condition**
 
 **MSS**
 
-1.  Doctor requests the patients matching a given medical condition.
+1.  Doctor requests to find patients treated for a given medical condition.
 2.  Doc shows the patients whose records list that condition.
 3.  Doctor requests to sort the shown patients by next visit date.
 4.  Doc shows the same patients ordered by next visit date.
@@ -445,14 +444,18 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 1.  Doctor requests to list patients.
 2.  Doc shows the caseload.
-3.  Doctor requests to archive a specific patient in the list.
+3.  Doctor requests to archive a patient identified by their displayed index.
 4.  Doc removes the patient from the active caseload and keeps the record, with its visit history, among the archived patients.
 
     Use case ends.
 
 **Extensions**
 
-* 3a. The given index is invalid.
+* 2a. The caseload is empty.
+
+  Use case ends.
+
+* 3a. The displayed index does not identify a patient in the current list.
 
     * 3a1. Doc shows an error message.
 
