@@ -39,22 +39,14 @@ You can reach us at the email `seer[at]comp.nus.edu.sg`
 * Role: Developer
 * Responsibilities: Data
 
-### Jean Doe
-
-<img src="images/johndoe.png" width="200px">
-
-[[github](http://github.com/johndoe)]
-[[portfolio](team/johndoe.md)]
-
-* Role: Developer
-* Responsibilities: Dev Ops + Threading
-
 ### Chan Tze Yuon
 
 <img src="images/tzeyuon.png" width="200px">
 
 [[github](http://github.com/tzeyuon)]
-[[portfolio](team/tzeyuon.md)]
+* Role: Integration
+* Responsibilities: In charge of versioning the code, maintaining the code repository, and integrating various parts of the software to create a whole. 
+
 ### Kean Lai
 
 <img src="images/jameslee5182.png" width="200px">
