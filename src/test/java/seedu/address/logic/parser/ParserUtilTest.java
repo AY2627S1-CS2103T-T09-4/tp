@@ -16,6 +16,7 @@ import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Phone;
+import seedu.address.model.person.VisitDate;
 import seedu.address.model.tag.Tag;
 
 public class ParserUtilTest {
@@ -24,11 +25,13 @@ public class ParserUtilTest {
     private static final String INVALID_ADDRESS = " ";
     private static final String INVALID_EMAIL = "example.com";
     private static final String INVALID_TAG = "#friend";
+    private static final String INVALID_VISIT_DATE = "31/2/2026 1000";
 
     private static final String VALID_NAME = "Rachel Walker";
     private static final String VALID_PHONE = "123456";
     private static final String VALID_ADDRESS = "123 Main Street #0505";
     private static final String VALID_EMAIL = "rachel@example.com";
+    private static final String VALID_VISIT_DATE = "18/9/2026 1000";
     private static final String VALID_TAG_1 = "friend";
     private static final String VALID_TAG_2 = "neighbour";
 
@@ -144,6 +147,29 @@ public class ParserUtilTest {
         String emailWithWhitespace = WHITESPACE + VALID_EMAIL + WHITESPACE;
         Email expectedEmail = new Email(VALID_EMAIL);
         assertEquals(expectedEmail, ParserUtil.parseEmail(emailWithWhitespace));
+    }
+
+    @Test
+    public void parseVisitDate_null_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> ParserUtil.parseVisitDate((String) null));
+    }
+
+    @Test
+    public void parseVisitDate_invalidValue_throwsParseException() {
+        assertThrows(ParseException.class, () -> ParserUtil.parseVisitDate(INVALID_VISIT_DATE));
+    }
+
+    @Test
+    public void parseVisitDate_validValueWithoutWhitespace_returnsVisitDate() throws Exception {
+        VisitDate expectedVisitDate = new VisitDate(VALID_VISIT_DATE);
+        assertEquals(expectedVisitDate, ParserUtil.parseVisitDate(VALID_VISIT_DATE));
+    }
+
+    @Test
+    public void parseVisitDate_validValueWithWhitespace_returnsTrimmedVisitDate() throws Exception {
+        String visitDateWithWhitespace = WHITESPACE + VALID_VISIT_DATE + WHITESPACE;
+        VisitDate expectedVisitDate = new VisitDate(VALID_VISIT_DATE);
+        assertEquals(expectedVisitDate, ParserUtil.parseVisitDate(visitDateWithWhitespace));
     }
 
     @Test
