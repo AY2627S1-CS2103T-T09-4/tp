@@ -6,6 +6,7 @@ import static seedu.address.commons.util.AppUtil.checkArgument;
 /**
  * Represents a Person's email in the address book.
  * Guarantees: immutable; is valid as declared in {@link #isValidEmail(String)}
+ * An empty value represents a person with no email.
  */
 public class Email {
 
@@ -45,10 +46,10 @@ public class Email {
     }
 
     /**
-     * Returns true if a given string is a valid email.
+     * Returns true if a given string is a valid email, or is empty (no email).
      */
     public static boolean isValidEmail(String test) {
-        return test.matches(VALIDATION_REGEX);
+        return test.isEmpty() || test.matches(VALIDATION_REGEX);
     }
 
     @Override
