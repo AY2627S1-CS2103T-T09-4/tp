@@ -13,6 +13,7 @@ import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Phone;
+import seedu.address.model.person.VisitDate;
 import seedu.address.model.tag.Tag;
 
 /**
@@ -93,6 +94,21 @@ public class ParserUtil {
             throw new ParseException(Email.MESSAGE_CONSTRAINTS);
         }
         return new Email(trimmedEmail);
+    }
+
+    /**
+     * Parses a {@code String visitDate} into a {@code VisitDate}.
+     * Leading and trailing whitespaces will be trimmed.
+     *
+     * @throws ParseException if the given {@code visitDate} is invalid.
+     */
+    public static VisitDate parseVisitDate(String visitDate) throws ParseException {
+        requireNonNull(visitDate);
+        String trimmedVisitDate = visitDate.trim();
+        if (!VisitDate.isValidVisitDate(trimmedVisitDate)) {
+            throw new ParseException(VisitDate.MESSAGE_CONSTRAINTS);
+        }
+        return new VisitDate(trimmedVisitDate);
     }
 
     /**

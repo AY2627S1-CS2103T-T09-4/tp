@@ -23,18 +23,21 @@ public class Person {
 
     // Data fields
     private final Address address;
+    private final VisitDate visitDate;
     private final Note note;
     private final Set<Tag> tags = new HashSet<>();
 
     /**
      * Every field must be present and not null.
      */
-    public Person(Name name, Phone phone, Email email, Address address, Note note, Set<Tag> tags) {
-        requireAllNonNull(name, phone, email, address, note, tags);
+    public Person(Name name, Phone phone, Email email, Address address, VisitDate visitDate, Note note,
+            Set<Tag> tags) {
+        requireAllNonNull(name, phone, email, address, visitDate, note, tags);
         this.name = name;
         this.phone = phone;
         this.email = email;
         this.address = address;
+        this.visitDate = visitDate;
         this.note = note;
         this.tags.addAll(tags);
     }
@@ -53,6 +56,10 @@ public class Person {
 
     public Address getAddress() {
         return address;
+    }
+
+    public VisitDate getVisitDate() {
+        return visitDate;
     }
 
     public Note getNote() {
@@ -99,6 +106,7 @@ public class Person {
                 && phone.equals(otherPerson.phone)
                 && email.equals(otherPerson.email)
                 && address.equals(otherPerson.address)
+                && visitDate.equals(otherPerson.visitDate)
                 && note.equals(otherPerson.note)
                 && tags.equals(otherPerson.tags);
     }
@@ -106,7 +114,7 @@ public class Person {
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(name, phone, email, address, note, tags);
+        return Objects.hash(name, phone, email, address, visitDate, note, tags);
     }
 
     @Override
@@ -116,6 +124,7 @@ public class Person {
                 .add("phone", phone)
                 .add("email", email)
                 .add("address", address)
+                .add("visitDate", visitDate)
                 .add("note", note)
                 .add("tags", tags)
                 .toString();
