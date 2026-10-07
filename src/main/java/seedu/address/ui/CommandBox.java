@@ -1,5 +1,7 @@
 package seedu.address.ui;
 
+import java.util.function.BooleanSupplier;
+
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
@@ -17,6 +19,7 @@ public class CommandBox extends UiPart<Region> {
     private static final String FXML = "CommandBox.fxml";
 
     private final CommandExecutor commandExecutor;
+    private final BooleanSupplier isInputRequestPending;
 
     @FXML
     private TextField commandTextField;
@@ -25,8 +28,19 @@ public class CommandBox extends UiPart<Region> {
      * Creates a {@code CommandBox} with the given {@code CommandExecutor}.
      */
     public CommandBox(CommandExecutor commandExecutor) {
+        this(commandExecutor, () -> false);
+    }
+
+    /**
+     * Creates a {@code CommandBox} that can submit empty text while follow-up input is pending.
+     *
+     * @param commandExecutor Executor for submitted text.
+     * @param isInputRequestPending Supplies whether the next submission answers a pending input request.
+     */
+    public CommandBox(CommandExecutor commandExecutor, BooleanSupplier isInputRequestPending) {
         super(FXML);
         this.commandExecutor = commandExecutor;
+        this.isInputRequestPending = isInputRequestPending;
         // calls #setStyleToDefault() whenever there is a change to the text of the command box.
         commandTextField.textProperty().addListener((unused1, unused2, unused3) -> setStyleToDefault());
     }
@@ -37,7 +51,7 @@ public class CommandBox extends UiPart<Region> {
     @FXML
     private void handleCommandEntered() {
         String commandText = commandTextField.getText();
-        if (commandText.equals("")) {
+        if (commandText.isEmpty() && !isInputRequestPending.getAsBoolean()) {
             return;
         }
 
