@@ -200,10 +200,12 @@ For `clear`, `ClearCommand` requests confirmation only when the address book con
 
 ### Command history navigation
 
-`CommandHistory` stores each non-empty ordinary submission as an exact string. `CommandBox` records the text before
-calling its command executor, so commands that later fail parsing or execution remain available. Before recording,
-`CommandBox` checks whether `Logic` has a pending `CommandInputRequest`; follow-up responses are excluded from command
-history because they are input for an existing command rather than new commands.
+`CommandHistory` stores each non-empty ordinary submission as an exact string unless it is identical to the newest
+history entry. This collapses consecutive exact duplicates while retaining identical submissions separated by another
+command. `CommandBox` records the text before calling its command executor, so commands that later fail parsing or
+execution remain available. Before recording, `CommandBox` checks whether `Logic` has a pending
+`CommandInputRequest`; follow-up responses are excluded from command history because they are input for an existing
+command rather than new commands.
 
 The history position starts immediately after the newest entry. On the first Up arrow press, `CommandHistory` saves
 the current command box text as a draft and returns the newest command. Further Up presses move towards older
@@ -632,8 +634,13 @@ behavior of `list` and `find`.
    1. Submit an invalid command containing leading or trailing spaces, then press the Up arrow key.<br>
       Expected: The invalid command is recalled with its original spaces.
 
-   1. Submit the same command twice, then press the Up arrow key twice.<br>
-      Expected: Each submission occupies a separate history position.
+   1. Restart the application. Submit `list`, then submit `find Alex` twice. Press the Up arrow key twice.<br>
+      Expected: The command box shows `find Alex`, then `list`. The consecutive duplicate occupies one history
+      position.
+
+   1. Restart the application. Submit `list`, `find Alex`, then `list`. Press the Up arrow key three times.<br>
+      Expected: The command box shows `list`, `find Alex`, then `list`. Identical commands separated by another
+      command occupy separate history positions.
 
 1. Excluding follow-up responses
 

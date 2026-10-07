@@ -75,8 +75,9 @@ The command box keeps commands submitted during the current application session 
   oldest command remains displayed when there are no earlier commands.
 * Press <kbd>Down</kbd> to move towards newer commands. After the newest command, pressing <kbd>Down</kbd> restores the
   unfinished text that was in the command box before you started browsing.
-* Commands are recalled exactly as submitted, including spaces and repeated identical commands. Both successful and
-  invalid commands are kept.
+* Commands are recalled exactly as submitted, including spaces. Consecutive commands with exactly the same text are
+  kept as one history entry so that navigation does not appear unresponsive. The same command is kept again when
+  another command separates the submissions. Both successful and invalid commands are kept.
 * Empty ordinary submissions and responses to follow-up prompts, such as `y` for a deletion confirmation, are not
   kept. While a follow-up prompt is pending, any recalled text you submit is still handled as the response to that
   prompt.
