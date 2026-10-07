@@ -8,6 +8,7 @@ import seedu.address.logic.commands.EditCommand.EditPersonDescriptor;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
+import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
 import seedu.address.model.person.VisitDate;
@@ -44,6 +45,7 @@ public class EditPersonDescriptorBuilder {
         descriptor.setEmail(person.getEmail());
         descriptor.setAddress(person.getAddress());
         descriptor.setVisitDate(person.getVisitDate());
+        descriptor.setNote(person.getNote());
         descriptor.setTags(person.getTags());
     }
 
@@ -84,6 +86,14 @@ public class EditPersonDescriptorBuilder {
      */
     public EditPersonDescriptorBuilder withVisitDate(String visitDate) {
         descriptor.setVisitDate(new VisitDate(visitDate));
+        return this;
+    }
+
+    /**
+     * Sets the replacement note, including an empty value to clear existing notes.
+     */
+    public EditPersonDescriptorBuilder withNote(String note) {
+        descriptor.setNote(new Note(note));
         return this;
     }
 

@@ -1,5 +1,6 @@
 package seedu.address.logic.parser;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.commands.CommandTestUtil.ADDRESS_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.ADDRESS_DESC_BOB;
@@ -12,6 +13,7 @@ import static seedu.address.logic.commands.CommandTestUtil.INVALID_PHONE_DESC;
 import static seedu.address.logic.commands.CommandTestUtil.INVALID_TAG_DESC;
 import static seedu.address.logic.commands.CommandTestUtil.INVALID_VISIT_DATE_DESC;
 import static seedu.address.logic.commands.CommandTestUtil.NAME_DESC_AMY;
+import static seedu.address.logic.commands.CommandTestUtil.NOTE_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.PHONE_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.PHONE_DESC_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.TAG_DESC_FRIEND;
@@ -19,6 +21,7 @@ import static seedu.address.logic.commands.CommandTestUtil.TAG_DESC_HUSBAND;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_ADDRESS_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_EMAIL_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_NAME_AMY;
+import static seedu.address.logic.commands.CommandTestUtil.VALID_NOTE_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_PHONE_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_PHONE_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_TAG_FRIEND;
@@ -29,6 +32,7 @@ import static seedu.address.logic.commands.CommandTestUtil.VISIT_DATE_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.VISIT_DATE_DESC_BOB;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_VISIT_DATE;
@@ -47,10 +51,12 @@ import seedu.address.logic.commands.EditCommand.EditPersonDescriptor;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
+import seedu.address.model.person.Note;
 import seedu.address.model.person.Phone;
 import seedu.address.model.person.VisitDate;
 import seedu.address.model.tag.Tag;
 import seedu.address.testutil.EditPersonDescriptorBuilder;
+import seedu.address.testutil.PersonUtil;
 
 public class EditCommandParserTest {
 
@@ -123,12 +129,12 @@ public class EditCommandParserTest {
         Index targetIndex = INDEX_SECOND_PERSON;
         String userInput = targetIndex.getOneBased() + VISIT_DATE_DESC_AMY
                 + PHONE_DESC_BOB + TAG_DESC_HUSBAND + EMAIL_DESC_AMY + ADDRESS_DESC_AMY
-                + NAME_DESC_AMY + TAG_DESC_FRIEND;
+                + NAME_DESC_AMY + NOTE_DESC_AMY + TAG_DESC_FRIEND;
 
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withVisitDate(VALID_VISIT_DATE_AMY)
                 .withName(VALID_NAME_AMY).withPhone(VALID_PHONE_BOB)
                 .withEmail(VALID_EMAIL_AMY).withAddress(VALID_ADDRESS_AMY)
-                .withTags(VALID_TAG_HUSBAND, VALID_TAG_FRIEND).build();
+                .withNote(VALID_NOTE_AMY).withTags(VALID_TAG_HUSBAND, VALID_TAG_FRIEND).build();
         EditCommand expectedCommand = new EditCommand(targetIndex, descriptor);
 
         assertParseSuccess(parser, userInput, expectedCommand);
@@ -222,6 +228,125 @@ public class EditCommandParserTest {
     }
 
     @Test
+    public void parse_noteOnly_success() {
+        assertOptionalFieldParsed(NOTE_DESC_AMY,
+                new EditPersonDescriptorBuilder().withNote(VALID_NOTE_AMY).build());
+    }
+
+    @Test
+    public void parse_emptyNote_success() {
+        EditCommand expectedCommand = new EditCommand(INDEX_FIRST_PERSON,
+                new EditPersonDescriptorBuilder().withNote("").build());
+        assertParseSuccess(parser, "1 note/", expectedCommand);
+        assertParseSuccess(parser, "1 note/ \t \r \n ", expectedCommand);
+    }
+
+    @Test
+    public void parse_noteWhitespace_trimsOuterSpacesOnly() {
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withNote("Patient requests  a morning visit").build();
+        assertParseSuccess(parser, "1 note/  Patient requests  a morning visit  \t",
+                new EditCommand(INDEX_FIRST_PERSON, descriptor));
+    }
+
+    @Test
+    public void parse_noteWithEachOtherField_success() {
+        assertNoteAndFieldParsed(NAME_DESC_AMY,
+                new EditPersonDescriptorBuilder().withName(VALID_NAME_AMY).build());
+        assertNoteAndFieldParsed(PHONE_DESC_AMY,
+                new EditPersonDescriptorBuilder().withPhone(VALID_PHONE_AMY).build());
+        assertNoteAndFieldParsed(ADDRESS_DESC_AMY,
+                new EditPersonDescriptorBuilder().withAddress(VALID_ADDRESS_AMY).build());
+        assertNoteAndFieldParsed(EMAIL_DESC_AMY,
+                new EditPersonDescriptorBuilder().withEmail(VALID_EMAIL_AMY).build());
+        assertNoteAndFieldParsed(VISIT_DATE_DESC_AMY,
+                new EditPersonDescriptorBuilder().withVisitDate(VALID_VISIT_DATE_AMY).build());
+        assertNoteAndFieldParsed(TAG_DESC_FRIEND + TAG_DESC_HUSBAND,
+                new EditPersonDescriptorBuilder().withTags(VALID_TAG_FRIEND, VALID_TAG_HUSBAND).build());
+        assertNoteAndFieldParsed(TAG_EMPTY, new EditPersonDescriptorBuilder().withTags().build());
+    }
+
+    @Test
+    public void parse_noteWithVisitDateEmailAndTags_success() {
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withNote(VALID_NOTE_AMY)
+                .withVisitDate(VALID_VISIT_DATE_AMY).withEmail(VALID_EMAIL_AMY)
+                .withTags(VALID_TAG_FRIEND, VALID_TAG_HUSBAND).build();
+        EditCommand expectedCommand = new EditCommand(INDEX_FIRST_PERSON, descriptor);
+        assertParseSuccess(parser, "1" + VISIT_DATE_DESC_AMY + EMAIL_DESC_AMY + NOTE_DESC_AMY
+                + TAG_DESC_FRIEND + TAG_DESC_HUSBAND, expectedCommand);
+        assertParseSuccess(parser, "1" + TAG_DESC_HUSBAND + NOTE_DESC_AMY + EMAIL_DESC_AMY
+                + TAG_DESC_FRIEND + VISIT_DATE_DESC_AMY, expectedCommand);
+    }
+
+    @Test
+    public void parse_emptyEmailAndNote_success() {
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withEmail("").withNote("").build();
+        assertParseSuccess(parser, "1 e/ note/", new EditCommand(INDEX_FIRST_PERSON, descriptor));
+        assertParseSuccess(parser, "1 note/ e/", new EditCommand(INDEX_FIRST_PERSON, descriptor));
+        descriptor.setVisitDate(new VisitDate(VALID_VISIT_DATE_AMY));
+        assertParseSuccess(parser, INDEX_AND_VISIT_DATE + " e/ note/",
+                new EditCommand(INDEX_FIRST_PERSON, descriptor));
+        assertParseSuccess(parser, "1 note/" + VISIT_DATE_DESC_AMY + " e/",
+                new EditCommand(INDEX_FIRST_PERSON, descriptor));
+    }
+
+    @Test
+    public void parse_repeatedNote_failure() {
+        String[] repeatedNotes = {NOTE_DESC_AMY + " note/Review medication", NOTE_DESC_AMY + NOTE_DESC_AMY,
+            " note/ note/", " note/" + NOTE_DESC_AMY, NOTE_DESC_AMY + " note/"};
+        for (String repeatedNote : repeatedNotes) {
+            assertParseFailure(parser, "1" + repeatedNote,
+                    Messages.getErrorMessageForDuplicatePrefixes(PREFIX_NOTE));
+        }
+    }
+
+    @Test
+    public void parse_noteValidationOrder_failure() {
+        assertParseFailure(parser, "0" + NOTE_DESC_AMY + NOTE_DESC_AMY, MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "x note/ note/", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1" + INVALID_NAME_DESC + NOTE_DESC_AMY + NOTE_DESC_AMY,
+                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_NOTE));
+        assertParseFailure(parser, "1" + INVALID_VISIT_DATE_DESC + " note/ note/",
+                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_NOTE));
+    }
+
+    @Test
+    public void parse_invalidFieldWithNote_failure() {
+        assertParseFailure(parser, "1" + NOTE_DESC_AMY + INVALID_NAME_DESC, Name.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1" + NOTE_DESC_AMY + INVALID_PHONE_DESC, Phone.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1" + NOTE_DESC_AMY + INVALID_ADDRESS_DESC, Address.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1" + NOTE_DESC_AMY + INVALID_EMAIL_DESC, Email.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1" + NOTE_DESC_AMY + INVALID_VISIT_DATE_DESC, VisitDate.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1" + NOTE_DESC_AMY + INVALID_TAG_DESC, Tag.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
+    public void parse_notePrefixDelimiter_preservesExistingGrammar() {
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withNote("Review medication").withEmail(VALID_EMAIL_AMY).build();
+        assertParseSuccess(parser, "1 note/Review medication" + EMAIL_DESC_AMY,
+                new EditCommand(INDEX_FIRST_PERSON, descriptor));
+        EditPersonDescriptor literalNote = new EditPersonDescriptorBuilder().withNote("Review\te/literal").build();
+        assertParseSuccess(parser, "1 note/Review\te/literal", new EditCommand(INDEX_FIRST_PERSON, literalNote));
+    }
+
+    @Test
+    public void parse_serializedNotesAndTags_success() {
+        EditPersonDescriptor emptyFields = new EditPersonDescriptorBuilder()
+                .withEmail("").withNote("").withTags().build();
+        String emptyDetails = PersonUtil.getEditPersonDescriptorDetails(emptyFields);
+        assertEquals("e/ note/ t/", emptyDetails);
+        assertParseSuccess(parser, "1 " + emptyDetails, new EditCommand(INDEX_FIRST_PERSON, emptyFields));
+
+        EditPersonDescriptor replacements = new EditPersonDescriptorBuilder().withVisitDate(VALID_VISIT_DATE_AMY)
+                .withEmail(VALID_EMAIL_AMY).withNote(VALID_NOTE_AMY).withTags(VALID_TAG_FRIEND).build();
+        String replacementDetails = PersonUtil.getEditPersonDescriptorDetails(replacements);
+        assertEquals("vd/" + VALID_VISIT_DATE_AMY + EMAIL_DESC_AMY + NOTE_DESC_AMY + TAG_DESC_FRIEND + " ",
+                replacementDetails);
+        assertParseSuccess(parser, "1 " + replacementDetails, new EditCommand(INDEX_FIRST_PERSON, replacements));
+    }
+
+    @Test
     public void parse_multipleRepeatedFields_failure() {
         // More extensive testing of duplicate parameter detections is done in
         // AddCommandParserTest#parse_repeatedNonTagValue_failure()
@@ -276,5 +401,15 @@ public class EditCommandParserTest {
         descriptor.setVisitDate(new VisitDate(VALID_VISIT_DATE_AMY));
         assertParseSuccess(parser, INDEX_AND_VISIT_DATE + optionalField,
                 new EditCommand(INDEX_FIRST_PERSON, descriptor));
+    }
+
+    /**
+     * Checks notes together with another field in either prefix order.
+     */
+    private void assertNoteAndFieldParsed(String otherField, EditPersonDescriptor descriptor) {
+        descriptor.setNote(new Note(VALID_NOTE_AMY));
+        EditCommand expectedCommand = new EditCommand(INDEX_FIRST_PERSON, descriptor);
+        assertParseSuccess(parser, "1" + NOTE_DESC_AMY + otherField, expectedCommand);
+        assertParseSuccess(parser, "1" + otherField + NOTE_DESC_AMY, expectedCommand);
     }
 }

@@ -132,7 +132,7 @@ Format: `sort`
 
 Edits an existing person in the address book.
 
-Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [t/TAG]...`
+Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`
 
 * Edits the person at the specified `INDEX`. The index refers to the index number shown in the displayed person list. The index **must be a positive integer** 1, 2, 3, ...
 * All editable fields are optional, but at least one must be provided.
@@ -140,6 +140,14 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [t/T
   (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted.
 * The visit date and time can be edited by itself. Omitting `vd/` preserves the existing visit date and time.
 * Omitted fields, including email and existing notes, keep their values. Use an empty `e/` to clear email.
+* Use `note/NOTES` to replace the entire stored note. Use an empty `note/` to clear it; notes can be edited
+  without `vd/`. An explicitly empty note counts as a supplied field, even when the note is already empty.
+* Leading and trailing spaces and tabs in notes are trimmed; internal spaces are preserved. An empty value
+  after trimming clears the note. A recognized prefix preceded by a literal space starts another field,
+  even inside notes (e.g., `note/Review medication e/new@example.com` edits both notes and email).
+  There is no escaping for literal prefix text.
+* Prefixes can appear in any order. Repeated single-valued prefixes, including `note/`, are rejected,
+  even when their values are identical or empty. Multiple `t/TAG` prefixes are allowed.
 * Editing replaces the stored visit date and time; it does not append a visit-history entry.
 * Existing values will be updated to the input values.
 * When editing tags, all of the person's existing tags are removed; adding tags is not cumulative.
@@ -150,6 +158,10 @@ Examples:
 * `edit 1 p/91234567 vd/8/10/2026 1000 e/johndoe@example.com` Updates the visit, phone number, and email.
 * `edit 1 p/91234567 e/johndoe@example.com` Updates the phone number and email, keeping the visit unchanged.
 * `edit 1 e/` Clears the email, keeping the visit and other details unchanged.
+* `edit 1 note/Patient requests a morning visit` Replaces the notes, keeping all other details unchanged.
+* `edit 1 note/` Clears the notes, keeping all other details unchanged.
+* `edit 1 e/ note/` Clears both email and notes, keeping the visit and other details unchanged.
+* `edit 1 vd/8/10/2026 1000 e/new@example.com note/Review medication` Updates the visit, email, and notes.
 * `edit 2 n/Betsy Crower t/` Updates the name and clears all existing tags, keeping the visit unchanged.
 
 ### Locating persons by name: `find`
@@ -256,7 +268,7 @@ Action     | Format, Examples
 **Add**    | `add n/NAME p/PHONE_NUMBER e/EMAIL a/ADDRESS [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 e/jamesho@example.com a/123, Clementi Rd, 1234665 t/friend t/colleague`
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
-**Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [t/TAG]...`<br> e.g., `edit 2 n/James Lee vd/8/10/2026 1000 e/jameslee@example.com`
+**Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
 **Sort**   | `sort`
