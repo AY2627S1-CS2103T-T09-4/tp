@@ -16,17 +16,25 @@ class CommandHistory {
 
     /**
      * Records a submitted command and resets navigation to the newest end of the history.
-     * Follow-up input requested by a command and empty input are not stored.
+     * Follow-up input requested by a command, empty input, and exact consecutive duplicates are not stored.
      *
      * @param input Submitted command-line input.
      * @param isFollowUpInput Whether the input answers a pending request instead of representing a command.
      */
     void recordSubmission(String input, boolean isFollowUpInput) {
         requireNonNull(input);
-        if (!isFollowUpInput && !input.isEmpty()) {
+        if (shouldRecord(input, isFollowUpInput)) {
             commands.add(input);
         }
         resetNavigation();
+    }
+
+    /**
+     * Returns whether the input should be added as a new history entry.
+     */
+    private boolean shouldRecord(String input, boolean isFollowUpInput) {
+        boolean isConsecutiveDuplicate = !commands.isEmpty() && commands.get(commands.size() - 1).equals(input);
+        return !isFollowUpInput && !input.isEmpty() && !isConsecutiveDuplicate;
     }
 
     /**

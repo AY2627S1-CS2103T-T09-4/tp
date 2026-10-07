@@ -36,14 +36,24 @@ public class CommandHistoryTest {
     }
 
     @Test
-    public void recordSubmission_duplicateAndWhitespaceCommands_preservesExactInputAndOrder() {
+    public void recordSubmission_consecutiveExactDuplicates_storesOnlyOneEntry() {
         history.recordSubmission("  list  ", false);
         history.recordSubmission("list", false);
         history.recordSubmission("list", false);
 
         assertEquals("list", history.getPrevious(""));
-        assertEquals("list", history.getPrevious("list"));
         assertEquals("  list  ", history.getPrevious("list"));
+    }
+
+    @Test
+    public void recordSubmission_duplicatesSeparatedByAnotherCommand_storesEachEntry() {
+        history.recordSubmission("list", false);
+        history.recordSubmission("find Alex", false);
+        history.recordSubmission("list", false);
+
+        assertEquals("list", history.getPrevious(""));
+        assertEquals("find Alex", history.getPrevious("list"));
+        assertEquals("list", history.getPrevious("find Alex"));
     }
 
     @Test
@@ -67,5 +77,18 @@ public class CommandHistoryTest {
 
         assertEquals("third", history.getPrevious(""));
         assertEquals("second", history.getPrevious("third"));
+    }
+
+    @Test
+    public void recordSubmission_consecutiveDuplicateWhileNavigating_resetsNavigation() {
+        history.recordSubmission("first", false);
+        history.recordSubmission("second", false);
+        history.getPrevious("");
+        history.getPrevious("second");
+
+        history.recordSubmission("second", false);
+
+        assertEquals("second", history.getPrevious(""));
+        assertEquals("", history.getNext("second"));
     }
 }
