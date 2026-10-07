@@ -6,6 +6,7 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_VISIT_DATE;
 import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 
 import java.util.Collections;
@@ -26,6 +27,7 @@ import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
+import seedu.address.model.person.VisitDate;
 import seedu.address.model.tag.Tag;
 
 /**
@@ -41,11 +43,13 @@ public class EditCommand extends Command {
             + "Parameters: INDEX (must be a positive integer) "
             + "[" + PREFIX_NAME + "NAME] "
             + "[" + PREFIX_PHONE + "PHONE] "
-            + "[" + PREFIX_EMAIL + "EMAIL] "
             + "[" + PREFIX_ADDRESS + "ADDRESS] "
+            + "[" + PREFIX_VISIT_DATE + "DATE_TIME] "
+            + "[" + PREFIX_EMAIL + "EMAIL] "
             + "[" + PREFIX_TAG + "TAG]...\n"
             + "Example: " + COMMAND_WORD + " 1 "
             + PREFIX_PHONE + "91234567 "
+            + PREFIX_VISIT_DATE + "8/10/2026 1000 "
             + PREFIX_EMAIL + "johndoe@example.com";
 
     public static final String MESSAGE_EDIT_PERSON_SUCCESS = "Edited person: %1$s";
@@ -56,8 +60,10 @@ public class EditCommand extends Command {
     private final EditPersonDescriptor editPersonDescriptor;
 
     /**
-     * @param index of the person in the filtered person list to edit
-     * @param editPersonDescriptor details to edit the person with
+     * Creates a command that edits the person at the displayed index.
+     *
+     * @param index Index of the person in the displayed person list.
+     * @param editPersonDescriptor Details to edit the person with.
      */
     public EditCommand(Index index, EditPersonDescriptor editPersonDescriptor) {
         requireNonNull(index);
@@ -67,6 +73,10 @@ public class EditCommand extends Command {
         this.editPersonDescriptor = new EditPersonDescriptor(editPersonDescriptor);
     }
 
+    /**
+     * {@inheritDoc}
+     * Replaces the person at the displayed index and restores the full list in stored order.
+     */
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
@@ -99,10 +109,11 @@ public class EditCommand extends Command {
         Phone updatedPhone = editPersonDescriptor.getPhone().orElse(personToEdit.getPhone());
         Email updatedEmail = editPersonDescriptor.getEmail().orElse(personToEdit.getEmail());
         Address updatedAddress = editPersonDescriptor.getAddress().orElse(personToEdit.getAddress());
+        VisitDate updatedVisitDate = editPersonDescriptor.getVisitDate().orElse(personToEdit.getVisitDate());
         Set<Tag> updatedTags = editPersonDescriptor.getTags().orElse(personToEdit.getTags());
 
         return new Person(updatedName, updatedPhone, updatedEmail, updatedAddress,
-                personToEdit.getVisitDate(), personToEdit.getNote(), updatedTags);
+                updatedVisitDate, personToEdit.getNote(), updatedTags);
     }
 
     @Override
@@ -129,20 +140,24 @@ public class EditCommand extends Command {
     }
 
     /**
-     * Stores the details to edit the person with. Each non-empty field value will replace the
-     * corresponding field value of the person.
+     * Stores the details to edit the person with. Each supplied field replaces the corresponding
+     * value, including explicitly empty email and tag values. Omitted fields remain unchanged.
      */
     public static class EditPersonDescriptor {
         private Name name;
         private Phone phone;
         private Email email;
         private Address address;
+        private VisitDate visitDate;
         private Set<Tag> tags;
 
+        /**
+         * Creates an empty descriptor with no fields to replace.
+         */
         public EditPersonDescriptor() {}
 
         /**
-         * Copy constructor.
+         * Creates a copy of the supplied descriptor.
          * A defensive copy of {@code tags} is used internally.
          */
         public EditPersonDescriptor(EditPersonDescriptor toCopy) {
@@ -150,6 +165,7 @@ public class EditCommand extends Command {
             setPhone(toCopy.phone);
             setEmail(toCopy.email);
             setAddress(toCopy.address);
+            setVisitDate(toCopy.visitDate);
             setTags(toCopy.tags);
         }
 
@@ -157,7 +173,7 @@ public class EditCommand extends Command {
          * Returns true if at least one field is edited.
          */
         public boolean isAnyFieldEdited() {
-            return CollectionUtil.isAnyNonNull(name, phone, email, address, tags);
+            return CollectionUtil.isAnyNonNull(name, phone, email, address, visitDate, tags);
         }
 
         public void setName(Name name) {
@@ -192,6 +208,14 @@ public class EditCommand extends Command {
             return Optional.ofNullable(address);
         }
 
+        public void setVisitDate(VisitDate visitDate) {
+            this.visitDate = visitDate;
+        }
+
+        public Optional<VisitDate> getVisitDate() {
+            return Optional.ofNullable(visitDate);
+        }
+
         /**
          * Sets {@code tags} to this object's {@code tags}.
          * A defensive copy of {@code tags} is used internally.
@@ -224,6 +248,7 @@ public class EditCommand extends Command {
                     && Objects.equals(phone, otherEditPersonDescriptor.phone)
                     && Objects.equals(email, otherEditPersonDescriptor.email)
                     && Objects.equals(address, otherEditPersonDescriptor.address)
+                    && Objects.equals(visitDate, otherEditPersonDescriptor.visitDate)
                     && Objects.equals(tags, otherEditPersonDescriptor.tags);
         }
 
@@ -234,6 +259,7 @@ public class EditCommand extends Command {
                     .add("phone", phone)
                     .add("email", email)
                     .add("address", address)
+                    .add("visitDate", visitDate)
                     .add("tags", tags)
                     .toString();
         }

@@ -166,6 +166,22 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 
 This section describes some noteworthy details on how certain features are implemented.
 
+### Editing visit date and time
+
+`EditCommandParser` accepts optional replacement fields, including `vd/`. It checks index syntax and
+duplicate single-valued prefixes before parsing field values, then rejects a descriptor with no supplied
+fields. When `vd/` is supplied, `ParserUtil#parseVisitDate` reuses the existing strict `VisitDate` validation
+for `d/M/yyyy HHmm`; valid past dates are accepted, while an empty `vd/` is rejected.
+
+`EditPersonDescriptor` stores the supplied visit date and time along with the optional replacement fields.
+`EditCommand` copies the descriptor, resolves the patient using the displayed list, and replaces the immutable
+`Person`. Omitted fields, including the visit date/time and notes, are preserved. An explicitly empty
+email or tag field clears its existing value and counts as a supplied field.
+
+A successful edit restores the full displayed list in stored order and uses the existing logic/storage path
+to save the updated record. The existing patient card displays the replacement visit date and time.
+Editing replaces one stored visit date/time; it does not create visit-history entries.
+
 ### Follow-up command-line input and destructive-command confirmation
 
 `CommandInputRequest` lets any command collect an additional command-line input through the existing command box and
@@ -379,17 +395,19 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case resumes at step 1.
 
-**Use case: UC02 - Update a patient record after a visit**
+**Use case: UC02 - Edit a patient's details**
+
+**Guarantees**
+
+* Only the details that the doctor requests to change are replaced; other details remain unchanged.
+* If Doc rejects the requested changes, the patient's existing details remain unchanged.
 
 **MSS**
 
 1.  Doctor requests to list patients.
 2.  Doc shows the caseload.
-3.  Doctor requests to record a completed visit for a patient identified by their displayed index, providing the
-    visit date and, a note optionally.
-4.  Doc records the visit and shows the updated patient record.
-5.  Doctor requests to schedule the patient's next visit, providing the next visit date.
-6.  Doc records the next visit date and shows the updated patient record.
+3.  Doctor requests to edit a selected patient, specifying one or more changes to the patient's details.
+4.  Doc updates the patient's details and shows the updated patient record.
 
     Use case ends.
 
@@ -399,27 +417,29 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
   Use case ends.
 
-* 3a. The displayed index does not identify a patient in the current list.
+* 3a. The selected patient cannot be found in the current list.
 
-    * 3a1. Doc shows an error message.
-
-      Use case resumes at step 2.
-
-* 3b. The visit date is in the future.
-
-    * 3b1. Doc shows an error message stating that a completed visit cannot be dated in the future.
+    * 3a1. Doc shows an error message explaining that the selection is invalid.
 
       Use case resumes at step 3.
 
-* 5a. Doctor does not schedule a next visit.
+* 3b. Doctor does not specify any changes.
 
-  Use case ends.
+    * 3b1. Doc shows an error message explaining that at least one detail must be supplied.
 
-* 5b. The next visit date is in the past.
+      Use case resumes at step 3.
 
-    * 5b1. Doc shows an error message stating that the next visit date cannot be in the past.
+* 3c. A supplied detail is invalid.
 
-      Use case resumes at step 5.
+    * 3c1. Doc shows an error message describing the expected input.
+
+      Use case resumes at step 3.
+
+* 3d. The requested changes would create a duplicate of another patient record.
+
+    * 3d1. Doc shows an error message explaining that the patient record already exists.
+
+      Use case resumes at step 3.
 
 **Use case: UC03 - Prepare for the day's visits**
 
@@ -587,6 +607,26 @@ behavior of `list` and `find`.
 1. Run `delete 1`. Expect the first displayed patient to be deleted, with the remaining visits still sorted.
 1. Run `list`. Expect every remaining patient, including yesterday's, in stored order.
 1. Try `sort` on an empty address book and one containing only past visits. Expect an empty list.
+
+### Editing visit date and time
+
+Use a disposable copy of the data file for these tests. Start with multiple patients, including one with
+nonempty notes, and record the selected patient's existing details before editing.
+
+1. Run `edit 1 vd/8/10/2026 1000`. Expect the first displayed patient's card to show the new visit date/time;
+   all other details, including notes, remain unchanged.
+1. Run `edit 1 e/new@example.com`. Expect only the email to change; the visit date/time and notes are preserved.
+1. Run `edit 1`. Expect the message "At least one field to edit must be provided." and unchanged records.
+1. Run `edit 1 vd/`, then `edit 1 vd/31/2/2026 1000`. Expect date validation errors and unchanged records.
+1. Run `edit 1 vd/8/10/2026 1000 vd/9/10/2026 1000`. Expect a duplicate-prefix error and unchanged records.
+1. Run `edit 1 vd/1/1/2025 0930`. Expect the valid past date/time to be accepted.
+1. Run `edit 1 e/`. Expect the email to be cleared, with the visit date/time and notes preserved.
+1. Run `edit 1 t/friend t/colleague`, then `edit 1 t/`. Expect tags to be replaced, then cleared;
+   the visit date/time and notes remain unchanged.
+1. Show a filtered or sorted list with a different first patient, then run `edit 1 vd/8/10/2026 1000`.
+   Expect that displayed patient to be edited, followed by the full list in stored order.
+1. Close and reopen the application. Expect the edited date/time and cleared email to remain saved,
+   with the patient's notes and other omitted fields preserved.
 
 ### Deleting a person
 

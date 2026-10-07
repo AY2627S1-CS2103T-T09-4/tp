@@ -6,14 +6,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.DESC_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_NAME_BOB;
+import static seedu.address.logic.commands.CommandTestUtil.VALID_NOTE_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_PHONE_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_TAG_HUSBAND;
+import static seedu.address.logic.commands.CommandTestUtil.VALID_VISIT_DATE_AMY;
+import static seedu.address.logic.commands.CommandTestUtil.VALID_VISIT_DATE_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.logic.commands.CommandTestUtil.showPersonAtIndex;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
 import static seedu.address.testutil.TypicalIndexes.INDEX_SECOND_PERSON;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
+
+import java.util.Comparator;
 
 import org.junit.jupiter.api.Test;
 
@@ -25,6 +30,7 @@ import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
 import seedu.address.model.person.Person;
+import seedu.address.model.person.VisitDate;
 import seedu.address.testutil.EditPersonDescriptorBuilder;
 import seedu.address.testutil.PersonBuilder;
 
@@ -130,8 +136,7 @@ public class EditCommandTest {
     }
 
     /**
-     * Edit filtered list where index is larger than size of filtered list,
-     * but smaller than size of address book
+     * Checks an index outside the displayed list but inside the stored address book.
      */
     @Test
     public void execute_invalidPersonIndexFilteredList_failure() {
@@ -144,6 +149,78 @@ public class EditCommandTest {
                 new EditPersonDescriptorBuilder().withName(VALID_NAME_BOB).build());
 
         assertCommandFailure(editCommand, model, Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
+    }
+
+    @Test
+    public void execute_visitDateOnly_preservesOtherFields() {
+        Person original = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person personWithNotes = new PersonBuilder(original).withNote(VALID_NOTE_AMY).build();
+        model.setPerson(original, personWithNotes);
+        Person editedPerson = new PersonBuilder(personWithNotes).withVisitDate(VALID_VISIT_DATE_BOB).build();
+        EditCommand command = new EditCommand(INDEX_FIRST_PERSON,
+                new EditPersonDescriptorBuilder().withVisitDate(VALID_VISIT_DATE_BOB).build());
+
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expectedModel.setPerson(personWithNotes, editedPerson);
+        assertCommandSuccess(command, model,
+                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), expectedModel);
+    }
+
+    @Test
+    public void execute_sameVisitDate_success() {
+        Person original = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        EditCommand command = new EditCommand(INDEX_FIRST_PERSON,
+                new EditPersonDescriptorBuilder().withVisitDate(original.getVisitDate().toString()).build());
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+
+        assertCommandSuccess(command, model,
+                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(original)), expectedModel);
+    }
+
+    @Test
+    public void execute_visitDateAndEmptyEmail_success() {
+        Person original = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person editedPerson = new PersonBuilder(original).withVisitDate(VALID_VISIT_DATE_BOB).withEmail("").build();
+        EditCommand command = new EditCommand(INDEX_FIRST_PERSON,
+                new EditPersonDescriptorBuilder().withVisitDate(VALID_VISIT_DATE_BOB).withEmail("").build());
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expectedModel.setPerson(original, editedPerson);
+
+        assertCommandSuccess(command, model,
+                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), expectedModel);
+    }
+
+    @Test
+    public void execute_sortedList_editsDisplayedPerson() {
+        Person storedSecondPerson = model.getAddressBook().getPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        Person earlierPerson = new PersonBuilder(storedSecondPerson).withVisitDate(VALID_VISIT_DATE_BOB).build();
+        model.setPerson(storedSecondPerson, earlierPerson);
+        model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
+        assertEquals(earlierPerson, model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased()));
+
+        Person editedPerson = new PersonBuilder(earlierPerson).withVisitDate(VALID_VISIT_DATE_AMY).build();
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expectedModel.setPerson(earlierPerson, editedPerson);
+        EditCommand command = new EditCommand(INDEX_FIRST_PERSON,
+                new EditPersonDescriptorBuilder().withVisitDate(VALID_VISIT_DATE_AMY).build());
+
+        assertCommandSuccess(command, model,
+                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), expectedModel);
+        assertEquals(editedPerson, model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased()));
+    }
+
+    @Test
+    public void execute_descriptorChangedAfterConstruction_preservesCopiedVisitDate() {
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withVisitDate(VALID_VISIT_DATE_BOB).build();
+        EditCommand command = new EditCommand(INDEX_FIRST_PERSON, descriptor);
+        descriptor.setVisitDate(new VisitDate(VALID_VISIT_DATE_AMY));
+        Person original = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person editedPerson = new PersonBuilder(original).withVisitDate(VALID_VISIT_DATE_BOB).build();
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expectedModel.setPerson(original, editedPerson);
+
+        assertCommandSuccess(command, model,
+                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), expectedModel);
     }
 
     @Test
