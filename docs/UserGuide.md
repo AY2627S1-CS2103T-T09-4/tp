@@ -128,6 +128,22 @@ Format: `sort`
 * `list` shows all patients again in stored order; `find` also returns to its usual order.
 * Like `list`, extra parameters are ignored. Run `sort` again to refresh the date cutoff after midnight.
 
+### Viewing a person's details: `view`
+
+Displays only the selected person so that their full record is easier to inspect.
+
+Format: `view INDEX`
+
+* Displays the person at the specified `INDEX`.
+* The index refers to the index number shown in the currently displayed person list.
+* The index **must be a positive integer** 1, 2, 3, ...
+* The command works on lists produced by commands such as `find` and `sort`.
+* Viewing a person does not change their stored details.
+* Use `list` to display all persons again.
+
+Example:
+* `view 1` displays only the first person in the currently displayed list.
+
 ### Editing a person: `edit`
 
 Edits an existing person in the address book.
@@ -272,4 +288,5 @@ Action     | Format, Examples
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
 **Sort**   | `sort`
+**View**   | `view INDEX`<br> e.g., `view 1`
 **Help**   | `help`
