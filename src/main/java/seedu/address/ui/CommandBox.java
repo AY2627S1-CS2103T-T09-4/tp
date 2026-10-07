@@ -5,6 +5,7 @@ import java.util.function.BooleanSupplier;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Region;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -20,6 +21,7 @@ public class CommandBox extends UiPart<Region> {
 
     private final CommandExecutor commandExecutor;
     private final BooleanSupplier isInputRequestPending;
+    private final CommandHistory commandHistory = new CommandHistory();
 
     @FXML
     private TextField commandTextField;
@@ -51,16 +53,45 @@ public class CommandBox extends UiPart<Region> {
     @FXML
     private void handleCommandEntered() {
         String commandText = commandTextField.getText();
-        if (!shouldSubmit(commandText, isInputRequestPending.getAsBoolean())) {
+        boolean isFollowUpInput = isInputRequestPending.getAsBoolean();
+        if (!shouldSubmit(commandText, isFollowUpInput)) {
             return;
         }
 
+        commandHistory.recordSubmission(commandText, isFollowUpInput);
         try {
             commandExecutor.execute(commandText);
             commandTextField.setText("");
         } catch (CommandException | ParseException e) {
             setStyleToIndicateCommandFailure();
         }
+    }
+
+    /**
+     * Replaces the command text with older or newer command history when an arrow key is pressed.
+     */
+    @FXML
+    private void handleKeyPressed(KeyEvent keyEvent) {
+        switch (keyEvent.getCode()) {
+            case UP:
+                replaceCommandText(commandHistory.getPrevious(commandTextField.getText()));
+                keyEvent.consume();
+                break;
+            case DOWN:
+                replaceCommandText(commandHistory.getNext(commandTextField.getText()));
+                keyEvent.consume();
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * Replaces the command box content and positions the caret after the recalled text.
+     */
+    private void replaceCommandText(String commandText) {
+        commandTextField.setText(commandText);
+        commandTextField.positionCaret(commandText.length());
     }
 
     /**
