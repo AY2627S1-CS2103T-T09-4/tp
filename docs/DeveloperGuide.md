@@ -113,7 +113,7 @@ How the `Logic` component works:
    delete a person after confirmation).<br>
    Note that although this is shown as a single step in the diagram above for simplicity, the code can require several interactions between the command object and the `Model` to complete the operation.
 1. The result of command execution or input handling is encapsulated as a `CommandResult` object which is returned
-   from `Logic`. The result also tells `LogicManager` whether the address book changed and needs to be saved.
+   from `Logic`. The result also tells `LogicManager` whether it should save the address book.
 
 Here are the other classes in `Logic` (omitted from the class diagram above) that are used for parsing a user command:
 
