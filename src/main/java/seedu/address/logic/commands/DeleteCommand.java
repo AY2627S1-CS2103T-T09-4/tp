@@ -24,9 +24,16 @@ public class DeleteCommand extends Command {
             + "Example: " + COMMAND_WORD + " 1";
 
     public static final String MESSAGE_DELETE_PERSON_SUCCESS = "Deleted person: %1$s";
+    public static final String MESSAGE_CONFIRM_DELETE = "Delete %1$s? Type y to confirm. Any other input cancels.";
+    public static final String MESSAGE_DELETE_CANCELLED = "Deletion cancelled.";
+    public static final String MESSAGE_PERSON_NO_LONGER_EXISTS =
+            "The person selected for deletion no longer exists.";
 
     private final Index targetIndex;
 
+    /**
+     * Creates a command that requests confirmation before deleting the person at {@code targetIndex}.
+     */
     public DeleteCommand(Index targetIndex) {
         this.targetIndex = targetIndex;
     }
@@ -41,6 +48,23 @@ public class DeleteCommand extends Command {
         }
 
         Person personToDelete = lastShownList.get(targetIndex.getZeroBased());
+        String prompt = String.format(MESSAGE_CONFIRM_DELETE, personToDelete.getName());
+        CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(
+                prompt, MESSAGE_DELETE_CANCELLED,
+                confirmedModel -> deletePerson(confirmedModel, personToDelete));
+        return CommandResult.requestInput(inputRequest);
+    }
+
+    /**
+     * Deletes the person captured when the command was first executed.
+     *
+     * @throws CommandException If that exact person no longer exists in the address book.
+     */
+    private CommandResult deletePerson(Model model, Person personToDelete) throws CommandException {
+        if (!model.getAddressBook().getPersonList().contains(personToDelete)) {
+            throw new CommandException(MESSAGE_PERSON_NO_LONGER_EXISTS);
+        }
+
         model.deletePerson(personToDelete);
         return new CommandResult(String.format(MESSAGE_DELETE_PERSON_SUCCESS, Messages.format(personToDelete)));
     }

@@ -51,7 +51,7 @@ public class CommandBox extends UiPart<Region> {
     @FXML
     private void handleCommandEntered() {
         String commandText = commandTextField.getText();
-        if (commandText.isEmpty() && !isInputRequestPending.getAsBoolean()) {
+        if (!shouldSubmit(commandText, isInputRequestPending.getAsBoolean())) {
             return;
         }
 
@@ -61,6 +61,13 @@ public class CommandBox extends UiPart<Region> {
         } catch (CommandException | ParseException e) {
             setStyleToIndicateCommandFailure();
         }
+    }
+
+    /**
+     * Returns true when the supplied text is a command or a response to a pending input request.
+     */
+    static boolean shouldSubmit(String commandText, boolean isInputRequestPending) {
+        return !commandText.isEmpty() || isInputRequestPending;
     }
 
     /**

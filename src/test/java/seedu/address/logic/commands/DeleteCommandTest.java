@@ -2,9 +2,9 @@ package seedu.address.logic.commands;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
-import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.logic.commands.CommandTestUtil.showPersonAtIndex;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
 import static seedu.address.testutil.TypicalIndexes.INDEX_SECOND_PERSON;
@@ -14,10 +14,12 @@ import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.Messages;
+import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
 import seedu.address.model.person.Person;
+import seedu.address.testutil.PersonBuilder;
 
 /**
  * Contains integration tests (interaction with the Model) and unit tests for
@@ -28,17 +30,44 @@ public class DeleteCommandTest {
     private Model model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
 
     @Test
-    public void execute_validIndexUnfilteredList_success() {
+    public void execute_validIndexUnfilteredList_requestsConfirmation() throws Exception {
         Person personToDelete = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
         DeleteCommand deleteCommand = new DeleteCommand(INDEX_FIRST_PERSON);
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
 
-        String expectedMessage = String.format(DeleteCommand.MESSAGE_DELETE_PERSON_SUCCESS,
-                Messages.format(personToDelete));
+        CommandResult result = deleteCommand.execute(model);
 
-        ModelManager expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
-        expectedModel.deletePerson(personToDelete);
+        assertEquals(String.format(DeleteCommand.MESSAGE_CONFIRM_DELETE, personToDelete.getName()),
+                result.getFeedbackToUser());
+        assertTrue(result.getInputRequest().isPresent());
+        assertFalse(result.shouldSaveAddressBook());
+        assertEquals(expectedModel, model);
+    }
 
-        assertCommandSuccess(deleteCommand, model, expectedMessage, expectedModel);
+    @Test
+    public void confirmation_lowercaseY_deletesCapturedPerson() throws Exception {
+        Person personToDelete = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        DeleteCommand deleteCommand = new DeleteCommand(INDEX_FIRST_PERSON);
+        CommandResult requestResult = deleteCommand.execute(model);
+
+        CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond("y", model);
+
+        assertEquals(String.format(DeleteCommand.MESSAGE_DELETE_PERSON_SUCCESS, Messages.format(personToDelete)),
+                confirmedResult.getFeedbackToUser());
+        assertFalse(model.getAddressBook().getPersonList().contains(personToDelete));
+        assertTrue(confirmedResult.shouldSaveAddressBook());
+    }
+
+    @Test
+    public void confirmation_nonY_cancelsDeletion() throws Exception {
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        CommandResult requestResult = new DeleteCommand(INDEX_FIRST_PERSON).execute(model);
+
+        CommandResult cancelledResult = requestResult.getInputRequest().orElseThrow().respond("list", model);
+
+        assertEquals(DeleteCommand.MESSAGE_DELETE_CANCELLED, cancelledResult.getFeedbackToUser());
+        assertFalse(cancelledResult.shouldSaveAddressBook());
+        assertEquals(expectedModel, model);
     }
 
     @Test
@@ -50,20 +79,18 @@ public class DeleteCommandTest {
     }
 
     @Test
-    public void execute_validIndexFilteredList_success() {
+    public void execute_validIndexFilteredList_confirmsDisplayedPerson() throws Exception {
         showPersonAtIndex(model, INDEX_FIRST_PERSON);
 
         Person personToDelete = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
         DeleteCommand deleteCommand = new DeleteCommand(INDEX_FIRST_PERSON);
+        CommandResult requestResult = deleteCommand.execute(model);
 
-        String expectedMessage = String.format(DeleteCommand.MESSAGE_DELETE_PERSON_SUCCESS,
-                Messages.format(personToDelete));
+        requestResult.getInputRequest().orElseThrow().respond("Y", model);
 
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
-        expectedModel.deletePerson(personToDelete);
         showNoPerson(expectedModel);
-
-        assertCommandSuccess(deleteCommand, model, expectedMessage, expectedModel);
+        assertEquals(expectedModel, model);
     }
 
     @Test
@@ -77,6 +104,24 @@ public class DeleteCommandTest {
         DeleteCommand deleteCommand = new DeleteCommand(outOfBoundIndex);
 
         assertCommandFailure(deleteCommand, model, Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
+    }
+
+    @Test
+    public void confirmation_capturedPersonChanged_throwsCommandExceptionWithoutDeletingReplacement() throws Exception {
+        Person originalPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        CommandResult requestResult = new DeleteCommand(INDEX_FIRST_PERSON).execute(model);
+        Person editedPerson = new PersonBuilder(originalPerson)
+                .withPhone("91234567")
+                .build();
+        model.setPerson(originalPerson, editedPerson);
+        int expectedPersonCount = model.getAddressBook().getPersonList().size();
+
+        CommandException exception = assertThrows(
+                CommandException.class, () -> requestResult.getInputRequest().orElseThrow().respond("y", model));
+
+        assertEquals(DeleteCommand.MESSAGE_PERSON_NO_LONGER_EXISTS, exception.getMessage());
+        assertEquals(expectedPersonCount, model.getAddressBook().getPersonList().size());
+        assertTrue(model.getAddressBook().getPersonList().contains(editedPerson));
     }
 
     @Test
