@@ -97,6 +97,20 @@ Shows a list of all persons in the address book.
 
 Format: `list`
 
+### Sorting upcoming visits: `sort`
+
+Shows all patients with visits today or later, ordered by visit date and time, earliest first.
+
+Format: `sort`
+
+* Today is determined using your computer's local date when you run the command. Earlier times today are included.
+* Patients with identical visit dates and times keep their stored order.
+* This replaces any previous search results. Past visits are hidden, not deleted.
+* If there are no qualifying visits, the displayed list is empty.
+* Use the displayed indices for subsequent commands such as `edit` or `delete`.
+* `list` shows all patients again in stored order; `find` also returns to its usual order.
+* Like `list`, extra parameters are ignored. Run `sort` again to refresh the date cutoff after midnight.
+
 ### Editing a person: `edit`
 
 Edits an existing person in the address book.
@@ -220,4 +234,5 @@ Action     | Format, Examples
 **Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [e/EMAIL] [a/ADDRESS] [t/TAG]... `<br> e.g.,`edit 2 n/James Lee e/jameslee@example.com`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
+**Sort**   | `sort`
 **Help**   | `help`
