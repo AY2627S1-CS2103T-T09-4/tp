@@ -14,6 +14,18 @@ activate ui UI_COLOR
 ui -[UI_COLOR]> logic : execute("delete 1")
 activate logic LOGIC_COLOR
 
+logic --[LOGIC_COLOR]> ui : confirmation prompt
+deactivate logic
+
+ui --[UI_COLOR]> user : show confirmation prompt
+deactivate ui
+
+user -[USER_COLOR]> ui : "y"
+activate ui UI_COLOR
+
+ui -[UI_COLOR]> logic : execute("y")
+activate logic LOGIC_COLOR
+
 logic -[LOGIC_COLOR]> model : deletePerson(p)
 activate model MODEL_COLOR
 
@@ -31,9 +43,9 @@ deactivate storage
 storage --[STORAGE_COLOR]> logic
 deactivate storage
 
-logic --[LOGIC_COLOR]> ui
+logic --[LOGIC_COLOR]> ui : deletion result
 deactivate logic
 
-ui--[UI_COLOR]> user
+ui--[UI_COLOR]> user : show deletion result
 deactivate ui
 @enduml

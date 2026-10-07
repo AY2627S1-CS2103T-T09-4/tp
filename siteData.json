@@ -51,6 +51,7 @@
         "storage-component": "Storage component",
         "common-classes": "Common classes",
         "implementation": "Implementation",
+        "follow-up-command-line-input-and-destructive-command-confirmation": "Follow-up command-line input and destructive-command confirmation",
         "proposed-undo-redo-feature": "[Proposed] Undo/redo feature",
         "proposed-data-archiving": "[Proposed] Data archiving",
         "documentation-logging-testing-dev-ops": "Documentation, logging, testing, dev-ops",
@@ -64,6 +65,7 @@
         "launch-and-shutdown": "Launch and shutdown",
         "sorting-upcoming-visits": "Sorting upcoming visits",
         "deleting-a-person": "Deleting a person",
+        "clearing-all-persons": "Clearing all persons",
         "saving-data": "Saving data"
       },
       "headingKeywords": {}
