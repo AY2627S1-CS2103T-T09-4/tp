@@ -536,6 +536,22 @@ testers are expected to do more *exploratory* testing.
 
 1. _{ more test cases … }_
 
+### Sorting upcoming visits
+
+The model exposes a `SortedList` backed by its `FilteredList`. `SortCommand` filters visits
+using the local date at execution time, then sorts by visit date and time. Stored patient
+order is unchanged. Updating the filter resets the displayed order, preserving the usual
+behavior of `list` and `find`.
+
+1. Prepare patients with visits yesterday, today at 0000, today at 2300, and tomorrow,
+   entered in a different order from their visit dates.
+1. Run `sort`. Expect only today's and tomorrow's patients, earliest first.
+1. Run `find` for one patient, then `sort`. Expect all qualifying patients again.
+1. Run `sort` twice. Expect the same order; equal visit times retain stored order.
+1. Run `delete 1`. Expect the first displayed patient to be deleted, with the remaining visits still sorted.
+1. Run `list`. Expect every remaining patient, including yesterday's, in stored order.
+1. Try `sort` on an empty address book and one containing only past visits. Expect an empty list.
+
 ### Deleting a person
 
 1. Deleting a person while all persons are being shown
