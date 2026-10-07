@@ -50,7 +50,8 @@ The bulk of the app's work is done by the following four components:
 
 **How the architecture components interact with each other**
 
-The *Sequence Diagram* below shows how the components interact with each other for the scenario where the user issues the command `delete 1`.
+The *Sequence Diagram* below shows how the components interact when the user issues `delete 1` and then confirms
+the deletion with `y`.
 
 <puml src="diagrams/ArchitectureSequenceDiagram.puml" width="574" />
 
@@ -90,7 +91,8 @@ Here's a (partial) class diagram of the `Logic` component:
 
 <puml src="diagrams/LogicClassDiagram.puml" width="550"/>
 
-The sequence diagram below illustrates the interactions within the `Logic` component, taking `execute("delete 1")` API call as an example.
+The sequence diagram below illustrates the interactions within the `Logic` component when `execute("delete 1")`
+requests confirmation and `execute("y")` confirms it.
 
 <puml src="diagrams/DeleteSequenceDiagram.puml" alt="Interactions Inside the Logic Component for the `delete 1` Command" />
 
@@ -104,9 +106,14 @@ How the `Logic` component works:
 
 1. When `Logic` is called upon to execute a command, the command is passed to an `AddressBookParser` object, which in turn creates a parser that matches the command (e.g., `DeleteCommandParser`) and uses it to parse the command.
 1. This results in a `Command` object (more precisely, an object of one of its subclasses e.g., `DeleteCommand`) which is executed by the `LogicManager`.
-1. The command can communicate with the `Model` when it is executed (e.g. to delete a person).<br>
+1. A command that needs more input returns a `CommandResult` containing a `CommandInputRequest`. `LogicManager`
+   stores at most one pending request and sends the next command-line input directly to it without parsing that input
+   as a command.
+1. The command can communicate with the `Model` when it is executed or when requested input is handled (e.g. to
+   delete a person after confirmation).<br>
    Note that although this is shown as a single step in the diagram above for simplicity, the code can require several interactions between the command object and the `Model` to complete the operation.
-1. The result of the command execution is encapsulated as a `CommandResult` object which is returned from `Logic`.
+1. The result of command execution or input handling is encapsulated as a `CommandResult` object which is returned
+   from `Logic`. The result also tells `LogicManager` whether the address book changed and needs to be saved.
 
 Here are the other classes in `Logic` (omitted from the class diagram above) that are used for parsing a user command:
 
@@ -158,6 +165,35 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 ## **Implementation**
 
 This section describes some noteworthy details on how certain features are implemented.
+
+### Follow-up command-line input and destructive-command confirmation
+
+`CommandInputRequest` lets any command collect an additional command-line input through the existing command box and
+result display. It contains the prompt and a response handler. The handler receives the raw next input and the
+`Model`, then returns a `CommandResult`. That result can complete the interaction or contain another
+`CommandInputRequest`, so future commands can implement multi-step input without adding command-specific state to the
+UI or parser.
+
+`LogicManager` stores at most one pending request. While a request is pending, `LogicManager#execute(String)` sends
+the submitted text to the request handler instead of `AddressBookParser`. This includes blank input and text that
+would otherwise be a valid command. After the handler returns or throws a `CommandException`, the old request is no
+longer pending. A handler can continue the interaction by returning a result containing a new request.
+
+`CommandResult` separates displaying feedback from saving the address book. Prompts, cancellations, and the
+already-empty `clear` result do not cause a file write. A confirmed mutation returns a result that causes
+`LogicManager` to save the updated address book once.
+
+The shared `CommandInputRequest#createConfirmation` helper trims the response and compares it to `y` without regard
+to case. It runs the supplied action only for that response; every other response returns the supplied cancellation
+message.
+
+For `delete INDEX`, `DeleteCommand` validates the index and captures the exact displayed `Person` before requesting
+confirmation. The prompt contains only that person's name because other fields can be absent. Confirmation deletes
+that captured object rather than resolving the index again. If the record changed or disappeared while confirmation
+was pending, the command reports that the selected person no longer exists and deletes nothing.
+
+For `clear`, `ClearCommand` requests confirmation only when the address book contains entries. Its prompt uses
+`entry` for one record and `entries` otherwise. Confirming clears the address book; every other response cancels.
 
 ### \[Proposed\] Undo/redo feature
 
@@ -543,13 +579,55 @@ testers are expected to do more *exploratory* testing.
    1. Prerequisites: List all persons using the `list` command, with multiple persons in the list.
 
    1. Test case: `delete 1`<br>
-      Expected: The first contact is deleted from the list. The status message shows the deleted contact's details.
+      Expected: No contact is deleted. The result display shows
+      `Delete NAME? Type y to confirm. Any other input cancels.` using the first contact's name.
+
+   1. Test case: `y` immediately after the previous test case<br>
+      Expected: The first contact is deleted from the list. The result display shows the deleted contact's details.
+
+   1. Test case: `delete 1`, followed by `n`<br>
+      Expected: No contact is deleted. The result display shows `Deletion cancelled.`
+
+   1. Test case: `delete 1`, followed by `list`<br>
+      Expected: No contact is deleted and `list` is consumed as the confirmation response. The result display shows
+      `Deletion cancelled.` Entering `list` again lists all contacts normally.
+
+   1. Test case: `delete 1`, followed by pressing Enter with an empty command box<br>
+      Expected: No contact is deleted. The result display shows `Deletion cancelled.`
 
    1. Test case: `delete 0`<br>
       Expected: No person is deleted. The status message shows error details.
 
    1. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
-      Expected: Similar to previous.
+      Expected: The existing invalid-command response is shown and no confirmation is requested.
+
+### Clearing all persons
+
+1. Clearing a non-empty address book
+
+   1. Prerequisites: The address book contains multiple persons.
+
+   1. Test case: `clear`<br>
+      Expected: No contact is deleted. The result display shows
+      `Clear COUNT entries? Type y to confirm. Any other input cancels.` with the current count.
+
+   1. Test case: `Y` immediately after the previous test case<br>
+      Expected: All contacts are deleted and the result display shows `Address book has been cleared!`.
+
+1. Cancelling a clear operation
+
+   1. Prerequisites: The address book contains at least one person.
+
+   1. Test case: `clear`, followed by any input other than `y`, such as `list`<br>
+      Expected: No contact is deleted, the second input is not executed as a command, and the result display shows
+      `Clear cancelled.`
+
+1. Clearing an empty address book
+
+   1. Prerequisites: The address book is empty.
+
+   1. Test case: `clear`<br>
+      Expected: No confirmation is requested and the result display shows `Address book is already empty.`
 
 1. _{ more test cases … }_
 

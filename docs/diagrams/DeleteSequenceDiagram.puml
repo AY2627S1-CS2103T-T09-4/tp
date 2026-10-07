@@ -7,11 +7,16 @@ participant ":LogicManager" as LogicManager LOGIC_COLOR
 participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
 participant ":DeleteCommandParser" as DeleteCommandParser LOGIC_COLOR
 participant "d:DeleteCommand" as DeleteCommand LOGIC_COLOR
-participant "r:CommandResult" as CommandResult LOGIC_COLOR
+participant "q:CommandInputRequest" as CommandInputRequest LOGIC_COLOR
+participant ":CommandResult" as CommandResult LOGIC_COLOR
 end box
 
 box Model MODEL_COLOR_T1
 participant "m:Model" as Model MODEL_COLOR
+end box
+
+box Storage STORAGE_COLOR_T1
+participant ":Storage" as Storage STORAGE_COLOR
 end box
 
 [-> LogicManager : execute("delete 1")
@@ -49,22 +54,59 @@ deactivate AddressBookParser
 LogicManager -> DeleteCommand : execute(m)
 activate DeleteCommand
 
-DeleteCommand -> Model : deletePerson(1)
+DeleteCommand -> Model : getFilteredPersonList()
 activate Model
 
-Model --> DeleteCommand
+Model --> DeleteCommand : persons
 deactivate Model
 
+create CommandInputRequest
+DeleteCommand -> CommandInputRequest : createConfirmation(prompt, action)
+activate CommandInputRequest
+
+CommandInputRequest --> DeleteCommand : q
+deactivate CommandInputRequest
+
 create CommandResult
-DeleteCommand -> CommandResult
+DeleteCommand -> CommandResult : requestInput(q)
 activate CommandResult
 
-CommandResult --> DeleteCommand
+CommandResult --> DeleteCommand : r
 deactivate CommandResult
 
 DeleteCommand --> LogicManager : r
 deactivate DeleteCommand
 
-[<--LogicManager
+[<--LogicManager : r
+deactivate LogicManager
+
+[-> LogicManager : execute("y")
+activate LogicManager
+
+LogicManager -> CommandInputRequest : respond("y", m)
+activate CommandInputRequest
+
+CommandInputRequest -> DeleteCommand : deletePerson(m, p)
+activate DeleteCommand
+
+DeleteCommand -> Model : deletePerson(p)
+activate Model
+
+Model --> DeleteCommand
+deactivate Model
+
+DeleteCommand --> CommandInputRequest : confirmed result
+deactivate DeleteCommand
+
+CommandInputRequest --> LogicManager : confirmed result
+deactivate CommandInputRequest
+
+LogicManager -> Storage : saveAddressBook(addressBook)
+activate Storage
+
+Storage --> LogicManager
+deactivate Storage
+
+[<--LogicManager : confirmed result
 deactivate LogicManager
 @enduml

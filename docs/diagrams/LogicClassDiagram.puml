@@ -10,6 +10,7 @@ package "Parser Classes" as ParserClasses{
 }
 Class XYZCommand
 Class CommandResult
+Class CommandInputRequest
 Class "{abstract}\nCommand" as Command
 
 
@@ -33,6 +34,7 @@ ParserClasses ..> XYZCommand : <<create>>
 
 XYZCommand -up-|> Command
 LogicManager .left.> Command : <<call>>
+LogicManager --> "0..1" CommandInputRequest : pending
 
 LogicManager --> Model
 LogicManager --> Storage
@@ -44,4 +46,6 @@ note right of XYZCommand: XYZCommand = AddCommand, \nFindCommand, etc
 Logic ..> CommandResult
 LogicManager .down.> CommandResult
 Command .up.> CommandResult : <<create>>
+CommandResult --> "0..1" CommandInputRequest
+Command .up.> CommandInputRequest : <<create>>
 @enduml
