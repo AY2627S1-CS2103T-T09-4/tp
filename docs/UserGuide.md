@@ -67,6 +67,23 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </box>
 
+### Navigating command history
+
+The command box keeps commands submitted during the current application session so that you can reuse or edit them.
+
+* Press <kbd>Up</kbd> to recall the most recently submitted command. Press it again to move to older commands. The
+  oldest command remains displayed when there are no earlier commands.
+* Press <kbd>Down</kbd> to move towards newer commands. After the newest command, pressing <kbd>Down</kbd> restores the
+  unfinished text that was in the command box before you started browsing.
+* Commands are recalled exactly as submitted, including spaces. Consecutive commands with exactly the same text are
+  kept as one history entry so that navigation does not appear unresponsive. The same command is kept again when
+  another command separates the submissions. Both successful and invalid commands are kept.
+* Empty ordinary submissions and responses to follow-up prompts, such as `y` for a deletion confirmation, are not
+  kept. While a follow-up prompt is pending, any recalled text you submit is still handled as the response to that
+  prompt.
+* Submitting a new command returns navigation to the newest command. The history is cleared when the application
+  closes.
+
 ### Viewing help: `help`
 
 Shows a message explaining how to access the help page.

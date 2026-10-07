@@ -22,6 +22,10 @@ You can run tests in two ways.
 * **Method 2: Using Gradle**
   * Open a console and run the command `gradlew clean test` (Mac/Linux: `./gradlew clean test`)
 
+`CommandBoxTest` loads the production JavaFX control and FXML file. Linux environments without a graphical display
+must provide a virtual display, for example by running
+`xvfb-run --auto-servernum ./gradlew clean test`. The Linux CI job uses the same setup.
+
 <box type="info" seamless>
 
 **Link**: Read [this Gradle Tutorial from the se-edu/guides](https://se-education.org/guides/tutorials/gradle.html) to learn more about using Gradle.
