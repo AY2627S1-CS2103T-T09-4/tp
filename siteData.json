@@ -62,6 +62,7 @@
         "glossary": "Glossary",
         "appendix-instructions-for-manual-testing": "Appendix: Instructions for manual testing",
         "launch-and-shutdown": "Launch and shutdown",
+        "sorting-upcoming-visits": "Sorting upcoming visits",
         "deleting-a-person": "Deleting a person",
         "saving-data": "Saving data"
       },
@@ -113,6 +114,7 @@
         "viewing-help-help": "Viewing help: help",
         "adding-a-person-add": "Adding a person: add",
         "listing-all-persons-list": "Listing all persons: list",
+        "sorting-upcoming-visits-sort": "Sorting upcoming visits: sort",
         "editing-a-person-edit": "Editing a person: edit",
         "locating-persons-by-name-find": "Locating persons by name: find",
         "deleting-a-person-delete": "Deleting a person: delete",
