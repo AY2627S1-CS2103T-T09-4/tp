@@ -3,6 +3,7 @@ package seedu.address.logic.commands;
 import static java.util.Objects.requireNonNull;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import seedu.address.commons.util.ToStringBuilder;
 
@@ -19,13 +20,26 @@ public class CommandResult {
     /** The application should exit. */
     private final boolean exit;
 
+    /** The current address book state should be saved. */
+    private final boolean saveAddressBook;
+
+    /** The next command-line input should be handled by this request. */
+    private final CommandInputRequest inputRequest;
+
     /**
      * Constructs a {@code CommandResult} with the specified fields.
      */
     public CommandResult(String feedbackToUser, boolean showHelp, boolean exit) {
+        this(feedbackToUser, showHelp, exit, true, null);
+    }
+
+    private CommandResult(String feedbackToUser, boolean showHelp, boolean exit, boolean saveAddressBook,
+            CommandInputRequest inputRequest) {
         this.feedbackToUser = requireNonNull(feedbackToUser);
         this.showHelp = showHelp;
         this.exit = exit;
+        this.saveAddressBook = saveAddressBook;
+        this.inputRequest = inputRequest;
     }
 
     /**
@@ -34,6 +48,28 @@ public class CommandResult {
      */
     public CommandResult(String feedbackToUser) {
         this(feedbackToUser, false, false);
+    }
+
+    /**
+     * Creates a result that displays the request prompt and waits for the next command-line input.
+     * The current address book state is not saved for this result.
+     *
+     * @param inputRequest Request that will handle the next input.
+     * @return Result containing the input request.
+     */
+    public static CommandResult requestInput(CommandInputRequest inputRequest) {
+        requireNonNull(inputRequest);
+        return new CommandResult(inputRequest.getPrompt(), false, false, false, inputRequest);
+    }
+
+    /**
+     * Creates a result that displays feedback without saving the current address book state.
+     *
+     * @param feedbackToUser Feedback to display.
+     * @return Result that does not trigger an address book save.
+     */
+    public static CommandResult withoutSaving(String feedbackToUser) {
+        return new CommandResult(feedbackToUser, false, false, false, null);
     }
 
     public String getFeedbackToUser() {
@@ -46,6 +82,14 @@ public class CommandResult {
 
     public boolean isExit() {
         return exit;
+    }
+
+    public boolean shouldSaveAddressBook() {
+        return saveAddressBook;
+    }
+
+    public Optional<CommandInputRequest> getInputRequest() {
+        return Optional.ofNullable(inputRequest);
     }
 
     @Override
@@ -61,12 +105,14 @@ public class CommandResult {
 
         return feedbackToUser.equals(otherCommandResult.feedbackToUser)
                 && showHelp == otherCommandResult.showHelp
-                && exit == otherCommandResult.exit;
+                && exit == otherCommandResult.exit
+                && saveAddressBook == otherCommandResult.saveAddressBook
+                && (inputRequest != null) == (otherCommandResult.inputRequest != null);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(feedbackToUser, showHelp, exit);
+        return Objects.hash(feedbackToUser, showHelp, exit, saveAddressBook, inputRequest != null);
     }
 
     @Override
@@ -75,6 +121,8 @@ public class CommandResult {
                 .add("feedbackToUser", feedbackToUser)
                 .add("showHelp", showHelp)
                 .add("exit", exit)
+                .add("saveAddressBook", saveAddressBook)
+                .add("inputRequested", inputRequest != null)
                 .toString();
     }
 

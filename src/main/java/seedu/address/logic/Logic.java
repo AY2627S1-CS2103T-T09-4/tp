@@ -20,6 +20,11 @@ public interface Logic {
      */
     CommandResult execute(String commandText) throws CommandException, ParseException;
 
+    /**
+     * Returns true when the next command-line input will answer a pending request instead of being parsed as a command.
+     */
+    boolean isInputRequestPending();
+
     /** Returns an unmodifiable view of the filtered list of persons */
     ObservableList<Person> getFilteredPersonList();
 

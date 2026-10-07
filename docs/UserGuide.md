@@ -33,9 +33,9 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 
    * `add n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01` : Adds a contact named `John Doe` to the Address Book.
 
-   * `delete 3` : Deletes the 3rd contact shown in the current list.
+   * `delete 3` : Asks for confirmation before deleting the 3rd contact shown in the current list.
 
-   * `clear` : Deletes all contacts.
+   * `clear` : Asks for confirmation before deleting all contacts.
 
    * `exit` : Exits the app.
 
@@ -153,16 +153,31 @@ Format: `delete INDEX`
 * Deletes the person at the specified `INDEX`.
 * The index refers to the index number shown in the displayed person list.
 * The index **must be a positive integer** 1, 2, 3, ...
+* A valid command displays `Delete NAME? Type y to confirm. Any other input cancels.` without deleting the person.
+* Type `y` and press Enter to confirm. Surrounding spaces and letter case are ignored.
+* Any other input, including an empty response or another valid command, cancels the deletion and is not run as a
+  command. The result display then shows `Deletion cancelled.`
+* Invalid `delete` commands continue to show the usual invalid-command response and do not ask for confirmation.
 
 Examples:
-* `list` followed by `delete 2` deletes the 2nd person in the address book.
-* `find Betsy` followed by `delete 1` deletes the 1st person in the results of the `find` command.
+* `list` followed by `delete 2`, then `y`, deletes the 2nd person in the address book.
+* `find Betsy` followed by `delete 1`, then `y`, deletes the 1st person in the results of the `find` command.
 
 ### Clearing all entries: `clear`
 
 Clears all entries from the address book.
 
 Format: `clear`
+
+* When the address book contains entries, the result display asks for confirmation and shows the number of entries
+  that will be cleared.
+* Type `y` and press Enter to confirm. Surrounding spaces and letter case are ignored.
+* Any other input, including an empty response or another valid command, cancels the clear operation and is not run as
+  a command. The result display then shows `Clear cancelled.`
+* If the address book is empty, no confirmation is requested and the result display shows
+  `Address book is already empty.`
+
+Example: `clear` followed by `y` clears every entry.
 
 ### Exiting the program: `exit`
 
@@ -172,7 +187,9 @@ Format: `exit`
 
 ### Saving the data
 
-AddressBook automatically saves data after every command. You do not need to save manually.
+AddressBook automatically saves data after completed commands. Confirmation prompts, cancelled operations, and
+`clear` on an empty address book do not write a file because they do not change stored data. You do not need to save
+manually.
 
 ### Editing the data file
 
@@ -181,7 +198,9 @@ AddressBook data is saved automatically as a JSON file `[JAR file location]/data
 <box type="warning" seamless>
 
 **Caution:**
-If your changes make the data file invalid, AddressBook starts with an empty address book at the next run. The invalid file remains on disk until you run a command (AddressBook saves after every command). Still, we recommend backing up the file before editing it.<br>
+If your changes make the data file invalid, AddressBook starts with an empty address book at the next run. The invalid
+file remains on disk until you run a command that triggers saving, such as `list`. Still, we recommend backing up the
+file before editing it.<br>
 Furthermore, certain edits can cause the AddressBook to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 </box>
 

@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
+import seedu.address.model.ModelManager;
+
 public class CommandResultTest {
     @Test
     public void equals() {
@@ -33,6 +35,14 @@ public class CommandResultTest {
 
         // different exit value -> returns false
         assertFalse(commandResult.equals(new CommandResult("feedback", false, true)));
+
+        // different saveAddressBook value -> returns false
+        assertFalse(commandResult.equals(CommandResult.withoutSaving("feedback")));
+
+        // different input-request state -> returns false
+        CommandInputRequest inputRequest = new CommandInputRequest(
+                "feedback", (input, model) -> CommandResult.withoutSaving(input));
+        assertFalse(CommandResult.withoutSaving("feedback").equals(CommandResult.requestInput(inputRequest)));
     }
 
     @Test
@@ -50,6 +60,50 @@ public class CommandResultTest {
 
         // different exit value -> returns different hashcode
         assertNotEquals(commandResult.hashCode(), new CommandResult("feedback", false, true).hashCode());
+
+        // different saveAddressBook value -> returns different hashcode
+        assertNotEquals(commandResult.hashCode(), CommandResult.withoutSaving("feedback").hashCode());
+
+        // different input-request state -> returns different hashcode
+        CommandInputRequest inputRequest = new CommandInputRequest(
+                "feedback", (input, model) -> CommandResult.withoutSaving(input));
+        assertNotEquals(CommandResult.withoutSaving("feedback").hashCode(),
+                CommandResult.requestInput(inputRequest).hashCode());
+    }
+
+    @Test
+    public void requestInput_validRequest_returnsNonSavingResultWithRequest() {
+        CommandInputRequest inputRequest = new CommandInputRequest(
+                "Enter value", (input, model) -> CommandResult.withoutSaving(input));
+
+        CommandResult result = CommandResult.requestInput(inputRequest);
+
+        assertEquals("Enter value", result.getFeedbackToUser());
+        assertFalse(result.shouldSaveAddressBook());
+        assertEquals(inputRequest, result.getInputRequest().orElseThrow());
+    }
+
+    @Test
+    public void withoutSaving_validFeedback_returnsNonSavingResultWithoutRequest() {
+        CommandResult result = CommandResult.withoutSaving("feedback");
+
+        assertFalse(result.shouldSaveAddressBook());
+        assertTrue(result.getInputRequest().isEmpty());
+    }
+
+    @Test
+    public void inputRequest_respondsWithArbitraryInputAndCanContinue() throws Exception {
+        CommandInputRequest secondRequest = new CommandInputRequest(
+                "Second value", (input, model) -> CommandResult.withoutSaving(input));
+        CommandInputRequest firstRequest = new CommandInputRequest(
+                "First value", (input, model) -> CommandResult.requestInput(secondRequest));
+
+        CommandResult firstResult = firstRequest.respond("arbitrary input", new ModelManager());
+        CommandResult secondResult = firstResult.getInputRequest().orElseThrow()
+                .respond("another value", new ModelManager());
+
+        assertEquals("Second value", firstResult.getFeedbackToUser());
+        assertEquals("another value", secondResult.getFeedbackToUser());
     }
 
     @Test
@@ -57,7 +111,8 @@ public class CommandResultTest {
         CommandResult commandResult = new CommandResult("feedback");
         String expected = CommandResult.class.getCanonicalName() + "{feedbackToUser="
                 + commandResult.getFeedbackToUser() + ", showHelp=" + commandResult.isShowHelp()
-                + ", exit=" + commandResult.isExit() + "}";
+                + ", exit=" + commandResult.isExit() + ", saveAddressBook="
+                + commandResult.shouldSaveAddressBook() + ", inputRequested=false}";
         assertEquals(expected, commandResult.toString());
     }
 }

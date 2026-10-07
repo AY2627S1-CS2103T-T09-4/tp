@@ -8,6 +8,7 @@ import javafx.collections.ObservableList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.logic.commands.Command;
+import seedu.address.logic.commands.CommandInputRequest;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.AddressBookParser;
@@ -30,6 +31,7 @@ public class LogicManager implements Logic {
     private final Model model;
     private final Storage storage;
     private final AddressBookParser addressBookParser;
+    private CommandInputRequest pendingInputRequest;
 
     /**
      * Constructs a {@code LogicManager} with the given {@code Model} and {@code Storage}.
@@ -44,10 +46,51 @@ public class LogicManager implements Logic {
     public CommandResult execute(String commandText) throws CommandException, ParseException {
         logger.info("----------------[USER COMMAND][" + commandText + "]");
 
-        CommandResult commandResult;
-        Command command = addressBookParser.parseCommand(commandText);
-        commandResult = command.execute(model);
+        CommandResult commandResult = hasPendingInputRequest()
+                ? handleRequestedInput(commandText)
+                : executeParsedCommand(commandText);
 
+        if (commandResult.shouldSaveAddressBook()) {
+            saveAddressBook();
+        }
+
+        pendingInputRequest = commandResult.getInputRequest().orElse(null);
+        return commandResult;
+    }
+
+    @Override
+    public boolean isInputRequestPending() {
+        return hasPendingInputRequest();
+    }
+
+    /**
+     * Parses and executes a regular command.
+     */
+    private CommandResult executeParsedCommand(String commandText) throws CommandException, ParseException {
+        Command command = addressBookParser.parseCommand(commandText);
+        return command.execute(model);
+    }
+
+    /**
+     * Consumes input requested by the previous command without passing it to the command parser.
+     */
+    private CommandResult handleRequestedInput(String input) throws CommandException {
+        CommandInputRequest inputRequest = pendingInputRequest;
+        pendingInputRequest = null;
+        return inputRequest.respond(input, model);
+    }
+
+    /**
+     * Returns true when a command has requested another command-line input.
+     */
+    private boolean hasPendingInputRequest() {
+        return pendingInputRequest != null;
+    }
+
+    /**
+     * Saves the current address book state and converts storage failures to command failures.
+     */
+    private void saveAddressBook() throws CommandException {
         try {
             storage.saveAddressBook(model.getAddressBook());
         } catch (AccessDeniedException e) {
@@ -55,8 +98,6 @@ public class LogicManager implements Logic {
         } catch (IOException ioe) {
             throw new CommandException(String.format(FILE_OPS_ERROR_FORMAT, ioe.getMessage()), ioe);
         }
-
-        return commandResult;
     }
 
     @Override

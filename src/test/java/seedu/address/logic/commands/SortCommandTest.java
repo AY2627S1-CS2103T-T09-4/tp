@@ -104,7 +104,8 @@ public class SortCommandTest {
         addPersons(future, past, early, late);
         new SortCommand().execute(model);
 
-        new DeleteCommand(INDEX_FIRST_PERSON).execute(model);
+        CommandResult requestResult = new DeleteCommand(INDEX_FIRST_PERSON).execute(model);
+        requestResult.getInputRequest().orElseThrow().respond("y", model);
 
         assertEquals(List.of(late, future), model.getFilteredPersonList());
         assertEquals(List.of(future, past, late), model.getAddressBook().getPersonList());
