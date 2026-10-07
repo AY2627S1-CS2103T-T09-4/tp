@@ -83,6 +83,9 @@ The `UI` component,
 * keeps a reference to the `Logic` component, because the `UI` relies on the `Logic` to execute commands.
 * depends on some classes in the `Model` component because it displays `Person` objects from the model.
 
+`CommandBox` owns a session-scoped `CommandHistory`. It records ordinary command submissions and uses it to replace
+the command box text when the user presses the Up or Down arrow key.
+
 ### Logic component
 
 **API** : [`Logic.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/logic/Logic.java)
@@ -194,6 +197,23 @@ was pending, the command reports that the selected person no longer exists and d
 
 For `clear`, `ClearCommand` requests confirmation only when the address book contains entries. Its prompt uses
 `entry` for one record and `entries` otherwise. Confirming clears the address book; every other response cancels.
+
+### Command history navigation
+
+`CommandHistory` stores each non-empty ordinary submission as an exact string. `CommandBox` records the text before
+calling its command executor, so commands that later fail parsing or execution remain available. Before recording,
+`CommandBox` checks whether `Logic` has a pending `CommandInputRequest`; follow-up responses are excluded from command
+history because they are input for an existing command rather than new commands.
+
+The history position starts immediately after the newest entry. On the first Up arrow press, `CommandHistory` saves
+the current command box text as a draft and returns the newest command. Further Up presses move towards older
+commands and stop at the oldest entry. Down presses move towards newer commands; moving past the newest entry restores
+the saved draft. A new ordinary submission resets the position to immediately after the newest entry.
+
+`CommandBox` handles JavaFX key-pressed events for the Up and Down arrow keys, replaces the text, positions the caret
+after the recalled text, and consumes the event so the key does not also move the caret. Other keys retain the usual
+`TextField` behavior. The history belongs only to the current `CommandBox`, so it is discarded when the application
+closes.
 
 ### \[Proposed\] Undo/redo feature
 
@@ -584,9 +604,44 @@ behavior of `list` and `find`.
 1. Run `sort`. Expect only today's and tomorrow's patients, earliest first.
 1. Run `find` for one patient, then `sort`. Expect all qualifying patients again.
 1. Run `sort` twice. Expect the same order; equal visit times retain stored order.
-1. Run `delete 1`. Expect the first displayed patient to be deleted, with the remaining visits still sorted.
+1. Run `delete 1`, then `y`. Expect the first displayed patient to be deleted, with the remaining visits still sorted.
 1. Run `list`. Expect every remaining patient, including yesterday's, in stored order.
 1. Try `sort` on an empty address book and one containing only past visits. Expect an empty list.
+
+### Navigating command history
+
+1. Recalling submitted commands
+
+   1. Restart the application. Enter `list`, then enter `find Alex`.<br>
+      Expected: Both commands run normally.
+
+   1. Press the Up arrow key once, then again.<br>
+      Expected: The command box shows `find Alex`, then `list`. The caret is after the recalled text. Further Up arrow
+      presses leave `list` displayed.
+
+   1. Press the Down arrow key twice.<br>
+      Expected: The command box shows `find Alex`, then becomes empty. Further Down arrow presses leave it empty.
+
+1. Restoring unfinished text
+
+   1. Type `find Be` without pressing Enter, press the Up arrow key, then press the Down arrow key.<br>
+      Expected: A previous command is recalled, then the unfinished text `find Be` is restored exactly.
+
+1. Recording command text
+
+   1. Submit an invalid command containing leading or trailing spaces, then press the Up arrow key.<br>
+      Expected: The invalid command is recalled with its original spaces.
+
+   1. Submit the same command twice, then press the Up arrow key twice.<br>
+      Expected: Each submission occupies a separate history position.
+
+1. Excluding follow-up responses
+
+   1. Enter `delete 1`, then `n`. Press the Up arrow key once.<br>
+      Expected: `delete 1` is recalled. The confirmation response `n` is not recalled.
+
+   1. Restart the application and press the Up arrow key before entering any command.<br>
+      Expected: The command box remains unchanged because command history is not persisted.
 
 ### Deleting a person
 
