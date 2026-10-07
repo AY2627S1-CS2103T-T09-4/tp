@@ -52,6 +52,7 @@
         "common-classes": "Common classes",
         "implementation": "Implementation",
         "follow-up-command-line-input-and-destructive-command-confirmation": "Follow-up command-line input and destructive-command confirmation",
+        "command-history-navigation": "Command history navigation",
         "proposed-undo-redo-feature": "[Proposed] Undo/redo feature",
         "proposed-data-archiving": "[Proposed] Data archiving",
         "documentation-logging-testing-dev-ops": "Documentation, logging, testing, dev-ops",
@@ -64,6 +65,7 @@
         "appendix-instructions-for-manual-testing": "Appendix: Instructions for manual testing",
         "launch-and-shutdown": "Launch and shutdown",
         "sorting-upcoming-visits": "Sorting upcoming visits",
+        "navigating-command-history": "Navigating command history",
         "deleting-a-person": "Deleting a person",
         "clearing-all-persons": "Clearing all persons",
         "saving-data": "Saving data"
@@ -113,6 +115,7 @@
         "ab-3-user-guide": "AB-3 User Guide",
         "quick-start": "Quick start",
         "features": "Features",
+        "navigating-command-history": "Navigating command history",
         "viewing-help-help": "Viewing help: help",
         "adding-a-person-add": "Adding a person: add",
         "listing-all-persons-list": "Listing all persons: list",
