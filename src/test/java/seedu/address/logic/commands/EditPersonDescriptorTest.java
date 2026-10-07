@@ -10,10 +10,13 @@ import static seedu.address.logic.commands.CommandTestUtil.VALID_EMAIL_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_NAME_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_PHONE_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_TAG_HUSBAND;
+import static seedu.address.logic.commands.CommandTestUtil.VALID_VISIT_DATE_AMY;
+import static seedu.address.logic.commands.CommandTestUtil.VALID_VISIT_DATE_BOB;
 
 import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.commands.EditCommand.EditPersonDescriptor;
+import seedu.address.model.person.VisitDate;
 import seedu.address.testutil.EditPersonDescriptorBuilder;
 
 public class EditPersonDescriptorTest {
@@ -58,13 +61,43 @@ public class EditPersonDescriptorTest {
     }
 
     @Test
+    public void equals_differentVisitDate_returnsFalse() {
+        EditPersonDescriptor editedAmy = new EditPersonDescriptorBuilder(DESC_AMY)
+                .withVisitDate(VALID_VISIT_DATE_BOB).build();
+        assertFalse(DESC_AMY.equals(editedAmy));
+    }
+
+    @Test
+    public void copy_visitDateOnly_preservesField() {
+        EditPersonDescriptor original = new EditPersonDescriptorBuilder().withVisitDate(VALID_VISIT_DATE_AMY).build();
+        EditPersonDescriptor copy = new EditPersonDescriptor(original);
+        assertEquals(original, copy);
+
+        original.setVisitDate(new VisitDate(VALID_VISIT_DATE_BOB));
+        assertEquals(new VisitDate(VALID_VISIT_DATE_AMY), copy.getVisitDate().orElseThrow());
+        assertFalse(original.equals(copy));
+    }
+
+    @Test
+    public void isAnyFieldEdited_visitDateOnly_returnsTrue() {
+        EditPersonDescriptor descriptor = new EditPersonDescriptor();
+        assertFalse(descriptor.isAnyFieldEdited());
+
+        descriptor.setVisitDate(new VisitDate(VALID_VISIT_DATE_AMY));
+        assertTrue(descriptor.isAnyFieldEdited());
+        assertFalse(descriptor.equals(new EditPersonDescriptor()));
+    }
+
+    @Test
     public void toStringMethod() {
-        EditPersonDescriptor editPersonDescriptor = new EditPersonDescriptor();
+        EditPersonDescriptor editPersonDescriptor = new EditPersonDescriptorBuilder()
+                .withVisitDate(VALID_VISIT_DATE_AMY).build();
         String expected = EditPersonDescriptor.class.getCanonicalName() + "{name="
                 + editPersonDescriptor.getName().orElse(null) + ", phone="
                 + editPersonDescriptor.getPhone().orElse(null) + ", email="
                 + editPersonDescriptor.getEmail().orElse(null) + ", address="
-                + editPersonDescriptor.getAddress().orElse(null) + ", tags="
+                + editPersonDescriptor.getAddress().orElse(null) + ", visitDate="
+                + editPersonDescriptor.getVisitDate().orElse(null) + ", tags="
                 + editPersonDescriptor.getTags().orElse(null) + "}";
         assertEquals(expected, editPersonDescriptor.toString());
     }
