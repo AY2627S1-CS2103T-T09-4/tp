@@ -34,6 +34,20 @@ public class AddCommandParser implements Parser<AddCommand> {
      * @throws ParseException if the user input does not conform to the expected format
      */
     public AddCommand parse(String args) throws ParseException {
+        try {
+            return new AddCommand(parsePerson(args));
+        } catch (ParseException pe) {
+            // Every add failure tells the user that no patient was added, followed by the reason.
+            throw new ParseException(String.format(AddCommand.MESSAGE_NOT_ADDED, pe.getMessage()), pe);
+        }
+    }
+
+    /**
+     * Parses the given {@code String} of arguments into the {@code Person} to be added.
+     *
+     * @throws ParseException if the user input does not conform to the expected format
+     */
+    private Person parsePerson(String args) throws ParseException {
         ArgumentMultimap argMultimap =
                 ArgumentTokenizer.tokenize(args, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_ADDRESS,
                         PREFIX_VISIT_DATE, PREFIX_NOTE, PREFIX_TAG);
@@ -53,9 +67,7 @@ public class AddCommandParser implements Parser<AddCommand> {
         Note note = new Note(argMultimap.getValue(PREFIX_NOTE).orElse(""));
         Set<Tag> tagList = ParserUtil.parseTags(argMultimap.getAllValues(PREFIX_TAG));
 
-        Person person = new Person(name, phone, email, address, visitDate, note, tagList);
-
-        return new AddCommand(person);
+        return new Person(name, phone, email, address, visitDate, note, tagList);
     }
 
     /**
