@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.DESC_BOB;
+import static seedu.address.logic.commands.CommandTestUtil.VALID_EMAIL_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_NAME_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_NOTE_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_PHONE_BOB;
@@ -29,6 +30,7 @@ import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.VisitDate;
 import seedu.address.testutil.EditPersonDescriptorBuilder;
@@ -38,6 +40,8 @@ import seedu.address.testutil.PersonBuilder;
  * Contains integration tests (interaction with the Model) and unit tests for EditCommand.
  */
 public class EditCommandTest {
+
+    private static final String REPLACEMENT_NOTE = "Review medication";
 
     private Model model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
 
@@ -224,6 +228,133 @@ public class EditCommandTest {
     }
 
     @Test
+    public void execute_noteOnly_preservesOtherFields() {
+        Person original = setExistingNote(INDEX_FIRST_PERSON);
+        Person editedPerson = new PersonBuilder(original).withNote(REPLACEMENT_NOTE).build();
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withNote(REPLACEMENT_NOTE).build();
+
+        assertEditSuccess(INDEX_FIRST_PERSON, original, editedPerson, descriptor);
+    }
+
+    @Test
+    public void execute_emptyNote_preservesOtherFields() {
+        Person original = setExistingNote(INDEX_FIRST_PERSON);
+        Person editedPerson = new PersonBuilder(original).withNote("").build();
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withNote("").build();
+
+        assertEditSuccess(INDEX_FIRST_PERSON, original, editedPerson, descriptor);
+    }
+
+    @Test
+    public void execute_emptyNoteAlreadyEmpty_success() {
+        Person original = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        assertEquals(new Note(""), original.getNote());
+
+        assertEditSuccess(INDEX_FIRST_PERSON, original, original,
+                new EditPersonDescriptorBuilder().withNote("").build());
+    }
+
+    @Test
+    public void execute_sameNote_success() {
+        Person original = setExistingNote(INDEX_FIRST_PERSON);
+
+        assertEditSuccess(INDEX_FIRST_PERSON, original, original,
+                new EditPersonDescriptorBuilder().withNote(VALID_NOTE_AMY).build());
+    }
+
+    @Test
+    public void execute_noteOmitted_preservesExistingNote() {
+        Person original = setExistingNote(INDEX_FIRST_PERSON);
+        Person editedPerson = new PersonBuilder(original).withPhone(VALID_PHONE_BOB).build();
+
+        assertEditSuccess(INDEX_FIRST_PERSON, original, editedPerson,
+                new EditPersonDescriptorBuilder().withPhone(VALID_PHONE_BOB).build());
+    }
+
+    @Test
+    public void execute_visitDateEmailAndNote_success() {
+        Person original = setExistingNote(INDEX_FIRST_PERSON);
+        Person editedPerson = new PersonBuilder(original).withVisitDate(VALID_VISIT_DATE_BOB)
+                .withEmail(VALID_EMAIL_BOB).withNote(REPLACEMENT_NOTE).build();
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withVisitDate(VALID_VISIT_DATE_BOB)
+                .withEmail(VALID_EMAIL_BOB).withNote(REPLACEMENT_NOTE).build();
+
+        assertEditSuccess(INDEX_FIRST_PERSON, original, editedPerson, descriptor);
+    }
+
+    @Test
+    public void execute_emptyEmailAndNote_successWithAndWithoutVisitDate() {
+        Person original = setExistingNote(INDEX_FIRST_PERSON);
+        Person clearedPerson = new PersonBuilder(original).withEmail("").withNote("").build();
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withEmail("").withNote("").build();
+        assertEditSuccess(INDEX_FIRST_PERSON, original, clearedPerson, descriptor);
+
+        model.setPerson(clearedPerson, original);
+        descriptor.setVisitDate(new VisitDate(VALID_VISIT_DATE_BOB));
+        Person rescheduledPerson = new PersonBuilder(clearedPerson).withVisitDate(VALID_VISIT_DATE_BOB).build();
+        assertEditSuccess(INDEX_FIRST_PERSON, original, rescheduledPerson, descriptor);
+    }
+
+    @Test
+    public void execute_noteFilteredList_editsDisplayedPersonAndRestoresFullList() {
+        Person original = setExistingNote(INDEX_SECOND_PERSON);
+        showPersonAtIndex(model, INDEX_SECOND_PERSON);
+        Person editedPerson = new PersonBuilder(original).withNote(REPLACEMENT_NOTE).build();
+
+        assertEditSuccess(INDEX_FIRST_PERSON, original, editedPerson,
+                new EditPersonDescriptorBuilder().withNote(REPLACEMENT_NOTE).build());
+        assertEquals(editedPerson, model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased()));
+    }
+
+    @Test
+    public void execute_noteSortedList_editsDisplayedPersonAndRestoresStoredOrder() {
+        Person original = setExistingNote(INDEX_SECOND_PERSON);
+        Person earlierPerson = new PersonBuilder(original).withVisitDate(VALID_VISIT_DATE_BOB).build();
+        model.setPerson(original, earlierPerson);
+        model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
+        assertEquals(earlierPerson, model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased()));
+        Person editedPerson = new PersonBuilder(earlierPerson).withNote(REPLACEMENT_NOTE).build();
+
+        assertEditSuccess(INDEX_FIRST_PERSON, earlierPerson, editedPerson,
+                new EditPersonDescriptorBuilder().withNote(REPLACEMENT_NOTE).build());
+        assertEquals(editedPerson, model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased()));
+    }
+
+    @Test
+    public void execute_duplicateNameAndNote_preservesState() {
+        Person firstPerson = setExistingNote(INDEX_FIRST_PERSON);
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withName(firstPerson.getName().fullName).withNote(REPLACEMENT_NOTE).build();
+
+        assertCommandFailure(new EditCommand(INDEX_SECOND_PERSON, descriptor), model,
+                EditCommand.MESSAGE_DUPLICATE_PERSON);
+    }
+
+    @Test
+    public void execute_noteInvalidDisplayedIndex_preservesState() {
+        setExistingNote(INDEX_FIRST_PERSON);
+        showPersonAtIndex(model, INDEX_FIRST_PERSON);
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withNote(REPLACEMENT_NOTE).build();
+
+        assertCommandFailure(new EditCommand(INDEX_SECOND_PERSON, descriptor), model,
+                Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
+    }
+
+    @Test
+    public void execute_descriptorChangedAfterConstruction_preservesCopiedNote() {
+        Person original = setExistingNote(INDEX_FIRST_PERSON);
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withNote(REPLACEMENT_NOTE).build();
+        EditCommand command = new EditCommand(INDEX_FIRST_PERSON, descriptor);
+        descriptor.setNote(new Note(""));
+        Person editedPerson = new PersonBuilder(original).withNote(REPLACEMENT_NOTE).build();
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expectedModel.setPerson(original, editedPerson);
+
+        assertCommandSuccess(command, model,
+                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), expectedModel);
+    }
+
+    @Test
     public void equals() {
         final EditCommand standardCommand = new EditCommand(INDEX_FIRST_PERSON, DESC_AMY);
 
@@ -258,4 +389,26 @@ public class EditCommandTest {
         assertEquals(expected, editCommand.toString());
     }
 
+    /**
+     * Gives the patient at the displayed index a nonempty note before testing an edit.
+     */
+    private Person setExistingNote(Index displayedIndex) {
+        Person original = model.getFilteredPersonList().get(displayedIndex.getZeroBased());
+        Person personWithNote = new PersonBuilder(original).withNote(VALID_NOTE_AMY).build();
+        model.setPerson(original, personWithNote);
+        return personWithNote;
+    }
+
+    /**
+     * Checks the complete edited record, success feedback, and restoration of the full displayed list.
+     */
+    private void assertEditSuccess(Index displayedIndex, Person original, Person editedPerson,
+            EditPersonDescriptor descriptor) {
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expectedModel.setPerson(original, editedPerson);
+        EditCommand command = new EditCommand(displayedIndex, descriptor);
+
+        assertCommandSuccess(command, model,
+                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), expectedModel);
+    }
 }

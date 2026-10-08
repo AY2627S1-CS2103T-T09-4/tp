@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_VISIT_DATE;
@@ -25,6 +26,7 @@ import seedu.address.model.Model;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
+import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
 import seedu.address.model.person.VisitDate;
@@ -46,11 +48,13 @@ public class EditCommand extends Command {
             + "[" + PREFIX_ADDRESS + "ADDRESS] "
             + "[" + PREFIX_VISIT_DATE + "DATE_TIME] "
             + "[" + PREFIX_EMAIL + "EMAIL] "
+            + "[" + PREFIX_NOTE + "NOTES] "
             + "[" + PREFIX_TAG + "TAG]...\n"
             + "Example: " + COMMAND_WORD + " 1 "
             + PREFIX_PHONE + "91234567 "
             + PREFIX_VISIT_DATE + "8/10/2026 1000 "
-            + PREFIX_EMAIL + "johndoe@example.com";
+            + PREFIX_EMAIL + "johndoe@example.com "
+            + PREFIX_NOTE + "Review medication";
 
     public static final String MESSAGE_EDIT_PERSON_SUCCESS = "Edited person: %1$s";
     public static final String MESSAGE_NOT_EDITED = "At least one field to edit must be provided.";
@@ -110,10 +114,11 @@ public class EditCommand extends Command {
         Email updatedEmail = editPersonDescriptor.getEmail().orElse(personToEdit.getEmail());
         Address updatedAddress = editPersonDescriptor.getAddress().orElse(personToEdit.getAddress());
         VisitDate updatedVisitDate = editPersonDescriptor.getVisitDate().orElse(personToEdit.getVisitDate());
+        Note updatedNote = editPersonDescriptor.getNote().orElse(personToEdit.getNote());
         Set<Tag> updatedTags = editPersonDescriptor.getTags().orElse(personToEdit.getTags());
 
         return new Person(updatedName, updatedPhone, updatedEmail, updatedAddress,
-                updatedVisitDate, personToEdit.getNote(), updatedTags);
+                updatedVisitDate, updatedNote, updatedTags);
     }
 
     @Override
@@ -141,7 +146,7 @@ public class EditCommand extends Command {
 
     /**
      * Stores the details to edit the person with. Each supplied field replaces the corresponding
-     * value, including explicitly empty email and tag values. Omitted fields remain unchanged.
+     * value, including explicitly empty email, note, and tag values. Omitted fields remain unchanged.
      */
     public static class EditPersonDescriptor {
         private Name name;
@@ -149,6 +154,7 @@ public class EditCommand extends Command {
         private Email email;
         private Address address;
         private VisitDate visitDate;
+        private Note note;
         private Set<Tag> tags;
 
         /**
@@ -166,6 +172,7 @@ public class EditCommand extends Command {
             setEmail(toCopy.email);
             setAddress(toCopy.address);
             setVisitDate(toCopy.visitDate);
+            setNote(toCopy.note);
             setTags(toCopy.tags);
         }
 
@@ -173,7 +180,7 @@ public class EditCommand extends Command {
          * Returns true if at least one field is edited.
          */
         public boolean isAnyFieldEdited() {
-            return CollectionUtil.isAnyNonNull(name, phone, email, address, visitDate, tags);
+            return CollectionUtil.isAnyNonNull(name, phone, email, address, visitDate, note, tags);
         }
 
         public void setName(Name name) {
@@ -216,6 +223,14 @@ public class EditCommand extends Command {
             return Optional.ofNullable(visitDate);
         }
 
+        public void setNote(Note note) {
+            this.note = note;
+        }
+
+        public Optional<Note> getNote() {
+            return Optional.ofNullable(note);
+        }
+
         /**
          * Sets {@code tags} to this object's {@code tags}.
          * A defensive copy of {@code tags} is used internally.
@@ -249,6 +264,7 @@ public class EditCommand extends Command {
                     && Objects.equals(email, otherEditPersonDescriptor.email)
                     && Objects.equals(address, otherEditPersonDescriptor.address)
                     && Objects.equals(visitDate, otherEditPersonDescriptor.visitDate)
+                    && Objects.equals(note, otherEditPersonDescriptor.note)
                     && Objects.equals(tags, otherEditPersonDescriptor.tags);
         }
 
@@ -260,6 +276,7 @@ public class EditCommand extends Command {
                     .add("email", email)
                     .add("address", address)
                     .add("visitDate", visitDate)
+                    .add("note", note)
                     .add("tags", tags)
                     .toString();
         }

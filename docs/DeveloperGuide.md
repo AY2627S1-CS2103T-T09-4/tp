@@ -169,21 +169,35 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 
 This section describes some noteworthy details on how certain features are implemented.
 
-### Editing visit date and time
+### Editing patient details
 
-`EditCommandParser` accepts optional replacement fields, including `vd/`. It checks index syntax and
-duplicate single-valued prefixes before parsing field values, then rejects a descriptor with no supplied
-fields. When `vd/` is supplied, `ParserUtil#parseVisitDate` reuses the existing strict `VisitDate` validation
+`EditCommandParser` accepts optional replacement fields, including `vd/` and `note/`. The displayed format is
+`edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`.
+It checks index syntax and duplicate single-valued prefixes before parsing field values, then rejects a
+descriptor with no supplied fields. When `vd/` is supplied, `ParserUtil#parseVisitDate` reuses the existing strict
+`VisitDate` validation
 for `d/M/yyyy HHmm`; valid past dates are accepted, while an empty `vd/` is rejected.
 
-`EditPersonDescriptor` stores the supplied visit date and time along with the optional replacement fields.
+`EditPersonDescriptor` stores the supplied visit date and time and note along with the optional replacement fields.
 `EditCommand` copies the descriptor, resolves the patient using the displayed list, and replaces the immutable
 `Person`. Omitted fields, including the visit date/time and notes, are preserved. An explicitly empty
-email or tag field clears its existing value and counts as a supplied field.
+email, note, or tag field clears its existing value and counts as a supplied field.
+
+The descriptor's nullable `Note` distinguishes omission from an explicitly empty `Note("")`.
+When `note/` is present, the parser constructs the existing immutable `Note` from the tokenizer's value;
+otherwise, the descriptor's note remains null. Notes-only replacement and clearing both succeed without `vd/`.
+The descriptor copy preserves this distinction, and `createEditedPerson` uses the supplied note or preserves
+the patient's existing note. Supplying the same note again, or clearing an already-empty note, succeeds.
+
+The existing tokenizer uses `String#trim()` on outer whitespace, preserves internal spaces, and recognizes
+prefixes preceded by a literal space. A recognized prefix inside notes delimits another field; there is no
+escaping or extra note validation. Repeated `note/` prefixes are rejected before field validation, including identical or empty
+values. Repeated `t/TAG` prefixes retain their existing replacement and clearing behavior.
 
 A successful edit restores the full displayed list in stored order and uses the existing logic/storage path
-to save the updated record. The existing patient card displays the replacement visit date and time.
-Editing replaces one stored visit date/time; it does not create visit-history entries.
+to save the updated record, including empty notes, in the existing JSON format. The existing patient card displays
+the replacement visit date/time and notes. Editing replaces one stored visit date/time and one stored note;
+it does not append visit-history entries or per-visit notes.
 
 ### Follow-up command-line input and destructive-command confirmation
 
@@ -630,7 +644,7 @@ behavior of `list` and `find`.
 1. Run `list`. Expect every remaining patient, including yesterday's, in stored order.
 1. Try `sort` on an empty address book and one containing only past visits. Expect an empty list.
 
-### Editing visit date and time
+### Editing patient details
 
 Use a disposable copy of the data file for these tests. Start with multiple patients, including one with
 nonempty notes, and record the selected patient's existing details before editing.
@@ -638,17 +652,32 @@ nonempty notes, and record the selected patient's existing details before editin
 1. Run `edit 1 vd/8/10/2026 1000`. Expect the first displayed patient's card to show the new visit date/time;
    all other details, including notes, remain unchanged.
 1. Run `edit 1 e/new@example.com`. Expect only the email to change; the visit date/time and notes are preserved.
+1. Run `edit 1 note/Patient requests a morning visit`. Expect the card's note to update immediately;
+   the visit date/time, name, phone, email, address, and tags remain unchanged.
+1. Run `edit 1 note/  Review  medication  `. Expect the stored and displayed note to be `Review  medication`,
+   with the two internal spaces preserved. Repeat the same note; expect success and the same details.
+1. Run `edit 1 note/`, then `edit 1 note/   `. Expect the card's note to be cleared immediately and both commands
+   to succeed, with other details preserved. Restore a nonempty note before testing omitted-field preservation.
+1. Run `edit 1 vd/8/10/2026 1000 e/new@example.com note/Review medication`.
+   Expect only the visit date/time, email, and notes to change. Repeat with prefixes in a different order.
+1. Run `edit 1 e/ note/`. Expect email and notes to be cleared, with the visit and other details preserved.
+   Restore email and notes, then run `edit 1 vd/8/10/2026 1000 e/ note/`; expect the visit to change and both to clear.
 1. Run `edit 1`. Expect the message "At least one field to edit must be provided." and unchanged records.
 1. Run `edit 1 vd/`, then `edit 1 vd/31/2/2026 1000`. Expect date validation errors and unchanged records.
 1. Run `edit 1 vd/8/10/2026 1000 vd/9/10/2026 1000`. Expect a duplicate-prefix error and unchanged records.
+1. Run `edit 1 note/First note/Second`, `edit 1 note/Same note/Same`, and `edit 1 note/ note/`.
+   Expect duplicate-prefix errors and unchanged records, including saved data.
+1. Run `edit 0 note/`, `edit 999 note/`, and `edit 1 p/911a note/Review medication`.
+   Expect index or phone validation errors and unchanged records; use an index beyond the displayed list size.
 1. Run `edit 1 vd/1/1/2025 0930`. Expect the valid past date/time to be accepted.
 1. Run `edit 1 e/`. Expect the email to be cleared, with the visit date/time and notes preserved.
 1. Run `edit 1 t/friend t/colleague`, then `edit 1 t/`. Expect tags to be replaced, then cleared;
    the visit date/time and notes remain unchanged.
-1. Show a filtered or sorted list with a different first patient, then run `edit 1 vd/8/10/2026 1000`.
+1. Show a filtered or sorted list with a different first patient, then run `edit 1 note/Review medication`.
    Expect that displayed patient to be edited, followed by the full list in stored order.
-1. Close and reopen the application. Expect the edited date/time and cleared email to remain saved,
-   with the patient's notes and other omitted fields preserved.
+1. Close and reopen the application after replacing notes, then repeat after clearing them.
+   Expect the updated or empty note, edited date/time, and cleared email to remain saved,
+   with other omitted fields preserved.
 
 ### Viewing one patient
 
