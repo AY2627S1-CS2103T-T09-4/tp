@@ -32,14 +32,15 @@ public class ViewCommandTest {
     @Test
     public void execute_validIndexUnfilteredList_displaysSelectedPerson() {
         Person personToView = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        List<Person> originalList = List.copyOf(model.getFilteredPersonList());
         ViewCommand viewCommand = new ViewCommand(INDEX_SECOND_PERSON);
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
-        expectedModel.updateFilteredPersonList(personToView::equals);
-        CommandResult expectedResult = CommandResult.withoutSaving(
-                String.format(ViewCommand.MESSAGE_VIEW_PERSON_SUCCESS, personToView.getName()));
+        CommandResult expectedResult = CommandResult.viewPerson(
+                String.format(ViewCommand.MESSAGE_VIEW_PERSON_SUCCESS, personToView.getName()), personToView);
 
         assertCommandSuccess(viewCommand, model, expectedResult, expectedModel);
-        assertEquals(List.of(personToView), model.getFilteredPersonList());
+        assertEquals(originalList, model.getFilteredPersonList());
+        assertEquals(personToView, expectedResult.getPersonToView().orElseThrow());
         assertFalse(expectedResult.shouldSaveAddressBook());
     }
 
@@ -50,8 +51,8 @@ public class ViewCommandTest {
         ViewCommand viewCommand = new ViewCommand(INDEX_FIRST_PERSON);
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
         expectedModel.updateFilteredPersonList(personToView::equals);
-        CommandResult expectedResult = CommandResult.withoutSaving(
-                String.format(ViewCommand.MESSAGE_VIEW_PERSON_SUCCESS, personToView.getName()));
+        CommandResult expectedResult = CommandResult.viewPerson(
+                String.format(ViewCommand.MESSAGE_VIEW_PERSON_SUCCESS, personToView.getName()), personToView);
 
         assertCommandSuccess(viewCommand, model, expectedResult, expectedModel);
         assertEquals(List.of(personToView), model.getFilteredPersonList());
@@ -59,20 +60,25 @@ public class ViewCommandTest {
 
     @Test
     public void execute_validIndexSortedList_displaysSelectedPerson() {
-        model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getName().fullName).reversed());
+        Comparator<Person> reverseNameComparator = Comparator
+                .comparing((Person person) -> person.getName().fullName)
+                .reversed();
+        model.sortFilteredPersonList(reverseNameComparator);
         Person firstDisplayedPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        List<Person> originalList = List.copyOf(model.getFilteredPersonList());
         ViewCommand viewCommand = new ViewCommand(INDEX_FIRST_PERSON);
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
-        expectedModel.updateFilteredPersonList(firstDisplayedPerson::equals);
-        CommandResult expectedResult = CommandResult.withoutSaving(
-                String.format(ViewCommand.MESSAGE_VIEW_PERSON_SUCCESS, firstDisplayedPerson.getName()));
+        expectedModel.sortFilteredPersonList(reverseNameComparator);
+        CommandResult expectedResult = CommandResult.viewPerson(
+                String.format(ViewCommand.MESSAGE_VIEW_PERSON_SUCCESS, firstDisplayedPerson.getName()),
+                firstDisplayedPerson);
 
         assertCommandSuccess(viewCommand, model, expectedResult, expectedModel);
-        assertEquals(List.of(firstDisplayedPerson), model.getFilteredPersonList());
+        assertEquals(originalList, model.getFilteredPersonList());
     }
 
     @Test
-    public void execute_viewThenList_restoresFullList() throws Exception {
+    public void execute_viewThenList_keepsFullList() throws Exception {
         List<Person> originalList = List.copyOf(model.getFilteredPersonList());
 
         new ViewCommand(INDEX_SECOND_PERSON).execute(model);
