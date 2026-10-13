@@ -13,13 +13,13 @@
       <padding>
         <Insets top="15" right="15" bottom="15" left="15" />
       </padding>
-      <Label fx:id="name" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
-      <Label fx:id="phone" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
-      <Label fx:id="email" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
-      <Label fx:id="address" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
-      <Label fx:id="visitDate" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
-      <Label fx:id="note" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
-      <Label fx:id="tags" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
+      <Label id="name" fx:id="name" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
+      <Label id="phone" fx:id="phone" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
+      <Label id="email" fx:id="email" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
+      <Label id="address" fx:id="address" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
+      <Label id="visitDate" fx:id="visitDate" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
+      <Label id="note" fx:id="note" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
+      <Label id="tags" fx:id="tags" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
     </VBox>
   </content>
 </ScrollPane>
