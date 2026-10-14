@@ -628,6 +628,35 @@ testers are expected to do more *exploratory* testing.
 
 1. _{ more test cases … }_
 
+### Accessing the User Guide
+
+Use the packaged JAR to check browser integration on each supported operating system.
+
+1. Enter `help`, then close help and reopen it with <kbd>F1</kbd> while the command box is focused, and with
+   **Help → Help**. Expect the help window each time, showing
+   `https://ay2627s1-cs2103t-t09-4.github.io/tp/UserGuide.html` and **Press Esc to close**.
+1. With help open, return to the main window and invoke each entry point again. Expect the existing help window
+   to gain focus with no duplicate. Minimize help and repeat; expect the same window to be restored.
+1. Click the link. Expect a request to open that exact URL in the default browser and help to remain available.
+   Check the loaded guide when Internet access is available; a returning launch call does not confirm loading.
+1. Click **Copy URL** and paste into a text field or browser address bar. Expect exactly the URL above.
+1. Reopen help and use only the keyboard. Expect the guide link to be initially focused with a blue outline.
+   Press <kbd>Space</kbd> to request the guide, return to help, and use <kbd>Tab</kbd> to focus **Copy URL**.
+   Press <kbd>Space</kbd> to copy the URL. Expect <kbd>Shift</kbd>+<kbd>Tab</kbd> to return to the link.
+1. Press <kbd>Esc</kbd> with the link focused, then reopen help and repeat with **Copy URL** focused.
+   Expect only help to close; the main application stays usable. Repeat opening and closing several times.
+1. Leave help open, focus the main command box, and press <kbd>Esc</kbd>. Expect help to remain open.
+   Check command editing and command history still work normally.
+1. Without Internet access, open help, copy and paste its URL, close it with <kbd>Esc</kbd>, and reopen it.
+   Expect all these actions to work. The browser may open, but loading the online guide needs Internet access.
+1. If a browser-launch error propagates to the application, expect the message
+   **Could not open the browser. Use Copy URL and paste the link into your browser.**
+   Expect copying, closing, and reopening still to work. `HelpWindowTest` injects launch exceptions to test this
+   path without changing operating-system settings. JavaFX `HostServices.showDocument` provides no success status
+   and may not report every failure; absence of this message does not confirm a browser or page opened.
+1. Check the normal and error layouts at 1920×1080 at 100% and 125% scaling, and 1280×720 at 150% scaling.
+   Expect the complete URL, button, focus outline, and hints to remain readable without overlap or clipping.
+
 ### Sorting upcoming visits
 
 The model exposes a `SortedList` backed by its `FilteredList`. `SortCommand` filters visits

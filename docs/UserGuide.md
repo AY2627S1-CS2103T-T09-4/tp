@@ -86,11 +86,25 @@ The command box keeps commands submitted during the current application session 
 
 ### Viewing help: `help`
 
-Shows a message explaining how to access the help page.
+Opens the help window with a link to [Doc's User Guide](https://ay2627s1-cs2103t-t09-4.github.io/tp/UserGuide.html).
 
 ![help message](images/helpMessage.png)
 
 Format: `help`
+
+* You can also press <kbd>F1</kbd> or select **Help → Help**. If help is already open, it is restored and focused
+  rather than opening another window.
+* Click the guide link to request it in your default browser. **Copy URL** copies the same link so you can paste
+  it into a browser yourself. Both actions leave the help window available.
+* Use <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd> to move between the link and **Copy URL**. The focused control
+  has a blue outline. Press <kbd>Space</kbd> to activate either focused control.
+* Press <kbd>Esc</kbd> anywhere in the focused help window to close it, as indicated by **Press Esc to close**.
+  The main application stays open, and you can reopen help normally. <kbd>Esc</kbd> in the main window does not
+  close help.
+* Viewing the online guide requires Internet access. Opening help, copying the URL, and closing help work offline.
+* If a browser-launch error is reported, help shows **Could not open the browser. Use Copy URL and paste the link
+  into your browser.** Use **Copy URL** whenever the browser or page does not open; some failures cannot be
+  detected by the application.
 
 
 ### Adding a patient: `add`
@@ -278,7 +292,6 @@ _Details coming soon ..._
 ## Known issues
 
 1. **When using multiple screens**, if you move the application to a secondary screen, and later switch to using only the primary screen, the GUI will open off-screen. The remedy is to delete the `preferences.json` file created by the application before running the application again.
-2. **If you minimize the Help Window** and then run the `help` command (or use the `Help` menu, or the keyboard shortcut `F1`) again, the original Help Window will remain minimized, and no new Help Window will appear. The remedy is to manually restore the minimized Help Window.
 
 --------------------------------------------------------------------------------------------------------------------
 

@@ -1,5 +1,23 @@
+#helpMessageContainer {
+    -fx-background-color: derive(#1d1d1d, 20%);
+    -fx-font-size: 13px;
+}
+
 #copyButton, #helpMessage {
     -fx-text-fill: white;
+}
+
+#userGuideLink {
+    -fx-text-fill: #8bd4ff;
+    -fx-underline: true;
+}
+
+#closeHint, #internetHint {
+    -fx-text-fill: #dddddd;
+}
+
+#browserError {
+    -fx-text-fill: #ffb3b3;
 }
 
 #copyButton {
@@ -14,6 +32,12 @@
     -fx-background-color: darkgray;
 }
 
-#helpMessageContainer {
-    -fx-background-color: derive(#1d1d1d, 20%);
+#copyButton, #userGuideLink {
+    -fx-border-color: transparent;
+    -fx-border-width: 2;
+    -fx-border-radius: 3;
+}
+
+#copyButton:focused, #userGuideLink:focused {
+    -fx-border-color: #66ccff;
 }
