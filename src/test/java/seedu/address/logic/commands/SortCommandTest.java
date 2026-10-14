@@ -22,6 +22,7 @@ import seedu.address.testutil.PersonBuilder;
 public class SortCommandTest {
 
     private final LocalDate today = LocalDate.now();
+    private final Person olderPast = personWithVisit("Older past", today.minusDays(2), 23);
     private final Person past = personWithVisit("Past", today.minusDays(1), 23);
     private final Person early = personWithVisit("Early", today, 0);
     private final Person late = personWithVisit("Late", today, 23);
@@ -34,49 +35,48 @@ public class SortCommandTest {
     }
 
     @Test
-    public void execute_mixedDates_showsTodayAndFutureChronologically() {
-        addPersons(future, late, past, early);
+    public void execute_mixedDates_showsUpcomingThenPastChronologically() {
+        addPersons(future, past, late, olderPast, early);
         ObservableList<Person> displayedPersons = model.getFilteredPersonList();
 
         CommandResult result = new SortCommand().execute(model);
 
         assertEquals(SortCommand.MESSAGE_SUCCESS, result.getFeedbackToUser());
-        assertEquals(List.of(early, late, future), displayedPersons);
+        assertEquals(List.of(early, late, future, olderPast, past), displayedPersons);
         assertSame(displayedPersons, model.getFilteredPersonList());
-        assertEquals(List.of(future, late, past, early), model.getAddressBook().getPersonList());
+        assertEquals(List.of(future, past, late, olderPast, early), model.getAddressBook().getPersonList());
         assertThrows(UnsupportedOperationException.class, () -> displayedPersons.remove(0));
     }
 
     @Test
-    public void execute_filteredList_includesVisitsOutsidePreviousFilter() {
+    public void execute_filteredList_preservesPreviousFilter() {
         addPersons(future, early);
         model.updateFilteredPersonList(person -> person.equals(future));
 
         new SortCommand().execute(model);
 
-        assertEquals(List.of(early, future), model.getFilteredPersonList());
+        assertEquals(List.of(future), model.getFilteredPersonList());
     }
 
     @Test
-    public void execute_emptyOrPastOnlyList_showsEmptyList() {
+    public void execute_emptyOrPastOnlyList_sortsDisplayedVisits() {
         new SortCommand().execute(model);
         assertTrue(model.getFilteredPersonList().isEmpty());
 
-        addPersons(past);
+        addPersons(past, olderPast);
         new SortCommand().execute(model);
-        assertTrue(model.getFilteredPersonList().isEmpty());
-        assertEquals(List.of(past), model.getAddressBook().getPersonList());
+        assertEquals(List.of(olderPast, past), model.getFilteredPersonList());
+        assertEquals(List.of(past, olderPast), model.getAddressBook().getPersonList());
     }
 
     @Test
-    public void execute_equalDatesAndRepeatedSort_preservesTieOrder() {
-        Person sameTime = personWithVisit("Same time", today, 0);
-        addPersons(future, sameTime, early);
+    public void execute_repeatedSort_preservesChronologicalOrder() {
+        addPersons(future, late, early);
 
         new SortCommand().execute(model);
         new SortCommand().execute(model);
 
-        assertEquals(List.of(sameTime, early, future), model.getFilteredPersonList());
+        assertEquals(List.of(early, late, future), model.getFilteredPersonList());
     }
 
     @Test
@@ -107,7 +107,7 @@ public class SortCommandTest {
         CommandResult requestResult = new DeleteCommand(INDEX_FIRST_PERSON).execute(model);
         requestResult.getInputRequest().orElseThrow().respond("y", model);
 
-        assertEquals(List.of(late, future), model.getFilteredPersonList());
+        assertEquals(List.of(late, future, past), model.getFilteredPersonList());
         assertEquals(List.of(future, past, late), model.getAddressBook().getPersonList());
     }
 

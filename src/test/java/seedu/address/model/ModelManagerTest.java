@@ -3,6 +3,8 @@ package seedu.address.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.commands.CommandTestUtil.VALID_PHONE_BOB;
+import static seedu.address.logic.commands.CommandTestUtil.VALID_VISIT_DATE_BOB;
 import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.ALICE;
@@ -17,6 +19,7 @@ import seedu.address.commons.core.GuiSettings;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
 import seedu.address.testutil.AddressBookBuilder;
+import seedu.address.testutil.PersonBuilder;
 
 public class ModelManagerTest {
 
@@ -68,6 +71,25 @@ public class ModelManagerTest {
     public void hasPerson_personInAddressBook_returnsTrue() {
         modelManager.addPerson(ALICE);
         assertTrue(modelManager.hasPerson(ALICE));
+    }
+
+    @Test
+    public void hasPersonWithSameName_sameNameAndDifferentPhone_returnsTrue() {
+        modelManager.addPerson(ALICE);
+        Person sameNameDifferentPhone = new PersonBuilder(ALICE).withPhone(VALID_PHONE_BOB)
+                .withVisitDate(VALID_VISIT_DATE_BOB).build();
+
+        assertFalse(modelManager.hasPerson(sameNameDifferentPhone));
+        assertTrue(modelManager.hasPersonWithSameName(sameNameDifferentPhone));
+    }
+
+    @Test
+    public void hasPersonWithSameVisitDate_sameVisitDate_returnsTrue() {
+        modelManager.addPerson(ALICE);
+        Person personWithSameVisitDate = new PersonBuilder(ALICE).withName("Different Patient")
+                .withPhone(VALID_PHONE_BOB).build();
+
+        assertTrue(modelManager.hasPersonWithSameVisitDate(personWithSameVisitDate));
     }
 
     @Test

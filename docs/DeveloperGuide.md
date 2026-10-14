@@ -169,6 +169,91 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 
 This section describes some noteworthy details on how certain features are implemented.
 
+### Duplicate patient identity, visit dates, and name confirmation
+
+Doc normalizes names only for duplicate detection. Normalization trims surrounding whitespace, replaces each sequence
+of spaces with one space, and converts letters to lowercase using `Locale.ROOT`. The accepted `Name#fullName` value is
+retained for display and storage, and `Name#equals` remains an exact value comparison.
+
+Doc distinguishes a **true duplicate** from a **name duplicate**:
+
+* A true duplicate has the same normalized name and exact phone number as an existing patient.
+  `Person#isSamePerson` implements this identity rule. `UniquePersonList` rejects true duplicates, so the same
+  invariant applies to commands, model replacement, and data loaded from JSON. A true duplicate is rejected without
+  offering confirmation.
+* A name duplicate has the same normalized name but a different phone number. `Person#hasSameName` identifies this
+  weaker match. `UniquePersonList` permits name duplicates, but `add` and an `edit` that changes a patient's name
+  require confirmation before creating one.
+
+Patients with different names but the same phone number are neither true duplicates nor name duplicates, so they are
+accepted without confirmation. This preserves phone numbers shared by a household or clinic while using name and
+phone together to identify a patient record.
+
+`Model#hasPerson` exposes the true-duplicate check, while `Model#hasPersonWithSameName` exposes the weaker warning
+check. Phone comparison continues to use exact `Phone` value equality.
+
+Visit dates and times form a separate scheduling invariant. `UniquePersonList#containsSameVisitDate` compares
+`VisitDate` values, whose equality is based on their parsed `LocalDateTime`. `add`, `setPerson`, and `setPersons` throw
+`DuplicateVisitDateException` rather than allowing two records to use the same value. This covers command mutations,
+model replacement, sample data, and direct model use. `JsonSerializableAddressBook` performs the same check while
+loading and reports an invalid data file with a visit-date-specific message.
+
+`Model#hasPersonWithSameVisitDate` exposes the scheduling check. `AddCommand` rejects a true duplicate first, then a
+visit-date conflict. For a name duplicate with an available visit time, it captures the proposed immutable `Person` in
+a `CommandInputRequest#createConfirmation` action. Confirmation rechecks both rejection rules before adding, which
+prevents a conflicting record from being introduced if model state changes while the prompt is pending.
+
+`EditCommand` similarly rejects a true duplicate or a changed visit date that another patient uses before requesting
+confirmation. Re-entering the selected patient's existing visit date is allowed because it does not allocate another
+slot. The command asks for confirmation only when the requested edit changes the name to one already in use; editing
+other fields of a patient whose name is already shared does not prompt again. It captures the original and edited
+`Person` objects, then verifies on confirmation that the original record still exists and that the edit still creates
+neither a true duplicate nor a visit-date conflict.
+
+#### Duplicate-detection limitations
+
+Duplicate detection is a heuristic because Doc does not assign a permanent patient identifier:
+
+* Two different patients with the same normalized name and phone number cannot both be stored, such as family members
+  who share a name and contact number. A distinguishing name component or different contact number is required.
+* A returning patient with both a changed name and changed phone number is not detected as a possible duplicate.
+* Normalization does not understand nicknames, reordered names, misspellings, transliterations, or equivalent accented
+  forms. It performs no fuzzy or culture-specific matching.
+* Phone numbers are compared exactly. Equivalent numbers entered with different country-code forms are not detected as
+  the same number.
+* Collapsing whitespace and ignoring case can warn about two distinct names whose intentional difference is only
+  capitalization or spacing.
+
+A future patient-ID feature should replace name and phone as identity fields if Doc needs to distinguish these cases
+without relying on user confirmation or spelling conventions.
+
+#### Current implementation limitations
+
+The current implementation does not provide an in-app migration or recovery workflow for data that conflicts with the
+new duplicate rules:
+
+* A file accepted by an older version can become invalid when two records have the same phone number and names that
+  differ only in letter case or repeated spacing. The normalized names now make those records true duplicates.
+* A file accepted by an older version can also become invalid when two records use the same visit date and time.
+* For either conflict, Doc reports the loading problem and starts with an empty address book. The conflicting file is
+  not backed up automatically, and a command that triggers saving, such as `list`, can replace it with the empty
+  address book. Users must back up the file and resolve the conflicts manually before migration.
+* Automated tests do not currently construct `SampleDataUtil#getSampleAddressBook`. Consequently, an accidental
+  duplicate among the sample visit times could break first-run sample-data initialization without failing the test
+  suite.
+
+#### Visit-time conflict limitations
+
+The visit-date rule prevents only exact scheduling collisions:
+
+* Equality is checked to the minute using the parsed `LocalDateTime`. The rule does not model visit duration, travel
+  time, preparation time, or partial overlaps.
+* Doc has one schedule and does not model multiple doctors, doctor availability, time zones, or recurring visits.
+* Past visit dates are also unique because every current `Person` has one required `VisitDate`; the model does not
+  distinguish an historical visit from an upcoming appointment.
+* A data file created by an older version may contain duplicate visit dates. The migration and data-preservation risks
+  are described under the current implementation limitations above.
+
 ### Editing patient details
 
 `EditCommandParser` accepts optional replacement fields, including `vd/` and `note/`. The displayed format is
@@ -182,6 +267,10 @@ for `d/M/yyyy HHmm`; valid past dates are accepted, while an empty `vd/` is reje
 `EditCommand` copies the descriptor, resolves the patient using the displayed list, and replaces the immutable
 `Person`. Omitted fields, including the visit date/time and notes, are preserved. An explicitly empty
 email, note, or tag field clears its existing value and counts as a supplied field.
+
+Before replacement, `EditCommand` permits an unchanged visit date but rejects a changed value already assigned to
+another patient. This check is repeated after a name-duplicate confirmation so a slot taken while the prompt was
+pending cannot be introduced into the model.
 
 The descriptor's nullable `Note` distinguishes omission from an explicitly empty `Note("")`.
 When `note/` is present, the parser constructs the existing immutable `Note` from the tokenizer's value;
@@ -199,7 +288,7 @@ to save the updated record, including empty notes, in the existing JSON format. 
 the replacement visit date/time and notes. Editing replaces one stored visit date/time and one stored note;
 it does not append visit-history entries or per-visit notes.
 
-### Follow-up command-line input and destructive-command confirmation
+### Follow-up command-line input and confirmation
 
 `CommandInputRequest` lets any command collect an additional command-line input through the existing command box and
 result display. It contains the prompt and a response handler. The handler receives the raw next input and the
@@ -219,6 +308,11 @@ already-empty `clear` result do not cause a file write. A confirmed mutation ret
 The shared `CommandInputRequest#createConfirmation` helper trims the response and compares it to `y` without regard
 to case. It runs the supplied action only for that response; every other response returns the supplied cancellation
 message.
+
+For same-name additions and edits, `AddCommand` and `EditCommand` use the same confirmation helper as destructive
+commands. The prompt does not mutate or save the address book. Confirmation performs the captured mutation and saves
+once; every other response cancels without saving. The proposed patient is captured before the prompt, and confirmed
+actions recheck both the true-duplicate and unique-visit-date invariants before modifying the model.
 
 For `delete INDEX`, `DeleteCommand` validates the index and captures the exact displayed `Person` before requesting
 confirmation. The prompt contains only that person's name because other fields can be absent. Confirmation deletes
@@ -389,7 +483,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* * *`  | doctor                  | find patients whose next visit date is today                              | be reminded who is due for a visit                                                      |
 | `* *`    | doctor                  | add or update notes about a patient's medical conditions                  | prepare for future visits                                                               |
 | `* *`    | doctor                  | assign a priority level to a patient                                      | tell at a glance which patients need closer attention                                   |
-| `* *`    | doctor                  | sort my patients by their next visit date                                 | deal with the most overdue visits first                                                 |
+| `* *`    | doctor                  | sort my patients by their next visit date                                 | plan upcoming visits while retaining past schedules for reference                       |
 | `* *`    | doctor                  | search patient notes for a medical condition                              | review together all the patients I treat for the same condition                         |
 | `* *`    | doctor                  | filter patients by how long ago they were last visited                    | find patients who have gone too long without a checkup                                  |
 | `* *`    | doctor                  | see the coming week's visits as a schedule                                | plan my week before it starts                                                           |
@@ -412,7 +506,8 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 **MSS**
 
-1.  Doctor requests to add a patient, providing the patient's name, address, phone number and medical conditions.
+1.  Doctor requests to add a patient, providing the patient's name, address, phone number, next visit date and time,
+    and medical conditions.
 2.  Doc adds the patient to the caseload and shows the newly added patient record.
 
     Use case ends.
@@ -428,6 +523,26 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * 1b. A patient with the same name and phone number already exists.
 
     * 1b1. Doc shows an error message identifying the existing patient.
+
+      Use case resumes at step 1.
+
+* 1c. A patient with the same name but a different phone number already exists.
+
+    * 1c1. Doc asks the doctor to confirm adding the patient.
+    * 1c2. The doctor confirms the addition.
+    * 1c3. Doc adds the patient to the caseload and shows the newly added patient record.
+
+      Use case ends.
+
+    * 1c2a. The doctor does not confirm the addition.
+
+        * 1c2a1. Doc cancels the addition without changing the caseload.
+
+          Use case ends.
+
+* 1d. Another patient already has the requested visit date and time.
+
+    * 1d1. Doc shows an error asking the doctor to choose a different date and time.
 
       Use case resumes at step 1.
 
@@ -471,9 +586,29 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case resumes at step 3.
 
-* 3d. The requested changes would create a duplicate of another patient record.
+* 3d. The requested changes would create a true duplicate with the same name and phone number as another patient.
 
     * 3d1. Doc shows an error message explaining that the patient record already exists.
+
+      Use case resumes at step 3.
+
+* 3e. The requested changes would use another patient's name with a different phone number.
+
+    * 3e1. Doc asks the doctor to confirm the name duplicate.
+    * 3e2. The doctor confirms the changes.
+    * 3e3. Doc updates the patient's details and shows the updated record.
+
+      Use case ends.
+
+    * 3e2a. The doctor does not confirm the changes.
+
+        * 3e2a1. Doc cancels the edit without changing the patient record.
+
+          Use case ends.
+
+* 3f. The requested changes would use another patient's visit date and time.
+
+    * 3f1. Doc shows an error asking the doctor to choose a different date and time.
 
       Use case resumes at step 3.
 
@@ -591,7 +726,8 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * **House-call doctor**: A doctor who travels to patients' homes to provide medical consultations and follow-up care.
 * **Medical condition**: An ongoing health issue recorded in a patient's notes to help the doctor prepare for future visits.
 * **MSS**: Main Success Scenario; the sequence of steps in a use case when nothing goes wrong.
-* **Next visit date**: The date on which a patient is next scheduled to receive a house call.
+* **Next visit date**: The date and time at which a patient is next scheduled to receive a house call. No two active
+  patient records can use the same value.
 * **Overdue visit**: A scheduled visit whose next visit date has passed without the visit being recorded or rescheduled.
 * **Patient record**: The information Doc stores for one patient, including their contact details, medical conditions, visit history and next visit date.
 * **Priority level**: A label indicating how closely a patient needs to be followed up, used when ordering planned visits.
@@ -657,29 +793,61 @@ Use the packaged JAR to check browser integration on each supported operating sy
 1. Check the normal and error layouts at 1920×1080 at 100% and 125% scaling, and 1280×720 at 150% scaling.
    Expect the complete URL, button, focus outline, and hints to remain readable without overlap or clipping.
 
-### Sorting upcoming visits
+### Sorting visits by date
 
-The model exposes a `SortedList` backed by its `FilteredList`. `SortCommand` filters visits
-using the local date at execution time, then sorts by visit date and time. Stored patient
-order is unchanged. Updating the filter resets the displayed order, preserving the usual
-behavior of `list` and `find`.
+The model exposes a `SortedList` backed by its `FilteredList`. `SortCommand` preserves the
+current filter and sorts its displayed patients into two groups using the local date at
+execution time: visits today or later first, followed by past visits. Each group is ordered
+by visit date and time, earliest first. Stored patient order is unchanged. Updating the
+filter resets the displayed order, preserving the usual behavior of `list` and `find`.
 
-1. Prepare patients with visits yesterday, today at 0000, today at 2300, and tomorrow,
+1. Prepare patients with visits two days ago, yesterday, today at 0000, today at 2300, and tomorrow,
    entered in a different order from their visit dates.
-1. Run `sort`. Expect only today's and tomorrow's patients, earliest first.
-1. Run `find` for one patient, then `sort`. Expect all qualifying patients again.
+1. Run `sort`. Expect today's and tomorrow's patients first, followed by the two past visits;
+   expect each group to be in ascending date-time order.
+1. Run `find` for one patient, then `sort`. Expect only that matching patient to remain displayed.
 1. Run `sort` twice. Expect the same order; equal visit times retain stored order.
 1. Run `delete 1`, then `y`. Expect the first displayed patient to be deleted, with the remaining visits still sorted.
 1. Run `list`. Expect every remaining patient, including yesterday's, in stored order.
-1. Try `sort` on an empty address book and one containing only past visits. Expect an empty list.
+1. Try `sort` on an empty address book. Expect an empty list. Try it on an address book containing only past visits;
+   expect all visits in ascending date-time order.
+
+### Preventing duplicate visit dates and times
+
+Use a disposable copy of the data file. Start with `Alex Tan` scheduled for `8/10/2026 1000`.
+
+1. Try to add a different patient scheduled for `8/10/2026 1000`. Expect an error identifying the occupied slot and
+   no change to the displayed list or data file.
+1. Add a different patient, using a different name and phone number, scheduled for `8/10/2026 1030`. Expect the
+   addition to succeed.
+1. Try to edit the second patient to `vd/8/10/2026 1000`. Expect the occupied-slot error and unchanged details.
+1. Re-enter `vd/8/10/2026 1000` for Alex. Expect the edit to succeed because Alex retains the existing slot.
+1. Try to add another `Alex Tan` with a different phone number but with `vd/8/10/2026 1000`. Expect the occupied-slot
+   error without a duplicate-name confirmation prompt.
+
+### Adding patients with duplicate names
+
+Use a disposable copy of the data file for these tests. Start with a patient named `Alex Tan` whose phone number is
+`91234567`. Use a different unused visit date and time for every proposed additional patient.
+
+1. Add another patient named `Alex Tan` with phone number `92345678`. Expect a confirmation prompt and no immediate
+   change. Enter `y`; expect both patients to be present and the data file to be saved once.
+1. Add `alex   tan` with another unused phone number. Expect the same confirmation prompt because case and repeated
+   spaces are ignored for duplicate detection. Enter `y`; expect the name to retain its entered capitalization and
+   spacing when displayed and saved.
+1. Repeat with another unused phone number, then enter `n`. Expect `Addition cancelled.`, no new patient, and no data
+   file change.
+1. Try to add another patient named `ALEX  TAN` with phone number `91234567`. Expect the true-duplicate error without
+   a confirmation prompt, even if the remaining fields differ.
+1. Close and reopen the application after confirming a name duplicate. Expect both same-name patients to load.
 
 ### Editing patient details
 
 Use a disposable copy of the data file for these tests. Start with multiple patients, including one with
 nonempty notes, and record the selected patient's existing details before editing.
 
-1. Run `edit 1 vd/8/10/2026 1000`. Expect the first displayed patient's card to show the new visit date/time;
-   all other details, including notes, remain unchanged.
+1. Ensure `8/10/2026 1000` is unused, then run `edit 1 vd/8/10/2026 1000`. Expect the first displayed patient's card
+   to show the new visit date/time; all other details, including notes, remain unchanged.
 1. Run `edit 1 e/new@example.com`. Expect only the email to change; the visit date/time and notes are preserved.
 1. Run `edit 1 note/Patient requests a morning visit`. Expect the card's note to update immediately;
    the visit date/time, name, phone, email, address, and tags remain unchanged.
@@ -704,18 +872,29 @@ nonempty notes, and record the selected patient's existing details before editin
    the visit date/time and notes remain unchanged.
 1. Show a filtered or sorted list with a different first patient, then run `edit 1 note/Review medication`.
    Expect that displayed patient to be edited, followed by the full list in stored order.
+1. With patients `Alex Tan` and `Betsy Crowe` using different phone numbers, rename Betsy to `Alex Tan`. Expect a
+   confirmation prompt and no immediate change. Enter `y`; expect both records to use the name `Alex Tan`.
+1. Repeat the rename using `alex   tan`. Expect the same confirmation prompt because the normalized name matches.
+1. Change only Alex's capitalization or repeated spacing. Expect the edit to succeed without a confirmation prompt
+   because the patient's normalized name has not changed, while the entered form is preserved for display and storage.
+1. Repeat the rename setup, then enter `n`. Expect `Edit cancelled.` and the original record to remain unchanged.
+1. Give Betsy both Alex's name and phone number. Expect the true-duplicate error without a confirmation prompt.
+1. After confirming two patients with the same name, edit only one patient's note. Expect the edit to succeed without
+   another confirmation prompt.
 1. Close and reopen the application after replacing notes, then repeat after clearing them.
    Expect the updated or empty note, edited date/time, and cleared email to remain saved,
    with other omitted fields preserved.
 
 ### Viewing one patient
 
-1. Run `list`, followed by `view 1`. Expect only the first displayed patient to remain visible.
-1. Run `list`, followed by `find Alex`, and then `view 1`. Expect the first patient in the search results to remain
-   visible.
-1. Run `sort`, followed by `view 1`. Expect the first patient in the sorted results to remain visible.
-1. Run `view 999`. Expect an invalid-index error and no changes to stored patient data.
-1. Run `list`. Expect all patients to be visible again in stored order.
+1. Run `list`, followed by `view 1`. Expect the full list to remain on the left and the first patient's complete
+   details to appear on the right.
+1. Run `list`, followed by `find Alex`, and then `view 1`. Expect the search results to remain on the left and the
+   first patient's complete details to appear on the right.
+1. Run `sort`, followed by `view 1`. Expect the sorted list to remain on the left and the first patient's complete
+   details to appear on the right.
+1. Run `view 999`. Expect an invalid-index error, no change to the displayed list, and no changes to stored patient
+   data.
 1. Close and reopen the application. Expect all patient data to remain unchanged.
 
 ### Navigating command history
@@ -821,6 +1000,13 @@ nonempty notes, and record the selected patient's existing details before editin
 
 1. Dealing with missing/corrupted data files
 
-   1. _{Explain how to simulate missing or corrupted data files and state the expected behavior.}_
+   1. Back up `data/addressbook.json`, then edit two otherwise valid patient records to use the same `visitDate`.
+
+   1. Relaunch Doc.<br>
+      Expected: Doc reports that the data file contains duplicate visit dates and times, retains the invalid file, and
+      starts with an empty address book under the existing invalid-data behavior.
+
+   1. Restore the backup, assign distinct visit dates and times, and relaunch Doc.<br>
+      Expected: Every patient record loads normally.
 
 1. _{ more test cases … }_

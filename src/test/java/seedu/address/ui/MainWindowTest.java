@@ -1,6 +1,8 @@
 package seedu.address.ui;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.JavaFxExtension.runOnFxThread;
@@ -17,18 +19,25 @@ import org.junit.jupiter.api.io.TempDir;
 
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
+import javafx.scene.control.Label;
 import javafx.scene.control.MenuBar;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import seedu.address.logic.LogicManager;
+import seedu.address.logic.commands.exceptions.CommandException;
+import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.ModelManager;
+import seedu.address.model.person.Person;
 import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
 import seedu.address.testutil.JavaFxExtension;
+import seedu.address.testutil.PersonBuilder;
 
 @ExtendWith(JavaFxExtension.class)
 public class MainWindowTest {
@@ -37,6 +46,7 @@ public class MainWindowTest {
     Path testDirectory;
 
     private MainWindow mainWindow;
+    private ModelManager model;
     private List<String> requestedUrls;
 
     @BeforeEach
@@ -46,7 +56,8 @@ public class MainWindowTest {
             StorageManager storage = new StorageManager(new JsonAddressBookStorage(addressBookPath),
                     new JsonUserPrefsStorage(testDirectory.resolve("preferences.json")));
             requestedUrls = new ArrayList<>();
-            mainWindow = new MainWindow(new Stage(), new LogicManager(new ModelManager(), storage),
+            model = new ModelManager();
+            mainWindow = new MainWindow(new Stage(), new LogicManager(model, storage),
                     addressBookPath, requestedUrls::add);
             mainWindow.show();
             mainWindow.fillInnerParts();
@@ -112,6 +123,29 @@ public class MainWindowTest {
 
             assertFalse(helpStage.isIconified());
             assertSame(helpStage, getHelpStage());
+        });
+    }
+
+    @Test
+    public void executeCommand_viewCommand_displaysPersonInDetailsPanel() {
+        runOnFxThread(() -> {
+            Person person = new PersonBuilder().withName("Alex Yeoh").build();
+            model.addPerson(person);
+
+            try {
+                mainWindow.executeCommand("view 1");
+            } catch (CommandException | ParseException e) {
+                throw new AssertionError("View command should execute successfully", e);
+            }
+
+            PatientDetailsPanel patientDetailsPanel = mainWindow.getPatientDetailsPanel();
+            assertNotNull(patientDetailsPanel);
+            ScrollPane detailsPanel = (ScrollPane) patientDetailsPanel.getRoot();
+            VBox detailsContainer = (VBox) detailsPanel.getContent();
+            Label name = (Label) detailsContainer.lookup("#name");
+            assertNotNull(name);
+            assertEquals("Alex Yeoh", name.getText());
+            assertTrue(detailsContainer.isVisible());
         });
     }
 

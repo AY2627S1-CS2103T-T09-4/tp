@@ -40,7 +40,14 @@ public class AddCommand extends Command {
             + PREFIX_TAG + "owesMoney";
 
     public static final String MESSAGE_SUCCESS = "Added patient %1$s";
-    public static final String MESSAGE_DUPLICATE_PERSON = "This person already exists in the address book.";
+    public static final String MESSAGE_DUPLICATE_PERSON =
+            "A patient with the same name and phone number already exists in the address book.";
+    public static final String MESSAGE_DUPLICATE_VISIT_DATE =
+            "Another patient already has a visit scheduled for %1$s. Choose a different date and time.";
+    public static final String MESSAGE_CONFIRM_DUPLICATE_NAME =
+            "A patient named %1$s already exists. Add this patient anyway? "
+                    + "Type y to confirm. Any other input cancels.";
+    public static final String MESSAGE_ADD_CANCELLED = "Addition cancelled.";
     public static final String MESSAGE_NOT_ADDED = "The patient is not added due to: %1$s";
 
     private final Person toAdd;
@@ -57,12 +64,41 @@ public class AddCommand extends Command {
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
 
-        if (model.hasPerson(toAdd)) {
-            throw new CommandException(String.format(MESSAGE_NOT_ADDED, MESSAGE_DUPLICATE_PERSON));
+        validateNoConflicts(model);
+
+        if (model.hasPersonWithSameName(toAdd)) {
+            String prompt = String.format(MESSAGE_CONFIRM_DUPLICATE_NAME, toAdd.getName());
+            CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(
+                    prompt, MESSAGE_ADD_CANCELLED, confirmedModel -> addPerson(confirmedModel));
+            return CommandResult.requestInput(inputRequest);
         }
+
+        return addPerson(model);
+    }
+
+    /**
+     * Adds the person captured when this command was created.
+     *
+     * @throws CommandException If a true duplicate or visit-date conflict now exists in the address book.
+     */
+    private CommandResult addPerson(Model model) throws CommandException {
+        validateNoConflicts(model);
 
         model.addPerson(toAdd);
         return new CommandResult(String.format(MESSAGE_SUCCESS, toAdd.getName()));
+    }
+
+    /**
+     * Checks that the captured person has neither an identity nor a visit-date conflict.
+     */
+    private void validateNoConflicts(Model model) throws CommandException {
+        if (model.hasPerson(toAdd)) {
+            throw new CommandException(String.format(MESSAGE_NOT_ADDED, MESSAGE_DUPLICATE_PERSON));
+        }
+        if (model.hasPersonWithSameVisitDate(toAdd)) {
+            String conflictMessage = String.format(MESSAGE_DUPLICATE_VISIT_DATE, toAdd.getVisitDate());
+            throw new CommandException(String.format(MESSAGE_NOT_ADDED, conflictMessage));
+        }
     }
 
     @Override
