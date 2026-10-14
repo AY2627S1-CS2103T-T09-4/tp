@@ -58,7 +58,14 @@ public class EditCommand extends Command {
 
     public static final String MESSAGE_EDIT_PERSON_SUCCESS = "Edited person: %1$s";
     public static final String MESSAGE_NOT_EDITED = "At least one field to edit must be provided.";
-    public static final String MESSAGE_DUPLICATE_PERSON = "This person already exists in the address book.";
+    public static final String MESSAGE_DUPLICATE_PERSON =
+            "A patient with the same name and phone number already exists in the address book.";
+    public static final String MESSAGE_CONFIRM_DUPLICATE_NAME =
+            "A patient named %1$s already exists. Apply this edit anyway? "
+                    + "Type y to confirm. Any other input cancels.";
+    public static final String MESSAGE_EDIT_CANCELLED = "Edit cancelled.";
+    public static final String MESSAGE_PERSON_NO_LONGER_EXISTS =
+            "The person selected for editing no longer exists.";
 
     private final Index index;
     private final EditPersonDescriptor editPersonDescriptor;
@@ -92,6 +99,32 @@ public class EditCommand extends Command {
 
         Person personToEdit = lastShownList.get(index.getZeroBased());
         Person editedPerson = createEditedPerson(personToEdit, editPersonDescriptor);
+
+        if (!personToEdit.isSamePerson(editedPerson) && model.hasPerson(editedPerson)) {
+            throw new CommandException(MESSAGE_DUPLICATE_PERSON);
+        }
+
+        boolean isNormalizedNameChanged = !personToEdit.hasSameName(editedPerson);
+        if (isNormalizedNameChanged && model.hasPersonWithSameName(editedPerson)) {
+            String prompt = String.format(MESSAGE_CONFIRM_DUPLICATE_NAME, editedPerson.getName());
+            CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(
+                    prompt, MESSAGE_EDIT_CANCELLED,
+                    confirmedModel -> editPerson(confirmedModel, personToEdit, editedPerson));
+            return CommandResult.requestInput(inputRequest);
+        }
+
+        return editPerson(model, personToEdit, editedPerson);
+    }
+
+    /**
+     * Replaces the person captured when this command was first executed.
+     *
+     * @throws CommandException If the captured person no longer exists or the edit would create a true duplicate.
+     */
+    private CommandResult editPerson(Model model, Person personToEdit, Person editedPerson) throws CommandException {
+        if (!model.getAddressBook().getPersonList().contains(personToEdit)) {
+            throw new CommandException(MESSAGE_PERSON_NO_LONGER_EXISTS);
+        }
 
         if (!personToEdit.isSamePerson(editedPerson) && model.hasPerson(editedPerson)) {
             throw new CommandException(MESSAGE_DUPLICATE_PERSON);

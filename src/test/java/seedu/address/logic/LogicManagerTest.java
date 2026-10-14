@@ -27,6 +27,7 @@ import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.DeleteCommand;
+import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -39,6 +40,7 @@ import seedu.address.storage.JsonAddressBookStorage;
 import seedu.address.storage.JsonUserPrefsStorage;
 import seedu.address.storage.StorageManager;
 import seedu.address.testutil.PersonBuilder;
+import seedu.address.testutil.PersonUtil;
 
 public class LogicManagerTest {
     private static final IOException DUMMY_IO_EXCEPTION = new IOException("dummy IO exception");
@@ -112,6 +114,55 @@ public class LogicManagerTest {
                 confirmedResult.getFeedbackToUser());
         assertFalse(logic.isInputRequestPending());
         assertFalse(model.getAddressBook().getPersonList().contains(personToDelete));
+        assertEquals(1, addressBookSaveCount);
+    }
+
+    @Test
+    public void execute_addDuplicateNameThenConfirm_addsAndSavesOnce() throws Exception {
+        model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
+        logic = createLogic(model);
+        Person existingPerson = model.getFilteredPersonList().get(0);
+        Person personToAdd = new PersonBuilder(existingPerson).withPhone("91234567").build();
+
+        CommandResult requestResult = logic.execute(PersonUtil.getAddCommand(personToAdd));
+
+        assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, personToAdd.getName()),
+                requestResult.getFeedbackToUser());
+        assertTrue(logic.isInputRequestPending());
+        assertFalse(model.getAddressBook().getPersonList().contains(personToAdd));
+        assertEquals(0, addressBookSaveCount);
+
+        CommandResult confirmedResult = logic.execute("y");
+
+        assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, personToAdd.getName()),
+                confirmedResult.getFeedbackToUser());
+        assertFalse(logic.isInputRequestPending());
+        assertTrue(model.getAddressBook().getPersonList().contains(personToAdd));
+        assertEquals(1, addressBookSaveCount);
+    }
+
+    @Test
+    public void execute_editDuplicateNameThenConfirm_editsAndSavesOnce() throws Exception {
+        model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
+        logic = createLogic(model);
+        Person firstPerson = model.getFilteredPersonList().get(0);
+        Person secondPerson = model.getFilteredPersonList().get(1);
+        Person editedPerson = new PersonBuilder(secondPerson).withName(firstPerson.getName().fullName).build();
+
+        CommandResult requestResult = logic.execute("edit 2 n/" + firstPerson.getName());
+
+        assertEquals(String.format(EditCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, editedPerson.getName()),
+                requestResult.getFeedbackToUser());
+        assertTrue(logic.isInputRequestPending());
+        assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
+        assertEquals(0, addressBookSaveCount);
+
+        CommandResult confirmedResult = logic.execute("Y");
+
+        assertEquals(String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
+                confirmedResult.getFeedbackToUser());
+        assertFalse(logic.isInputRequestPending());
+        assertTrue(model.getAddressBook().getPersonList().contains(editedPerson));
         assertEquals(1, addressBookSaveCount);
     }
 

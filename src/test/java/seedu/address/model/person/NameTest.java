@@ -39,6 +39,17 @@ public class NameTest {
     }
 
     @Test
+    public void isSameName() {
+        Name name = new Name("Valid Name");
+
+        assertTrue(name.isSameName(new Name("valid name")));
+        assertTrue(name.isSameName(new Name("Valid   Name")));
+        assertTrue(name.isSameName(new Name("Valid Name   ")));
+        assertFalse(name.isSameName(new Name("Other Valid Name")));
+        assertFalse(name.isSameName(null));
+    }
+
+    @Test
     public void equals() {
         Name name = new Name("Valid Name");
 
@@ -56,5 +67,8 @@ public class NameTest {
 
         // different values -> returns false
         assertFalse(name.equals(new Name("Other Valid Name")));
+
+        // normalized match with different stored value -> returns false
+        assertFalse(name.equals(new Name("valid  name")));
     }
 }
