@@ -10,6 +10,7 @@ import static seedu.address.logic.commands.CommandTestUtil.ADDRESS_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.EMAIL_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.NAME_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.PHONE_DESC_AMY;
+import static seedu.address.logic.commands.CommandTestUtil.VALID_VISIT_DATE_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VISIT_DATE_DESC_AMY;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.AMY;
@@ -122,7 +123,8 @@ public class LogicManagerTest {
         model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
         logic = createLogic(model);
         Person existingPerson = model.getFilteredPersonList().get(0);
-        Person personToAdd = new PersonBuilder(existingPerson).withPhone("91234567").build();
+        Person personToAdd = new PersonBuilder(existingPerson).withPhone("91234567")
+                .withVisitDate(VALID_VISIT_DATE_BOB).build();
 
         CommandResult requestResult = logic.execute(PersonUtil.getAddCommand(personToAdd));
 

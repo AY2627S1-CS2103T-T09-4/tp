@@ -54,6 +54,19 @@ public class AddCommandTest {
     }
 
     @Test
+    public void execute_duplicateVisitDate_throwsCommandException() {
+        Person existingPerson = new PersonBuilder().withName("Existing Person").build();
+        Person personWithConflictingVisit = new PersonBuilder().build();
+        AddCommand addCommand = new AddCommand(personWithConflictingVisit);
+        ModelStub modelStub = new ModelStubWithPerson(existingPerson);
+
+        String conflictMessage = String.format(AddCommand.MESSAGE_DUPLICATE_VISIT_DATE,
+                personWithConflictingVisit.getVisitDate());
+        String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, conflictMessage);
+        assertThrows(CommandException.class, expectedMessage, () -> addCommand.execute(modelStub));
+    }
+
+    @Test
     public void equals() {
         Person alice = new PersonBuilder().withName("Alice").build();
         Person bob = new PersonBuilder().withName("Bob").build();
@@ -129,6 +142,11 @@ public class AddCommandTest {
         }
 
         @Override
+        public boolean hasPersonWithSameVisitDate(Person person) {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
         public void deletePerson(Person target) {
             throw new AssertionError("This method should not be called.");
         }
@@ -176,6 +194,12 @@ public class AddCommandTest {
             requireNonNull(person);
             return this.person.hasSameName(person);
         }
+
+        @Override
+        public boolean hasPersonWithSameVisitDate(Person person) {
+            requireNonNull(person);
+            return this.person.getVisitDate().equals(person.getVisitDate());
+        }
     }
 
     /**
@@ -194,6 +218,13 @@ public class AddCommandTest {
         public boolean hasPersonWithSameName(Person person) {
             requireNonNull(person);
             return personsAdded.stream().anyMatch(person::hasSameName);
+        }
+
+        @Override
+        public boolean hasPersonWithSameVisitDate(Person person) {
+            requireNonNull(person);
+            return personsAdded.stream()
+                    .anyMatch(existingPerson -> existingPerson.getVisitDate().equals(person.getVisitDate()));
         }
 
         @Override
