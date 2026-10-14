@@ -171,22 +171,26 @@ This section describes some noteworthy details on how certain features are imple
 
 ### Duplicate patient identity and name confirmation
 
+Doc normalizes names only for duplicate detection. Normalization trims surrounding whitespace, replaces each sequence
+of spaces with one space, and converts letters to lowercase using `Locale.ROOT`. The accepted `Name#fullName` value is
+retained for display and storage, and `Name#equals` remains an exact value comparison.
+
 Doc distinguishes a **true duplicate** from a **name duplicate**:
 
-* A true duplicate has the same exact name and phone number as an existing patient. `Person#isSamePerson` implements
-  this identity rule. `UniquePersonList` rejects true duplicates, so the same invariant applies to commands, model
-  replacement, and data loaded from JSON. A true duplicate is rejected without offering confirmation.
-* A name duplicate has the same exact name but a different phone number. `Person#hasSameName` identifies this weaker
-  match. `UniquePersonList` permits name duplicates, but `add` and an `edit` that changes a patient's name require
-  confirmation before creating one.
+* A true duplicate has the same normalized name and exact phone number as an existing patient.
+  `Person#isSamePerson` implements this identity rule. `UniquePersonList` rejects true duplicates, so the same
+  invariant applies to commands, model replacement, and data loaded from JSON. A true duplicate is rejected without
+  offering confirmation.
+* A name duplicate has the same normalized name but a different phone number. `Person#hasSameName` identifies this
+  weaker match. `UniquePersonList` permits name duplicates, but `add` and an `edit` that changes a patient's name
+  require confirmation before creating one.
 
 Patients with different names but the same phone number are neither true duplicates nor name duplicates, so they are
 accepted without confirmation. This preserves phone numbers shared by a household or clinic while using name and
 phone together to identify a patient record.
 
-Both checks use the existing value-object equality of `Name` and `Phone`. In particular, name matching remains
-case-sensitive. `Model#hasPerson` exposes the true-duplicate check, while `Model#hasPersonWithSameName` exposes the
-weaker warning check.
+`Model#hasPerson` exposes the true-duplicate check, while `Model#hasPersonWithSameName` exposes the weaker warning
+check. Phone comparison continues to use exact `Phone` value equality.
 
 `AddCommand` rejects a true duplicate first. For a name duplicate, it captures the proposed immutable `Person` in a
 `CommandInputRequest#createConfirmation` action. Confirmation rechecks the true-duplicate invariant before adding,
@@ -196,6 +200,23 @@ which prevents a conflicting record from being introduced if model state changes
 changes the name to one already in use; editing other fields of a patient whose name is already shared does not prompt
 again. The command captures the original and edited `Person` objects, then verifies on confirmation that the original
 record still exists and that the edit still does not create a true duplicate.
+
+#### Duplicate-detection limitations
+
+Duplicate detection is a heuristic because Doc does not assign a permanent patient identifier:
+
+* Two different patients with the same normalized name and phone number cannot both be stored, such as family members
+  who share a name and contact number. A distinguishing name component or different contact number is required.
+* A returning patient with both a changed name and changed phone number is not detected as a possible duplicate.
+* Normalization does not understand nicknames, reordered names, misspellings, transliterations, or equivalent accented
+  forms. It performs no fuzzy or culture-specific matching.
+* Phone numbers are compared exactly. Equivalent numbers entered with different country-code forms are not detected as
+  the same number.
+* Collapsing whitespace and ignoring case can warn about two distinct names whose intentional difference is only
+  capitalization or spacing.
+
+A future patient-ID feature should replace name and phone as identity fields if Doc needs to distinguish these cases
+without relying on user confirmation or spelling conventions.
 
 ### Editing patient details
 
@@ -712,10 +733,13 @@ Use a disposable copy of the data file for these tests. Start with a patient nam
 
 1. Add another patient named `Alex Tan` with phone number `92345678`. Expect a confirmation prompt and no immediate
    change. Enter `y`; expect both patients to be present and the data file to be saved once.
+1. Add `alex   tan` with another unused phone number. Expect the same confirmation prompt because case and repeated
+   spaces are ignored for duplicate detection. Enter `y`; expect the name to retain its entered capitalization and
+   spacing when displayed and saved.
 1. Repeat with another unused phone number, then enter `n`. Expect `Addition cancelled.`, no new patient, and no data
    file change.
-1. Try to add another patient named `Alex Tan` with phone number `91234567`. Expect the true-duplicate error without a
-   confirmation prompt, even if the remaining fields differ.
+1. Try to add another patient named `ALEX  TAN` with phone number `91234567`. Expect the true-duplicate error without
+   a confirmation prompt, even if the remaining fields differ.
 1. Close and reopen the application after confirming a name duplicate. Expect both same-name patients to load.
 
 ### Editing patient details
@@ -751,6 +775,9 @@ nonempty notes, and record the selected patient's existing details before editin
    Expect that displayed patient to be edited, followed by the full list in stored order.
 1. With patients `Alex Tan` and `Betsy Crowe` using different phone numbers, rename Betsy to `Alex Tan`. Expect a
    confirmation prompt and no immediate change. Enter `y`; expect both records to use the name `Alex Tan`.
+1. Repeat the rename using `alex   tan`. Expect the same confirmation prompt because the normalized name matches.
+1. Change only Alex's capitalization or repeated spacing. Expect the edit to succeed without a confirmation prompt
+   because the patient's normalized name has not changed, while the entered form is preserved for display and storage.
 1. Repeat the rename setup, then enter `n`. Expect `Edit cancelled.` and the original record to remain unchanged.
 1. Give Betsy both Alex's name and phone number. Expect the true-duplicate error without a confirmation prompt.
 1. After confirming two patients with the same name, edit only one patient's note. Expect the edit to succeed without

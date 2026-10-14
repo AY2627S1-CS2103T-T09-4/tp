@@ -104,8 +104,8 @@ public class EditCommand extends Command {
             throw new CommandException(MESSAGE_DUPLICATE_PERSON);
         }
 
-        boolean isNameChanged = !personToEdit.getName().equals(editedPerson.getName());
-        if (isNameChanged && model.hasPersonWithSameName(editedPerson)) {
+        boolean isNormalizedNameChanged = !personToEdit.hasSameName(editedPerson);
+        if (isNormalizedNameChanged && model.hasPersonWithSameName(editedPerson)) {
             String prompt = String.format(MESSAGE_CONFIRM_DUPLICATE_NAME, editedPerson.getName());
             CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(
                     prompt, MESSAGE_EDIT_CANCELLED,

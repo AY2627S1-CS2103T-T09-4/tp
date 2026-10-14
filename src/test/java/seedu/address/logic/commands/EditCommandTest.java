@@ -21,6 +21,7 @@ import static seedu.address.testutil.TypicalIndexes.INDEX_SECOND_PERSON;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
 import java.util.Comparator;
+import java.util.Locale;
 
 import org.junit.jupiter.api.Test;
 
@@ -95,6 +96,22 @@ public class EditCommandTest {
 
         assertCommandSuccess(new EditCommand(INDEX_FIRST_PERSON, descriptor), model,
                 String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), expectedModel);
+    }
+
+    @Test
+    public void execute_nameCaseAndSpacingOnlyChange_editsWithoutConfirmation() throws Exception {
+        Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        String normalizedNameVariant = firstPerson.getName().fullName.toLowerCase(Locale.ROOT)
+                .replace(" ", "   ") + " ";
+        Person editedPerson = new PersonBuilder(firstPerson).withName(normalizedNameVariant).build();
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withName(normalizedNameVariant).build();
+
+        CommandResult result = new EditCommand(INDEX_FIRST_PERSON, descriptor).execute(model);
+
+        assertEquals(String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
+                result.getFeedbackToUser());
+        assertTrue(result.getInputRequest().isEmpty());
+        assertTrue(model.getAddressBook().getPersonList().contains(editedPerson));
     }
 
     @Test
@@ -352,6 +369,22 @@ public class EditCommandTest {
         assertTrue(result.getInputRequest().isPresent());
         assertFalse(result.shouldSaveAddressBook());
         assertEquals(expectedModel, model);
+        assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
+    }
+
+    @Test
+    public void execute_normalizedDuplicateName_requestsConfirmationWithoutEditing() throws Exception {
+        Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person secondPerson = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        String normalizedNameVariant = firstPerson.getName().fullName.toLowerCase(Locale.ROOT)
+                .replace(" ", "   ") + " ";
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withName(normalizedNameVariant).build();
+
+        CommandResult result = new EditCommand(INDEX_SECOND_PERSON, descriptor).execute(model);
+
+        assertEquals(String.format(EditCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, normalizedNameVariant),
+                result.getFeedbackToUser());
+        assertTrue(result.getInputRequest().isPresent());
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
     }
 

@@ -8,6 +8,8 @@ import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
+import java.util.Locale;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -72,6 +74,33 @@ public class AddCommandIntegrationTest {
         assertTrue(result.getInputRequest().isPresent());
         assertFalse(result.shouldSaveAddressBook());
         assertFalse(model.getAddressBook().getPersonList().contains(sameNameDifferentPhone));
+    }
+
+    @Test
+    public void execute_normalizedDuplicateName_requestsConfirmationWithoutAdding() throws Exception {
+        Person personInList = model.getAddressBook().getPersonList().get(0);
+        String normalizedNameVariant = personInList.getName().fullName.toLowerCase(Locale.ROOT)
+                .replace(" ", "   ") + " ";
+        Person sameNameDifferentPhone = new PersonBuilder(personInList)
+                .withName(normalizedNameVariant).withPhone("91234567").build();
+
+        CommandResult result = new AddCommand(sameNameDifferentPhone).execute(model);
+
+        assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, sameNameDifferentPhone.getName()),
+                result.getFeedbackToUser());
+        assertTrue(result.getInputRequest().isPresent());
+        assertFalse(model.getAddressBook().getPersonList().contains(sameNameDifferentPhone));
+    }
+
+    @Test
+    public void execute_normalizedNameAndSamePhone_throwsCommandException() {
+        Person personInList = model.getAddressBook().getPersonList().get(0);
+        String normalizedNameVariant = personInList.getName().fullName.toLowerCase(Locale.ROOT)
+                .replace(" ", "   ") + " ";
+        Person trueDuplicate = new PersonBuilder(personInList).withName(normalizedNameVariant).build();
+
+        assertCommandFailure(new AddCommand(trueDuplicate), model,
+                String.format(AddCommand.MESSAGE_NOT_ADDED, AddCommand.MESSAGE_DUPLICATE_PERSON));
     }
 
     @Test

@@ -54,6 +54,15 @@ public class AddressBookTest {
     }
 
     @Test
+    public void resetData_withNormalizedNameAndSamePhone_throwsDuplicatePersonException() {
+        String normalizedNameVariant = ALICE.getName().fullName.toLowerCase().replace(" ", "   ") + " ";
+        Person trueDuplicate = new PersonBuilder(ALICE).withName(normalizedNameVariant).build();
+        AddressBookStub newData = new AddressBookStub(List.of(ALICE, trueDuplicate));
+
+        assertThrows(DuplicatePersonException.class, () -> addressBook.resetData(newData));
+    }
+
+    @Test
     public void resetData_withSameNameAndDifferentPhone_replacesData() {
         Person sameNameDifferentPhone = new PersonBuilder(ALICE).withPhone(VALID_PHONE_BOB).build();
         AddressBookStub newData = new AddressBookStub(List.of(ALICE, sameNameDifferentPhone));

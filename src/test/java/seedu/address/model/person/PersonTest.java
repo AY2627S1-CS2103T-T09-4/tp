@@ -12,6 +12,8 @@ import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.ALICE;
 import static seedu.address.testutil.TypicalPersons.BOB;
 
+import java.util.Locale;
+
 import org.junit.jupiter.api.Test;
 
 import seedu.address.testutil.PersonBuilder;
@@ -45,14 +47,19 @@ public class PersonTest {
         editedAlice = new PersonBuilder(ALICE).withName(VALID_NAME_BOB).build();
         assertFalse(ALICE.isSamePerson(editedAlice));
 
-        // name differs in case, all other attributes same -> returns false
-        Person editedBob = new PersonBuilder(BOB).withName(VALID_NAME_BOB.toLowerCase()).build();
-        assertFalse(BOB.isSamePerson(editedBob));
+        // name differs in case, all other attributes same -> returns true
+        Person editedBob = new PersonBuilder(BOB).withName(VALID_NAME_BOB.toLowerCase(Locale.ROOT)).build();
+        assertTrue(BOB.isSamePerson(editedBob));
 
-        // name has trailing spaces, all other attributes same -> returns false
+        // name has trailing spaces, all other attributes same -> returns true
         String nameWithTrailingSpaces = VALID_NAME_BOB + " ";
         editedBob = new PersonBuilder(BOB).withName(nameWithTrailingSpaces).build();
-        assertFalse(BOB.isSamePerson(editedBob));
+        assertTrue(BOB.isSamePerson(editedBob));
+
+        // name has repeated spaces, all other attributes same -> returns true
+        String nameWithRepeatedSpaces = VALID_NAME_BOB.replace(" ", "   ");
+        editedBob = new PersonBuilder(BOB).withName(nameWithRepeatedSpaces).build();
+        assertTrue(BOB.isSamePerson(editedBob));
     }
 
     @Test
@@ -62,6 +69,11 @@ public class PersonTest {
 
         Person sameNameDifferentPhone = new PersonBuilder(ALICE).withPhone(VALID_PHONE_BOB).build();
         assertTrue(ALICE.hasSameName(sameNameDifferentPhone));
+
+        Person normalizedNameDifferentPhone = new PersonBuilder(ALICE)
+                .withName(ALICE.getName().fullName.toLowerCase(Locale.ROOT).replace(" ", "   ") + " ")
+                .withPhone(VALID_PHONE_BOB).build();
+        assertTrue(ALICE.hasSameName(normalizedNameDifferentPhone));
 
         Person differentName = new PersonBuilder(ALICE).withName(VALID_NAME_BOB).build();
         assertFalse(ALICE.hasSameName(differentName));

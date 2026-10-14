@@ -3,6 +3,8 @@ package seedu.address.model.person;
 import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.AppUtil.checkArgument;
 
+import java.util.Locale;
+
 /**
  * Represents a Person's name in the address book.
  * Guarantees: immutable; is valid as declared in {@link #isValidName(String)}
@@ -18,7 +20,11 @@ public class Name {
      */
     public static final String VALIDATION_REGEX = "[\\p{Alnum}][\\p{Alnum} ]*";
 
+    private static final String SPACE_SEQUENCE_REGEX = " +";
+    private static final String NORMALIZED_SPACE = " ";
+
     public final String fullName;
+    private final String normalizedName;
 
     /**
      * Constructs a {@code Name}.
@@ -29,6 +35,7 @@ public class Name {
         requireNonNull(name);
         checkArgument(isValidName(name), MESSAGE_CONSTRAINTS);
         fullName = name;
+        normalizedName = normalize(name);
     }
 
     /**
@@ -38,6 +45,22 @@ public class Name {
         return test.matches(VALIDATION_REGEX);
     }
 
+    /**
+     * Returns true if both names match after trimming surrounding whitespace, collapsing repeated spaces,
+     * and converting letters to lowercase without using a locale-specific rule.
+     */
+    public boolean isSameName(Name otherName) {
+        return otherName != null && normalizedName.equals(otherName.normalizedName);
+    }
+
+    /**
+     * Returns the normalized form used only for duplicate-name comparison.
+     */
+    private static String normalize(String name) {
+        return name.trim()
+                .replaceAll(SPACE_SEQUENCE_REGEX, NORMALIZED_SPACE)
+                .toLowerCase(Locale.ROOT);
+    }
 
     @Override
     public String toString() {
