@@ -216,6 +216,19 @@ public class EditCommandTest {
     }
 
     @Test
+    public void execute_duplicateVisitDate_throwsCommandException() {
+        Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person secondPerson = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withVisitDate(firstPerson.getVisitDate().toString()).build();
+        String expectedMessage = String.format(EditCommand.MESSAGE_DUPLICATE_VISIT_DATE,
+                firstPerson.getVisitDate());
+
+        assertCommandFailure(new EditCommand(INDEX_SECOND_PERSON, descriptor), model, expectedMessage);
+        assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
+    }
+
+    @Test
     public void execute_visitDateAndEmptyEmail_success() {
         Person original = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
         Person editedPerson = new PersonBuilder(original).withVisitDate(VALID_VISIT_DATE_BOB).withEmail("").build();
@@ -424,7 +437,8 @@ public class EditCommandTest {
     @Test
     public void execute_existingDuplicateNameWithoutNameChange_editsWithoutConfirmation() throws Exception {
         Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
-        Person sameNameDifferentPhone = new PersonBuilder(firstPerson).withPhone("91234567").build();
+        Person sameNameDifferentPhone = new PersonBuilder(firstPerson).withPhone("91234567")
+                .withVisitDate(VALID_VISIT_DATE_BOB).build();
         model.addPerson(sameNameDifferentPhone);
         Index duplicateNameIndex = Index.fromOneBased(model.getFilteredPersonList().size());
         Person editedPerson = new PersonBuilder(sameNameDifferentPhone).withNote(REPLACEMENT_NOTE).build();
@@ -463,7 +477,8 @@ public class EditCommandTest {
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
                 .withName(firstPerson.getName().fullName).build();
         CommandResult requestResult = new EditCommand(INDEX_SECOND_PERSON, descriptor).execute(model);
-        Person trueDuplicate = new PersonBuilder(secondPerson).withName(firstPerson.getName().fullName).build();
+        Person trueDuplicate = new PersonBuilder(secondPerson).withName(firstPerson.getName().fullName)
+                .withVisitDate(VALID_VISIT_DATE_BOB).build();
         model.addPerson(trueDuplicate);
 
         assertThrows(CommandException.class, EditCommand.MESSAGE_DUPLICATE_PERSON, () ->
@@ -473,6 +488,28 @@ public class EditCommandTest {
 
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
         assertTrue(model.getAddressBook().getPersonList().contains(trueDuplicate));
+    }
+
+    @Test
+    public void confirmation_visitDateConflictAppeared_throwsCommandExceptionWithoutEditing() throws Exception {
+        Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person secondPerson = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withName(firstPerson.getName().fullName).withVisitDate(VALID_VISIT_DATE_AMY).build();
+        CommandResult requestResult = new EditCommand(INDEX_SECOND_PERSON, descriptor).execute(model);
+        Person conflictingVisit = new PersonBuilder().withName("Visit Conflict").withPhone("92345678")
+                .withVisitDate(VALID_VISIT_DATE_AMY).build();
+        model.addPerson(conflictingVisit);
+
+        String expectedMessage = String.format(EditCommand.MESSAGE_DUPLICATE_VISIT_DATE,
+                VALID_VISIT_DATE_AMY);
+        assertThrows(CommandException.class, expectedMessage, () ->
+                requestResult.getInputRequest()
+                        .orElseThrow()
+                        .respond("y", model));
+
+        assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
+        assertTrue(model.getAddressBook().getPersonList().contains(conflictingVisit));
     }
 
     @Test

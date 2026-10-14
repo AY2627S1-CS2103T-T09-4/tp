@@ -25,6 +25,8 @@ import seedu.address.testutil.PersonBuilder;
  */
 public class AddCommandIntegrationTest {
 
+    private static final String AVAILABLE_VISIT_DATE = "2/1/2026 0900";
+
     private Model model;
 
     @BeforeEach
@@ -47,7 +49,8 @@ public class AddCommandIntegrationTest {
     @Test
     public void execute_duplicatePhoneWithDifferentName_success() {
         Person personInList = model.getAddressBook().getPersonList().get(0);
-        Person samePhoneDifferentName = new PersonBuilder(personInList).withName("Alex Different").build();
+        Person samePhoneDifferentName = new PersonBuilder(personInList).withName("Alex Different")
+                .withVisitDate(AVAILABLE_VISIT_DATE).build();
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
         expectedModel.addPerson(samePhoneDifferentName);
 
@@ -63,9 +66,22 @@ public class AddCommandIntegrationTest {
     }
 
     @Test
+    public void execute_duplicateVisitDate_throwsCommandException() {
+        Person personInList = model.getAddressBook().getPersonList().get(0);
+        Person personWithConflictingVisit = new PersonBuilder(personInList)
+                .withName("Different Patient").withPhone("91234567").build();
+        String conflictMessage = String.format(AddCommand.MESSAGE_DUPLICATE_VISIT_DATE,
+                personWithConflictingVisit.getVisitDate());
+
+        assertCommandFailure(new AddCommand(personWithConflictingVisit), model,
+                String.format(AddCommand.MESSAGE_NOT_ADDED, conflictMessage));
+    }
+
+    @Test
     public void execute_duplicateName_requestsConfirmationWithoutAdding() throws Exception {
         Person personInList = model.getAddressBook().getPersonList().get(0);
-        Person sameNameDifferentPhone = new PersonBuilder(personInList).withPhone("91234567").build();
+        Person sameNameDifferentPhone = new PersonBuilder(personInList).withPhone("91234567")
+                .withVisitDate(AVAILABLE_VISIT_DATE).build();
 
         CommandResult result = new AddCommand(sameNameDifferentPhone).execute(model);
 
@@ -82,7 +98,8 @@ public class AddCommandIntegrationTest {
         String normalizedNameVariant = personInList.getName().fullName.toLowerCase(Locale.ROOT)
                 .replace(" ", "   ") + " ";
         Person sameNameDifferentPhone = new PersonBuilder(personInList)
-                .withName(normalizedNameVariant).withPhone("91234567").build();
+                .withName(normalizedNameVariant).withPhone("91234567")
+                .withVisitDate(AVAILABLE_VISIT_DATE).build();
 
         CommandResult result = new AddCommand(sameNameDifferentPhone).execute(model);
 
@@ -106,7 +123,8 @@ public class AddCommandIntegrationTest {
     @Test
     public void confirmation_duplicateNameConfirmed_addsPerson() throws Exception {
         Person personInList = model.getAddressBook().getPersonList().get(0);
-        Person sameNameDifferentPhone = new PersonBuilder(personInList).withPhone("91234567").build();
+        Person sameNameDifferentPhone = new PersonBuilder(personInList).withPhone("91234567")
+                .withVisitDate(AVAILABLE_VISIT_DATE).build();
         CommandResult requestResult = new AddCommand(sameNameDifferentPhone).execute(model);
 
         CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond(" y ", model);
@@ -120,7 +138,8 @@ public class AddCommandIntegrationTest {
     @Test
     public void confirmation_duplicateNameNotConfirmed_cancelsAddition() throws Exception {
         Person personInList = model.getAddressBook().getPersonList().get(0);
-        Person sameNameDifferentPhone = new PersonBuilder(personInList).withPhone("91234567").build();
+        Person sameNameDifferentPhone = new PersonBuilder(personInList).withPhone("91234567")
+                .withVisitDate(AVAILABLE_VISIT_DATE).build();
         CommandResult requestResult = new AddCommand(sameNameDifferentPhone).execute(model);
 
         CommandResult cancelledResult = requestResult.getInputRequest().orElseThrow().respond("n", model);
@@ -133,11 +152,29 @@ public class AddCommandIntegrationTest {
     @Test
     public void confirmation_trueDuplicateAppeared_throwsCommandException() throws Exception {
         Person personInList = model.getAddressBook().getPersonList().get(0);
-        Person sameNameDifferentPhone = new PersonBuilder(personInList).withPhone("91234567").build();
+        Person sameNameDifferentPhone = new PersonBuilder(personInList).withPhone("91234567")
+                .withVisitDate(AVAILABLE_VISIT_DATE).build();
         CommandResult requestResult = new AddCommand(sameNameDifferentPhone).execute(model);
         model.addPerson(sameNameDifferentPhone);
 
         String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, AddCommand.MESSAGE_DUPLICATE_PERSON);
+        assertThrows(CommandException.class, expectedMessage, () ->
+                requestResult.getInputRequest().orElseThrow().respond("y", model));
+    }
+
+    @Test
+    public void confirmation_visitDateConflictAppeared_throwsCommandException() throws Exception {
+        Person personInList = model.getAddressBook().getPersonList().get(0);
+        Person sameNameDifferentPhone = new PersonBuilder(personInList).withPhone("91234567")
+                .withVisitDate(AVAILABLE_VISIT_DATE).build();
+        CommandResult requestResult = new AddCommand(sameNameDifferentPhone).execute(model);
+        Person conflictingVisit = new PersonBuilder().withName("Visit Conflict").withPhone("92345678")
+                .withVisitDate(AVAILABLE_VISIT_DATE).build();
+        model.addPerson(conflictingVisit);
+
+        String conflictMessage = String.format(AddCommand.MESSAGE_DUPLICATE_VISIT_DATE,
+                sameNameDifferentPhone.getVisitDate());
+        String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, conflictMessage);
         assertThrows(CommandException.class, expectedMessage, () ->
                 requestResult.getInputRequest().orElseThrow().respond("y", model));
     }
