@@ -136,18 +136,20 @@ Shows a list of all persons in the address book.
 
 Format: `list`
 
-### Sorting upcoming visits: `sort`
+### Sorting visits by date: `sort`
 
-Shows all patients with visits today or later, ordered by visit date and time, earliest first.
+Sorts the currently displayed patients by visit date and time. Visits today or later are shown first, followed by
+past visits.
 
 Format: `sort`
 
 * Today is determined using your computer's local date when you run the command. Earlier times today are included.
+* Within the upcoming and past groups, visits are ordered by date and time, earliest first.
 * Patients with identical visit dates and times keep their stored order.
-* This replaces any previous search results. Past visits are hidden, not deleted.
-* If there are no qualifying visits, the displayed list is empty.
+* The command preserves the current displayed set. For example, `find Tan` followed by `sort` sorts only the matching
+  patients.
 * Use the displayed indices for subsequent commands such as `edit` or `delete`.
-* `list` shows all patients again in stored order; `find` also returns to its usual order.
+* `list` shows all patients again in stored order; a new `find` also returns its matches in stored order.
 * Like `list`, extra parameters are ignored. Run `sort` again to refresh the date cutoff after midnight.
 
 ### Viewing a person's details: `view`
