@@ -12,7 +12,7 @@ import seedu.address.model.Model;
 import seedu.address.model.person.Person;
 
 /**
- * Displays a person identified using their displayed index.
+ * Displays the details of a person identified using their displayed index.
  */
 public class ViewCommand extends Command {
 
@@ -28,7 +28,7 @@ public class ViewCommand extends Command {
     private final Index targetIndex;
 
     /**
-     * Creates a command that displays only the person at {@code targetIndex}.
+     * Creates a command that displays the details of the person at {@code targetIndex}.
      */
     public ViewCommand(Index targetIndex) {
         this.targetIndex = targetIndex;
@@ -44,9 +44,8 @@ public class ViewCommand extends Command {
         }
 
         Person personToView = lastShownList.get(targetIndex.getZeroBased());
-        model.updateFilteredPersonList(personToView::equals);
-        return CommandResult.withoutSaving(
-                String.format(MESSAGE_VIEW_PERSON_SUCCESS, personToView.getName()));
+        return CommandResult.viewPerson(
+                String.format(MESSAGE_VIEW_PERSON_SUCCESS, personToView.getName()), personToView);
     }
 
     @Override

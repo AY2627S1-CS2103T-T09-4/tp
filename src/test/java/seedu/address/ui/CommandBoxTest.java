@@ -4,21 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.ui.JavaFxTestUtil.runOnFxThread;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
@@ -28,19 +22,9 @@ import seedu.address.logic.parser.exceptions.ParseException;
 
 public class CommandBoxTest {
 
-    private static final long FX_TIMEOUT_SECONDS = 10;
-
     @BeforeAll
     public static void startJavaFx() throws InterruptedException {
-        CountDownLatch startupLatch = new CountDownLatch(1);
-        Platform.startup(startupLatch::countDown);
-        assertTrue(startupLatch.await(FX_TIMEOUT_SECONDS, TimeUnit.SECONDS));
-        Platform.setImplicitExit(false);
-    }
-
-    @AfterAll
-    public static void stopJavaFx() {
-        Platform.exit();
+        JavaFxTestUtil.startJavaFx();
     }
 
     @Test
@@ -195,27 +179,4 @@ public class CommandBoxTest {
         return keyEvent;
     }
 
-    /**
-     * Runs an assertion block on the JavaFX application thread and propagates its failure to JUnit.
-     */
-    private static void runOnFxThread(Runnable action) {
-        FutureTask<Void> task = new FutureTask<>(action, null);
-        Platform.runLater(task);
-        try {
-            task.get(FX_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new AssertionError("Interrupted while waiting for the JavaFX application thread", e);
-        } catch (ExecutionException e) {
-            if (e.getCause() instanceof Error error) {
-                throw error;
-            }
-            if (e.getCause() instanceof RuntimeException runtimeException) {
-                throw runtimeException;
-            }
-            throw new AssertionError("JavaFX test action failed", e.getCause());
-        } catch (TimeoutException e) {
-            throw new AssertionError("JavaFX application thread did not respond", e);
-        }
-    }
 }
