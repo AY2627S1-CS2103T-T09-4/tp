@@ -103,6 +103,11 @@ Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES
 * `EMAIL` and `NOTES` are optional.
 * On success, the app shows `Added patient NAME` and the new patient appears in the list.
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
+* A patient with the same name and phone number as an existing patient is a duplicate and cannot be added.
+* If only the name matches an existing patient, the app asks
+  `A patient named NAME already exists. Add this patient anyway? Type y to confirm. Any other input cancels.`
+* Type `y` and press Enter to add the patient. Surrounding spaces and letter case are ignored. Any other input cancels
+  the addition and is not run as a command.
 
 <box type="tip" seamless>
 
@@ -173,6 +178,12 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [not
 * Existing values will be updated to the input values.
 * When editing tags, all of the person's existing tags are removed; adding tags is not cumulative.
 * To remove all of a person's tags, enter `t/` without a tag after it.
+* An edit that would give a patient the same name and phone number as another patient is rejected.
+* When an edit changes the patient's name to one already used by another patient with a different phone number, the
+  app asks `A patient named NAME already exists. Apply this edit anyway? Type y to confirm. Any other input cancels.`
+* Type `y` and press Enter to apply the edit. Surrounding spaces and letter case are ignored. Any other input cancels
+  the edit and is not run as a command. Editing other details of a patient whose name is already shared does not ask
+  for confirmation again.
 
 Examples:
 * `edit 1 vd/8/10/2026 1000` Changes the 1st person's visit to 8 October 2026 at 10:00.
