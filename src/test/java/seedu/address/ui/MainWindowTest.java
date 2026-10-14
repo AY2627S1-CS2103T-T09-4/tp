@@ -22,6 +22,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.ScrollPane;
@@ -148,6 +149,29 @@ public class MainWindowTest {
     }
 
     @Test
+    public void constructor_withoutBrowserOpener_createsWindow() {
+        runWithHeadlessDesktop(() -> runOnFxThread(() -> {
+            Path addressBookPath = testDirectory.resolve("compatibility-addressbook.json");
+            StorageManager storage = new StorageManager(new JsonAddressBookStorage(addressBookPath),
+                    new JsonUserPrefsStorage(testDirectory.resolve("compatibility-preferences.json")));
+            MainWindow compatibilityWindow = new MainWindow(new Stage(), new LogicManager(new ModelManager(), storage),
+                    addressBookPath);
+
+            compatibilityWindow.show();
+            assertTrue(compatibilityWindow.getRoot().isShowing());
+            compatibilityWindow.handleHelp();
+            Stage helpStage = Window.getWindows().stream()
+                    .filter(window -> window instanceof Stage stage && "Help".equals(stage.getTitle()))
+                    .map(window -> (Stage) window)
+                    .findFirst().orElseThrow(() -> new AssertionError("Help window was not shown"));
+            Hyperlink userGuideLink = (Hyperlink) helpStage.getScene().lookup("#userGuideLink");
+            userGuideLink.fire();
+            assertTrue(helpStage.getScene().lookup("#browserError").isVisible());
+            compatibilityWindow.getRoot().hide();
+        }));
+    }
+
+    @Test
     public void executeCommand_viewCommand_displaysPersonInDetailsPanel() {
         runOnFxThread(() -> {
             Person person = new PersonBuilder().withName("Alex Yeoh").build();
@@ -184,5 +208,19 @@ public class MainWindowTest {
     private static void fireKey(Node target, KeyCode keyCode) {
         target.fireEvent(new KeyEvent(target, target, KeyEvent.KEY_PRESSED, "", "", keyCode,
                 false, false, false, false));
+    }
+
+    private static void runWithHeadlessDesktop(Runnable action) {
+        String previousHeadlessSetting = System.getProperty("java.awt.headless");
+        System.setProperty("java.awt.headless", "true");
+        try {
+            action.run();
+        } finally {
+            if (previousHeadlessSetting == null) {
+                System.clearProperty("java.awt.headless");
+            } else {
+                System.setProperty("java.awt.headless", previousHeadlessSetting);
+            }
+        }
     }
 }
