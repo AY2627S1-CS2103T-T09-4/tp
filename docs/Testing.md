@@ -28,7 +28,11 @@ They share the toolkit through `JavaFxExtension`, which shuts it down after the 
 test class. Browser actions use an injected callback; automated tests do not open a real browser or need Internet
 access. Linux environments without a graphical display
 must provide a virtual display, for example by running
-`xvfb-run --auto-servernum ./gradlew clean test`. The Linux CI job uses the same setup.
+`xvfb-run --auto-servernum sh -c 'openbox --sm-disable & ./gradlew clean test'` after installing Openbox.
+The window manager supplies native minimize and restore events that Xvfb alone does not provide.
+The restoration test waits for the window state on the JUnit thread so JavaFX can process those events.
+Clipboard assertions restore only contents JavaFX can read, omitting advertised formats with null contents.
+The Linux CI job uses the same display and window-manager setup.
 
 <box type="info" seamless>
 

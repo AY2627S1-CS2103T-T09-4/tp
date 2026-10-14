@@ -10,6 +10,9 @@ import static seedu.address.testutil.JavaFxExtension.runOnFxThread;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +44,8 @@ import seedu.address.testutil.PersonBuilder;
 
 @ExtendWith(JavaFxExtension.class)
 public class MainWindowTest {
+
+    private static final long WINDOW_STATE_TIMEOUT_SECONDS = 10;
 
     @TempDir
     Path testDirectory;
@@ -113,17 +118,33 @@ public class MainWindowTest {
     }
 
     @Test
-    public void handleHelp_minimizedWindow_restoresExistingWindow() {
+    public void handleHelp_minimizedWindow_restoresExistingWindow() throws InterruptedException {
+        AtomicReference<Stage> originalHelpStage = new AtomicReference<>();
         runOnFxThread(() -> {
             mainWindow.handleHelp();
             Stage helpStage = getHelpStage();
+            originalHelpStage.set(helpStage);
             helpStage.setIconified(true);
-
-            mainWindow.handleHelp();
-
-            assertFalse(helpStage.isIconified());
-            assertSame(helpStage, getHelpStage());
         });
+
+        CountDownLatch restoredLatch = new CountDownLatch(1);
+        runOnFxThread(() -> {
+            Stage helpStage = originalHelpStage.get();
+            helpStage.iconifiedProperty().addListener((observable, wasIconified, isIconified) -> {
+                if (!isIconified) {
+                    restoredLatch.countDown();
+                }
+            });
+            mainWindow.handleHelp();
+            assertSame(originalHelpStage.get(), getHelpStage());
+            if (!helpStage.isIconified()) {
+                restoredLatch.countDown();
+            }
+        });
+
+        assertTrue(restoredLatch.await(WINDOW_STATE_TIMEOUT_SECONDS, TimeUnit.SECONDS),
+                "The window manager did not restore the help window");
+        runOnFxThread(() -> assertFalse(originalHelpStage.get().isIconified()));
     }
 
     @Test

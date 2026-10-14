@@ -199,13 +199,17 @@ public class HelpWindowTest {
     }
 
     /**
-     * Verifies copying and pasting without leaving the user's clipboard changed.
+     * Verifies copying and pasting, then restores the readable clipboard contents.
      */
     private void assertClipboardAction(Runnable copyAction) {
         Clipboard clipboard = Clipboard.getSystemClipboard();
         Map<DataFormat, Object> previousContents = new HashMap<>();
         for (DataFormat format : clipboard.getContentTypes()) {
-            previousContents.put(format, clipboard.getContent(format));
+            // Native clipboards can advertise formats whose contents JavaFX cannot read.
+            Object content = clipboard.getContent(format);
+            if (content != null) {
+                previousContents.put(format, content);
+            }
         }
         try {
             ClipboardContent initialContents = new ClipboardContent();
