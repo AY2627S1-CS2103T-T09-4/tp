@@ -2,6 +2,9 @@ package seedu.address.ui;
 
 import static java.util.Objects.requireNonNull;
 
+import java.awt.Desktop;
+import java.io.IOException;
+import java.net.URI;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -60,10 +63,26 @@ public class HelpWindow extends UiPart<Stage> {
     }
 
     /**
+     * Creates a new HelpWindow with the default desktop browser opener.
+     *
+     * @param root Stage to use as the root of the HelpWindow.
+     */
+    public HelpWindow(Stage root) {
+        this(root, HelpWindow::openInDefaultBrowser);
+    }
+
+    /**
      * Creates a new HelpWindow with the given browser-opening capability.
      */
     public HelpWindow(Consumer<String> browserOpener) {
         this(new Stage(), browserOpener);
+    }
+
+    /**
+     * Creates a new HelpWindow with the default desktop browser opener.
+     */
+    public HelpWindow() {
+        this(new Stage());
     }
 
     /**
@@ -129,5 +148,18 @@ public class HelpWindow extends UiPart<Stage> {
         final ClipboardContent url = new ClipboardContent();
         url.putString(USERGUIDE_URL);
         clipboard.setContent(url);
+    }
+
+    /**
+     * Opens a URL with the desktop browser for callers that do not provide a browser capability.
+     *
+     * @param url URL to open.
+     */
+    static void openInDefaultBrowser(String url) {
+        try {
+            Desktop.getDesktop().browse(URI.create(url));
+        } catch (IOException | RuntimeException e) {
+            throw new IllegalStateException("Could not open the URL in the default browser", e);
+        }
     }
 }

@@ -73,6 +73,17 @@ public class MainWindow extends UiPart<Stage> {
         helpWindow = new HelpWindow(browserOpener);
     }
 
+    /**
+     * Creates a {@code MainWindow} using the default desktop browser opener.
+     *
+     * @param primaryStage Stage to use as the root of the main window.
+     * @param logic Logic component used by the window.
+     * @param dataFilePath Path to the data file shown in the status bar.
+     */
+    public MainWindow(Stage primaryStage, Logic logic, Path dataFilePath) {
+        this(primaryStage, logic, dataFilePath, HelpWindow::openInDefaultBrowser);
+    }
+
     public Stage getPrimaryStage() {
         return primaryStage;
     }

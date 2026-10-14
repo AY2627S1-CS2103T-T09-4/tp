@@ -39,6 +39,16 @@ public class UiManager implements Ui {
         this.browserOpener = browserOpener;
     }
 
+    /**
+     * Creates a {@code UiManager} using the default desktop browser opener.
+     *
+     * @param logic Logic component used by the UI.
+     * @param dataFilePath Path to the data file shown in the status bar.
+     */
+    public UiManager(Logic logic, Path dataFilePath) {
+        this(logic, dataFilePath, HelpWindow::openInDefaultBrowser);
+    }
+
     @Override
     public void start(Stage primaryStage) {
         logger.info("Starting UI...");
