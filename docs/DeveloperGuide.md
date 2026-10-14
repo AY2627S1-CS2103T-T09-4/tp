@@ -227,6 +227,21 @@ Duplicate detection is a heuristic because Doc does not assign a permanent patie
 A future patient-ID feature should replace name and phone as identity fields if Doc needs to distinguish these cases
 without relying on user confirmation or spelling conventions.
 
+#### Current implementation limitations
+
+The current implementation does not provide an in-app migration or recovery workflow for data that conflicts with the
+new duplicate rules:
+
+* A file accepted by an older version can become invalid when two records have the same phone number and names that
+  differ only in letter case or repeated spacing. The normalized names now make those records true duplicates.
+* A file accepted by an older version can also become invalid when two records use the same visit date and time.
+* For either conflict, Doc reports the loading problem and starts with an empty address book. The conflicting file is
+  not backed up automatically, and a command that triggers saving, such as `list`, can replace it with the empty
+  address book. Users must back up the file and resolve the conflicts manually before migration.
+* Automated tests do not currently construct `SampleDataUtil#getSampleAddressBook`. Consequently, an accidental
+  duplicate among the sample visit times could break first-run sample-data initialization without failing the test
+  suite.
+
 #### Visit-time conflict limitations
 
 The visit-date rule prevents only exact scheduling collisions:
@@ -236,9 +251,8 @@ The visit-date rule prevents only exact scheduling collisions:
 * Doc has one schedule and does not model multiple doctors, doctor availability, time zones, or recurring visits.
 * Past visit dates are also unique because every current `Person` has one required `VisitDate`; the model does not
   distinguish an historical visit from an upcoming appointment.
-* A data file created by an older version may contain duplicate visit dates. This version treats that file as invalid,
-  reports the loading problem, and starts with an empty address book under the existing invalid-data behavior. Users
-  should back up the file and assign distinct times before migration.
+* A data file created by an older version may contain duplicate visit dates. The migration and data-preservation risks
+  are described under the current implementation limitations above.
 
 ### Editing patient details
 
@@ -772,7 +786,8 @@ Use a disposable copy of the data file. Start with `Alex Tan` scheduled for `8/1
 
 1. Try to add a different patient scheduled for `8/10/2026 1000`. Expect an error identifying the occupied slot and
    no change to the displayed list or data file.
-1. Add the same patient using `8/10/2026 1030`. Expect the addition to succeed.
+1. Add a different patient, using a different name and phone number, scheduled for `8/10/2026 1030`. Expect the
+   addition to succeed.
 1. Try to edit the second patient to `vd/8/10/2026 1000`. Expect the occupied-slot error and unchanged details.
 1. Re-enter `vd/8/10/2026 1000` for Alex. Expect the edit to succeed because Alex retains the existing slot.
 1. Try to add another `Alex Tan` with a different phone number but with `vd/8/10/2026 1000`. Expect the occupied-slot
