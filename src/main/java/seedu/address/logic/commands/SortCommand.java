@@ -14,6 +14,10 @@ import seedu.address.model.person.Person;
 public class SortCommand extends Command {
 
     public static final String COMMAND_WORD = "sort";
+    public static final String MESSAGE_USAGE = COMMAND_WORD
+            + ": Sorts the displayed patients by the specified field.\n"
+            + "Parameters: FIELD (must be date)\n"
+            + "Example: " + COMMAND_WORD + " date";
     public static final String MESSAGE_SUCCESS = "Sorted displayed visits by date, with upcoming visits first.";
 
     /**

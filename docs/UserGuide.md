@@ -145,21 +145,25 @@ Shows a list of all persons in the address book.
 
 Format: `list`
 
-### Sorting visits by date: `sort`
+### Sorting visits by date: `sort date`
 
 Sorts the currently displayed patients by visit date and time. Visits today or later are shown first, followed by
 past visits.
 
-Format: `sort`
+Format: `sort FIELD`
 
+* `FIELD` must be `date`.
 * Today is determined using your computer's local date when you run the command. Earlier times today are included.
 * Within the upcoming and past groups, visits are ordered by date and time, earliest first.
-* This replaces any previous search results. Past visits are hidden, not deleted.
-* The command preserves the current displayed set. For example, `find Tan` followed by `sort` sorts only the matching
-  patients.
+* The command preserves the current displayed set. For example, `find Tan` followed by `sort date` sorts only the
+  matching patients.
 * Use the displayed indices for subsequent commands such as `edit` or `delete`.
 * `list` shows all patients again in stored order; a new `find` also returns its matches in stored order.
-* Like `list`, extra parameters are ignored. Run `sort` again to refresh the date cutoff after midnight.
+* Running `sort` without a field, or with a field other than `date`, shows the required format and an example command.
+* Run `sort date` again to refresh which visits belong to the upcoming and past groups after midnight.
+
+Example:
+* `sort date` sorts the currently displayed patients by their visit date and time.
 
 ### Viewing a person's details: `view`
 
@@ -170,7 +174,7 @@ Format: `view INDEX`
 * Displays the person at the specified `INDEX`.
 * The index refers to the index number shown in the currently displayed person list.
 * The index **must be a positive integer** 1, 2, 3, ...
-* The command works on lists produced by commands such as `find` and `sort`.
+* The command works on lists produced by commands such as `find` and `sort date`.
 * The currently displayed person list remains visible on the left.
 * Viewing a person does not change their stored details.
 
@@ -332,6 +336,6 @@ Action     | Format, Examples
 **Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
-**Sort**   | `sort`
+**Sort**   | `sort date`
 **View**   | `view INDEX`<br> e.g., `view 1`
 **Help**   | `help`

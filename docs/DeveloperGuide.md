@@ -766,22 +766,26 @@ testers are expected to do more *exploratory* testing.
 
 ### Sorting visits by date
 
-The model exposes a `SortedList` backed by its `FilteredList`. `SortCommand` preserves the
-current filter and sorts its displayed patients into two groups using the local date at
-execution time: visits today or later first, followed by past visits. Each group is ordered
-by visit date and time, earliest first. Stored patient order is unchanged. Updating the
-filter resets the displayed order, preserving the usual behavior of `list` and `find`.
+`SortCommandParser` accepts the `date` field and rejects missing, unsupported, or additional
+arguments with the command usage message. The model exposes a `SortedList` backed by its
+`FilteredList`. `SortCommand` preserves the current filter and sorts its displayed patients
+into two groups using the local date at execution time: visits today or later first, followed
+by past visits. Each group is ordered by visit date and time, earliest first. Stored patient
+order is unchanged. Updating the filter resets the displayed order, preserving the usual
+behavior of `list` and `find`.
 
 1. Prepare patients with visits two days ago, yesterday, today at 0000, today at 2300, and tomorrow,
    entered in a different order from their visit dates.
-1. Run `sort`. Expect today's and tomorrow's patients first, followed by the two past visits;
+1. Run `sort date`. Expect today's and tomorrow's patients first, followed by the two past visits;
    expect each group to be in ascending date-time order.
-1. Run `find` for one patient, then `sort`. Expect only that matching patient to remain displayed.
-1. Run `sort` twice. Expect the same order; equal visit times retain stored order.
+1. Run `find` for one patient, then `sort date`. Expect only that matching patient to remain displayed.
+1. Run `sort date` twice. Expect the same order; equal visit times retain stored order.
 1. Run `delete 1`, then `y`. Expect the first displayed patient to be deleted, with the remaining visits still sorted.
 1. Run `list`. Expect every remaining patient, including yesterday's, in stored order.
-1. Try `sort` on an empty address book. Expect an empty list. Try it on an address book containing only past visits;
-   expect all visits in ascending date-time order.
+1. Try `sort date` on an empty address book. Expect an empty list. Try it on an address book containing only past
+   visits; expect all visits in ascending date-time order.
+1. Run `sort`, `sort name`, and `sort date name`. Expect each command to show the required format and the
+   `sort date` example without changing the displayed list.
 
 ### Preventing duplicate visit dates and times
 
@@ -862,7 +866,7 @@ nonempty notes, and record the selected patient's existing details before editin
    details to appear on the right.
 1. Run `list`, followed by `find Alex`, and then `view 1`. Expect the search results to remain on the left and the
    first patient's complete details to appear on the right.
-1. Run `sort`, followed by `view 1`. Expect the sorted list to remain on the left and the first patient's complete
+1. Run `sort date`, followed by `view 1`. Expect the sorted list to remain on the left and the first patient's complete
    details to appear on the right.
 1. Run `view 999`. Expect an invalid-index error, no change to the displayed list, and no changes to stored patient
    data.

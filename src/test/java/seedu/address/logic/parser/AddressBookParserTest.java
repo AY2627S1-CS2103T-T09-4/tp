@@ -91,9 +91,8 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_sort() throws Exception {
-        assertTrue(parser.parseCommand("sort") instanceof SortCommand);
-        assertTrue(parser.parseCommand("  sort  ") instanceof SortCommand);
-        assertTrue(parser.parseCommand("sort 3") instanceof SortCommand);
+        assertTrue(parser.parseCommand("sort date") instanceof SortCommand);
+        assertTrue(parser.parseCommand("  sort   date  ") instanceof SortCommand);
     }
 
     @Test
