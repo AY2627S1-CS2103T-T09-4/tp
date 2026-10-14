@@ -23,6 +23,17 @@ public class PersonCardTest {
     }
 
     @Test
+    public void publicConstructor_pastVisit_addsPastVisitStyle() {
+        runOnFxThread(() -> {
+            Person person = new PersonBuilder().withVisitDate("1/1/2000 1000").build();
+
+            PersonCard personCard = new PersonCard(person, 1);
+
+            assertTrue(personCard.getRoot().getStyleClass().contains("past-visit-card"));
+        });
+    }
+
+    @Test
     public void constructor_visitBeforeCurrentDate_addsPastVisitStyle() {
         runOnFxThread(() -> {
             Person person = new PersonBuilder().withVisitDate("13/10/2026 1000").build();
