@@ -11,7 +11,7 @@ import seedu.address.model.person.UniquePersonList;
 
 /**
  * Wraps all data at the address-book level.
- * True duplicates are not allowed (by .isSamePerson comparison).
+ * True duplicates and duplicate visit dates are not allowed.
  */
 public class AddressBook implements ReadOnlyAddressBook {
 
@@ -31,7 +31,7 @@ public class AddressBook implements ReadOnlyAddressBook {
 
     /**
      * Replaces the contents of the person list with {@code persons}.
-     * {@code persons} must not contain duplicate persons.
+     * {@code persons} must not contain duplicate persons or visit dates.
      */
     public void setPersons(List<Person> persons) {
         this.persons.setPersons(persons);
@@ -65,8 +65,16 @@ public class AddressBook implements ReadOnlyAddressBook {
     }
 
     /**
+     * Returns true if a person with the same visit date and time as {@code person} exists in the address book.
+     */
+    public boolean hasPersonWithSameVisitDate(Person person) {
+        requireNonNull(person);
+        return persons.containsSameVisitDate(person);
+    }
+
+    /**
      * Adds a person to the address book.
-     * The person must not already exist in the address book.
+     * The person and visit date must not already exist in the address book.
      */
     public void addPerson(Person p) {
         persons.add(p);
@@ -75,7 +83,7 @@ public class AddressBook implements ReadOnlyAddressBook {
     /**
      * Replaces the given person {@code target} in the list with {@code editedPerson}.
      * {@code target} must exist in the address book.
-     * The person identity of {@code editedPerson} must not be the same as another existing person in the address book.
+     * The identity and visit date of {@code editedPerson} must not match another existing person in the address book.
      */
     public void setPerson(Person target, Person editedPerson) {
         requireNonNull(editedPerson);

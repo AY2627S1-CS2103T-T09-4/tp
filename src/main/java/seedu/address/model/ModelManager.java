@@ -86,6 +86,12 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public boolean hasPersonWithSameVisitDate(Person person) {
+        requireNonNull(person);
+        return addressBook.hasPersonWithSameVisitDate(person);
+    }
+
+    @Override
     public void deletePerson(Person target) {
         addressBook.removePerson(target);
     }

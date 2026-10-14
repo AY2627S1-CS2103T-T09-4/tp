@@ -100,6 +100,8 @@ Adds a patient to the address book.
 Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [t/TAG]... `
 
 * `VISIT_DATE` must be a date and time in the format `d/M/yyyy HHmm`, e.g. `18/9/2026 1000`. Past dates are allowed.
+* Each patient must have a unique visit date and time. If another patient already uses the supplied date and time,
+  the addition is rejected and the app asks you to choose a different slot.
 * `EMAIL` and `NOTES` are optional.
 * On success, the app shows `Added patient NAME` and the new patient appears in the list.
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
@@ -107,7 +109,7 @@ Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES
 * If only the name matches an existing patient, the app asks
   `A patient named NAME already exists. Add this patient anyway? Type y to confirm. Any other input cancels.`
 * Type `y` and press Enter to add the patient. Surrounding spaces and letter case are ignored. Any other input cancels
-  the addition and is not run as a command.
+  the addition and is not run as a command. Confirmation rechecks that the visit date and time are still available.
 * For duplicate detection, names are compared without letter case after surrounding whitespace is removed and repeated
   spaces are collapsed to one space. For example, `John Doe`, `john doe`, and `John   Doe` are treated as the same
   name. The accepted name's spelling, capitalization, and internal spacing are still displayed and saved.
@@ -120,6 +122,13 @@ Duplicate detection has these limitations:
   name component, such as a middle name or suffix, or use a different contact number.
 * Patients whose intentional name difference consists only of capitalization or spacing will trigger duplicate
   handling.
+
+Visit-time conflict detection has these limitations:
+
+* It compares the parsed date and time exactly to the minute. It does not account for appointment duration, travel
+  time, preparation time, or partially overlapping visits.
+* It does not manage doctor availability, time zones, recurring visits, or separate schedules for multiple doctors.
+* Past visit dates are subject to the same uniqueness rule because every patient record has one visit date and time.
 
 <box type="tip" seamless>
 
@@ -145,7 +154,7 @@ Format: `sort`
 
 * Today is determined using your computer's local date when you run the command. Earlier times today are included.
 * Within the upcoming and past groups, visits are ordered by date and time, earliest first.
-* Patients with identical visit dates and times keep their stored order.
+* This replaces any previous search results. Past visits are hidden, not deleted.
 * The command preserves the current displayed set. For example, `find Tan` followed by `sort` sorts only the matching
   patients.
 * Use the displayed indices for subsequent commands such as `edit` or `delete`.
@@ -154,7 +163,7 @@ Format: `sort`
 
 ### Viewing a person's details: `view`
 
-Displays only the selected person so that their full record is easier to inspect.
+Displays the selected person's full record in the details panel on the right.
 
 Format: `view INDEX`
 
@@ -162,11 +171,11 @@ Format: `view INDEX`
 * The index refers to the index number shown in the currently displayed person list.
 * The index **must be a positive integer** 1, 2, 3, ...
 * The command works on lists produced by commands such as `find` and `sort`.
+* The currently displayed person list remains visible on the left.
 * Viewing a person does not change their stored details.
-* Use `list` to display all persons again.
 
 Example:
-* `view 1` displays only the first person in the currently displayed list.
+* `view 1` displays the first person's full record in the details panel.
 
 ### Editing a person: `edit`
 
@@ -179,6 +188,8 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [not
 * To update the visit date and time, use `vd/` with the format `d/M/yyyy HHmm`
   (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted.
 * The visit date and time can be edited by itself. Omitting `vd/` preserves the existing visit date and time.
+* Re-entering the selected patient's existing visit date and time is allowed. Changing it to a slot used by another
+  patient is rejected, including when the edit also changes other fields.
 * Omitted fields, including email and existing notes, keep their values. Use an empty `e/` to clear email.
 * Use `note/NOTES` to replace the entire stored note. Use an empty `note/` to clear it; notes can be edited
   without `vd/`. An explicitly empty note counts as a supplied field, even when the note is already empty.
@@ -197,8 +208,9 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [not
   app asks `A patient named NAME already exists. Apply this edit anyway? Type y to confirm. Any other input cancels.`
 * Type `y` and press Enter to apply the edit. Surrounding spaces and letter case are ignored. Any other input cancels
   the edit and is not run as a command. Editing other details of a patient whose name is already shared does not ask
-  for confirmation again.
+  for confirmation again. A confirmed name-duplicate edit rechecks that its requested visit slot is still available.
 * The normalized-name comparison and duplicate-detection limitations described under `add` also apply to edits.
+* The visit-time conflict limitations described under `add` also apply to edits.
 
 Examples:
 * `edit 1 vd/8/10/2026 1000` Changes the 1st person's visit to 8 October 2026 at 10:00.
@@ -286,6 +298,8 @@ If your changes make the data file invalid, AddressBook starts with an empty add
 file remains on disk until you run a command that triggers saving, such as `list`. Still, we recommend backing up the
 file before editing it.<br>
 Furthermore, certain edits can cause the AddressBook to behave in unexpected ways (e.g., if a value entered is outside of the acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
+Files created by older versions can also be invalid if two patient records use the same visit date and time. Assign a
+different visit slot to each record before opening such a file with this version.
 </box>
 
 ### Archiving data files `[coming in v2.0]`

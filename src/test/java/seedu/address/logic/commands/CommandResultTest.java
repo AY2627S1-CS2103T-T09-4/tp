@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.testutil.TypicalPersons.ALICE;
+import static seedu.address.testutil.TypicalPersons.BENSON;
 
 import org.junit.jupiter.api.Test;
 
@@ -43,6 +45,11 @@ public class CommandResultTest {
         CommandInputRequest inputRequest = new CommandInputRequest(
                 "feedback", (input, model) -> CommandResult.withoutSaving(input));
         assertFalse(CommandResult.withoutSaving("feedback").equals(CommandResult.requestInput(inputRequest)));
+
+        // different person-to-view state -> returns false
+        assertFalse(CommandResult.withoutSaving("feedback").equals(CommandResult.viewPerson("feedback", ALICE)));
+        assertFalse(CommandResult.viewPerson("feedback", ALICE)
+                .equals(CommandResult.viewPerson("feedback", BENSON)));
     }
 
     @Test
@@ -69,6 +76,10 @@ public class CommandResultTest {
                 "feedback", (input, model) -> CommandResult.withoutSaving(input));
         assertNotEquals(CommandResult.withoutSaving("feedback").hashCode(),
                 CommandResult.requestInput(inputRequest).hashCode());
+
+        // different person-to-view state -> returns different hashcode
+        assertNotEquals(CommandResult.withoutSaving("feedback").hashCode(),
+                CommandResult.viewPerson("feedback", ALICE).hashCode());
     }
 
     @Test
@@ -89,6 +100,16 @@ public class CommandResultTest {
 
         assertFalse(result.shouldSaveAddressBook());
         assertTrue(result.getInputRequest().isEmpty());
+        assertTrue(result.getPersonToView().isEmpty());
+    }
+
+    @Test
+    public void viewPerson_validPerson_returnsNonSavingResultWithPerson() {
+        CommandResult result = CommandResult.viewPerson("feedback", ALICE);
+
+        assertFalse(result.shouldSaveAddressBook());
+        assertTrue(result.getInputRequest().isEmpty());
+        assertEquals(ALICE, result.getPersonToView().orElseThrow());
     }
 
     @Test
@@ -112,7 +133,7 @@ public class CommandResultTest {
         String expected = CommandResult.class.getCanonicalName() + "{feedbackToUser="
                 + commandResult.getFeedbackToUser() + ", showHelp=" + commandResult.isShowHelp()
                 + ", exit=" + commandResult.isExit() + ", saveAddressBook="
-                + commandResult.shouldSaveAddressBook() + ", inputRequested=false}";
+                + commandResult.shouldSaveAddressBook() + ", inputRequested=false, personToView=null}";
         assertEquals(expected, commandResult.toString());
     }
 }

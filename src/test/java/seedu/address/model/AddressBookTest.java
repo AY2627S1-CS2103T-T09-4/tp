@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_ADDRESS_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_PHONE_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_TAG_HUSBAND;
+import static seedu.address.logic.commands.CommandTestUtil.VALID_VISIT_DATE_BOB;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.ALICE;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
@@ -19,6 +20,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.exceptions.DuplicatePersonException;
+import seedu.address.model.person.exceptions.DuplicateVisitDateException;
 import seedu.address.testutil.PersonBuilder;
 
 public class AddressBookTest {
@@ -64,12 +66,22 @@ public class AddressBookTest {
 
     @Test
     public void resetData_withSameNameAndDifferentPhone_replacesData() {
-        Person sameNameDifferentPhone = new PersonBuilder(ALICE).withPhone(VALID_PHONE_BOB).build();
+        Person sameNameDifferentPhone = new PersonBuilder(ALICE).withPhone(VALID_PHONE_BOB)
+                .withVisitDate(VALID_VISIT_DATE_BOB).build();
         AddressBookStub newData = new AddressBookStub(List.of(ALICE, sameNameDifferentPhone));
 
         addressBook.resetData(newData);
 
         assertEquals(List.of(ALICE, sameNameDifferentPhone), addressBook.getPersonList());
+    }
+
+    @Test
+    public void resetData_withDuplicateVisitDates_throwsDuplicateVisitDateException() {
+        Person personWithSameVisitDate = new PersonBuilder(ALICE).withName("Different Patient")
+                .withPhone(VALID_PHONE_BOB).build();
+        AddressBookStub newData = new AddressBookStub(List.of(ALICE, personWithSameVisitDate));
+
+        assertThrows(DuplicateVisitDateException.class, () -> addressBook.resetData(newData));
     }
 
     @Test
@@ -99,10 +111,20 @@ public class AddressBookTest {
     @Test
     public void hasPersonWithSameName_sameNameAndDifferentPhone_returnsTrue() {
         addressBook.addPerson(ALICE);
-        Person sameNameDifferentPhone = new PersonBuilder(ALICE).withPhone(VALID_PHONE_BOB).build();
+        Person sameNameDifferentPhone = new PersonBuilder(ALICE).withPhone(VALID_PHONE_BOB)
+                .withVisitDate(VALID_VISIT_DATE_BOB).build();
 
         assertFalse(addressBook.hasPerson(sameNameDifferentPhone));
         assertTrue(addressBook.hasPersonWithSameName(sameNameDifferentPhone));
+    }
+
+    @Test
+    public void hasPersonWithSameVisitDate_sameVisitDate_returnsTrue() {
+        addressBook.addPerson(ALICE);
+        Person personWithSameVisitDate = new PersonBuilder(ALICE).withName("Different Patient")
+                .withPhone(VALID_PHONE_BOB).build();
+
+        assertTrue(addressBook.hasPersonWithSameVisitDate(personWithSameVisitDate));
     }
 
     @Test

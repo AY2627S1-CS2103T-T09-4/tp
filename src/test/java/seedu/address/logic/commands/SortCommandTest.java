@@ -70,14 +70,13 @@ public class SortCommandTest {
     }
 
     @Test
-    public void execute_equalDatesAndRepeatedSort_preservesTieOrder() {
-        Person sameTime = personWithVisit("Same time", today, 0);
-        addPersons(future, sameTime, early);
+    public void execute_repeatedSort_preservesChronologicalOrder() {
+        addPersons(future, late, early);
 
         new SortCommand().execute(model);
         new SortCommand().execute(model);
 
-        assertEquals(List.of(sameTime, early, future), model.getFilteredPersonList());
+        assertEquals(List.of(early, late, future), model.getFilteredPersonList());
     }
 
     @Test
