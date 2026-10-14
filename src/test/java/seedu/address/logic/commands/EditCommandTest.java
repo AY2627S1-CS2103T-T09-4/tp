@@ -15,6 +15,7 @@ import static seedu.address.logic.commands.CommandTestUtil.VALID_VISIT_DATE_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.logic.commands.CommandTestUtil.showPersonAtIndex;
+import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
 import static seedu.address.testutil.TypicalIndexes.INDEX_SECOND_PERSON;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.EditCommand.EditPersonDescriptor;
+import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
@@ -78,6 +80,21 @@ public class EditCommandTest {
         expectedModel.setPerson(lastPerson, editedPerson);
 
         assertCommandSuccess(editCommand, model, expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_duplicatePhoneWithDifferentName_success() {
+        Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person secondPerson = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        Person editedPerson = new PersonBuilder(firstPerson).withPhone(secondPerson.getPhone().value).build();
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withPhone(secondPerson.getPhone().value).build();
+
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expectedModel.setPerson(firstPerson, editedPerson);
+
+        assertCommandSuccess(new EditCommand(INDEX_FIRST_PERSON, descriptor), model,
+                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), expectedModel);
     }
 
     @Test
@@ -321,13 +338,89 @@ public class EditCommandTest {
     }
 
     @Test
-    public void execute_duplicateNameAndNote_preservesState() {
+    public void execute_duplicateName_requestsConfirmationWithoutEditing() throws Exception {
         Person firstPerson = setExistingNote(INDEX_FIRST_PERSON);
+        Person secondPerson = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
                 .withName(firstPerson.getName().fullName).withNote(REPLACEMENT_NOTE).build();
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
 
-        assertCommandFailure(new EditCommand(INDEX_SECOND_PERSON, descriptor), model,
-                EditCommand.MESSAGE_DUPLICATE_PERSON);
+        CommandResult result = new EditCommand(INDEX_SECOND_PERSON, descriptor).execute(model);
+
+        assertEquals(String.format(EditCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, firstPerson.getName()),
+                result.getFeedbackToUser());
+        assertTrue(result.getInputRequest().isPresent());
+        assertFalse(result.shouldSaveAddressBook());
+        assertEquals(expectedModel, model);
+        assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
+    }
+
+    @Test
+    public void confirmation_duplicateNameConfirmed_editsPerson() throws Exception {
+        Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person secondPerson = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        Person editedPerson = new PersonBuilder(secondPerson).withName(firstPerson.getName().fullName).build();
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withName(firstPerson.getName().fullName).build();
+        CommandResult requestResult = new EditCommand(INDEX_SECOND_PERSON, descriptor).execute(model);
+
+        CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond("Y", model);
+
+        assertEquals(String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
+                confirmedResult.getFeedbackToUser());
+        assertTrue(confirmedResult.shouldSaveAddressBook());
+        assertTrue(model.getAddressBook().getPersonList().contains(editedPerson));
+        assertFalse(model.getAddressBook().getPersonList().contains(secondPerson));
+    }
+
+    @Test
+    public void confirmation_duplicateNameNotConfirmed_cancelsEdit() throws Exception {
+        Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person secondPerson = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withName(firstPerson.getName().fullName).build();
+        CommandResult requestResult = new EditCommand(INDEX_SECOND_PERSON, descriptor).execute(model);
+
+        CommandResult cancelledResult = requestResult.getInputRequest().orElseThrow().respond("n", model);
+
+        assertEquals(EditCommand.MESSAGE_EDIT_CANCELLED, cancelledResult.getFeedbackToUser());
+        assertFalse(cancelledResult.shouldSaveAddressBook());
+        assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
+    }
+
+    @Test
+    public void execute_existingDuplicateNameWithoutNameChange_editsWithoutConfirmation() throws Exception {
+        Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person sameNameDifferentPhone = new PersonBuilder(firstPerson).withPhone("91234567").build();
+        model.addPerson(sameNameDifferentPhone);
+        Index duplicateNameIndex = Index.fromOneBased(model.getFilteredPersonList().size());
+        Person editedPerson = new PersonBuilder(sameNameDifferentPhone).withNote(REPLACEMENT_NOTE).build();
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withNote(REPLACEMENT_NOTE).build();
+
+        CommandResult result = new EditCommand(duplicateNameIndex, descriptor).execute(model);
+
+        assertEquals(String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
+                result.getFeedbackToUser());
+        assertTrue(result.getInputRequest().isEmpty());
+        assertTrue(model.getAddressBook().getPersonList().contains(editedPerson));
+    }
+
+    @Test
+    public void confirmation_capturedPersonChanged_throwsCommandExceptionWithoutEditingReplacement() throws Exception {
+        Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person secondPerson = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withName(firstPerson.getName().fullName).build();
+        CommandResult requestResult = new EditCommand(INDEX_SECOND_PERSON, descriptor).execute(model);
+        Person replacement = new PersonBuilder(secondPerson).withNote(REPLACEMENT_NOTE).build();
+        model.setPerson(secondPerson, replacement);
+
+        assertThrows(CommandException.class, EditCommand.MESSAGE_PERSON_NO_LONGER_EXISTS, () ->
+                requestResult.getInputRequest()
+                        .orElseThrow()
+                        .respond("y", model));
+
+        assertTrue(model.getAddressBook().getPersonList().contains(replacement));
     }
 
     @Test

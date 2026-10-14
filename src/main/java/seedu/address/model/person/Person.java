@@ -19,9 +19,9 @@ public class Person {
     // Identity fields
     private final Name name;
     private final Phone phone;
-    private final Email email;
 
     // Data fields
+    private final Email email;
     private final Address address;
     private final VisitDate visitDate;
     private final Note note;
@@ -75,7 +75,7 @@ public class Person {
     }
 
     /**
-     * Returns true if both persons have the same name.
+     * Returns true if both persons have the same name and phone number.
      * This defines a weaker notion of equality between two persons.
      */
     public boolean isSamePerson(Person otherPerson) {
@@ -84,7 +84,15 @@ public class Person {
         }
 
         return otherPerson != null
-                && otherPerson.getName().equals(getName());
+                && otherPerson.getName().equals(getName())
+                && otherPerson.getPhone().equals(getPhone());
+    }
+
+    /**
+     * Returns true if both persons have the same name.
+     */
+    public boolean hasSameName(Person otherPerson) {
+        return otherPerson != null && otherPerson.getName().equals(getName());
     }
 
     /**

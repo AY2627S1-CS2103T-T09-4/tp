@@ -80,6 +80,12 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public boolean hasPersonWithSameName(Person person) {
+        requireNonNull(person);
+        return addressBook.hasPersonWithSameName(person);
+    }
+
+    @Override
     public void deletePerson(Person target) {
         addressBook.removePerson(target);
     }
