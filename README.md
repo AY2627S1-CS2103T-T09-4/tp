@@ -16,6 +16,7 @@ Doc is under active development. The features below describe the intended final 
 
 * Keep one record per patient, holding their address, phone number and ongoing medical conditions.
 * Filter and group patients by medical condition or by when they were last visited.
+
 * Sort patients by their next visit date, so the more severe cases surface first.
 * Prevent two patients from being scheduled for the exact same date and time.
 * See the week's visits at a glance, and who is due in the next session.

@@ -483,7 +483,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* * *`  | doctor                  | find patients whose next visit date is today                              | be reminded who is due for a visit                                                      |
 | `* *`    | doctor                  | add or update notes about a patient's medical conditions                  | prepare for future visits                                                               |
 | `* *`    | doctor                  | assign a priority level to a patient                                      | tell at a glance which patients need closer attention                                   |
-| `* *`    | doctor                  | sort my patients by their next visit date                                 | deal with the most overdue visits first                                                 |
+| `* *`    | doctor                  | sort my patients by their next visit date                                 | plan upcoming visits while retaining past schedules for reference                       |
 | `* *`    | doctor                  | search patient notes for a medical condition                              | review together all the patients I treat for the same condition                         |
 | `* *`    | doctor                  | filter patients by how long ago they were last visited                    | find patients who have gone too long without a checkup                                  |
 | `* *`    | doctor                  | see the coming week's visits as a schedule                                | plan my week before it starts                                                           |
@@ -764,21 +764,24 @@ testers are expected to do more *exploratory* testing.
 
 1. _{ more test cases … }_
 
-### Sorting upcoming visits
+### Sorting visits by date
 
-The model exposes a `SortedList` backed by its `FilteredList`. `SortCommand` filters visits
-using the local date at execution time, then sorts by visit date and time. Stored patient
-order is unchanged. Updating the filter resets the displayed order, preserving the usual
-behavior of `list` and `find`.
+The model exposes a `SortedList` backed by its `FilteredList`. `SortCommand` preserves the
+current filter and sorts its displayed patients into two groups using the local date at
+execution time: visits today or later first, followed by past visits. Each group is ordered
+by visit date and time, earliest first. Stored patient order is unchanged. Updating the
+filter resets the displayed order, preserving the usual behavior of `list` and `find`.
 
-1. Prepare patients with visits yesterday, today at 0000, today at 2300, and tomorrow,
+1. Prepare patients with visits two days ago, yesterday, today at 0000, today at 2300, and tomorrow,
    entered in a different order from their visit dates.
-1. Run `sort`. Expect only today's and tomorrow's patients, earliest first.
-1. Run `find` for one patient, then `sort`. Expect all qualifying patients again.
-1. Run `sort` twice. Expect the same chronological order both times.
+1. Run `sort`. Expect today's and tomorrow's patients first, followed by the two past visits;
+   expect each group to be in ascending date-time order.
+1. Run `find` for one patient, then `sort`. Expect only that matching patient to remain displayed.
+1. Run `sort` twice. Expect the same order; equal visit times retain stored order.
 1. Run `delete 1`, then `y`. Expect the first displayed patient to be deleted, with the remaining visits still sorted.
 1. Run `list`. Expect every remaining patient, including yesterday's, in stored order.
-1. Try `sort` on an empty address book and one containing only past visits. Expect an empty list.
+1. Try `sort` on an empty address book. Expect an empty list. Try it on an address book containing only past visits;
+   expect all visits in ascending date-time order.
 
 ### Preventing duplicate visit dates and times
 
