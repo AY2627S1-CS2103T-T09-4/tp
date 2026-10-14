@@ -152,7 +152,7 @@ Format: `sort`
 
 ### Viewing a person's details: `view`
 
-Displays only the selected person so that their full record is easier to inspect.
+Displays the selected person's full record in the details panel on the right.
 
 Format: `view INDEX`
 
@@ -160,11 +160,11 @@ Format: `view INDEX`
 * The index refers to the index number shown in the currently displayed person list.
 * The index **must be a positive integer** 1, 2, 3, ...
 * The command works on lists produced by commands such as `find` and `sort`.
+* The currently displayed person list remains visible on the left.
 * Viewing a person does not change their stored details.
-* Use `list` to display all persons again.
 
 Example:
-* `view 1` displays only the first person in the currently displayed list.
+* `view 1` displays the first person's full record in the details panel.
 
 ### Editing a person: `edit`
 

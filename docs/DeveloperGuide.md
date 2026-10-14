@@ -788,12 +788,14 @@ nonempty notes, and record the selected patient's existing details before editin
 
 ### Viewing one patient
 
-1. Run `list`, followed by `view 1`. Expect only the first displayed patient to remain visible.
-1. Run `list`, followed by `find Alex`, and then `view 1`. Expect the first patient in the search results to remain
-   visible.
-1. Run `sort`, followed by `view 1`. Expect the first patient in the sorted results to remain visible.
-1. Run `view 999`. Expect an invalid-index error and no changes to stored patient data.
-1. Run `list`. Expect all patients to be visible again in stored order.
+1. Run `list`, followed by `view 1`. Expect the full list to remain on the left and the first patient's complete
+   details to appear on the right.
+1. Run `list`, followed by `find Alex`, and then `view 1`. Expect the search results to remain on the left and the
+   first patient's complete details to appear on the right.
+1. Run `sort`, followed by `view 1`. Expect the sorted list to remain on the left and the first patient's complete
+   details to appear on the right.
+1. Run `view 999`. Expect an invalid-index error, no change to the displayed list, and no changes to stored patient
+   data.
 1. Close and reopen the application. Expect all patient data to remain unchanged.
 
 ### Navigating command history
