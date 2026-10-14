@@ -424,6 +424,25 @@ public class EditCommandTest {
     }
 
     @Test
+    public void confirmation_trueDuplicateAppeared_throwsCommandExceptionWithoutEditing() throws Exception {
+        Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person secondPerson = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withName(firstPerson.getName().fullName).build();
+        CommandResult requestResult = new EditCommand(INDEX_SECOND_PERSON, descriptor).execute(model);
+        Person trueDuplicate = new PersonBuilder(secondPerson).withName(firstPerson.getName().fullName).build();
+        model.addPerson(trueDuplicate);
+
+        assertThrows(CommandException.class, EditCommand.MESSAGE_DUPLICATE_PERSON, () ->
+                requestResult.getInputRequest()
+                        .orElseThrow()
+                        .respond("y", model));
+
+        assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
+        assertTrue(model.getAddressBook().getPersonList().contains(trueDuplicate));
+    }
+
+    @Test
     public void execute_noteInvalidDisplayedIndex_preservesState() {
         setExistingNote(INDEX_FIRST_PERSON);
         showPersonAtIndex(model, INDEX_FIRST_PERSON);
