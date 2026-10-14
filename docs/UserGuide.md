@@ -145,6 +145,10 @@ Shows a list of all persons in the address book.
 
 Format: `list`
 
+Patients with a visit date before today are shown using darker backgrounds and muted text. This visual distinction
+also appears in patient lists produced by commands such as `find` and `sort date`. Past patients remain selectable,
+and their complete details remain readable in the details panel.
+
 ### Sorting visits by date: `sort date`
 
 Sorts the currently displayed patients by visit date and time. Visits today or later are shown first, followed by
@@ -154,6 +158,7 @@ Format: `sort FIELD`
 
 * `FIELD` must be `date`.
 * Today is determined using your computer's local date when you run the command. Earlier times today are included.
+* Past visits are visually muted in the patient list, whether or not the list has been sorted.
 * Within the upcoming and past groups, visits are ordered by date and time, earliest first.
 * The command preserves the current displayed set. For example, `find Tan` followed by `sort date` sorts only the
   matching patients.
