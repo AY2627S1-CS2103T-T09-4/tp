@@ -8,6 +8,7 @@ import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.logic.commands.CommandTestUtil.showPersonAtIndex;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
 import static seedu.address.testutil.TypicalIndexes.INDEX_SECOND_PERSON;
+import static seedu.address.testutil.TypicalPersons.KEYWORD_MATCHING_MEIER;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
 import java.util.Comparator;
@@ -20,6 +21,7 @@ import seedu.address.logic.Messages;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
 
 /**
@@ -46,16 +48,21 @@ public class ViewCommandTest {
 
     @Test
     public void execute_validIndexFilteredList_displaysSelectedPerson() {
-        Person personToView = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
-        showPersonAtIndex(model, INDEX_SECOND_PERSON);
-        ViewCommand viewCommand = new ViewCommand(INDEX_FIRST_PERSON);
+        NameContainsKeywordsPredicate predicate =
+                new NameContainsKeywordsPredicate(List.of(KEYWORD_MATCHING_MEIER));
+        model.updateFilteredPersonList(predicate);
+        List<Person> originalList = List.copyOf(model.getFilteredPersonList());
+        assertTrue(originalList.size() >= 2);
+        Person personToView = originalList.get(INDEX_SECOND_PERSON.getZeroBased());
+        ViewCommand viewCommand = new ViewCommand(INDEX_SECOND_PERSON);
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
-        expectedModel.updateFilteredPersonList(personToView::equals);
+        expectedModel.updateFilteredPersonList(predicate);
         CommandResult expectedResult = CommandResult.viewPerson(
                 String.format(ViewCommand.MESSAGE_VIEW_PERSON_SUCCESS, personToView.getName()), personToView);
 
         assertCommandSuccess(viewCommand, model, expectedResult, expectedModel);
-        assertEquals(List.of(personToView), model.getFilteredPersonList());
+        assertEquals(originalList, model.getFilteredPersonList());
+        assertEquals(personToView, expectedResult.getPersonToView().orElseThrow());
     }
 
     @Test
