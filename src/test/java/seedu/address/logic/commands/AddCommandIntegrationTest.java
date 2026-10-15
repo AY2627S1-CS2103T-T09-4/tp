@@ -168,8 +168,8 @@ public class AddCommandIntegrationTest {
 
         CommandResult result = new AddCommand(eighthVisitOnDay).execute(model);
 
-        assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_FULL_DAY, AddCommand.MAX_VISITS_PER_DAY, "1/1/2026"),
-                result.getFeedbackToUser());
+        assertEquals("Heads up: you already have 7 visits on Thu, 1 Jan 2026. Add Amy Bee anyway? "
+                + "Type y to confirm. Any other input cancels.", result.getFeedbackToUser());
         assertTrue(result.getInputRequest().isPresent());
         assertFalse(result.shouldSaveAddressBook());
         assertFalse(model.getAddressBook().getPersonList().contains(eighthVisitOnDay));
@@ -209,8 +209,8 @@ public class AddCommandIntegrationTest {
 
         CommandResult dayRequestResult = nameRequestResult.getInputRequest().orElseThrow().respond("y", model);
 
-        assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_FULL_DAY, AddCommand.MAX_VISITS_PER_DAY, "1/1/2026"),
-                dayRequestResult.getFeedbackToUser());
+        assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_FULL_DAY, AddCommand.MAX_VISITS_PER_DAY,
+                "Thu, 1 Jan 2026", sameNameOnFullDay.getName()), dayRequestResult.getFeedbackToUser());
         assertFalse(model.getAddressBook().getPersonList().contains(sameNameOnFullDay));
 
         CommandResult confirmedResult = dayRequestResult.getInputRequest().orElseThrow().respond("y", model);

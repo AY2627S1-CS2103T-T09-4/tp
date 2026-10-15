@@ -68,7 +68,8 @@ public class VisitDateTest {
 
     @Test
     public void toDayString() {
-        assertEquals("18/9/2026", new VisitDate("18/09/2026 1000").toDayString());
+        assertEquals("Fri, 18 Sep 2026", new VisitDate("18/09/2026 1000").toDayString());
+        assertEquals("Thu, 1 Jan 2026", new VisitDate("1/1/2026 2359").toDayString());
     }
 
     @Test

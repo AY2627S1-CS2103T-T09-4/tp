@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
+import java.util.Locale;
 
 /**
  * Represents a Person's visit date and time in the address book.
@@ -20,7 +21,9 @@ public class VisitDate {
     public static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("d/M/uuuu HHmm")
             .withResolverStyle(ResolverStyle.STRICT);
 
-    private static final DateTimeFormatter DAY_FORMATTER = DateTimeFormatter.ofPattern("d/M/uuuu");
+    // English is fixed so that weekday and month names do not change with the user's system language
+    private static final DateTimeFormatter DAY_FORMATTER =
+            DateTimeFormatter.ofPattern("EEE, d MMM uuuu", Locale.ENGLISH);
 
     public final LocalDateTime value;
 
@@ -56,7 +59,7 @@ public class VisitDate {
     }
 
     /**
-     * Returns the calendar day of this visit date without the time, e.g. {@code 18/9/2026}.
+     * Returns the weekday and calendar day of this visit date without the time, e.g. {@code Fri, 18 Sep 2026}.
      */
     public String toDayString() {
         return value.format(DAY_FORMATTER);

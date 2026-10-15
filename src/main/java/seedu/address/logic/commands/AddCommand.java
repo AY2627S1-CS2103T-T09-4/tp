@@ -51,7 +51,7 @@ public class AddCommand extends Command {
             "A patient named %1$s already exists. Add this patient anyway? "
                     + "Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_CONFIRM_FULL_DAY =
-            "There are already %1$d patients scheduled on %2$s. Add this patient anyway? "
+            "Heads up: you already have %1$d visits on %2$s. Add %3$s anyway? "
                     + "Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_ADD_CANCELLED = "Addition cancelled.";
     public static final String MESSAGE_NOT_ADDED = "The patient is not added due to: %1$s";
@@ -90,7 +90,7 @@ public class AddCommand extends Command {
         int visitsOnSameDay = model.countPersonsWithSameVisitDay(toAdd);
         if (visitsOnSameDay >= MAX_VISITS_PER_DAY) {
             String prompt = String.format(MESSAGE_CONFIRM_FULL_DAY, visitsOnSameDay,
-                    toAdd.getVisitDate().toDayString());
+                    toAdd.getVisitDate().toDayString(), toAdd.getName());
             return requestConfirmation(prompt, this::addPerson);
         }
 
