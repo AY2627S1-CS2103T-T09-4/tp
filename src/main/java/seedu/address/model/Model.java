@@ -14,6 +14,9 @@ public interface Model {
     /** {@code Predicate} that always evaluates to true */
     Predicate<Person> PREDICATE_SHOW_ALL_PERSONS = unused -> true;
 
+    /** Number of visits a doctor can comfortably make in one day; scheduling beyond it requires confirmation. */
+    int MAX_VISITS_PER_DAY = 7;
+
     /**
      * Returns the user prefs.
      */
