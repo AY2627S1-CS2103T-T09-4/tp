@@ -147,6 +147,11 @@ public class AddCommandTest {
         }
 
         @Override
+        public int countPersonsWithSameVisitDay(Person person) {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
         public void deletePerson(Person target) {
             throw new AssertionError("This method should not be called.");
         }
@@ -200,6 +205,12 @@ public class AddCommandTest {
             requireNonNull(person);
             return this.person.getVisitDate().equals(person.getVisitDate());
         }
+
+        @Override
+        public int countPersonsWithSameVisitDay(Person person) {
+            requireNonNull(person);
+            return this.person.getVisitDate().isSameDay(person.getVisitDate()) ? 1 : 0;
+        }
     }
 
     /**
@@ -225,6 +236,14 @@ public class AddCommandTest {
             requireNonNull(person);
             return personsAdded.stream()
                     .anyMatch(existingPerson -> existingPerson.getVisitDate().equals(person.getVisitDate()));
+        }
+
+        @Override
+        public int countPersonsWithSameVisitDay(Person person) {
+            requireNonNull(person);
+            return (int) personsAdded.stream()
+                    .filter(existingPerson -> existingPerson.getVisitDate().isSameDay(person.getVisitDate()))
+                    .count();
         }
 
         @Override

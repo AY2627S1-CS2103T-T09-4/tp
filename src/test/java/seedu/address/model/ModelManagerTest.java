@@ -93,6 +93,19 @@ public class ModelManagerTest {
     }
 
     @Test
+    public void countPersonsWithSameVisitDay() {
+        // ALICE and BENSON visit on the same day at different times
+        modelManager.addPerson(ALICE);
+        modelManager.addPerson(BENSON);
+        Person personLaterOnSameDay = new PersonBuilder().withVisitDate("1/1/2026 1500").build();
+        Person personOnDifferentDay = new PersonBuilder().withVisitDate(VALID_VISIT_DATE_BOB).build();
+
+        assertEquals(2, modelManager.countPersonsWithSameVisitDay(personLaterOnSameDay));
+        assertEquals(0, modelManager.countPersonsWithSameVisitDay(personOnDifferentDay));
+        assertThrows(NullPointerException.class, () -> modelManager.countPersonsWithSameVisitDay(null));
+    }
+
+    @Test
     public void getFilteredPersonList_modifyList_throwsUnsupportedOperationException() {
         assertThrows(UnsupportedOperationException.class, () -> modelManager.getFilteredPersonList().remove(0));
     }

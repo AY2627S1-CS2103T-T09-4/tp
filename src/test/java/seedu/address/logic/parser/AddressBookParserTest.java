@@ -21,11 +21,13 @@ import seedu.address.logic.commands.ExitCommand;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.NextCommand;
 import seedu.address.logic.commands.SortCommand;
 import seedu.address.logic.commands.ViewCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
+import seedu.address.model.person.VisitDate;
 import seedu.address.testutil.EditPersonDescriptorBuilder;
 import seedu.address.testutil.PersonBuilder;
 import seedu.address.testutil.PersonUtil;
@@ -87,6 +89,31 @@ public class AddressBookParserTest {
     public void parseCommand_list() throws Exception {
         assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD) instanceof ListCommand);
         assertTrue(parser.parseCommand(ListCommand.COMMAND_WORD + " 3") instanceof ListCommand);
+    }
+
+    @Test
+    public void parseCommand_next() throws Exception {
+        NextCommand expectedCommand = new NextCommand(INDEX_FIRST_PERSON, new VisitDate("1/11/2026 0930"));
+        assertEquals(expectedCommand, parser.parseCommand("next 1 1/11/2026 0930"));
+        assertEquals(expectedCommand, parser.parseCommand(" \tnext\t1  01/11/2026\t0930  "));
+    }
+
+    @Test
+    public void parseCommand_bareNext_usesNextUsage() {
+        String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, NextCommand.MESSAGE_USAGE);
+        assertThrows(ParseException.class, expectedMessage, () -> parser.parseCommand("next"));
+    }
+
+    @Test
+    public void parseCommand_oversizedNextIndex_usesSpecificErrorAndNextUsage() {
+        String expectedMessage = NextCommandParser.MESSAGE_INDEX_TOO_LARGE + "\n" + NextCommand.MESSAGE_USAGE;
+        assertThrows(ParseException.class,
+                expectedMessage, () -> parser.parseCommand("next 2147483648 2/11/2026 1000"));
+    }
+
+    @Test
+    public void parseCommand_nextCapitalized_preservesCommandCasePolicy() {
+        assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("Next 1 1/11/2026 0930"));
     }
 
     @Test
