@@ -118,7 +118,7 @@ public class NextCommand extends Command {
 
     @Override
     public int hashCode() {
-        return Objects.hash(index, visitDate, clock);
+        return Objects.hash(index.getZeroBased(), visitDate, clock);
     }
 
     /**

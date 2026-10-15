@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -184,10 +185,14 @@ public class NextCommandTest {
     @Test
     public void equals() {
         NextCommand command = new NextCommand(INDEX_FIRST_PERSON, new VisitDate(NEW_VISIT_DATE), FIXED_CLOCK);
-        NextCommand equivalent = new NextCommand(INDEX_FIRST_PERSON, new VisitDate("01/11/2026 0930"), FIXED_CLOCK);
+        NextCommand equivalent = new NextCommand(Index.fromOneBased(1), new VisitDate("01/11/2026 0930"), FIXED_CLOCK);
         assertEquals(command, command);
         assertEquals(command, equivalent);
         assertEquals(command.hashCode(), equivalent.hashCode());
+        HashSet<NextCommand> commands = new HashSet<>();
+        commands.add(command);
+        commands.add(equivalent);
+        assertEquals(1, commands.size());
         assertNotEquals(command, null);
         assertNotEquals(command, new ListCommand());
         assertNotEquals(command, new NextCommand(INDEX_SECOND_PERSON, new VisitDate(NEW_VISIT_DATE), FIXED_CLOCK));
