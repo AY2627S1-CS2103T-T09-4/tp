@@ -787,6 +787,22 @@ behavior of `list` and `find`.
 1. Run `sort`, `sort name`, and `sort date name`. Expect each command to show the required format and the
    `sort date` example without changing the displayed list.
 
+### Distinguishing past visits in the patient list
+
+`PersonCard` compares each patient's visit date with the computer's local date when the card is created. A visit
+before today receives the `past-visit-card` style class. The dark theme uses this class to give both alternating row
+colours darker variants and to mute the card's text and tags. Visits earlier today are not treated as past. Because
+the styling belongs to the card rather than `SortCommand`, it applies to every patient-list view.
+
+1. Prepare patients with visits yesterday, earlier today, later today, and tomorrow.
+1. Run `list`. Expect only yesterday's patient card to have a darker background with muted text and tags. Expect
+   alternating rows to remain visually distinct.
+1. Run `find` for the patient with yesterday's visit. Expect the matching card to remain muted.
+1. Run `sort date`. Expect all past patient cards to remain muted and to appear after today's and future visits.
+1. Select a muted card. Expect its selection border and background to remain visible, and expect the details panel
+   on the right to remain fully readable.
+1. Edit the past visit to tomorrow's date. Expect the updated card to return to the normal styling.
+
 ### Preventing duplicate visit dates and times
 
 Use a disposable copy of the data file. Start with `Alex Tan` scheduled for `8/10/2026 1000`.
