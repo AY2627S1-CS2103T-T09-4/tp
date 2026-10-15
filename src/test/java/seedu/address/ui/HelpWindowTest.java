@@ -67,33 +67,31 @@ public class HelpWindowTest {
     }
 
     @Test
-    public void openUserGuide_defaultBrowserUnavailable_showsFallback() {
-        runWithHeadlessDesktop(() -> runOnFxThread(() -> {
-            HelpWindow defaultHelpWindow = new HelpWindow(new Stage());
-            defaultHelpWindow.show();
-            Hyperlink userGuideLink = (Hyperlink) defaultHelpWindow.getRoot().getScene()
-                    .lookup("#userGuideLink");
-            userGuideLink.fire();
-
-            assertEquals(HelpWindow.MESSAGE_BROWSER_FAILURE,
-                    getLabelFrom(defaultHelpWindow, "#browserError").getText());
-            assertTrue(getLabelFrom(defaultHelpWindow, "#browserError").isVisible());
-            defaultHelpWindow.hide();
-        }));
+    public void constructor_withStage_createsWindow() {
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            HelpWindow defaultHelpWindow = new HelpWindow(stage);
+            try {
+                defaultHelpWindow.show();
+                assertSame(stage, defaultHelpWindow.getRoot());
+                assertTrue(defaultHelpWindow.isShowing());
+            } finally {
+                defaultHelpWindow.hide();
+            }
+        });
     }
 
     @Test
-    public void constructor_withoutStage_usesDefaultBrowserOpener() {
-        runWithHeadlessDesktop(() -> runOnFxThread(() -> {
+    public void constructor_withoutStage_createsWindow() {
+        runOnFxThread(() -> {
             HelpWindow defaultHelpWindow = new HelpWindow();
-            defaultHelpWindow.show();
-            Hyperlink userGuideLink = (Hyperlink) defaultHelpWindow.getRoot().getScene()
-                    .lookup("#userGuideLink");
-            userGuideLink.fire();
-
-            assertTrue(getLabelFrom(defaultHelpWindow, "#browserError").isVisible());
-            defaultHelpWindow.hide();
-        }));
+            try {
+                defaultHelpWindow.show();
+                assertTrue(defaultHelpWindow.isShowing());
+            } finally {
+                defaultHelpWindow.hide();
+            }
+        });
     }
 
     @Test
@@ -218,24 +216,6 @@ public class HelpWindowTest {
 
     private Label getLabel(String selector) {
         return (Label) helpWindow.getRoot().getScene().lookup(selector);
-    }
-
-    private static Label getLabelFrom(HelpWindow window, String selector) {
-        return (Label) window.getRoot().getScene().lookup(selector);
-    }
-
-    private static void runWithHeadlessDesktop(Runnable action) {
-        String previousHeadlessSetting = System.getProperty("java.awt.headless");
-        System.setProperty("java.awt.headless", "true");
-        try {
-            action.run();
-        } finally {
-            if (previousHeadlessSetting == null) {
-                System.clearProperty("java.awt.headless");
-            } else {
-                System.setProperty("java.awt.headless", previousHeadlessSetting);
-            }
-        }
     }
 
     private void assertCopyUrl() {

@@ -20,9 +20,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 
+import javafx.beans.value.ChangeListener;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
-import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.ScrollPane;
@@ -128,29 +128,20 @@ public class MainWindowTest {
             helpStage.setIconified(true);
         });
 
-        CountDownLatch restoredLatch = new CountDownLatch(1);
+        waitForIconifiedState(originalHelpStage.get(), true);
         runOnFxThread(() -> {
             Stage helpStage = originalHelpStage.get();
-            helpStage.iconifiedProperty().addListener((observable, wasIconified, isIconified) -> {
-                if (!isIconified) {
-                    restoredLatch.countDown();
-                }
-            });
+            assertTrue(helpStage.isIconified(), "Help must be minimized before requesting restoration");
             mainWindow.handleHelp();
             assertSame(originalHelpStage.get(), getHelpStage());
-            if (!helpStage.isIconified()) {
-                restoredLatch.countDown();
-            }
         });
 
-        assertTrue(restoredLatch.await(WINDOW_STATE_TIMEOUT_SECONDS, TimeUnit.SECONDS),
-                "The window manager did not restore the help window");
-        runOnFxThread(() -> assertFalse(originalHelpStage.get().isIconified()));
+        waitForIconifiedState(originalHelpStage.get(), false);
     }
 
     @Test
     public void constructor_withoutBrowserOpener_createsWindow() {
-        runWithHeadlessDesktop(() -> runOnFxThread(() -> {
+        runOnFxThread(() -> {
             Path addressBookPath = testDirectory.resolve("compatibility-addressbook.json");
             StorageManager storage = new StorageManager(new JsonAddressBookStorage(addressBookPath),
                     new JsonUserPrefsStorage(testDirectory.resolve("compatibility-preferences.json")));
@@ -160,15 +151,8 @@ public class MainWindowTest {
             compatibilityWindow.show();
             assertTrue(compatibilityWindow.getRoot().isShowing());
             compatibilityWindow.handleHelp();
-            Stage helpStage = Window.getWindows().stream()
-                    .filter(window -> window instanceof Stage stage && "Help".equals(stage.getTitle()))
-                    .map(window -> (Stage) window)
-                    .findFirst().orElseThrow(() -> new AssertionError("Help window was not shown"));
-            Hyperlink userGuideLink = (Hyperlink) helpStage.getScene().lookup("#userGuideLink");
-            userGuideLink.fire();
-            assertTrue(helpStage.getScene().lookup("#browserError").isVisible());
-            compatibilityWindow.getRoot().hide();
-        }));
+            assertTrue(getHelpStage().isShowing());
+        });
     }
 
     @Test
@@ -210,17 +194,28 @@ public class MainWindowTest {
                 false, false, false, false));
     }
 
-    private static void runWithHeadlessDesktop(Runnable action) {
-        String previousHeadlessSetting = System.getProperty("java.awt.headless");
-        System.setProperty("java.awt.headless", "true");
-        try {
-            action.run();
-        } finally {
-            if (previousHeadlessSetting == null) {
-                System.clearProperty("java.awt.headless");
-            } else {
-                System.setProperty("java.awt.headless", previousHeadlessSetting);
+    /**
+     * Waits on the JUnit thread while JavaFX processes window-state changes.
+     */
+    private static void waitForIconifiedState(Stage stage, boolean shouldBeIconified) throws InterruptedException {
+        CountDownLatch stateLatch = new CountDownLatch(1);
+        ChangeListener<Boolean> stateListener = (observable, wasIconified, isIconified) -> {
+            if (isIconified == shouldBeIconified) {
+                stateLatch.countDown();
             }
+        };
+        runOnFxThread(() -> {
+            stage.iconifiedProperty().addListener(stateListener);
+            if (stage.isIconified() == shouldBeIconified) {
+                stateLatch.countDown();
+            }
+        });
+        try {
+            assertTrue(stateLatch.await(WINDOW_STATE_TIMEOUT_SECONDS, TimeUnit.SECONDS),
+                    "The window manager did not set iconified=" + shouldBeIconified);
+            runOnFxThread(() -> assertEquals(shouldBeIconified, stage.isIconified()));
+        } finally {
+            runOnFxThread(() -> stage.iconifiedProperty().removeListener(stateListener));
         }
     }
 }

@@ -57,7 +57,16 @@ public class MainApp extends Application {
 
         logic = new LogicManager(model, storage);
 
-        ui = new UiManager(logic, storage.getAddressBookFilePath(), getHostServices()::showDocument);
+        ui = new UiManager(logic, storage.getAddressBookFilePath(), this::openInBrowser);
+    }
+
+    /**
+     * Requests the given URL in the default browser using JavaFX host services.
+     *
+     * @param url URL to open.
+     */
+    protected void openInBrowser(String url) {
+        getHostServices().showDocument(url);
     }
 
     /**
