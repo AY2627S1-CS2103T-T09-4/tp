@@ -1,5 +1,7 @@
 package seedu.address.logic;
 
+import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
+
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.util.logging.Logger;
@@ -37,9 +39,18 @@ public class LogicManager implements Logic {
      * Constructs a {@code LogicManager} with the given {@code Model} and {@code Storage}.
      */
     public LogicManager(Model model, Storage storage) {
+        this(model, storage, new AddressBookParser());
+    }
+
+    /**
+     * Constructs a logic manager with the supplied parser, model, and storage.
+     * Allows command parsing dependencies to be controlled in integration tests.
+     */
+    public LogicManager(Model model, Storage storage, AddressBookParser addressBookParser) {
+        requireAllNonNull(model, storage, addressBookParser);
         this.model = model;
         this.storage = storage;
-        addressBookParser = new AddressBookParser();
+        this.addressBookParser = addressBookParser;
     }
 
     @Override
