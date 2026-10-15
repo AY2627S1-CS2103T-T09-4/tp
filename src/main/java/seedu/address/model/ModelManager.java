@@ -92,6 +92,12 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public int countPersonsWithSameVisitDay(Person person) {
+        requireNonNull(person);
+        return addressBook.countPersonsWithSameVisitDay(person);
+    }
+
+    @Override
     public void deletePerson(Person target) {
         addressBook.removePerson(target);
     }

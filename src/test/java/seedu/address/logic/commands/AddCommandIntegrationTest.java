@@ -26,6 +26,8 @@ import seedu.address.testutil.PersonBuilder;
 public class AddCommandIntegrationTest {
 
     private static final String AVAILABLE_VISIT_DATE = "2/1/2026 0900";
+    /** A free time slot on 1/1/2026, the day on which all seven typical persons are already visited. */
+    private static final String FULL_DAY_VISIT_DATE = "1/1/2026 1500";
 
     private Model model;
 
@@ -147,6 +149,75 @@ public class AddCommandIntegrationTest {
         assertEquals(AddCommand.MESSAGE_ADD_CANCELLED, cancelledResult.getFeedbackToUser());
         assertFalse(cancelledResult.shouldSaveAddressBook());
         assertFalse(model.getAddressBook().getPersonList().contains(sameNameDifferentPhone));
+    }
+
+    @Test
+    public void execute_visitDayBelowLimit_addsWithoutConfirmation() {
+        model.deletePerson(model.getAddressBook().getPersonList().get(0));
+        Person seventhVisitOnDay = new PersonBuilder().withVisitDate(FULL_DAY_VISIT_DATE).build();
+        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expectedModel.addPerson(seventhVisitOnDay);
+
+        assertCommandSuccess(new AddCommand(seventhVisitOnDay), model,
+                String.format(AddCommand.MESSAGE_SUCCESS, seventhVisitOnDay.getName()), expectedModel);
+    }
+
+    @Test
+    public void execute_visitDayFull_requestsConfirmationWithoutAdding() throws Exception {
+        Person eighthVisitOnDay = new PersonBuilder().withVisitDate(FULL_DAY_VISIT_DATE).build();
+
+        CommandResult result = new AddCommand(eighthVisitOnDay).execute(model);
+
+        assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_FULL_DAY, AddCommand.MAX_VISITS_PER_DAY, "1/1/2026"),
+                result.getFeedbackToUser());
+        assertTrue(result.getInputRequest().isPresent());
+        assertFalse(result.shouldSaveAddressBook());
+        assertFalse(model.getAddressBook().getPersonList().contains(eighthVisitOnDay));
+    }
+
+    @Test
+    public void confirmation_visitDayFullConfirmed_addsPerson() throws Exception {
+        Person eighthVisitOnDay = new PersonBuilder().withVisitDate(FULL_DAY_VISIT_DATE).build();
+        CommandResult requestResult = new AddCommand(eighthVisitOnDay).execute(model);
+
+        CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond("y", model);
+
+        assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, eighthVisitOnDay.getName()),
+                confirmedResult.getFeedbackToUser());
+        assertTrue(confirmedResult.shouldSaveAddressBook());
+        assertTrue(model.getAddressBook().getPersonList().contains(eighthVisitOnDay));
+    }
+
+    @Test
+    public void confirmation_visitDayFullNotConfirmed_cancelsAddition() throws Exception {
+        Person eighthVisitOnDay = new PersonBuilder().withVisitDate(FULL_DAY_VISIT_DATE).build();
+        CommandResult requestResult = new AddCommand(eighthVisitOnDay).execute(model);
+
+        CommandResult cancelledResult = requestResult.getInputRequest().orElseThrow().respond("n", model);
+
+        assertEquals(AddCommand.MESSAGE_ADD_CANCELLED, cancelledResult.getFeedbackToUser());
+        assertFalse(cancelledResult.shouldSaveAddressBook());
+        assertFalse(model.getAddressBook().getPersonList().contains(eighthVisitOnDay));
+    }
+
+    @Test
+    public void confirmation_duplicateNameOnFullDay_requestsBothConfirmations() throws Exception {
+        Person personInList = model.getAddressBook().getPersonList().get(0);
+        Person sameNameOnFullDay = new PersonBuilder(personInList).withPhone("91234567")
+                .withVisitDate(FULL_DAY_VISIT_DATE).build();
+        CommandResult nameRequestResult = new AddCommand(sameNameOnFullDay).execute(model);
+
+        CommandResult dayRequestResult = nameRequestResult.getInputRequest().orElseThrow().respond("y", model);
+
+        assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_FULL_DAY, AddCommand.MAX_VISITS_PER_DAY, "1/1/2026"),
+                dayRequestResult.getFeedbackToUser());
+        assertFalse(model.getAddressBook().getPersonList().contains(sameNameOnFullDay));
+
+        CommandResult confirmedResult = dayRequestResult.getInputRequest().orElseThrow().respond("y", model);
+
+        assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, sameNameOnFullDay.getName()),
+                confirmedResult.getFeedbackToUser());
+        assertTrue(model.getAddressBook().getPersonList().contains(sameNameOnFullDay));
     }
 
     @Test
