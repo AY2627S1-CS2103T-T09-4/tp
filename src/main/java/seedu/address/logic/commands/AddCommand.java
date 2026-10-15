@@ -21,6 +21,9 @@ public class AddCommand extends Command {
 
     public static final String COMMAND_WORD = "add";
 
+    /** Number of visits a doctor can comfortably make in one day; adding beyond it requires confirmation. */
+    public static final int MAX_VISITS_PER_DAY = 7;
+
     public static final String MESSAGE_USAGE = COMMAND_WORD + ": Adds a person to the address book. "
             + "Parameters: "
             + PREFIX_NAME + "NAME "
@@ -79,13 +82,13 @@ public class AddCommand extends Command {
 
     /**
      * Adds the person, first asking for confirmation if the visit day already has
-     * {@value Model#MAX_VISITS_PER_DAY} or more visits.
+     * {@value #MAX_VISITS_PER_DAY} or more visits.
      *
      * @throws CommandException If a true duplicate or visit-date conflict now exists in the address book.
      */
     private CommandResult addPersonAfterVisitDayCheck(Model model) throws CommandException {
         int visitsOnSameDay = model.countPersonsWithSameVisitDay(toAdd);
-        if (visitsOnSameDay >= Model.MAX_VISITS_PER_DAY) {
+        if (visitsOnSameDay >= MAX_VISITS_PER_DAY) {
             String prompt = String.format(MESSAGE_CONFIRM_FULL_DAY, visitsOnSameDay,
                     toAdd.getVisitDate().toDayString(), toAdd.getName());
             return requestConfirmation(prompt, this::addPerson);
