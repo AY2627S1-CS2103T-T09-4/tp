@@ -36,8 +36,7 @@ public class AddCommand extends Command {
             + PREFIX_EMAIL + "johnd@example.com "
             + PREFIX_ADDRESS + "311, Clementi Ave 2, #02-25 "
             + PREFIX_VISIT_DATE + "18/9/2026 1000 "
-            + PREFIX_TAG + "friends "
-            + PREFIX_TAG + "owesMoney";
+            + PREFIX_TAG + "followup ";
 
     public static final String MESSAGE_SUCCESS = "Added patient %1$s";
     public static final String MESSAGE_DUPLICATE_PERSON =

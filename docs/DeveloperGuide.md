@@ -4,7 +4,7 @@
   pageNav: 3
 ---
 
-# AB-3 Developer Guide
+# Doc Developer Guide
 
 <!-- * Table of Contents -->
 <page-nav-print />
@@ -35,7 +35,7 @@ The following provides a quick overview of the main components and their interac
 
 **Main components of the architecture**
 
-**`Main`** (consisting of classes [`Main`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/Main.java) and [`MainApp`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/MainApp.java)) is in charge of the app launch and shut down.
+**`Main`** (consisting of classes [`Main`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/java/seedu/address/Main.java) and [`MainApp`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/java/seedu/address/MainApp.java)) is in charge of the app launch and shut down.
 * At app launch, it initializes the other components in the correct sequence, and connects them up with each other.
 * At shut down, it shuts down the other components and invokes cleanup methods where necessary.
 
@@ -68,13 +68,13 @@ The sections below give more details of each component.
 
 ### UI component
 
-The **API** of this component is specified in [`Ui.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/ui/Ui.java)
+The **API** of this component is specified in [`Ui.java`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/java/seedu/address/ui/Ui.java)
 
 <puml src="diagrams/UiClassDiagram.puml" alt="Structure of the UI Component"/>
 
 The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `PersonListPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
 
-The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/ui/MainWindow.java).
+The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/java/seedu/address/ui/MainWindow.java).
 
 The `UI` component,
 
@@ -88,7 +88,7 @@ the command box text when the user presses the Up or Down arrow key.
 
 ### Logic component
 
-**API** : [`Logic.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/logic/Logic.java)
+**API** : [`Logic.java`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/java/seedu/address/logic/Logic.java)
 
 Here's a (partial) class diagram of the `Logic` component:
 
@@ -116,7 +116,7 @@ How the `Logic` component works:
    delete a person after confirmation).<br>
    Note that although this is shown as a single step in the diagram above for simplicity, the code can require several interactions between the command object and the `Model` to complete the operation.
 1. The result of command execution or input handling is encapsulated as a `CommandResult` object which is returned
-   from `Logic`. The result also tells `LogicManager` whether it should save the address book.
+   from `Logic`. The result also tells `LogicManager` whether it should save the patient data.
 
 Here are the other classes in `Logic` (omitted from the class diagram above) that are used for parsing a user command:
 
@@ -127,14 +127,14 @@ How the parsing works:
 * All `XYZCommandParser` classes, such as `AddCommandParser` and `DeleteCommandParser`, implement the `Parser` interface so they can be treated similarly where appropriate, for example during testing.
 
 ### Model component
-**API** : [`Model.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/model/Model.java)
+**API** : [`Model.java`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/java/seedu/address/model/Model.java)
 
 <puml src="diagrams/ModelClassDiagram.puml" width="450" />
 
 
 The `Model` component,
 
-* stores the address book data i.e., all `Person` objects (which are contained in a `UniquePersonList` object).
+* stores Doc's patient records i.e., all `Person` objects (which are contained in a `UniquePersonList` object).
 * stores the `Person` objects selected by the current filter, such as search results, in a separate _filtered_ list. It exposes this list as an unmodifiable `ObservableList<Person>` that the UI can observe and bind to, so the UI updates when the list changes.
 * stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
@@ -150,12 +150,12 @@ The `Model` component,
 
 ### Storage component
 
-**API** : [`Storage.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/storage/Storage.java)
+**API** : [`Storage.java`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/java/seedu/address/storage/Storage.java)
 
 <puml src="diagrams/StorageClassDiagram.puml" width="550" />
 
 The `Storage` component,
-* can save both address book data and user preference data in JSON format, and read them back into corresponding objects.
+* can save both patient data and user preference data in JSON format, and read them back into corresponding objects.
 * is implemented by `StorageManager`, which delegates the actual JSON file access to `JsonAddressBookStorage` and `JsonUserPrefsStorage` (one class per data file).
 * depends on some classes in the `Model` component (because the `Storage` component's job is to save/retrieve objects that belong to the `Model`)
 
@@ -235,9 +235,9 @@ new duplicate rules:
 * A file accepted by an older version can become invalid when two records have the same phone number and names that
   differ only in letter case or repeated spacing. The normalized names now make those records true duplicates.
 * A file accepted by an older version can also become invalid when two records use the same visit date and time.
-* For either conflict, Doc reports the loading problem and starts with an empty address book. The conflicting file is
+* For either conflict, Doc reports the loading problem and starts with an empty patient list. The conflicting file is
   not backed up automatically, and a command that triggers saving, such as `list`, can replace it with the empty
-  address book. Users must back up the file and resolve the conflicts manually before migration.
+  patient list. Users must back up the file and resolve the conflicts manually before migration.
 * Automated tests do not currently construct `SampleDataUtil#getSampleAddressBook`. Consequently, an accidental
   duplicate among the sample visit times could break first-run sample-data initialization without failing the test
   suite.
@@ -288,6 +288,45 @@ to save the updated record, including empty notes, in the existing JSON format. 
 the replacement visit date/time and notes. Editing replaces one stored visit date/time and one stored note;
 it does not append visit-history entries or per-visit notes.
 
+<<<<<<< Updated upstream
+=======
+### Scheduling the next visit
+
+`next INDEX DATETIME` schedules the following appointment for a displayed patient. Success changes only the visit
+date and time and restores the full caseload in stored order. Corrections use `edit ... vd/`; completed-visit recording
+and history remain deferred. See the [User Guide](UserGuide.md#scheduling-the-next-visit-next) for syntax and errors.
+
+For example, assume the clock reads `31/10/2026 1200`, `find Betsy` displays only Betsy, and her existing
+appointment is `2/11/2026 1000`. The doctor enters `next 1 1/11/2026 0930`, requesting an available future slot.
+
+`AddressBookParser` delegates argument parsing to `NextCommandParser` and returns a `NextCommand` to `LogicManager`.
+`LogicManager` executes the command against the model. The command selects Betsy from the displayed list and checks
+that the requested appointment differs from her existing
+one, is in the future, and is unused across all stored patients. Parsed equality detects equivalent spellings; the
+[visit-time conflict limitations](#visit-time-conflict-limitations) apply.
+
+On success, `NextCommand` replaces Betsy's immutable `Person`, preserving every other field, and restores the full
+list in stored order by clearing the filter and sort. `LogicManager` then saves the updated patient data before
+returning the success result to the UI.
+
+Validation failures stop before any mutation or save. Storage failure happens after the in-memory update and follows
+the existing error handling without rollback.
+
+The design keeps three decisions explicit:
+
+* **Separate scheduling from correction.** A dedicated command lets future visit-recording behavior evolve
+  independently of `edit`.
+* **Keep future validation in the command.** Comparing with now allows 1 November even though the old appointment
+  is on 2 November. Keeping this rule outside `VisitDate` and storage allows past appointments to remain valid for
+  corrections and loading.
+* **Inject the clock.** Production uses the system's local time zone and reads time once at execution without
+  truncating seconds. Fixed clocks make boundary and persistence tests deterministic without changing global time.
+
+Tests cover parsing, displayed indices, hidden conflicts, field preservation, list reset, and persistence, including
+saved appointments becoming past as the test clock advances. Manual cases appear in the
+[testing appendix](#testing-the-next-command).
+
+>>>>>>> Stashed changes
 ### Follow-up command-line input and confirmation
 
 `CommandInputRequest` lets any command collect an additional command-line input through the existing command box and
@@ -301,16 +340,16 @@ the submitted text to the request handler instead of `AddressBookParser`. This i
 would otherwise be a valid command. After the handler returns or throws a `CommandException`, the old request is no
 longer pending. A handler can continue the interaction by returning a result containing a new request.
 
-`CommandResult` separates displaying feedback from saving the address book. Prompts, cancellations, and the
+`CommandResult` separates displaying feedback from saving patient data. Prompts, cancellations, and the
 already-empty `clear` result do not cause a file write. A confirmed mutation returns a result that causes
-`LogicManager` to save the updated address book once.
+`LogicManager` to save the updated patient data once.
 
 The shared `CommandInputRequest#createConfirmation` helper trims the response and compares it to `y` without regard
 to case. It runs the supplied action only for that response; every other response returns the supplied cancellation
 message.
 
 For same-name additions and edits, `AddCommand` and `EditCommand` use the same confirmation helper as destructive
-commands. The prompt does not mutate or save the address book. Confirmation performs the captured mutation and saves
+commands. The prompt does not mutate or save patient data. Confirmation performs the captured mutation and saves
 once; every other response cancels without saving. The proposed patient is captured before the prompt, and confirmed
 actions recheck both the true-duplicate and unique-visit-date invariants before modifying the model.
 
@@ -319,8 +358,8 @@ confirmation. The prompt contains only that person's name because other fields c
 that captured object rather than resolving the index again. If the record changed or disappeared while confirmation
 was pending, the command reports that the selected person no longer exists and deletes nothing.
 
-For `clear`, `ClearCommand` requests confirmation only when the address book contains entries. Its prompt uses
-`entry` for one record and `entries` otherwise. Confirming clears the address book; every other response cancels.
+For `clear`, `ClearCommand` requests confirmation only when Doc contains patient records. Its prompt uses
+`entry` for one record and `entries` otherwise. Confirming clears the patient list; every other response cancels.
 
 ### Command history navigation
 
@@ -347,39 +386,46 @@ closes.
 
 The proposed undo/redo mechanism is facilitated by `VersionedAddressBook`. It extends `AddressBook` with an undo/redo history, stored internally as an `addressBookStateList` and `currentStatePointer`. Additionally, it implements the following operations:
 
-* `VersionedAddressBook#commit()` -- Saves the current address book state in its history.
-* `VersionedAddressBook#undo()` -- Restores the previous address book state from its history.
-* `VersionedAddressBook#redo()` -- Restores a previously undone address book state from its history.
+* `VersionedAddressBook#commit()` -- Saves the current patient-record state in its history.
+* `VersionedAddressBook#undo()` -- Restores the previous patient-record state from its history.
+* `VersionedAddressBook#redo()` -- Restores a previously undone patient-record state from its history.
 
 These operations are exposed in the `Model` interface as `Model#commitAddressBook()`, `Model#undoAddressBook()` and `Model#redoAddressBook()` respectively.
 
 Given below is an example usage scenario and how the undo/redo mechanism behaves at each step.
 
-Step 1. The user launches the application for the first time. The `VersionedAddressBook` will be initialized with the initial address book state, and the `currentStatePointer` pointing to that single address book state.
+Step 1. The user launches the application for the first time. The `VersionedAddressBook` will be initialized with the initial patient-record state, and the `currentStatePointer` pointing to that single state.
 
 <puml src="diagrams/UndoRedoState0.puml" alt="UndoRedoState0" />
 
-Step 2. The user executes `delete 5` command to delete the 5th person in the address book. The `delete` command calls `Model#commitAddressBook()`, causing the modified state of the address book after the `delete 5` command executes to be saved in the `addressBookStateList`, and the `currentStatePointer` is shifted to the newly inserted address book state.
+Step 2. The user executes `delete 5` to delete the 5th patient in Doc. The `delete` command calls
+`Model#commitAddressBook()`, causing the modified patient-record state to be saved in `addressBookStateList`, and the
+`currentStatePointer` is shifted to the newly inserted state.
 
 <puml src="diagrams/UndoRedoState1.puml" alt="UndoRedoState1" />
 
-Step 3. The user executes `add n/David …​` to add a new person. The `add` command also calls `Model#commitAddressBook()`, causing another modified address book state to be saved into the `addressBookStateList`.
+Step 3. The user executes `add n/David …​` to add a new patient. The `add` command also calls
+`Model#commitAddressBook()`, causing another modified patient-record state to be saved into `addressBookStateList`.
 
 <puml src="diagrams/UndoRedoState2.puml" alt="UndoRedoState2" />
 
 <box type="info" seamless>
 
-**Note:** If a command fails its execution, it will not call `Model#commitAddressBook()`, so the address book state will not be saved into the `addressBookStateList`.
+**Note:** If a command fails its execution, it will not call `Model#commitAddressBook()`, so the patient-record state
+will not be saved into `addressBookStateList`.
 </box>
 
-Step 4. The user now decides that adding the person was a mistake, and decides to undo that action by executing the `undo` command. The `undo` command will call `Model#undoAddressBook()`, which will shift the `currentStatePointer` once to the left, pointing it to the previous address book state, and restores the address book to that state.
+Step 4. The user decides that adding the patient was a mistake and executes `undo`. The command calls
+`Model#undoAddressBook()`, shifts `currentStatePointer` once to the left, and restores the previous patient-record
+state.
 
 <puml src="diagrams/UndoRedoState3.puml" alt="UndoRedoState3" />
 
 
 <box type="info" seamless>
 
-**Note:** If the `currentStatePointer` is at index 0, pointing to the initial AddressBook state, then there are no previous AddressBook states to restore. The `undo` command uses `Model#canUndoAddressBook()` to check if this is the case. If so, it will return an error to the user rather
+**Note:** If `currentStatePointer` is at index 0, pointing to the initial patient-record state, there are no previous
+states to restore. The `undo` command uses `Model#canUndoAddressBook()` to check if this is the case. If so, it will return an error to the user rather
 than attempting to perform the undo.
 </box>
 
@@ -396,18 +442,25 @@ Similarly, how an undo operation goes through the `Model` component is shown bel
 
 <puml src="diagrams/UndoSequenceDiagram-Model.puml" alt="UndoSequenceDiagram-Model" />
 
-The `redo` command does the opposite — it calls `Model#redoAddressBook()`, which shifts the `currentStatePointer` once to the right, pointing to the previously undone state, and restores the address book to that state.
+The `redo` command does the opposite — it calls `Model#redoAddressBook()`, shifts `currentStatePointer` once to the
+right, and restores the previously undone patient-record state.
 
 <box type="info" seamless>
 
-**Note:** If the `currentStatePointer` is at index `addressBookStateList.size() - 1`, pointing to the latest address book state, then there are no undone AddressBook states to restore. The `redo` command uses `Model#canRedoAddressBook()` to check if this is the case. If so, it will return an error to the user rather than attempting to perform the redo.
+**Note:** If `currentStatePointer` is at index `addressBookStateList.size() - 1`, pointing to the latest patient-record
+state, there are no undone states to restore. The `redo` command uses `Model#canRedoAddressBook()` to check if this is
+the case. If so, it returns an error instead of attempting the redo.
 </box>
 
-Step 5. The user then decides to execute the command `list`. Commands that do not modify the address book, such as `list`, will usually not call `Model#commitAddressBook()`, `Model#undoAddressBook()` or `Model#redoAddressBook()`. Thus, the `addressBookStateList` remains unchanged.
+Step 5. The user executes `list`. Commands that do not modify patient data, such as `list`, do not call
+`Model#commitAddressBook()`, `Model#undoAddressBook()` or `Model#redoAddressBook()`. Thus, `addressBookStateList`
+remains unchanged.
 
 <puml src="diagrams/UndoRedoState4.puml" alt="UndoRedoState4" />
 
-Step 6. The user executes `clear`, which calls `Model#commitAddressBook()`. Since the `currentStatePointer` is not pointing at the end of the `addressBookStateList`, all address book states after the `currentStatePointer` will be purged. Reason: It no longer makes sense to redo the `add n/David …` command. This is the behavior that most modern desktop applications follow.
+Step 6. The user executes `clear`, which calls `Model#commitAddressBook()`. Since `currentStatePointer` is not at the
+end of `addressBookStateList`, all patient-record states after it are purged because redoing `add n/David …` would no
+longer be valid. This is the behavior that most modern desktop applications follow.
 
 <puml src="diagrams/UndoRedoState5.puml" alt="UndoRedoState5" />
 
@@ -419,7 +472,7 @@ The following activity diagram summarizes what happens when a user executes a ne
 
 **Aspect: How undo & redo execute:**
 
-* **Alternative 1 (current choice):** Saves the entire address book.
+* **Alternative 1 (current choice):** Saves the entire patient-record state.
   * Pros: Easy to implement.
   * Cons: May have performance issues in terms of memory usage.
 
@@ -753,7 +806,7 @@ testers are expected to do more *exploratory* testing.
    1. Download the JAR file and copy it into an empty folder.
 
    1. Double-click the JAR file.<br>
-      Expected: The GUI opens with a set of sample contacts. The window size may not be optimal.
+      Expected: The GUI opens with a set of sample patient records. The window size may not be optimal.
 
 1. Saving window preferences
 
@@ -782,7 +835,7 @@ behavior of `list` and `find`.
 1. Run `sort date` twice. Expect the same order; equal visit times retain stored order.
 1. Run `delete 1`, then `y`. Expect the first displayed patient to be deleted, with the remaining visits still sorted.
 1. Run `list`. Expect every remaining patient, including yesterday's, in stored order.
-1. Try `sort date` on an empty address book. Expect an empty list. Try it on an address book containing only past
+1. Try `sort date` on an empty patient list. Expect an empty list. Try it on a patient list containing only past
    visits; expect all visits in ascending date-time order.
 1. Run `sort`, `sort name`, and `sort date name`. Expect each command to show the required format and the
    `sort date` example without changing the displayed list.
@@ -928,59 +981,59 @@ nonempty notes, and record the selected patient's existing details before editin
    1. Restart the application and press the Up arrow key before entering any command.<br>
       Expected: The command box remains unchanged because command history is not persisted.
 
-### Deleting a person
+### Deleting a patient
 
-1. Deleting a person while all persons are being shown
+1. Deleting a patient while all patients are being shown
 
-   1. Prerequisites: List all persons using the `list` command, with multiple persons in the list.
+   1. Prerequisites: List all patients using the `list` command, with multiple patients in the list.
 
    1. Test case: `delete 1`<br>
-      Expected: No contact is deleted. The result display shows
-      `Delete NAME? Type y to confirm. Any other input cancels.` using the first contact's name.
+      Expected: No patient is deleted. The result display shows
+      `Delete NAME? Type y to confirm. Any other input cancels.` using the first patient's name.
 
    1. Test case: `y` immediately after the previous test case<br>
-      Expected: The first contact is deleted from the list. The result display shows the deleted contact's details.
+      Expected: The first patient is deleted from the list. The result display shows the deleted patient's details.
 
    1. Test case: `delete 1`, followed by `n`<br>
-      Expected: No contact is deleted. The result display shows `Deletion cancelled.`
+      Expected: No patient is deleted. The result display shows `Deletion cancelled.`
 
    1. Test case: `delete 1`, followed by `list`<br>
-      Expected: No contact is deleted and `list` is consumed as the confirmation response. The result display shows
-      `Deletion cancelled.` Entering `list` again lists all contacts normally.
+      Expected: No patient is deleted and `list` is consumed as the confirmation response. The result display shows
+      `Deletion cancelled.` Entering `list` again lists all patients normally.
 
    1. Test case: `delete 1`, followed by pressing Enter with an empty command box<br>
-      Expected: No contact is deleted. The result display shows `Deletion cancelled.`
+      Expected: No patient is deleted. The result display shows `Deletion cancelled.`
 
    1. Test case: `delete 0`<br>
-      Expected: No person is deleted. The status message shows error details.
+      Expected: No patient is deleted. The status message shows error details.
 
    1. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
       Expected: The existing invalid-command response is shown and no confirmation is requested.
 
-### Clearing all persons
+### Clearing all patient records
 
-1. Clearing a non-empty address book
+1. Clearing a non-empty patient list
 
-   1. Prerequisites: The address book contains multiple persons.
+   1. Prerequisites: Doc contains multiple patient records.
 
    1. Test case: `clear`<br>
-      Expected: No contact is deleted. The result display shows
+      Expected: No patient record is deleted. The result display shows
       `Clear COUNT entries? Type y to confirm. Any other input cancels.` with the current count.
 
    1. Test case: `Y` immediately after the previous test case<br>
-      Expected: All contacts are deleted and the result display shows `Address book has been cleared!`.
+      Expected: All patient records are deleted and the result display shows `Address book has been cleared!`.
 
 1. Cancelling a clear operation
 
-   1. Prerequisites: The address book contains at least one person.
+   1. Prerequisites: Doc contains at least one patient record.
 
    1. Test case: `clear`, followed by any input other than `y`, such as `list`<br>
-      Expected: No contact is deleted, the second input is not executed as a command, and the result display shows
+      Expected: No patient record is deleted, the second input is not executed as a command, and the result display shows
       `Clear cancelled.`
 
-1. Clearing an empty address book
+1. Clearing an empty patient list
 
-   1. Prerequisites: The address book is empty.
+   1. Prerequisites: Doc contains no patient records.
 
    1. Test case: `clear`<br>
       Expected: No confirmation is requested and the result display shows `Address book is already empty.`
@@ -995,7 +1048,7 @@ nonempty notes, and record the selected patient's existing details before editin
 
    1. Relaunch Doc.<br>
       Expected: Doc reports that the data file contains duplicate visit dates and times, retains the invalid file, and
-      starts with an empty address book under the existing invalid-data behavior.
+      starts with an empty patient list under the existing invalid-data behavior.
 
    1. Restore the backup, assign distinct visit dates and times, and relaunch Doc.<br>
       Expected: Every patient record loads normally.
