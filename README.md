@@ -20,7 +20,6 @@ Doc is under active development. The features below describe the intended final 
 * Sort patients by their next visit date, so the more severe cases surface first.
 * Prevent two patients from being scheduled for the exact same date and time.
 * See the week's visits at a glance, and who is due in the next session.
-* Archive patients who no longer need regular visits, without losing their records.
 
 Doc is a record-keeping and planning tool. It does not handle communicating with patients.
 
