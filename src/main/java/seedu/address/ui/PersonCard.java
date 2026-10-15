@@ -1,5 +1,6 @@
 package seedu.address.ui;
 
+import java.time.LocalDate;
 import java.util.Comparator;
 
 import javafx.fxml.FXML;
@@ -15,6 +16,7 @@ import seedu.address.model.person.Person;
 public class PersonCard extends UiPart<Region> {
 
     private static final String FXML = "PersonListCard.fxml";
+    private static final String PAST_VISIT_STYLE_CLASS = "past-visit-card";
 
     /**
      * Note: Certain keywords such as "location" and "resources" are reserved keywords in JavaFX.
@@ -49,6 +51,13 @@ public class PersonCard extends UiPart<Region> {
      * Creates a {@code PersonCard} with the given {@code Person} and index to display.
      */
     public PersonCard(Person person, int displayedIndex) {
+        this(person, displayedIndex, LocalDate.now());
+    }
+
+    /**
+     * Creates a {@code PersonCard} using {@code currentDate} to determine whether the visit is in the past.
+     */
+    PersonCard(Person person, int displayedIndex, LocalDate currentDate) {
         super(FXML);
         this.person = person;
         id.setText(displayedIndex + ". ");
@@ -61,5 +70,9 @@ public class PersonCard extends UiPart<Region> {
         person.getTags().stream()
                 .sorted(Comparator.comparing(tag -> tag.tagName))
                 .forEach(tag -> tags.getChildren().add(new Label(tag.tagName)));
+
+        if (person.getVisitDate().value.toLocalDate().isBefore(currentDate)) {
+            cardPane.getStyleClass().add(PAST_VISIT_STYLE_CLASS);
+        }
     }
 }

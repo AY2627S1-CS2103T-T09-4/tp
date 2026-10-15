@@ -58,8 +58,12 @@ AddressBook Level 3 (AB3) is a **desktop application for managing contacts, opti
 * Items followed by `...` can appear zero or more times.<br>
   For example, `[t/TAG]... ` may be omitted, or written as `t/friend` or `t/friend t/family`.
 
-* Parameters can be in any order.<br>
+* Prefixed fields can be in any order after any required positional arguments.<br>
   For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
+
+* Positional arguments must follow the command's documented order.<br>
+  For example, `edit INDEX ...` starts with the index, and `next INDEX DATETIME` requires the index before the date
+  and time.
 
 * Extraneous parameters for commands that take no parameters, such as `help`, `list`, `exit`, and `clear`, are ignored.<br>
   For example, `help 123` is interpreted as `help`.
@@ -124,6 +128,10 @@ Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES
   `A patient named NAME already exists. Add this patient anyway? Type y to confirm. Any other input cancels.`
 * Type `y` and press Enter to add the patient. Surrounding spaces and letter case are ignored. Any other input cancels
   the addition and is not run as a command. Confirmation rechecks that the visit date and time are still available.
+* If 7 or more patients already have a visit on the same day (at any time), the app warns you before adding another,
+  e.g. `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Add Jane Tan anyway? Type y to confirm. Any other
+  input cancels.` Type `y` to add the patient anyway. If the name also matches an existing patient, you are asked to
+  confirm the name first and then the busy day.
 * For duplicate detection, names are compared without letter case after surrounding whitespace is removed and repeated
   spaces are collapsed to one space. For example, `John Doe`, `john doe`, and `John   Doe` are treated as the same
   name. The accepted name's spelling, capitalization, and internal spacing are still displayed and saved.
@@ -159,21 +167,30 @@ Shows a list of all persons in the address book.
 
 Format: `list`
 
-### Sorting visits by date: `sort`
+Patients with a visit date before today are shown using darker backgrounds and muted text. This visual distinction
+also appears in patient lists produced by commands such as `find` and `sort date`. Past patients remain selectable,
+and their complete details remain readable in the details panel.
+
+### Sorting visits by date: `sort date`
 
 Sorts the currently displayed patients by visit date and time. Visits today or later are shown first, followed by
 past visits.
 
-Format: `sort`
+Format: `sort FIELD`
 
+* `FIELD` must be `date`.
 * Today is determined using your computer's local date when you run the command. Earlier times today are included.
+* Past visits are visually muted in the patient list, whether or not the list has been sorted.
 * Within the upcoming and past groups, visits are ordered by date and time, earliest first.
-* This replaces any previous search results. Past visits are hidden, not deleted.
-* The command preserves the current displayed set. For example, `find Tan` followed by `sort` sorts only the matching
-  patients.
+* The command preserves the current displayed set. For example, `find Tan` followed by `sort date` sorts only the
+  matching patients.
 * Use the displayed indices for subsequent commands such as `edit` or `delete`.
 * `list` shows all patients again in stored order; a new `find` also returns its matches in stored order.
-* Like `list`, extra parameters are ignored. Run `sort` again to refresh the date cutoff after midnight.
+* Running `sort` without a field, or with a field other than `date`, shows the required format and an example command.
+* Run `sort date` again to refresh which visits belong to the upcoming and past groups after midnight.
+
+Example:
+* `sort date` sorts the currently displayed patients by their visit date and time.
 
 ### Viewing a person's details: `view`
 
@@ -184,7 +201,7 @@ Format: `view INDEX`
 * Displays the person at the specified `INDEX`.
 * The index refers to the index number shown in the currently displayed person list.
 * The index **must be a positive integer** 1, 2, 3, ...
-* The command works on lists produced by commands such as `find` and `sort`.
+* The command works on lists produced by commands such as `find` and `sort date`.
 * The currently displayed person list remains visible on the left.
 * Viewing a person does not change their stored details.
 
@@ -214,6 +231,7 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [not
 * Prefixes can appear in any order. Repeated single-valued prefixes, including `note/`, are rejected,
   even when their values are identical or empty. Multiple `t/TAG` prefixes are allowed.
 * Editing replaces the stored visit date and time; it does not append a visit-history entry.
+  Use `edit ... vd/` to correct an appointment, or [next](#scheduling-the-next-visit-next) to schedule the following visit.
 * Existing values will be updated to the input values.
 * When editing tags, all of the person's existing tags are removed; adding tags is not cumulative.
 * To remove all of a person's tags, enter `t/` without a tag after it.
@@ -236,6 +254,45 @@ Examples:
 * `edit 1 e/ note/` Clears both email and notes, keeping the visit and other details unchanged.
 * `edit 1 vd/8/10/2026 1000 e/new@example.com note/Review medication` Updates the visit, email, and notes.
 * `edit 2 n/Betsy Crower t/` Updates the name and clears all existing tags, keeping the visit unchanged.
+
+### Scheduling the next visit: `next`
+
+Schedules a patient's following appointment. It replaces the stored visit date and time without recording a
+completed visit or visit history. Use `edit ... vd/` to correct an existing appointment.
+
+Format: `next INDEX DATETIME`
+
+* Use a positive `INDEX` from the currently displayed list, including results of `find` or `sort date`.
+  `view` keeps that list and its indices unchanged.
+* Enter `DATETIME` as `d/M/yyyy HHmm`, with a four-digit 24-hour time. Spaces or tabs separate the arguments;
+  repeated and outer whitespace are accepted. Do not use `vd/`, quotation marks, or extra arguments.
+* The appointment must be strictly after your computer's current local time at execution; the current minute's
+  start is rejected. It may be earlier than the existing appointment, which need not be past.
+* The appointment must differ from the patient's existing one and every other patient's appointment, including
+  hidden patients. Leading-zero dates compare equally: `1/11/2026 0930` and `01/11/2026 0930` are the same time.
+* Conflict detection covers identical start times, not visit duration, travel time, or partial overlaps.
+  The [visit-time conflict limitations under add](#adding-a-patient-add) also apply.
+* Only the visit date and time change; all other details, including empty optional fields, are preserved.
+* Success shows `Next visit scheduled for patient NAME: DATETIME`, saves the record, and restores the full list in
+  stored order, clearing the filter and sort. Check the new indices; run `view` again to refresh the details panel.
+* Validation errors preserve data and the displayed list. A save failure reports a storage error; the in-memory
+  appointment may already have changed.
+
+Common errors:
+
+| Input problem | Feedback |
+| --- | --- |
+| Time at or before now | `The next visit must be in the future.` |
+| Unchanged appointment | `Patient NAME already has an appointment at DATETIME.` |
+| Another patient's appointment | `Patient NAME already has an appointment at DATETIME. Choose a different date and time.` |
+
+Bare `next` shows usage. Missing or extra arguments, `vd/` syntax, and incorrect index syntax show a reason and usage.
+Invalid dates show the required format; an index outside the displayed list shows the existing invalid-index error.
+
+Examples (choose a future date and time that no patient already uses):
+
+* `next 1 1/11/2026 0930` schedules the first displayed patient's next appointment for 1 November 2026 at 09:30.
+* `find Betsy`, then `next 1 2/11/2026 1430`, schedules the first matching patient and restores the full list.
 
 ### Locating persons by name: `find`
 
@@ -345,6 +402,7 @@ Action     | Format, Examples
 **Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
-**Sort**   | `sort`
+**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (use an available future appointment)
+**Sort**   | `sort date`
 **View**   | `view INDEX`<br> e.g., `view 1`
 **Help**   | `help`

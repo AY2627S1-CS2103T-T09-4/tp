@@ -45,6 +45,34 @@ public class VisitDateTest {
     }
 
     @Test
+    public void isSameDay() {
+        VisitDate visitDate = new VisitDate("18/9/2026 1000");
+
+        // null -> throws NullPointerException
+        assertThrows(NullPointerException.class, () -> visitDate.isSameDay(null));
+
+        // same day and time -> returns true
+        assertTrue(visitDate.isSameDay(new VisitDate("18/9/2026 1000")));
+
+        // same day, different times at both ends of the day -> returns true
+        assertTrue(visitDate.isSameDay(new VisitDate("18/9/2026 0000")));
+        assertTrue(visitDate.isSameDay(new VisitDate("18/9/2026 2359")));
+
+        // adjacent days -> returns false
+        assertFalse(visitDate.isSameDay(new VisitDate("17/9/2026 2359")));
+        assertFalse(visitDate.isSameDay(new VisitDate("19/9/2026 0000")));
+
+        // same day and month in a different year -> returns false
+        assertFalse(visitDate.isSameDay(new VisitDate("18/9/2027 1000")));
+    }
+
+    @Test
+    public void toDayString() {
+        assertEquals("Fri, 18 Sep 2026", new VisitDate("18/09/2026 1000").toDayString());
+        assertEquals("Thu, 1 Jan 2026", new VisitDate("1/1/2026 2359").toDayString());
+    }
+
+    @Test
     public void toStringMethod() {
         assertEquals("18/9/2026 1000", new VisitDate("18/09/2026 1000").toString());
     }

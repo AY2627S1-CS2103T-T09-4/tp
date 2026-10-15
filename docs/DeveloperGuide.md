@@ -288,6 +288,42 @@ to save the updated record, including empty notes, in the existing JSON format. 
 the replacement visit date/time and notes. Editing replaces one stored visit date/time and one stored note;
 it does not append visit-history entries or per-visit notes.
 
+### Scheduling the next visit
+
+`next INDEX DATETIME` schedules the following appointment for a displayed patient. Success changes only the visit
+date and time and restores the full caseload in stored order. Corrections use `edit ... vd/`; completed-visit recording
+and history remain deferred. See the [User Guide](UserGuide.md#scheduling-the-next-visit-next) for syntax and errors.
+
+For example, assume the clock reads `31/10/2026 1200`, `find Betsy` displays only Betsy, and her existing
+appointment is `2/11/2026 1000`. The doctor enters `next 1 1/11/2026 0930`, requesting an available future slot.
+
+`AddressBookParser` delegates argument parsing to `NextCommandParser` and returns a `NextCommand` to `LogicManager`.
+`LogicManager` executes the command against the model. The command selects Betsy from the displayed list and checks
+that the requested appointment differs from her existing
+one, is in the future, and is unused across all stored patients. Parsed equality detects equivalent spellings; the
+[visit-time conflict limitations](#visit-time-conflict-limitations) apply.
+
+On success, `NextCommand` replaces Betsy's immutable `Person`, preserving every other field, and restores the full
+list in stored order by clearing the filter and sort. `LogicManager` then saves the updated address book before
+returning the success result to the UI.
+
+Validation failures stop before any mutation or save. Storage failure happens after the in-memory update and follows
+the existing error handling without rollback.
+
+The design keeps three decisions explicit:
+
+* **Separate scheduling from correction.** A dedicated command lets future visit-recording behavior evolve
+  independently of `edit`.
+* **Keep future validation in the command.** Comparing with now allows 1 November even though the old appointment
+  is on 2 November. Keeping this rule outside `VisitDate` and storage allows past appointments to remain valid for
+  corrections and loading.
+* **Inject the clock.** Production uses the system's local time zone and reads time once at execution without
+  truncating seconds. Fixed clocks make boundary and persistence tests deterministic without changing global time.
+
+Tests cover parsing, displayed indices, hidden conflicts, field preservation, list reset, and persistence, including
+saved appointments becoming past as the test clock advances. Manual cases appear in the
+[testing appendix](#testing-the-next-command).
+
 ### Follow-up command-line input and confirmation
 
 `CommandInputRequest` lets any command collect an additional command-line input through the existing command box and
@@ -479,7 +515,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* * *`  | doctor                  | edit a patient's details                                                  | keep their record accurate when their contact information, address, next visit date or medical notes change |
 | `* * *`  | doctor                  | permanently delete an incorrectly created or duplicate patient record     | ensure erroneous records do not remain in my caseload                                   |
 | `* * *`  | doctor                  | record that I visited a patient on a given date                           | know when I last saw each patient                                                       |
-| `* * *`  | doctor                  | set the next visit date for a patient                                     | be reminded when that patient is due for a checkup                                      |
+| `* * *`  | doctor                  | schedule a patient's following visit                                     | plan their follow-up care                                                             |
 | `* * *`  | doctor                  | find patients whose next visit date is today                              | be reminded who is due for a visit                                                      |
 | `* *`    | doctor                  | add or update notes about a patient's medical conditions                  | prepare for future visits                                                               |
 | `* *`    | doctor                  | assign a priority level to a patient                                      | tell at a glance which patients need closer attention                                   |
@@ -698,6 +734,40 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case ends.
 
+**Use case: UC06 - Schedule the next visit**
+
+**Guarantees**
+
+* Only the selected patient's appointment changes; completed-visit recording is outside this use case.
+* Rejected input leaves patient records and the displayed list unchanged.
+
+**MSS**
+
+1.  Doctor requests a future appointment for a patient identified by their displayed index.
+2.  Doc saves the new appointment and shows the full caseload in stored order.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. The displayed index does not identify a patient.
+
+    * 1a1. Doc explains that the selection is invalid.
+
+      Use case resumes at step 1.
+
+* 1b. The appointment is invalid, not in the future, or unchanged.
+
+    * 1b1. Doc explains the specific reason for rejection.
+
+      Use case resumes at step 1.
+
+* 1c. Another patient already has the requested appointment.
+
+    * 1c1. Doc identifies the conflicting patient and time.
+
+      Use case resumes at step 1.
+
 ### Non-Functional Requirements
 
 1.  Should work on any _mainstream OS_ as long as it has Java `25` or above installed.
@@ -729,10 +799,11 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * **Next visit date**: The date and time at which a patient is next scheduled to receive a house call. No two active
   patient records can use the same value.
 * **Overdue visit**: A scheduled visit whose next visit date has passed without the visit being recorded or rescheduled.
-* **Patient record**: The information Doc stores for one patient, including their contact details, medical conditions, visit history and next visit date.
+* **Patient record**: The information Doc stores for one patient, including their contact details, medical notes,
+  tags, and current visit date and time. Completed visit history is not stored in this increment.
 * **Priority level**: A label indicating how closely a patient needs to be followed up, used when ordering planned visits.
-* **Visit**: A single house call recorded in Doc with its date and an optional note.
-* **Visit history**: The collection of completed visits recorded for a patient.
+* **Visit**: A single house call. Doc currently stores one appointment date and time and one patient-level note.
+* **Visit history**: A collection of completed visits for a patient; recording this history is deferred.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -795,22 +866,42 @@ Use the packaged JAR to check browser integration on each supported operating sy
 
 ### Sorting visits by date
 
-The model exposes a `SortedList` backed by its `FilteredList`. `SortCommand` preserves the
-current filter and sorts its displayed patients into two groups using the local date at
-execution time: visits today or later first, followed by past visits. Each group is ordered
-by visit date and time, earliest first. Stored patient order is unchanged. Updating the
-filter resets the displayed order, preserving the usual behavior of `list` and `find`.
+`SortCommandParser` accepts the `date` field and rejects missing, unsupported, or additional
+arguments with the command usage message. The model exposes a `SortedList` backed by its
+`FilteredList`. `SortCommand` preserves the current filter and sorts its displayed patients
+into two groups using the local date at execution time: visits today or later first, followed
+by past visits. Each group is ordered by visit date and time, earliest first. Stored patient
+order is unchanged. Updating the filter resets the displayed order, preserving the usual
+behavior of `list` and `find`.
 
 1. Prepare patients with visits two days ago, yesterday, today at 0000, today at 2300, and tomorrow,
    entered in a different order from their visit dates.
-1. Run `sort`. Expect today's and tomorrow's patients first, followed by the two past visits;
+1. Run `sort date`. Expect today's and tomorrow's patients first, followed by the two past visits;
    expect each group to be in ascending date-time order.
-1. Run `find` for one patient, then `sort`. Expect only that matching patient to remain displayed.
-1. Run `sort` twice. Expect the same order; equal visit times retain stored order.
+1. Run `find` for one patient, then `sort date`. Expect only that matching patient to remain displayed.
+1. Run `sort date` twice. Expect the same order; equal visit times retain stored order.
 1. Run `delete 1`, then `y`. Expect the first displayed patient to be deleted, with the remaining visits still sorted.
 1. Run `list`. Expect every remaining patient, including yesterday's, in stored order.
-1. Try `sort` on an empty address book. Expect an empty list. Try it on an address book containing only past visits;
-   expect all visits in ascending date-time order.
+1. Try `sort date` on an empty address book. Expect an empty list. Try it on an address book containing only past
+   visits; expect all visits in ascending date-time order.
+1. Run `sort`, `sort name`, and `sort date name`. Expect each command to show the required format and the
+   `sort date` example without changing the displayed list.
+
+### Distinguishing past visits in the patient list
+
+`PersonCard` compares each patient's visit date with the computer's local date when the card is created. A visit
+before today receives the `past-visit-card` style class. The dark theme uses this class to give both alternating row
+colours darker variants and to mute the card's text and tags. Visits earlier today are not treated as past. Because
+the styling belongs to the card rather than `SortCommand`, it applies to every patient-list view.
+
+1. Prepare patients with visits yesterday, earlier today, later today, and tomorrow.
+1. Run `list`. Expect only yesterday's patient card to have a darker background with muted text and tags. Expect
+   alternating rows to remain visually distinct.
+1. Run `find` for the patient with yesterday's visit. Expect the matching card to remain muted.
+1. Run `sort date`. Expect all past patient cards to remain muted and to appear after today's and future visits.
+1. Select a muted card. Expect its selection border and background to remain visible, and expect the details panel
+   on the right to remain fully readable.
+1. Edit the past visit to tomorrow's date. Expect the updated card to return to the normal styling.
 
 ### Preventing duplicate visit dates and times
 
@@ -885,13 +976,69 @@ nonempty notes, and record the selected patient's existing details before editin
    Expect the updated or empty note, edited date/time, and cleared email to remain saved,
    with other omitted fields preserved.
 
+### Testing the next command
+
+Use a disposable data copy and fresh test names. Replace `DAY` with a date after today in `d/M/yyyy` format whose
+0900, 0930, 1000, 1030, and 1100 slots are unused. Replace `PAST_DAY` with a date before today with an unused 1000 slot.
+These placeholders must be replaced before submitting commands.
+
+1. Add the two patients in this order:
+
+   ```text
+   add n/Nextalpha Patient p/81234567 a/10 Test Road vd/DAY 1000 e/alpha@example.com note/Keep this note t/priority
+   add n/Nextbeta Patient p/82345678 a/20 Test Road vd/DAY 0900
+   ```
+
+   Expect success, with nonempty optional fields for Nextalpha and empty email, notes, and tags for Nextbeta.
+
+1. Run `find Nextalpha`, then `next 1 DAY 0930`.<br>
+   Expect Nextalpha to move to 0930, preserving all other fields, followed by the full list in stored order.
+   The success message names Nextalpha and the new appointment. This checks a future time earlier than the old one.
+
+1. Run `find Nextalpha`, then `next 1 DAY 0900`.<br>
+   Expect a conflict naming hidden Nextbeta and the occupied time, with data and the filtered list unchanged.
+   Repeat with a leading-zero day or month when applicable; expect the same conflict.
+
+1. While only Nextalpha is displayed, try each of these commands:
+
+   | Command | Expected feedback |
+   | --- | --- |
+   | `next` | Next usage. |
+   | `next 1` | Missing arguments and usage. |
+   | `next 0 DAY 0930` | Invalid index syntax and usage. |
+   | `next 2147483648 DAY 0930` | Oversized index error and usage. |
+   | `next 2 DAY 0930` | Index outside the displayed list. |
+   | `next 1 DAY 0930` | Unchanged appointment. |
+   | `next 1 PAST_DAY 1000` | Non-future appointment. |
+   | `next 1 31/2/2027 0930` | Invalid date. |
+   | `next 1 DAY 2400` | Invalid time. |
+   | `next 1 vd/DAY 0930` | Prefix misuse and usage. |
+   | `next 1 DAY 0930 extra` | Extra arguments and usage. |
+
+   Each rejection must preserve records, file contents, and the displayed list. Also test today's current local
+   minute; expect rejection. Repeat the unchanged-date test with equivalent leading zeros when applicable.
+
+1. Run `find Nextalpha Nextbeta`, then `sort date`.<br>
+   Expect Nextbeta first. Try `next 1 DAY 0900`; expect rejection with the sorted order preserved.
+   Run `view 1`, then `next 1 DAY 1030`; expect Nextbeta to change, retaining empty optional fields, and the full list
+   to return in stored order. Run `find Nextbeta`, then `view 1`, to refresh its details.
+
+1. Run `find Nextalpha`, then `next   1   DAY   1100`.<br>
+   Expect repeated spaces to be accepted, Nextalpha to move to 1100, and the full list to return.
+
+1. Close and reopen the application. Find and view each test patient.<br>
+   Expect Nextalpha at 1100, Nextbeta at 1030, and every other field preserved, with no visit-history entry.
+
+1. After the persistence checks, run `find Nextalpha`, then `edit 1 vd/PAST_DAY 1000`. Close and reopen the app.<br>
+   Expect the past appointment to load. Integration tests also cover saved appointments becoming past as time advances.
+
 ### Viewing one patient
 
 1. Run `list`, followed by `view 1`. Expect the full list to remain on the left and the first patient's complete
    details to appear on the right.
 1. Run `list`, followed by `find Alex`, and then `view 1`. Expect the search results to remain on the left and the
    first patient's complete details to appear on the right.
-1. Run `sort`, followed by `view 1`. Expect the sorted list to remain on the left and the first patient's complete
+1. Run `sort date`, followed by `view 1`. Expect the sorted list to remain on the left and the first patient's complete
    details to appear on the right.
 1. Run `view 999`. Expect an invalid-index error, no change to the displayed list, and no changes to stored patient
    data.

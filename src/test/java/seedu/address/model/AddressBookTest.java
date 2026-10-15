@@ -128,6 +128,16 @@ public class AddressBookTest {
     }
 
     @Test
+    public void countPersonsWithSameVisitDay_typicalAddressBook_returnsCount() {
+        // Every typical person apart from AMY and BOB visits on 1/1/2026
+        AddressBook typicalAddressBook = getTypicalAddressBook();
+        Person personLaterOnSameDay = new PersonBuilder().withVisitDate("1/1/2026 1500").build();
+
+        assertEquals(7, typicalAddressBook.countPersonsWithSameVisitDay(personLaterOnSameDay));
+        assertThrows(NullPointerException.class, () -> typicalAddressBook.countPersonsWithSameVisitDay(null));
+    }
+
+    @Test
     public void getPersonList_modifyList_throwsUnsupportedOperationException() {
         assertThrows(UnsupportedOperationException.class, () -> addressBook.getPersonList().remove(0));
     }
