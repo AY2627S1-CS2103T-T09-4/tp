@@ -13,29 +13,29 @@ import java.util.Arrays;
 public class StringUtil {
 
     /**
-     * Returns true if the {@code sentence} contains the {@code word}.
-     *   Ignores case, but a full word match is required.
+     * Returns true if any word in the {@code sentence} starts with the {@code prefix}, ignoring case.
      *   <br>examples:<pre>
-     *       containsWordIgnoreCase("ABc def", "abc") == true
-     *       containsWordIgnoreCase("ABc def", "DEF") == true
-     *       containsWordIgnoreCase("ABc def", "AB") == false //not a full word match
+     *       containsWordStartingWithIgnoreCase("ABc def", "abc") == true
+     *       containsWordStartingWithIgnoreCase("ABc def", "a") == true
+     *       containsWordStartingWithIgnoreCase("ABc def", "DE") == true
+     *       containsWordStartingWithIgnoreCase("ABc def", "bc") == false //not at the start of a word
      *       </pre>
      * @param sentence cannot be null
-     * @param word cannot be null, cannot be empty, must be a single word
+     * @param prefix cannot be null, cannot be empty, must be a single word
      */
-    public static boolean containsWordIgnoreCase(String sentence, String word) {
+    public static boolean containsWordStartingWithIgnoreCase(String sentence, String prefix) {
         requireNonNull(sentence);
-        requireNonNull(word);
+        requireNonNull(prefix);
 
-        String preppedWord = word.trim();
-        checkArgument(!preppedWord.isEmpty(), "Word parameter cannot be empty");
-        checkArgument(preppedWord.split("\\s+").length == 1, "Word parameter should be a single word");
+        String preppedPrefix = prefix.trim();
+        checkArgument(!preppedPrefix.isEmpty(), "Prefix parameter cannot be empty");
+        checkArgument(preppedPrefix.split("\\s+").length == 1, "Prefix parameter should be a single word");
 
-        String preppedSentence = sentence;
-        String[] wordsInPreppedSentence = preppedSentence.split("\\s+");
+        String[] wordsInSentence = sentence.split("\\s+");
 
-        return Arrays.stream(wordsInPreppedSentence)
-                .anyMatch(preppedWord::equalsIgnoreCase);
+        // regionMatches with ignoreCase = true acts as a case-insensitive startsWith
+        return Arrays.stream(wordsInSentence)
+                .anyMatch(word -> word.regionMatches(true, 0, preppedPrefix, 0, preppedPrefix.length()));
     }
 
     /**

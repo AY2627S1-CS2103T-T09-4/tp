@@ -57,6 +57,24 @@ public class NameContainsKeywordsPredicateTest {
     }
 
     @Test
+    public void test_nameWordStartsWithKeyword_returnsTrue() {
+        // Single lowercase letter matches the start of the first name
+        NameContainsKeywordsPredicate predicate = new NameContainsKeywordsPredicate(List.of("b"));
+        assertTrue(predicate.test(new PersonBuilder().withName("Bernice Yu").build()));
+
+        // Single letter matches the start of a later name word
+        assertTrue(predicate.test(new PersonBuilder().withName("Alex Bo").build()));
+
+        // Uppercase partial keyword
+        predicate = new NameContainsKeywordsPredicate(List.of("BER"));
+        assertTrue(predicate.test(new PersonBuilder().withName("Bernice Yu").build()));
+
+        // Only one keyword is a matching prefix
+        predicate = new NameContainsKeywordsPredicate(List.of("zz", "yu"));
+        assertTrue(predicate.test(new PersonBuilder().withName("Bernice Yu").build()));
+    }
+
+    @Test
     public void test_nameDoesNotContainKeywords_returnsFalse() {
         // Zero keywords
         NameContainsKeywordsPredicate predicate = new NameContainsKeywordsPredicate(List.of());
@@ -64,6 +82,14 @@ public class NameContainsKeywordsPredicateTest {
 
         // Non-matching keyword
         predicate = new NameContainsKeywordsPredicate(List.of("Carol"));
+        assertFalse(predicate.test(new PersonBuilder().withName("Alice Bob").build()));
+
+        // Keyword appears only inside a name word, not at its start
+        predicate = new NameContainsKeywordsPredicate(List.of("ern", "ce"));
+        assertFalse(predicate.test(new PersonBuilder().withName("Bernice Yu").build()));
+
+        // Keyword is longer than the name word it starts with
+        predicate = new NameContainsKeywordsPredicate(List.of("Bobby"));
         assertFalse(predicate.test(new PersonBuilder().withName("Alice Bob").build()));
 
         // Keywords match phone, email and address, but do not match name
