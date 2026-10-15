@@ -22,6 +22,12 @@ You can run tests in two ways.
 * **Method 2: Using Gradle**
   * Open a console and run the command `gradlew clean test` (Mac/Linux: `./gradlew clean test`)
 
+`HelpWindowDesktopTest` checks the real Desktop adapter's failure handling by starting a child JVM with
+`-Djava.awt.headless=true`. It needs neither a display nor Internet access and does not change AWT settings
+in the shared UI test JVM. Run it with `gradlew test --tests seedu.address.ui.HelpWindowDesktopTest`
+(Mac/Linux: `./gradlew test --tests seedu.address.ui.HelpWindowDesktopTest`) or from an IDE without extra VM options.
+During Gradle coverage runs, the child reuses the existing JaCoCo agent so its hits reach the normal coverage report.
+
 `CommandBoxTest`, `HelpWindowTest`, `MainWindowTest`, `PatientDetailsPanelTest`, `PersonCardTest`, `UiManagerTest`,
 and `MainAppTest` load production JavaFX controls and FXML files.
 They share the toolkit through `JavaFxExtension`, which shuts it down after the test run, rather than after each
