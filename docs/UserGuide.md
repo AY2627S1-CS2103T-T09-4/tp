@@ -114,6 +114,10 @@ Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES
   `A patient named NAME already exists. Add this patient anyway? Type y to confirm. Any other input cancels.`
 * Type `y` and press Enter to add the patient. Surrounding spaces and letter case are ignored. Any other input cancels
   the addition and is not run as a command. Confirmation rechecks that the visit date and time are still available.
+* If 7 or more patients already have a visit on the same day (at any time), the app warns you before adding another,
+  e.g. `There are already 7 patients scheduled on 18/9/2026. Add this patient anyway? Type y to confirm. Any other
+  input cancels.` Type `y` to add the patient anyway. If the name also matches an existing patient, you are asked to
+  confirm the name first and then the busy day.
 * For duplicate detection, names are compared without letter case after surrounding whitespace is removed and repeated
   spaces are collapsed to one space. For example, `John Doe`, `john doe`, and `John   Doe` are treated as the same
   name. The accepted name's spelling, capitalization, and internal spacing are still displayed and saved.

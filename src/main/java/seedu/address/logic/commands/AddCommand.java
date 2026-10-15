@@ -21,6 +21,9 @@ public class AddCommand extends Command {
 
     public static final String COMMAND_WORD = "add";
 
+    /** Number of visits a doctor can comfortably make in one day; adding beyond it requires confirmation. */
+    public static final int MAX_VISITS_PER_DAY = 7;
+
     public static final String MESSAGE_USAGE = COMMAND_WORD + ": Adds a person to the address book. "
             + "Parameters: "
             + PREFIX_NAME + "NAME "
@@ -47,6 +50,9 @@ public class AddCommand extends Command {
     public static final String MESSAGE_CONFIRM_DUPLICATE_NAME =
             "A patient named %1$s already exists. Add this patient anyway? "
                     + "Type y to confirm. Any other input cancels.";
+    public static final String MESSAGE_CONFIRM_FULL_DAY =
+            "There are already %1$d patients scheduled on %2$s. Add this patient anyway? "
+                    + "Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_ADD_CANCELLED = "Addition cancelled.";
     public static final String MESSAGE_NOT_ADDED = "The patient is not added due to: %1$s";
 
@@ -68,12 +74,37 @@ public class AddCommand extends Command {
 
         if (model.hasPersonWithSameName(toAdd)) {
             String prompt = String.format(MESSAGE_CONFIRM_DUPLICATE_NAME, toAdd.getName());
-            CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(
-                    prompt, MESSAGE_ADD_CANCELLED, confirmedModel -> addPerson(confirmedModel));
-            return CommandResult.requestInput(inputRequest);
+            return requestConfirmation(prompt, this::addPersonAfterVisitDayCheck);
+        }
+
+        return addPersonAfterVisitDayCheck(model);
+    }
+
+    /**
+     * Adds the person, first asking for confirmation if the visit day already has
+     * {@value #MAX_VISITS_PER_DAY} or more visits.
+     *
+     * @throws CommandException If a true duplicate or visit-date conflict now exists in the address book.
+     */
+    private CommandResult addPersonAfterVisitDayCheck(Model model) throws CommandException {
+        int visitsOnSameDay = model.countPersonsWithSameVisitDay(toAdd);
+        if (visitsOnSameDay >= MAX_VISITS_PER_DAY) {
+            String prompt = String.format(MESSAGE_CONFIRM_FULL_DAY, visitsOnSameDay,
+                    toAdd.getVisitDate().toDayString());
+            return requestConfirmation(prompt, this::addPerson);
         }
 
         return addPerson(model);
+    }
+
+    /**
+     * Returns a result asking the user to confirm with {@code y} before running {@code confirmedAction}.
+     */
+    private static CommandResult requestConfirmation(String prompt,
+            CommandInputRequest.ConfirmedAction confirmedAction) {
+        CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(
+                prompt, MESSAGE_ADD_CANCELLED, confirmedAction);
+        return CommandResult.requestInput(inputRequest);
     }
 
     /**

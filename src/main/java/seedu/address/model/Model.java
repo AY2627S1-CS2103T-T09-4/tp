@@ -53,6 +53,11 @@ public interface Model {
     boolean hasPersonWithSameVisitDate(Person person);
 
     /**
+     * Returns the number of persons whose visit falls on the same day as {@code person}'s visit.
+     */
+    int countPersonsWithSameVisitDay(Person person);
+
+    /**
      * Deletes the given person.
      * The person must exist in the address book.
      */

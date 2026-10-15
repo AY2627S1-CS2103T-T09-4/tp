@@ -56,6 +56,16 @@ public class UniquePersonList implements Iterable<Person> {
     }
 
     /**
+     * Returns the number of persons in the list whose visit falls on the same day as the given argument's visit.
+     */
+    public int countSameVisitDay(Person toCheck) {
+        requireNonNull(toCheck);
+        return (int) internalList.stream()
+                .filter(person -> person.getVisitDate().isSameDay(toCheck.getVisitDate()))
+                .count();
+    }
+
+    /**
      * Adds a person to the list.
      * The person must not already exist in the list.
      */
