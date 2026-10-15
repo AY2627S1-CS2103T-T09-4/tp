@@ -209,7 +209,7 @@ public class AddCommandIntegrationTest {
 
         CommandResult dayRequestResult = nameRequestResult.getInputRequest().orElseThrow().respond("y", model);
 
-        assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_FULL_DAY, AddCommand.MAX_VISITS_PER_DAY,
+        assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_FULL_DAY, Model.MAX_VISITS_PER_DAY,
                 "Thu, 1 Jan 2026", sameNameOnFullDay.getName()), dayRequestResult.getFeedbackToUser());
         assertFalse(model.getAddressBook().getPersonList().contains(sameNameOnFullDay));
 

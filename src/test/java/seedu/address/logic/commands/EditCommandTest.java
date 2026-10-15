@@ -45,6 +45,8 @@ import seedu.address.testutil.PersonBuilder;
 public class EditCommandTest {
 
     private static final String REPLACEMENT_NOTE = "Review medication";
+    /** A free time slot on 1/1/2026, the day on which all seven typical persons are already visited. */
+    private static final String FULL_DAY_VISIT_DATE = "1/1/2026 1500";
 
     private Model model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
 
@@ -513,6 +515,100 @@ public class EditCommandTest {
     }
 
     @Test
+    public void execute_visitMovedToFullDay_requestsConfirmationWithoutEditing() throws Exception {
+        Index otherDayIndex = addPersonOnOtherDay();
+        Person otherDayPerson = model.getFilteredPersonList().get(otherDayIndex.getZeroBased());
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withVisitDate(FULL_DAY_VISIT_DATE).build();
+
+        CommandResult result = new EditCommand(otherDayIndex, descriptor).execute(model);
+
+        assertEquals("Heads up: you already have 7 visits on Thu, 1 Jan 2026. Schedule Amy Bee on that day anyway? "
+                + "Type y to confirm. Any other input cancels.", result.getFeedbackToUser());
+        assertTrue(result.getInputRequest().isPresent());
+        assertFalse(result.shouldSaveAddressBook());
+        assertTrue(model.getAddressBook().getPersonList().contains(otherDayPerson));
+    }
+
+    @Test
+    public void confirmation_visitMovedToFullDayConfirmed_editsPerson() throws Exception {
+        Index otherDayIndex = addPersonOnOtherDay();
+        Person otherDayPerson = model.getFilteredPersonList().get(otherDayIndex.getZeroBased());
+        Person editedPerson = new PersonBuilder(otherDayPerson).withVisitDate(FULL_DAY_VISIT_DATE).build();
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withVisitDate(FULL_DAY_VISIT_DATE).build();
+        CommandResult requestResult = new EditCommand(otherDayIndex, descriptor).execute(model);
+
+        CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond("y", model);
+
+        assertEquals(String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
+                confirmedResult.getFeedbackToUser());
+        assertTrue(confirmedResult.shouldSaveAddressBook());
+        assertTrue(model.getAddressBook().getPersonList().contains(editedPerson));
+        assertFalse(model.getAddressBook().getPersonList().contains(otherDayPerson));
+    }
+
+    @Test
+    public void confirmation_visitMovedToFullDayNotConfirmed_cancelsEdit() throws Exception {
+        Index otherDayIndex = addPersonOnOtherDay();
+        Person otherDayPerson = model.getFilteredPersonList().get(otherDayIndex.getZeroBased());
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withVisitDate(FULL_DAY_VISIT_DATE).build();
+        CommandResult requestResult = new EditCommand(otherDayIndex, descriptor).execute(model);
+
+        CommandResult cancelledResult = requestResult.getInputRequest().orElseThrow().respond("n", model);
+
+        assertEquals(EditCommand.MESSAGE_EDIT_CANCELLED, cancelledResult.getFeedbackToUser());
+        assertFalse(cancelledResult.shouldSaveAddressBook());
+        assertTrue(model.getAddressBook().getPersonList().contains(otherDayPerson));
+    }
+
+    @Test
+    public void execute_visitMovedToDayBelowLimit_editsWithoutConfirmation() throws Exception {
+        model.deletePerson(model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased()));
+        Index otherDayIndex = addPersonOnOtherDay();
+        Person otherDayPerson = model.getFilteredPersonList().get(otherDayIndex.getZeroBased());
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withVisitDate(FULL_DAY_VISIT_DATE).build();
+
+        CommandResult result = new EditCommand(otherDayIndex, descriptor).execute(model);
+
+        assertTrue(result.getInputRequest().isEmpty());
+        assertFalse(model.getAddressBook().getPersonList().contains(otherDayPerson));
+    }
+
+    @Test
+    public void execute_visitTimeChangedWithinFullDay_editsWithoutConfirmation() throws Exception {
+        // The first person is already one of the seven visits on the full day, so the day's total does not grow
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withVisitDate(FULL_DAY_VISIT_DATE).build();
+
+        CommandResult result = new EditCommand(INDEX_FIRST_PERSON, descriptor).execute(model);
+
+        assertTrue(result.getInputRequest().isEmpty());
+        assertTrue(result.shouldSaveAddressBook());
+    }
+
+    @Test
+    public void confirmation_duplicateNameOnFullDay_requestsBothConfirmations() throws Exception {
+        Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Index otherDayIndex = addPersonOnOtherDay();
+        Person otherDayPerson = model.getFilteredPersonList().get(otherDayIndex.getZeroBased());
+        Person editedPerson = new PersonBuilder(otherDayPerson).withName(firstPerson.getName().fullName)
+                .withVisitDate(FULL_DAY_VISIT_DATE).build();
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withName(firstPerson.getName().fullName)
+                .withVisitDate(FULL_DAY_VISIT_DATE).build();
+        CommandResult nameRequestResult = new EditCommand(otherDayIndex, descriptor).execute(model);
+
+        CommandResult dayRequestResult = nameRequestResult.getInputRequest().orElseThrow().respond("y", model);
+
+        assertEquals(String.format(EditCommand.MESSAGE_CONFIRM_FULL_DAY, Model.MAX_VISITS_PER_DAY,
+                "Thu, 1 Jan 2026", editedPerson.getName()), dayRequestResult.getFeedbackToUser());
+        assertTrue(model.getAddressBook().getPersonList().contains(otherDayPerson));
+
+        CommandResult confirmedResult = dayRequestResult.getInputRequest().orElseThrow().respond("y", model);
+
+        assertEquals(String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
+                confirmedResult.getFeedbackToUser());
+        assertTrue(model.getAddressBook().getPersonList().contains(editedPerson));
+    }
+
+    @Test
     public void execute_noteInvalidDisplayedIndex_preservesState() {
         setExistingNote(INDEX_FIRST_PERSON);
         showPersonAtIndex(model, INDEX_FIRST_PERSON);
@@ -579,6 +675,14 @@ public class EditCommandTest {
         Person personWithNote = new PersonBuilder(original).withNote(VALID_NOTE_AMY).build();
         model.setPerson(original, personWithNote);
         return personWithNote;
+    }
+
+    /**
+     * Adds a person visited on a day other than the typical persons' full day and returns its displayed index.
+     */
+    private Index addPersonOnOtherDay() {
+        model.addPerson(new PersonBuilder().withVisitDate("2/1/2026 0900").build());
+        return Index.fromOneBased(model.getFilteredPersonList().size());
     }
 
     /**

@@ -65,6 +65,9 @@ public class EditCommand extends Command {
     public static final String MESSAGE_CONFIRM_DUPLICATE_NAME =
             "A patient named %1$s already exists. Apply this edit anyway? "
                     + "Type y to confirm. Any other input cancels.";
+    public static final String MESSAGE_CONFIRM_FULL_DAY =
+            "Heads up: you already have %1$d visits on %2$s. Schedule %3$s on that day anyway? "
+                    + "Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_EDIT_CANCELLED = "Edit cancelled.";
     public static final String MESSAGE_PERSON_NO_LONGER_EXISTS =
             "The person selected for editing no longer exists.";
@@ -107,13 +110,46 @@ public class EditCommand extends Command {
         boolean isNormalizedNameChanged = !personToEdit.hasSameName(editedPerson);
         if (isNormalizedNameChanged && model.hasPersonWithSameName(editedPerson)) {
             String prompt = String.format(MESSAGE_CONFIRM_DUPLICATE_NAME, editedPerson.getName());
-            CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(
-                    prompt, MESSAGE_EDIT_CANCELLED,
+            return requestConfirmation(prompt,
+                    confirmedModel -> editPersonAfterVisitDayCheck(confirmedModel, personToEdit, editedPerson));
+        }
+
+        return editPersonAfterVisitDayCheck(model, personToEdit, editedPerson);
+    }
+
+    /**
+     * Replaces the person, first asking for confirmation if the visit moves to another day that already has
+     * {@value Model#MAX_VISITS_PER_DAY} or more visits. Edits that keep the visit on the same day never ask,
+     * since they do not add to that day's visits.
+     *
+     * @throws CommandException If the captured person no longer exists or the edit would create a conflict.
+     */
+    private CommandResult editPersonAfterVisitDayCheck(Model model, Person personToEdit, Person editedPerson)
+            throws CommandException {
+        boolean isVisitDayChanged = !personToEdit.getVisitDate().isSameDay(editedPerson.getVisitDate());
+        if (!isVisitDayChanged) {
+            return editPerson(model, personToEdit, editedPerson);
+        }
+
+        int visitsOnNewDay = model.countPersonsWithSameVisitDay(editedPerson);
+        if (visitsOnNewDay >= Model.MAX_VISITS_PER_DAY) {
+            String prompt = String.format(MESSAGE_CONFIRM_FULL_DAY, visitsOnNewDay,
+                    editedPerson.getVisitDate().toDayString(), editedPerson.getName());
+            return requestConfirmation(prompt,
                     confirmedModel -> editPerson(confirmedModel, personToEdit, editedPerson));
-            return CommandResult.requestInput(inputRequest);
         }
 
         return editPerson(model, personToEdit, editedPerson);
+    }
+
+    /**
+     * Returns a result asking the user to confirm with {@code y} before running {@code confirmedAction}.
+     */
+    private static CommandResult requestConfirmation(String prompt,
+            CommandInputRequest.ConfirmedAction confirmedAction) {
+        CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(
+                prompt, MESSAGE_EDIT_CANCELLED, confirmedAction);
+        return CommandResult.requestInput(inputRequest);
     }
 
     /**
