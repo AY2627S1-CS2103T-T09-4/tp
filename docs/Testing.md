@@ -22,8 +22,8 @@ You can run tests in two ways.
 * **Method 2: Using Gradle**
   * Open a console and run the command `gradlew clean test` (Mac/Linux: `./gradlew clean test`)
 
-`CommandBoxTest`, `HelpWindowTest`, `MainWindowTest`, `PatientDetailsPanelTest`, `UiManagerTest`, and `MainAppTest`
-load production JavaFX controls and FXML files.
+`CommandBoxTest`, `HelpWindowTest`, `MainWindowTest`, `PatientDetailsPanelTest`, `PersonCardTest`, `UiManagerTest`,
+and `MainAppTest` load production JavaFX controls and FXML files.
 They share the toolkit through `JavaFxExtension`, which shuts it down after the test run, rather than after each
 test class. Browser actions use an injected callback; automated tests do not open a real browser or need Internet
 access. Browser-wiring tests activate the help link and check the exact requested guide URL.

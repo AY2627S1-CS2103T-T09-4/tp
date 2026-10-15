@@ -2,25 +2,21 @@ package seedu.address.ui;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static seedu.address.ui.JavaFxTestUtil.runOnFxThread;
-import static seedu.address.ui.JavaFxTestUtil.startJavaFx;
+import static seedu.address.testutil.JavaFxExtension.runOnFxThread;
 
 import java.time.LocalDate;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import seedu.address.model.person.Person;
+import seedu.address.testutil.JavaFxExtension;
 import seedu.address.testutil.PersonBuilder;
 
+@ExtendWith(JavaFxExtension.class)
 public class PersonCardTest {
 
     private static final LocalDate CURRENT_DATE = LocalDate.of(2026, 10, 14);
-
-    @BeforeAll
-    public static void setUpJavaFx() throws InterruptedException {
-        startJavaFx();
-    }
 
     @Test
     public void publicConstructor_pastVisit_addsPastVisitStyle() {
