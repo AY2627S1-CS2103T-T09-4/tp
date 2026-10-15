@@ -3,22 +3,27 @@ package seedu.address.logic.commands;
 import static java.util.Objects.requireNonNull;
 
 import seedu.address.commons.util.ToStringBuilder;
-import seedu.address.logic.Messages;
 import seedu.address.model.Model;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 
 /**
- * Finds and lists all persons in the address book whose name contains any of the argument keywords.
+ * Finds and lists all persons in the address book with a name word that starts with any of the argument keywords.
  * Keyword matching is case insensitive.
  */
 public class FindCommand extends Command {
 
     public static final String COMMAND_WORD = "find";
 
-    public static final String MESSAGE_USAGE = COMMAND_WORD + ": Finds all persons whose names contain any of "
-            + "the specified keywords (case-insensitive) and displays them as a list with index numbers.\n"
+    public static final String MESSAGE_USAGE = COMMAND_WORD + ": Finds all patients with a word in their name that "
+            + "starts with any of the specified keywords (case-insensitive) "
+            + "and displays them as a list with index numbers.\n"
             + "Parameters: KEYWORD [MORE_KEYWORDS]...\n"
-            + "Example: " + COMMAND_WORD + " alice bob charlie";
+            + "Example: " + COMMAND_WORD + " b ali";
+
+    public static final String MESSAGE_PATIENTS_FOUND = "%1$d patients found.";
+    public static final String MESSAGE_ONE_PATIENT_FOUND = "1 patient found.";
+    public static final String MESSAGE_NO_PATIENTS_FOUND = "No patients found. "
+            + "find matches the start of any word in a name, e.g. \"find b\" matches \"Bernice Yu\".";
 
     private final NameContainsKeywordsPredicate predicate;
 
@@ -30,8 +35,19 @@ public class FindCommand extends Command {
     public CommandResult execute(Model model) {
         requireNonNull(model);
         model.updateFilteredPersonList(predicate);
-        return new CommandResult(
-                String.format(Messages.MESSAGE_PERSONS_LISTED_OVERVIEW, model.getFilteredPersonList().size()));
+        return new CommandResult(formatResultMessage(model.getFilteredPersonList().size()));
+    }
+
+    /**
+     * Returns the feedback for {@code patientCount} matches, using the singular for one match
+     * and a search hint for none.
+     */
+    private static String formatResultMessage(int patientCount) {
+        return switch (patientCount) {
+            case 0 -> MESSAGE_NO_PATIENTS_FOUND;
+            case 1 -> MESSAGE_ONE_PATIENT_FOUND;
+            default -> String.format(MESSAGE_PATIENTS_FOUND, patientCount);
+        };
     }
 
     @Override

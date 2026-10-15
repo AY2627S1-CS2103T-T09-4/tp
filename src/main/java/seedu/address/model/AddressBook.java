@@ -73,6 +73,14 @@ public class AddressBook implements ReadOnlyAddressBook {
     }
 
     /**
+     * Returns the number of persons whose visit falls on the same day as {@code person}'s visit.
+     */
+    public int countPersonsWithSameVisitDay(Person person) {
+        requireNonNull(person);
+        return persons.countSameVisitDay(person);
+    }
+
+    /**
      * Adds a person to the address book.
      * The person and visit date must not already exist in the address book.
      */

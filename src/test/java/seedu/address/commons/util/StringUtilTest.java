@@ -46,41 +46,44 @@ public class StringUtilTest {
     }
 
 
-    //---------------- Tests for containsWordIgnoreCase --------------------------------------
+    //---------------- Tests for containsWordStartingWithIgnoreCase --------------------------------------
 
     /*
-     * Invalid equivalence partitions for word: null, empty, multiple words
+     * Invalid equivalence partitions for prefix: null, empty, multiple words
      * Invalid equivalence partitions for sentence: null
      * The four test cases below test one invalid input at a time.
      */
 
     @Test
-    public void containsWordIgnoreCase_nullWord_throwsNullPointerException() {
-        assertThrows(NullPointerException.class, () -> StringUtil.containsWordIgnoreCase("typical sentence", null));
+    public void containsWordStartingWithIgnoreCase_nullPrefix_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, ()
+            -> StringUtil.containsWordStartingWithIgnoreCase("typical sentence", null));
     }
 
     @Test
-    public void containsWordIgnoreCase_emptyWord_throwsIllegalArgumentException() {
-        assertThrows(IllegalArgumentException.class, "Word parameter cannot be empty", ()
-            -> StringUtil.containsWordIgnoreCase("typical sentence", "  "));
+    public void containsWordStartingWithIgnoreCase_emptyPrefix_throwsIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, "Prefix parameter cannot be empty", ()
+            -> StringUtil.containsWordStartingWithIgnoreCase("typical sentence", "  "));
     }
 
     @Test
-    public void containsWordIgnoreCase_multipleWords_throwsIllegalArgumentException() {
-        assertThrows(IllegalArgumentException.class, "Word parameter should be a single word", ()
-            -> StringUtil.containsWordIgnoreCase("typical sentence", "aaa BBB"));
+    public void containsWordStartingWithIgnoreCase_multipleWords_throwsIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, "Prefix parameter should be a single word", ()
+            -> StringUtil.containsWordStartingWithIgnoreCase("typical sentence", "aaa BBB"));
     }
 
     @Test
-    public void containsWordIgnoreCase_nullSentence_throwsNullPointerException() {
-        assertThrows(NullPointerException.class, () -> StringUtil.containsWordIgnoreCase(null, "abc"));
+    public void containsWordStartingWithIgnoreCase_nullSentence_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> StringUtil.containsWordStartingWithIgnoreCase(null, "abc"));
     }
 
     /*
-     * Valid equivalence partitions for word:
-     *   - any word
-     *   - word containing symbols/numbers
-     *   - word with leading/trailing spaces
+     * Valid equivalence partitions for prefix:
+     *   - single character
+     *   - part of a word
+     *   - whole word
+     *   - prefix containing symbols/numbers
+     *   - prefix with leading/trailing spaces
      *
      * Valid equivalence partitions for sentence:
      *   - empty string
@@ -89,38 +92,38 @@ public class StringUtilTest {
      *   - sentence with extra spaces
      *
      * Possible scenarios returning true:
-     *   - matches first word in sentence
-     *   - last word in sentence
-     *   - middle word in sentence
-     *   - matches multiple words
+     *   - prefix starts the first, middle or last word in sentence
+     *   - prefix starts multiple words
      *
      * Possible scenarios returning false:
-     *   - query word matches part of a sentence word
-     *   - sentence word matches part of the query word
+     *   - prefix appears only in the middle or at the end of a word
+     *   - prefix is longer than every word it starts
      *
      * The test method below tries to verify all above with a reasonably low number of test cases.
      */
 
     @Test
-    public void containsWordIgnoreCase_validInputs_correctResult() {
+    public void containsWordStartingWithIgnoreCase_validInputs_correctResult() {
 
         // Empty sentence
-        assertFalse(StringUtil.containsWordIgnoreCase("", "abc")); // Boundary case
-        assertFalse(StringUtil.containsWordIgnoreCase("    ", "123"));
+        assertFalse(StringUtil.containsWordStartingWithIgnoreCase("", "abc")); // Boundary case
+        assertFalse(StringUtil.containsWordStartingWithIgnoreCase("    ", "123"));
 
-        // Matches a partial word only
-        assertFalse(StringUtil.containsWordIgnoreCase("aaa bbb ccc", "bb")); // Sentence word bigger than query word
-        assertFalse(StringUtil.containsWordIgnoreCase("aaa bbb ccc", "bbbb")); // Query word bigger than sentence word
+        // Prefix does not start any word
+        assertFalse(StringUtil.containsWordStartingWithIgnoreCase("abc def", "bc")); // Middle of a word
+        assertFalse(StringUtil.containsWordStartingWithIgnoreCase("abc def", "ef")); // End of a word
+        assertFalse(StringUtil.containsWordStartingWithIgnoreCase("abc def", "abcd")); // Prefix longer than word
 
-        // Matches word in the sentence, different upper/lower case letters
-        assertTrue(StringUtil.containsWordIgnoreCase("aaa bBb ccc", "Bbb")); // First word (boundary case)
-        assertTrue(StringUtil.containsWordIgnoreCase("aaa bBb ccc@1", "CCc@1")); // Last word (boundary case)
-        assertTrue(StringUtil.containsWordIgnoreCase("  AAA   bBb   ccc  ", "aaa")); // Sentence has extra spaces
-        assertTrue(StringUtil.containsWordIgnoreCase("Aaa", "aaa")); // Only one word in sentence (boundary case)
-        assertTrue(StringUtil.containsWordIgnoreCase("aaa bbb ccc", "  ccc  ")); // Leading/trailing spaces
+        // Prefix starts a word in the sentence, different upper/lower case letters
+        assertTrue(StringUtil.containsWordStartingWithIgnoreCase("aaa bBb ccc", "A")); // Single character
+        assertTrue(StringUtil.containsWordStartingWithIgnoreCase("aaa bBb ccc", "Bb")); // Middle word, partial
+        assertTrue(StringUtil.containsWordStartingWithIgnoreCase("aaa bBb ccc@1", "CCc@1")); // Last word, whole
+        assertTrue(StringUtil.containsWordStartingWithIgnoreCase("  AAA   bBb   ccc  ", "aa")); // Extra spaces
+        assertTrue(StringUtil.containsWordStartingWithIgnoreCase("Aaa", "aaa")); // Only one word (boundary case)
+        assertTrue(StringUtil.containsWordStartingWithIgnoreCase("aaa bbb ccc", "  cc  ")); // Leading/trailing spaces
 
-        // Matches multiple words in sentence
-        assertTrue(StringUtil.containsWordIgnoreCase("AAA bBb ccc  bbb", "bbB"));
+        // Prefix starts multiple words in sentence
+        assertTrue(StringUtil.containsWordStartingWithIgnoreCase("AAA bBb ccc  bbb", "b"));
     }
 
     //---------------- Tests for getDetails --------------------------------------

@@ -60,8 +60,12 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 * Items followed by `...` can appear zero or more times.<br>
   For example, `[t/TAG]... ` may be omitted, or written as `t/friend` or `t/friend t/family`.
 
-* Parameters can be in any order.<br>
+* Prefixed fields can be in any order after any required positional arguments.<br>
   For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
+
+* Positional arguments must follow the command's documented order.<br>
+  For example, `edit INDEX ...` starts with the index, and `next INDEX DATETIME` requires the index before the date
+  and time.
 
 * Extraneous parameters for commands that take no parameters, such as `help`, `list`, `exit`, and `clear`, are ignored.<br>
   For example, `help 123` is interpreted as `help`.
@@ -112,6 +116,10 @@ Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES
   `A patient named NAME already exists. Add this patient anyway? Type y to confirm. Any other input cancels.`
 * Type `y` and press Enter to add the patient. Surrounding spaces and letter case are ignored. Any other input cancels
   the addition and is not run as a command. Confirmation rechecks that the visit date and time are still available.
+* If 7 or more patients already have a visit on the same day (at any time), the app warns you before adding another,
+  e.g. `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Add Jane Tan anyway? Type y to confirm. Any other
+  input cancels.` Type `y` to add the patient anyway. If the name also matches an existing patient, you are asked to
+  confirm the name first and then the busy day.
 * For duplicate detection, names are compared without letter case after surrounding whitespace is removed and repeated
   spaces are collapsed to one space. For example, `John Doe`, `john doe`, and `John   Doe` are treated as the same
   name. The accepted name's spelling, capitalization, and internal spacing are still displayed and saved.
@@ -212,6 +220,7 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [not
 * Prefixes can appear in any order. Repeated single-valued prefixes, including `note/`, are rejected,
   even when their values are identical or empty. Multiple `t/TAG` prefixes are allowed.
 * Editing replaces the stored visit date and time; it does not append a visit-history entry.
+  Use `edit ... vd/` to correct an appointment, or [next](#scheduling-the-next-visit-next) to schedule the following visit.
 * Existing values will be updated to the input values.
 * When editing tags, all of the patient's existing tags are removed; adding tags is not cumulative.
 * To remove all of a patient's tags, enter `t/` without a tag after it.
@@ -221,6 +230,10 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [not
 * Type `y` and press Enter to apply the edit. Surrounding spaces and letter case are ignored. Any other input cancels
   the edit and is not run as a command. Editing other details of a patient whose name is already shared does not ask
   for confirmation again. A confirmed name-duplicate edit rechecks that its requested visit slot is still available.
+* When an edit moves a patient's visit to a different day that already has 7 or more visits, the app asks, e.g.
+  `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Schedule Jane Tan on that day anyway? Type y to confirm.
+  Any other input cancels.` Changing only the time within the same day, or editing other fields, does not ask. If the
+  name also matches another patient, you are asked to confirm the name first and then the busy day.
 * The normalized-name comparison and duplicate-detection limitations described under `add` also apply to edits.
 * The visit-time conflict limitations described under `add` also apply to edits.
 
@@ -235,9 +248,6 @@ Examples:
 * `edit 1 vd/8/10/2026 1000 e/new@example.com note/Review medication` Updates the visit, email, and notes.
 * `edit 2 n/Betsy Crower t/` Updates the name and clears all existing tags, keeping the visit unchanged.
 
-<<<<<<< Updated upstream
-### Locating persons by name: `find`
-=======
 ### Scheduling the next visit: `next`
 
 Schedules a patient's following appointment. It replaces the stored visit date and time without recording a
@@ -278,19 +288,23 @@ Examples (choose a future date and time that no patient already uses):
 * `find Betsy`, then `next 1 2/11/2026 1430`, schedules the first matching patient and restores the full list.
 
 ### Locating patients by name: `find`
->>>>>>> Stashed changes
 
-Finds persons whose names contain any of the given keywords.
+Finds patients with a word in their name that starts with any of the given keywords.
 
 Format: `find KEYWORD [MORE_KEYWORDS]`
 
 * The search is case-insensitive; for example, `hans` matches `Hans`.
+* A keyword matches the start of any word in the name, whether first name or surname. For example, `b` matches
+  `Bernice Yu` and `Roy Balakrishnan`, and `Han` matches `Hans`.
+* A keyword in the middle of a word does not match; for example, `ans` does not match `Hans`.
 * Keyword order does not matter; for example, `Hans Bo` matches `Bo Hans`.
 * The search considers only names.
-* Only full words match; for example, `Han` does not match `Hans`.
-* Persons matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
+* Patients matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
+* The app shows how many patients were found, e.g. `3 patients found.` If none match, it shows `No patients found.`
+  with a reminder of how keywords are matched.
 
 Examples:
+* `find b` returns `Bernice Yu` and `Roy Balakrishnan`
 * `find John` returns `john` and `John Doe`
 * `find alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
@@ -390,6 +404,7 @@ Action     | Format, Examples
 **Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
+**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (use an available future appointment)
 **Sort**   | `sort date`
 **View**   | `view INDEX`<br> e.g., `view 1`
 **Help**   | `help`

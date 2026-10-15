@@ -10,6 +10,7 @@ import static seedu.address.logic.commands.CommandTestUtil.VALID_TAG_HUSBAND;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_VISIT_DATE_BOB;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.ALICE;
+import static seedu.address.testutil.TypicalPersons.BENSON;
 import static seedu.address.testutil.TypicalPersons.BOB;
 
 import java.util.List;
@@ -70,6 +71,19 @@ public class UniquePersonListTest {
         assertTrue(uniquePersonList.containsSameVisitDate(personWithSameVisitDate));
         assertFalse(uniquePersonList.containsSameVisitDate(personWithDifferentVisitDate));
         assertThrows(NullPointerException.class, () -> uniquePersonList.containsSameVisitDate(null));
+    }
+
+    @Test
+    public void countSameVisitDay() {
+        // ALICE and BENSON visit on the same day at different times
+        uniquePersonList.add(ALICE);
+        uniquePersonList.add(BENSON);
+        Person personLaterOnSameDay = new PersonBuilder().withVisitDate("1/1/2026 1500").build();
+        Person personOnDifferentDay = new PersonBuilder().withVisitDate(VALID_VISIT_DATE_BOB).build();
+
+        assertEquals(2, uniquePersonList.countSameVisitDay(personLaterOnSameDay));
+        assertEquals(0, uniquePersonList.countSameVisitDay(personOnDifferentDay));
+        assertThrows(NullPointerException.class, () -> uniquePersonList.countSameVisitDay(null));
     }
 
     @Test
