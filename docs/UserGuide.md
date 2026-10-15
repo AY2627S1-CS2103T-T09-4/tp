@@ -297,6 +297,8 @@ Format: `find KEYWORD [MORE_KEYWORDS]`
 * Keyword order does not matter; for example, `Hans Bo` matches `Bo Hans`.
 * The search considers only names.
 * Patients matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
+* The app shows how many patients were found, e.g. `3 patients found.` If none match, it shows `No patients found.`
+  with a reminder of how keywords are matched.
 
 Examples:
 * `find b` returns `Bernice Yu` and `Roy Balakrishnan`
