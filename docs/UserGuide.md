@@ -246,8 +246,10 @@ Format: `edit INDEX [n/NAME] [dob/DATE] [p/PHONE] [ec/NAME, PHONE_NUMBER] [a/ADD
   list. The index **must be a positive integer** 1, 2, 3, ...
 * All editable fields are optional, but at least one must be provided.
 * Use `dob/DATE` to add or replace the date of birth, e.g. `edit 1 n/John Doe dob/15/6/1990`.
-  The same date rules as `add` apply. Omitting `dob/` preserves the current value. An empty `dob/` is
-  rejected; the date of birth cannot be cleared through a command.
+  The same date rules as `add` apply to nonempty values. Omitting `dob/` preserves the current value.
+  Use an empty `dob/`, e.g. `edit 1 dob/`, to clear the date of birth. Whitespace-only values also clear it.
+  Clearing an already empty date of birth is allowed. Run `view INDEX` again to hide the date of birth row.
+  Repeated `dob/` prefixes are rejected, including when one or both values are empty.
 * Use `ec/NAME, PHONE_NUMBER` to add or replace the emergency contact, e.g. `edit 1 ec/Mary Tan, 98765432`.
   The same validation rules as `add` apply. Omitting `ec/` preserves the existing contact; an empty `ec/` is
   rejected. Emergency contacts cannot be cleared through a command.

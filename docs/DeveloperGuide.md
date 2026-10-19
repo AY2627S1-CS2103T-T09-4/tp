@@ -922,8 +922,12 @@ Use a disposable data file and available visit slots.
 1. Run `edit 1 n/Dob Patient dob/20/7/1985`, then `view 1`; expect the replacement date and recalculated age.
 1. Edit another field and run `next 1 1/1/2099 1000`; expect the date of birth to remain unchanged.
 1. Restart the application and run `view 1`; expect the saved date of birth to remain.
-1. Try `edit 1 dob/`, `edit 1 dob/31/2/2000`, a future date, and repeated `dob/` prefixes.
-   Expect errors and unchanged data. Repeat these invalid cases using `add`; no patient should be added.
+1. Run `edit 1 dob/`, then `view 1`; expect the date of birth row to disappear and all other details to remain.
+   Restart and view the patient; expect the row to stay hidden. Whitespace-only `dob/` also clears the field,
+   and clearing an already empty date of birth succeeds. Set a new DOB to restore the row.
+1. Try `edit 1 dob/31/2/2000`, a future date, and repeated `dob/` prefixes (including `edit 1 dob/ dob/`).
+   Expect errors and unchanged data. Repeat these invalid cases using `add`, and try an empty DOB with `add`;
+   no patient should be added.
 1. Add another patient without `dob/` and view it; expect no date of birth row or stale text. View the first
    patient again; expect the row to reappear. Set the second patient's DOB using `edit INDEX dob/1/1/2000`.
 1. Load an older valid data file without `dateOfBirth`; expect the patients to load with the DOB row hidden.

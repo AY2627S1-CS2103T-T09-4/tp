@@ -90,18 +90,51 @@ public class DateOfBirthCommandIntegrationTest {
     }
 
     @Test
+    public void execute_emptyDateOfBirth_clearsSavedDateAndPreservesOtherFields() throws Exception {
+        logic.execute(ADD_PATIENT);
+        Person cleared = new PersonBuilder().build();
+        for (String emptyValue : List.of("", "   ", "  \t  ")) {
+            logic.execute("edit 1 dob/15/6/1990");
+            logic.execute("edit 1 dob/" + emptyValue);
+            assertStoredPatient(cleared);
+            logic.execute("view 1");
+            assertTrue(model.getFilteredPersonList().getFirst().getDateOfBirth().isEmpty());
+        }
+        logic.execute("edit 1 dob/");
+        assertStoredPatient(cleared);
+        logic.execute("edit 1 dob/1/1/2000");
+        assertStoredPatient(new PersonBuilder().withDateOfBirth("1/1/2000").build());
+    }
+
+    @Test
+    public void execute_clearDateOfBirthWithOtherFields_updatesBothFields() throws Exception {
+        logic.execute(ADD_PATIENT);
+        logic.execute("edit 1 dob/ note/Review medication");
+        assertStoredPatient(new PersonBuilder().withNote("Review medication").build());
+        logic.execute("edit 1 dob/15/6/1990");
+        logic.execute("edit 1 note/Keep this note dob/");
+        assertStoredPatient(new PersonBuilder().withNote("Keep this note").build());
+    }
+
+    @Test
     public void execute_invalidOrRepeatedDateOfBirth_leavesPatientAndFileUnchanged() throws Exception {
         logic.execute(ADD_PATIENT);
         String originalJson = Files.readString(storage.getAddressBookFilePath());
         Person originalPerson = model.getFilteredPersonList().getFirst();
-        for (String date : List.of("", "31/2/2000", "1/1/9999", "1990-06-15")) {
+        for (String date : List.of("31/2/2000", "1/1/9999", "1990-06-15")) {
             assertThrows(ParseException.class, DateOfBirth.MESSAGE_CONSTRAINTS, () ->
                     logic.execute("edit 1 dob/" + date));
             assertThrows(ParseException.class,
                     String.format(AddCommand.MESSAGE_NOT_ADDED, DateOfBirth.MESSAGE_CONSTRAINTS), () ->
                     logic.execute(ADD_PATIENT.replace("dob/15/6/1990", "dob/" + date)));
         }
+        assertThrows(ParseException.class,
+                String.format(AddCommand.MESSAGE_NOT_ADDED, DateOfBirth.MESSAGE_CONSTRAINTS), () ->
+                logic.execute(ADD_PATIENT.replace("dob/15/6/1990", "dob/")));
         String duplicateMessage = Messages.getErrorMessageForDuplicatePrefixes(PREFIX_DATE_OF_BIRTH);
+        for (String repeated : List.of("dob/ dob/", "dob/ dob/15/6/1990", "dob/15/6/1990 dob/")) {
+            assertThrows(ParseException.class, duplicateMessage, () -> logic.execute("edit 1 " + repeated));
+        }
         assertThrows(ParseException.class, duplicateMessage, () ->
                 logic.execute("edit 1 dob/15/6/1990 dob/15/6/1990"));
         assertThrows(ParseException.class, String.format(AddCommand.MESSAGE_NOT_ADDED, duplicateMessage), () ->

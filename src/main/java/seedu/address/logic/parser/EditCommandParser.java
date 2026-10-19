@@ -21,6 +21,7 @@ import seedu.address.commons.core.index.Index;
 import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.EditCommand.EditPersonDescriptor;
 import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.Note;
 import seedu.address.model.tag.Tag;
 
@@ -73,8 +74,9 @@ public class EditCommandParser implements Parser<EditCommand> {
             editPersonDescriptor.setName(ParserUtil.parseName(argMultimap.getValue(PREFIX_NAME).get()));
         }
         if (argMultimap.getValue(PREFIX_DATE_OF_BIRTH).isPresent()) {
-            editPersonDescriptor.setDateOfBirth(ParserUtil.parseDateOfBirth(
-                    argMultimap.getValue(PREFIX_DATE_OF_BIRTH).get()));
+            String dateOfBirth = argMultimap.getValue(PREFIX_DATE_OF_BIRTH).get().trim();
+            editPersonDescriptor.setDateOfBirth(dateOfBirth.isEmpty()
+                    ? new DateOfBirth("") : ParserUtil.parseDateOfBirth(dateOfBirth));
         }
         if (argMultimap.getValue(PREFIX_PHONE).isPresent()) {
             editPersonDescriptor.setPhone(ParserUtil.parsePhone(argMultimap.getValue(PREFIX_PHONE).get()));
