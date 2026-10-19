@@ -253,8 +253,9 @@ Examples:
 
 ### Scheduling the next visit: `next`
 
-Schedules a patient's following appointment. It replaces the stored visit date and time without recording a
-completed visit or visit history. Use `edit ... vd/` to correct an existing appointment.
+Schedules a patient's following appointment and retains the current visit date and time in their visit record.
+Use `next` after handling the current visit and planning another. Retained dates do not verify attendance or
+completion. Use `edit ... vd/` to correct or reschedule an existing appointment without adding a previous date.
 
 Format: `next INDEX DATETIME`
 
@@ -262,13 +263,17 @@ Format: `next INDEX DATETIME`
   `view` keeps that list and its indices unchanged.
 * Enter `DATETIME` as `d/M/yyyy HHmm`, with a four-digit 24-hour time. Spaces or tabs separate the arguments;
   repeated and outer whitespace are accepted. Do not use `vd/`, quotation marks, or extra arguments.
-* The appointment must be strictly after your computer's current local time at execution; the current minute's
-  start is rejected. It may be earlier than the existing appointment, which need not be past.
-* The appointment must differ from the patient's existing one and every other patient's appointment, including
-  hidden patients. Leading-zero dates compare equally: `1/11/2026 0930` and `01/11/2026 0930` are the same time.
+* The current visit must be at or before your computer's current local time at execution. If it is still in the
+  future, use `edit ... vd/` to reschedule it.
+* The requested appointment must be strictly after that execution time; the current minute's start is rejected.
+* The requested appointment must differ from every other patient's current and previous visit dates and times,
+  including hidden patients. Leading-zero dates compare equally: `1/11/2026 0930` and `01/11/2026 0930` are the same time.
 * Conflict detection covers identical start times, not visit duration, travel time, or partial overlaps.
   The [visit-time conflict limitations under add](#adding-a-patient-add) also apply.
-* Only the visit date and time change; all other details, including empty optional fields, are preserved.
+* Success appends the old current date and time to the previous dates, then sets the new current date and time.
+  All other details, including empty optional fields, are preserved. Previous dates are saved in order in the
+  JSON data file but are not yet shown in patient details.
+* If no further visit is planned, leave the current date and time unchanged, even after it passes.
 * Success shows `Next visit scheduled for patient NAME: DATETIME`, saves the record, and restores the full list in
   stored order, clearing the filter and sort. Check the new indices; run `view` again to refresh the details panel.
 * Validation errors preserve data and the displayed list. A save failure reports a storage error; the in-memory
@@ -278,14 +283,16 @@ Common errors:
 
 | Input problem | Feedback |
 | --- | --- |
-| Time at or before now | `The next visit must be in the future.` |
+| Current visit still in the future | `Patient NAME has a current visit at DATETIME that is still in the future. Use edit to reschedule it.` |
+| Time at or before now | `The next visit must be later than the current time (DATETIME). Choose a later date and time.` |
 | Unchanged appointment | `Patient NAME already has an appointment at DATETIME.` |
-| Another patient's appointment | `Patient NAME already has an appointment at DATETIME. Choose a different date and time.` |
+| Another patient's current or previous visit | `Patient NAME already has a current or previous visit at DATETIME. Choose a different date and time.` |
 
 Bare `next` shows usage. Missing or extra arguments, `vd/` syntax, and incorrect index syntax show a reason and usage.
 Invalid dates show the required format; an index outside the displayed list shows the existing invalid-index error.
+The current time in the error uses `d/M/yyyy HHmm`, without seconds; validation still uses the full execution time.
 
-Examples (choose a future date and time that no patient already uses):
+Examples (the selected patient's current visit must have arrived or passed; choose an unused future datetime):
 
 * `next 1 1/11/2026 0930` schedules the first displayed patient's next appointment for 1 November 2026 at 09:30.
 * `find Betsy`, then `next 1 2/11/2026 1430`, schedules the first matching patient and restores the full list.
@@ -412,7 +419,7 @@ Action     | Format, Examples
 **Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
-**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (use an available future appointment)
+q**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (current visit must have arrived or passed; use an unused future datetime)
 **Sort**   | `sort date`
 **View**   | `view INDEX`<br> e.g., `view 1`
 **Help**   | `help`
