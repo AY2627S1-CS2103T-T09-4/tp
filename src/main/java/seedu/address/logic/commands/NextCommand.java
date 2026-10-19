@@ -8,6 +8,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.ToStringBuilder;
@@ -32,7 +33,7 @@ public class NextCommand extends Command {
     public static final String MESSAGE_UNCHANGED_VISIT_DATE = "Patient %1$s already has an appointment at %2$s.";
     public static final String MESSAGE_NON_FUTURE_VISIT_DATE = "The next visit must be in the future.";
     public static final String MESSAGE_DUPLICATE_VISIT_DATE =
-            "Patient %1$s already has an appointment at %2$s and is shown in the patient list. "
+            "Patient %1$s already has an appointment at %2$s and is shown in the patient details panel. "
                     + "Choose a different date and time.";
 
     private final Index index;
@@ -93,12 +94,13 @@ public class NextCommand extends Command {
             throw new CommandException(MESSAGE_NON_FUTURE_VISIT_DATE);
         }
 
-        for (Person person : model.getAddressBook().getPersonList()) {
-            if (!person.equals(personToUpdate) && visitDate.equals(person.getVisitDate())) {
-                model.updateFilteredPersonList(
-                        existingPerson -> visitDate.equals(existingPerson.getVisitDate()));
-                throw new CommandException(String.format(MESSAGE_DUPLICATE_VISIT_DATE, person.getName(), visitDate));
-            }
+        Optional<Person> visitDateDuplicate =
+                DuplicatePersonFinder.findVisitDateDuplicate(model.getAddressBook(), visitDate);
+        if (visitDateDuplicate.isPresent()) {
+            Person conflictingPerson = visitDateDuplicate.get();
+            throw new CommandException(
+                    String.format(MESSAGE_DUPLICATE_VISIT_DATE, conflictingPerson.getName(), visitDate),
+                    conflictingPerson);
         }
     }
 

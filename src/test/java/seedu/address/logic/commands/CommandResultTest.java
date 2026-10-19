@@ -95,6 +95,19 @@ public class CommandResultTest {
     }
 
     @Test
+    public void requestInput_validRequestAndPerson_returnsNonSavingResultWithBoth() {
+        CommandInputRequest inputRequest = new CommandInputRequest(
+                "Enter value", (input, model) -> CommandResult.withoutSaving(input));
+
+        CommandResult result = CommandResult.requestInput(inputRequest, ALICE);
+
+        assertEquals("Enter value", result.getFeedbackToUser());
+        assertFalse(result.shouldSaveAddressBook());
+        assertEquals(inputRequest, result.getInputRequest().orElseThrow());
+        assertEquals(ALICE, result.getPersonToView().orElseThrow());
+    }
+
+    @Test
     public void withoutSaving_validFeedback_returnsNonSavingResultWithoutRequest() {
         CommandResult result = CommandResult.withoutSaving("feedback");
 

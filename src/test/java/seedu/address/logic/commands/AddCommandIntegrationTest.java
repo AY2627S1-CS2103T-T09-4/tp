@@ -63,11 +63,14 @@ public class AddCommandIntegrationTest {
     @Test
     public void execute_duplicatePerson_throwsCommandException() {
         Person personInList = model.getAddressBook().getPersonList().get(0);
+        List<Person> displayedPersons = List.copyOf(model.getFilteredPersonList());
         String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, AddCommand.MESSAGE_DUPLICATE_PERSON);
 
-        assertThrows(CommandException.class, expectedMessage, () -> new AddCommand(personInList).execute(model));
+        CommandException exception = assertThrows(
+                CommandException.class, expectedMessage, () -> new AddCommand(personInList).execute(model));
 
-        assertEquals(List.of(personInList), model.getFilteredPersonList());
+        assertEquals(personInList, exception.getPersonToView().orElseThrow());
+        assertEquals(displayedPersons, model.getFilteredPersonList());
     }
 
     @Test
@@ -75,13 +78,15 @@ public class AddCommandIntegrationTest {
         Person personInList = model.getAddressBook().getPersonList().get(0);
         Person personWithConflictingVisit = new PersonBuilder(personInList)
                 .withName("Different Patient").withPhone("91234567").build();
+        List<Person> displayedPersons = List.copyOf(model.getFilteredPersonList());
         String conflictMessage = String.format(AddCommand.MESSAGE_DUPLICATE_VISIT_DATE,
                 personWithConflictingVisit.getVisitDate());
 
         String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, conflictMessage);
-        assertThrows(CommandException.class, expectedMessage, () ->
+        CommandException exception = assertThrows(CommandException.class, expectedMessage, () ->
                 new AddCommand(personWithConflictingVisit).execute(model));
-        assertEquals(List.of(personInList), model.getFilteredPersonList());
+        assertEquals(personInList, exception.getPersonToView().orElseThrow());
+        assertEquals(displayedPersons, model.getFilteredPersonList());
     }
 
     @Test
@@ -95,9 +100,10 @@ public class AddCommandIntegrationTest {
         assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, sameNameDifferentPhone.getName()),
                 result.getFeedbackToUser());
         assertTrue(result.getInputRequest().isPresent());
+        assertEquals(personInList, result.getPersonToView().orElseThrow());
         assertFalse(result.shouldSaveAddressBook());
         assertFalse(model.getAddressBook().getPersonList().contains(sameNameDifferentPhone));
-        assertEquals(List.of(personInList), model.getFilteredPersonList());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
     }
 
     @Test
@@ -114,8 +120,23 @@ public class AddCommandIntegrationTest {
         assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, sameNameDifferentPhone.getName()),
                 result.getFeedbackToUser());
         assertTrue(result.getInputRequest().isPresent());
+        assertEquals(personInList, result.getPersonToView().orElseThrow());
         assertFalse(model.getAddressBook().getPersonList().contains(sameNameDifferentPhone));
-        assertEquals(List.of(personInList), model.getFilteredPersonList());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_duplicateNameHiddenByFilter_previewsMatchWithoutChangingList() throws Exception {
+        Person hiddenMatch = model.getAddressBook().getPersonList().get(0);
+        Person sameNameDifferentPhone = new PersonBuilder(hiddenMatch).withPhone("91234567")
+                .withVisitDate(AVAILABLE_VISIT_DATE).build();
+        model.updateFilteredPersonList(person -> !person.equals(hiddenMatch));
+        List<Person> displayedPersons = List.copyOf(model.getFilteredPersonList());
+
+        CommandResult result = new AddCommand(sameNameDifferentPhone).execute(model);
+
+        assertEquals(hiddenMatch, result.getPersonToView().orElseThrow());
+        assertEquals(displayedPersons, model.getFilteredPersonList());
     }
 
     @Test
@@ -126,13 +147,15 @@ public class AddCommandIntegrationTest {
         Person trueDuplicate = new PersonBuilder(personInList).withName(normalizedNameVariant).build();
 
         String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, AddCommand.MESSAGE_DUPLICATE_PERSON);
-        assertThrows(CommandException.class, expectedMessage, () -> new AddCommand(trueDuplicate).execute(model));
+        CommandException exception = assertThrows(
+                CommandException.class, expectedMessage, () -> new AddCommand(trueDuplicate).execute(model));
 
-        assertEquals(List.of(personInList), model.getFilteredPersonList());
+        assertEquals(personInList, exception.getPersonToView().orElseThrow());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
     }
 
     @Test
-    public void execute_multipleDuplicateNames_displaysAllMatches() throws Exception {
+    public void execute_multipleDuplicateNames_displaysFirstMatchWithoutChangingList() throws Exception {
         Person firstMatch = model.getAddressBook().getPersonList().get(0);
         Person secondMatch = new PersonBuilder(firstMatch).withPhone("91234567")
                 .withVisitDate(AVAILABLE_VISIT_DATE).build();
@@ -144,7 +167,9 @@ public class AddCommandIntegrationTest {
 
         assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_DUPLICATE_NAMES,
                 personToAdd.getName(), 2), result.getFeedbackToUser());
-        assertEquals(List.of(firstMatch, secondMatch), model.getFilteredPersonList());
+        assertTrue(result.getFeedbackToUser().contains("Only one matching patient is shown"));
+        assertEquals(firstMatch, result.getPersonToView().orElseThrow());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
         assertFalse(model.getAddressBook().getPersonList().contains(personToAdd));
     }
 
@@ -176,7 +201,7 @@ public class AddCommandIntegrationTest {
         assertEquals(AddCommand.MESSAGE_ADD_CANCELLED, cancelledResult.getFeedbackToUser());
         assertFalse(cancelledResult.shouldSaveAddressBook());
         assertFalse(model.getAddressBook().getPersonList().contains(sameNameDifferentPhone));
-        assertEquals(List.of(personInList), model.getFilteredPersonList());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
     }
 
     @Test
@@ -257,9 +282,10 @@ public class AddCommandIntegrationTest {
         model.addPerson(sameNameDifferentPhone);
 
         String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, AddCommand.MESSAGE_DUPLICATE_PERSON);
-        assertThrows(CommandException.class, expectedMessage, () ->
+        CommandException exception = assertThrows(CommandException.class, expectedMessage, () ->
                 requestResult.getInputRequest().orElseThrow().respond("y", model));
-        assertEquals(List.of(sameNameDifferentPhone), model.getFilteredPersonList());
+        assertEquals(sameNameDifferentPhone, exception.getPersonToView().orElseThrow());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
     }
 
     @Test
@@ -275,9 +301,10 @@ public class AddCommandIntegrationTest {
         String conflictMessage = String.format(AddCommand.MESSAGE_DUPLICATE_VISIT_DATE,
                 sameNameDifferentPhone.getVisitDate());
         String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, conflictMessage);
-        assertThrows(CommandException.class, expectedMessage, () ->
+        CommandException exception = assertThrows(CommandException.class, expectedMessage, () ->
                 requestResult.getInputRequest().orElseThrow().respond("y", model));
-        assertEquals(List.of(conflictingVisit), model.getFilteredPersonList());
+        assertEquals(conflictingVisit, exception.getPersonToView().orElseThrow());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
     }
 
 }

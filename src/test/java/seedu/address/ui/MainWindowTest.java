@@ -1,8 +1,10 @@
 package seedu.address.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.ui.JavaFxTestUtil.runOnFxThread;
 import static seedu.address.ui.JavaFxTestUtil.startJavaFx;
 
@@ -66,20 +68,120 @@ public class MainWindowTest {
         });
     }
 
+    @Test
+    public void executeCommand_duplicateError_displaysPersonInDetailsPanel() {
+        runOnFxThread(() -> {
+            Person person = new PersonBuilder().withName("Duplicate Patient").build();
+            TestLogic logic = new TestLogic(person, ExecutionOutcome.COMMAND_ERROR_WITH_PREVIEW);
+            Stage stage = new Stage();
+
+            try {
+                MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH);
+                mainWindow.fillInnerParts();
+
+                CommandException exception = assertThrows(
+                        CommandException.class, () -> mainWindow.executeCommand("add duplicate"));
+
+                assertEquals("Duplicate patient", exception.getMessage());
+                assertEquals(person, exception.getPersonToView().orElseThrow());
+                PatientDetailsPanel patientDetailsPanel = mainWindow.getPatientDetailsPanel();
+                ScrollPane detailsPanel = (ScrollPane) patientDetailsPanel.getRoot();
+                VBox detailsContainer = (VBox) detailsPanel.getContent();
+                Label name = (Label) detailsContainer.lookup("#name");
+                assertEquals("Duplicate Patient", name.getText());
+                assertTrue(detailsContainer.isVisible());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    @Test
+    public void executeCommand_commandErrorWithoutPreview_keepsDetailsPanelEmpty() {
+        runOnFxThread(() -> {
+            Person person = new PersonBuilder().build();
+            TestLogic logic = new TestLogic(person, ExecutionOutcome.COMMAND_ERROR);
+            Stage stage = new Stage();
+
+            try {
+                MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH);
+                mainWindow.fillInnerParts();
+
+                CommandException exception = assertThrows(
+                        CommandException.class, () -> mainWindow.executeCommand("invalid command"));
+
+                assertEquals("Command error", exception.getMessage());
+                ScrollPane detailsPanel = (ScrollPane) mainWindow.getPatientDetailsPanel().getRoot();
+                VBox detailsContainer = (VBox) detailsPanel.getContent();
+                assertFalse(detailsContainer.isVisible());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    @Test
+    public void executeCommand_parseError_keepsDetailsPanelEmpty() {
+        runOnFxThread(() -> {
+            Person person = new PersonBuilder().build();
+            TestLogic logic = new TestLogic(person, ExecutionOutcome.PARSE_ERROR);
+            Stage stage = new Stage();
+
+            try {
+                MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH);
+                mainWindow.fillInnerParts();
+
+                ParseException exception = assertThrows(
+                        ParseException.class, () -> mainWindow.executeCommand("invalid syntax"));
+
+                assertEquals("Parse error", exception.getMessage());
+                ScrollPane detailsPanel = (ScrollPane) mainWindow.getPatientDetailsPanel().getRoot();
+                VBox detailsContainer = (VBox) detailsPanel.getContent();
+                assertFalse(detailsContainer.isVisible());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /** Outcomes that the test logic can return or throw. */
+    private enum ExecutionOutcome {
+        SUCCESS,
+        COMMAND_ERROR_WITH_PREVIEW,
+        COMMAND_ERROR,
+        PARSE_ERROR
+    }
+
+    /** Logic stub that returns or throws the configured execution outcome. */
     private static class TestLogic implements Logic {
 
         private final Person personToView;
         private final ObservableList<Person> persons;
+        private final ExecutionOutcome executionOutcome;
         private String lastCommandText;
 
         TestLogic(Person personToView) {
+            this(personToView, ExecutionOutcome.SUCCESS);
+        }
+
+        TestLogic(Person personToView, ExecutionOutcome executionOutcome) {
             this.personToView = personToView;
+            this.executionOutcome = executionOutcome;
             persons = FXCollections.observableArrayList(personToView);
         }
 
         @Override
-        public CommandResult execute(String commandText) {
+        public CommandResult execute(String commandText) throws CommandException, ParseException {
             lastCommandText = commandText;
+            if (executionOutcome == ExecutionOutcome.COMMAND_ERROR_WITH_PREVIEW) {
+                throw new CommandException("Duplicate patient", personToView);
+            }
+            if (executionOutcome == ExecutionOutcome.COMMAND_ERROR) {
+                throw new CommandException("Command error");
+            }
+            if (executionOutcome == ExecutionOutcome.PARSE_ERROR) {
+                throw new ParseException("Parse error");
+            }
             return CommandResult.viewPerson("Viewing person: " + personToView.getName(), personToView);
         }
 

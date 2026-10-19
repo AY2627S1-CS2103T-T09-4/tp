@@ -130,6 +130,7 @@ public class LogicManagerTest {
 
         assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, personToAdd.getName()),
                 requestResult.getFeedbackToUser());
+        assertEquals(existingPerson, requestResult.getPersonToView().orElseThrow());
         assertTrue(logic.isInputRequestPending());
         assertFalse(model.getAddressBook().getPersonList().contains(personToAdd));
         assertEquals(0, addressBookSaveCount);
@@ -155,6 +156,7 @@ public class LogicManagerTest {
 
         assertEquals(String.format(EditCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, editedPerson.getName()),
                 requestResult.getFeedbackToUser());
+        assertEquals(firstPerson, requestResult.getPersonToView().orElseThrow());
         assertTrue(logic.isInputRequestPending());
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
         assertEquals(0, addressBookSaveCount);

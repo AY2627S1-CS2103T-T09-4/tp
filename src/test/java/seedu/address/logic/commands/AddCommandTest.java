@@ -51,7 +51,10 @@ public class AddCommandTest {
         ModelStub modelStub = new ModelStubWithPerson(validPerson);
 
         String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, AddCommand.MESSAGE_DUPLICATE_PERSON);
-        assertThrows(CommandException.class, expectedMessage, () -> addCommand.execute(modelStub));
+        CommandException exception =
+                assertThrows(CommandException.class, expectedMessage, () -> addCommand.execute(modelStub));
+
+        assertEquals(validPerson, exception.getPersonToView().orElseThrow());
     }
 
     @Test
@@ -64,7 +67,10 @@ public class AddCommandTest {
         String conflictMessage = String.format(AddCommand.MESSAGE_DUPLICATE_VISIT_DATE,
                 personWithConflictingVisit.getVisitDate());
         String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, conflictMessage);
-        assertThrows(CommandException.class, expectedMessage, () -> addCommand.execute(modelStub));
+        CommandException exception =
+                assertThrows(CommandException.class, expectedMessage, () -> addCommand.execute(modelStub));
+
+        assertEquals(existingPerson, exception.getPersonToView().orElseThrow());
         assertEquals(List.of(existingPerson), modelStub.getFilteredPersonList());
     }
 
@@ -196,6 +202,13 @@ public class AddCommandTest {
         public boolean hasPerson(Person person) {
             requireNonNull(person);
             return this.person.isSamePerson(person);
+        }
+
+        @Override
+        public ReadOnlyAddressBook getAddressBook() {
+            AddressBook addressBook = new AddressBook();
+            addressBook.addPerson(person);
+            return addressBook;
         }
 
         @Override

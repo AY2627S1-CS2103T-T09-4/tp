@@ -118,7 +118,7 @@ public class NextCommandIntegrationTest {
     }
 
     @Test
-    public void execute_hiddenConflict_displaysConflictingPatientWithoutSaving() throws Exception {
+    public void execute_hiddenConflict_previewsConflictWithoutChangingListOrSaving() throws Exception {
         logic.execute("find Amy");
         model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
         AddressBook before = new AddressBook(model.getAddressBook());
@@ -127,10 +127,12 @@ public class NextCommandIntegrationTest {
 
         String expectedMessage = String.format(NextCommand.MESSAGE_DUPLICATE_VISIT_DATE,
                 benson.getName(), benson.getVisitDate());
-        assertThrows(CommandException.class, expectedMessage, () -> logic.execute("next 1 01/11/2026 1000"));
+        CommandException exception = assertThrows(
+                CommandException.class, expectedMessage, () -> logic.execute("next 1 01/11/2026 1000"));
 
         assertEquals(before, model.getAddressBook());
-        assertEquals(List.of(benson), model.getFilteredPersonList());
+        assertEquals(benson, exception.getPersonToView().orElseThrow());
+        assertEquals(List.of(amy), model.getFilteredPersonList());
         assertEquals(savedData, Files.readString(addressBookStorage.getAddressBookFilePath()));
         assertEquals(savesBefore, saveCount);
         assertFalse(logic.isInputRequestPending());

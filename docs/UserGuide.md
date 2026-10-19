@@ -107,21 +107,20 @@ Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES
 
 * `VISIT_DATE` must be a date and time in the format `d/M/yyyy HHmm`, e.g. `18/9/2026 1000`. Past dates are allowed.
 * Each patient must have a unique visit date and time. If another patient already uses the supplied date and time,
-  the addition is rejected, the existing patient is shown in the patient list, and the app asks you to choose a
-  different slot.
+  the addition is rejected, the existing patient is shown in the patient details panel, and the app asks you to
+  choose a different slot. The patient list remains unchanged.
 * `EMAIL` and `NOTES` are optional.
 * On success, the app shows `Added patient NAME` and the new patient appears in the list.
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
 * A patient with the same normalized name and phone number as an existing patient is a duplicate and cannot be added.
-  The matching existing patient is shown in the patient list.
+  The matching existing patient is shown in the patient details panel without changing the patient list.
 * If only the name matches an existing patient, the app asks
-  `A patient named NAME already exists and is shown in the patient list. Add this patient anyway? Type y to confirm.
-  Any other input cancels.` If several patients have that normalized name, the app instead reports their count. All
-  matching patients are shown in the patient list.
+  `A patient named NAME already exists. The matching patient is shown in the patient details panel. Add this patient
+  anyway? Type y to confirm. Any other input cancels.` If several patients have that normalized name, the app reports
+  their count and explains that only one matching patient is shown. The patient list remains unchanged.
 * Type `y` and press Enter to add the patient. Surrounding spaces and letter case are ignored. Any other input cancels
   the addition and is not run as a command. Confirmation rechecks that the visit date and time are still available.
-  A successful addition restores the full patient list. After a rejection or cancellation, the matching existing
-  patients remain displayed for inspection; use `list` to restore the full patient list.
+  A successful addition restores the full patient list. A rejection or cancellation preserves the displayed list.
 * If 7 or more patients already have a visit on the same day (at any time), the app warns you before adding another,
   e.g. `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Add Jane Tan anyway? Type y to confirm. Any other
   input cancels.` Type `y` to add the patient anyway. If the name also matches an existing patient, you are asked to
@@ -215,7 +214,8 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [not
   (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted.
 * The visit date and time can be edited by itself. Omitting `vd/` preserves the existing visit date and time.
 * Re-entering the selected patient's existing visit date and time is allowed. Changing it to a slot used by another
-  patient is rejected and shows that patient in the patient list, including when the edit also changes other fields.
+  patient is rejected and shows that patient in the patient details panel, including when the edit also changes other
+  fields. The patient list remains unchanged.
 * Omitted fields, including email and existing notes, keep their values. Use an empty `e/` to clear email.
 * Use `note/NOTES` to replace the entire stored note. Use an empty `note/` to clear it; notes can be edited
   without `vd/`. An explicitly empty note counts as a supplied field, even when the note is already empty.
@@ -231,16 +231,15 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [not
 * When editing tags, all of the patient's existing tags are removed; adding tags is not cumulative.
 * To remove all of a patient's tags, enter `t/` without a tag after it.
 * An edit that would give a patient the same normalized name and phone number as another patient is rejected, and the
-  matching existing patient is shown in the patient list.
+  matching existing patient is shown in the patient details panel without changing the patient list.
 * When an edit changes the patient's name to one already used by another patient with a different phone number, the
-  app asks `A patient named NAME already exists and is shown in the patient list. Apply this edit anyway? Type y to
-  confirm. Any other input cancels.` If several patients have that normalized name, the app instead reports their
-  count. All matching patients are shown in the patient list.
+  app asks `A patient named NAME already exists. The matching patient is shown in the patient details panel. Apply
+  this edit anyway? Type y to confirm. Any other input cancels.` If several patients have that normalized name, the
+  app reports their count and explains that only one matching patient is shown. The patient list remains unchanged.
 * Type `y` and press Enter to apply the edit. Surrounding spaces and letter case are ignored. Any other input cancels
   the edit and is not run as a command. Editing other details of a patient whose name is already shared does not ask
   for confirmation again. A confirmed name-duplicate edit rechecks that its requested visit slot is still available.
-  A successful edit restores the full patient list. After a rejection or cancellation, the matching existing patients
-  remain displayed for inspection; use `list` to restore the full patient list.
+  A successful edit restores the full patient list. A rejection or cancellation preserves the displayed list.
 * When an edit moves a patient's visit to a different day that already has 7 or more visits, the app asks, e.g.
   `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Schedule Jane Tan on that day anyway? Type y to confirm.
   Any other input cancels.` Changing only the time within the same day, or editing other fields, does not ask. If the
@@ -279,9 +278,9 @@ Format: `next INDEX DATETIME`
 * Only the visit date and time change; all other details, including empty optional fields, are preserved.
 * Success shows `Next visit scheduled for patient NAME: DATETIME`, saves the record, and restores the full list in
   stored order, clearing the filter and sort. Check the new indices; run `view` again to refresh the details panel.
-* Validation errors preserve data. An appointment conflict replaces the displayed list with the patient using that
-  slot; other validation errors preserve the displayed list. Use `list` to restore the full patient list. A save
-  failure reports a storage error; the in-memory appointment may already have changed.
+* Validation errors preserve data and the displayed list. An appointment conflict shows the patient using that slot
+  in the patient details panel. A save failure reports a storage error; the in-memory appointment may already have
+  changed.
 
 Common errors:
 
@@ -289,7 +288,7 @@ Common errors:
 | --- | --- |
 | Time at or before now | `The next visit must be in the future.` |
 | Unchanged appointment | `Patient NAME already has an appointment at DATETIME.` |
-| Another patient's appointment | `Patient NAME already has an appointment at DATETIME and is shown in the patient list. Choose a different date and time.` |
+| Another patient's appointment | `Patient NAME already has an appointment at DATETIME and is shown in the patient details panel. Choose a different date and time.` |
 
 Bare `next` shows usage. Missing or extra arguments, `vd/` syntax, and incorrect index syntax show a reason and usage.
 Invalid dates show the required format; an index outside the displayed list shows the existing invalid-index error.

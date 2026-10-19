@@ -108,7 +108,7 @@ public class NextCommandTest {
     }
 
     @Test
-    public void execute_hiddenPatientConflict_displaysConflictingPatient() {
+    public void execute_hiddenPatientConflict_previewsConflictWithoutChangingList() {
         model.updateFilteredPersonList(person -> !person.equals(BENSON));
         model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
         assertEquals(List.of(AMY, CARL), model.getFilteredPersonList());
@@ -118,10 +118,12 @@ public class NextCommandTest {
         String expectedMessage = String.format(NextCommand.MESSAGE_DUPLICATE_VISIT_DATE,
                 BENSON.getName(), BENSON.getVisitDate());
 
-        assertThrows(CommandException.class, expectedMessage, () -> command.execute(model));
+        CommandException exception =
+                assertThrows(CommandException.class, expectedMessage, () -> command.execute(model));
 
         assertEquals(originalAddressBook, model.getAddressBook());
-        assertEquals(List.of(BENSON), model.getFilteredPersonList());
+        assertEquals(BENSON, exception.getPersonToView().orElseThrow());
+        assertEquals(List.of(AMY, CARL), model.getFilteredPersonList());
     }
 
     @Test
