@@ -3,6 +3,7 @@ package seedu.address.ui;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.ui.JavaFxTestUtil.runOnFxThread;
 import static seedu.address.ui.JavaFxTestUtil.startJavaFx;
@@ -84,6 +85,27 @@ public class HelpWindowTest {
                         false, false, false, false);
                 stage.getScene().getRoot().fireEvent(escape);
                 assertFalse(helpWindow.isShowing());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    @Test
+    public void show_minimizedWindow_restoresWindow() {
+        runOnFxThread(() -> {
+            HelpWindow helpWindow = new HelpWindow();
+            Stage stage = helpWindow.getRoot();
+            try {
+                helpWindow.show();
+                stage.setIconified(true);
+                assertTrue(stage.isIconified());
+
+                helpWindow.show();
+
+                assertTrue(helpWindow.isShowing());
+                assertFalse(stage.isIconified());
+                assertSame(findButton(stage, "#closeButton"), stage.getScene().getFocusOwner());
             } finally {
                 stage.close();
             }

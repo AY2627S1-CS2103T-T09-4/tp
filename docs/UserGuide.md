@@ -97,6 +97,16 @@ can be resized and its content can be scrolled vertically when needed. Use
 **Copy URL** to copy the guide link, **Close** to dismiss the window, or press
 **Escape**. You can continue using the main window while help is open.
 
+Press **F1** or choose **Help → Help** to open the same window. Repeating a help
+request brings that window to the front and restores it if it was minimized.
+After closing help, focus returns to the command box without submitting or
+discarding unfinished input. You can reopen help after using **Close**,
+**Escape**, or the window's native close control.
+
+If a confirmation or follow-up prompt is pending, use **F1** or **Help → Help**
+to consult the guide without answering the prompt. Typing `help` and pressing
+Enter still counts as the response to the pending prompt.
+
 ![help message](images/helpMessage.png)
 
 Format: `help`
@@ -393,7 +403,6 @@ Doc home folder.
 ## Known issues
 
 1. **When using multiple screens**, if you move the application to a secondary screen, and later switch to using only the primary screen, the GUI will open off-screen. The remedy is to delete the `preferences.json` file created by the application before running the application again.
-2. **If you minimize the Help Window** and then run the `help` command (or use the `Help` menu, or the keyboard shortcut `F1`) again, the original Help Window will remain minimized, and no new Help Window will appear. The remedy is to manually restore the minimized Help Window.
 
 --------------------------------------------------------------------------------------------------------------------
 
