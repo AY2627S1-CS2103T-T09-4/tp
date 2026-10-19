@@ -22,9 +22,23 @@ You can run tests in two ways.
 * **Method 2: Using Gradle**
   * Open a console and run the command `gradlew clean test` (Mac/Linux: `./gradlew clean test`)
 
-`CommandBoxTest` loads the production JavaFX control and FXML file. Linux environments without a graphical display
-must provide a virtual display, for example by running
-`xvfb-run --auto-servernum ./gradlew clean test`. The Linux CI job uses the same setup.
+JavaFX UI tests load production controls and FXML files. Linux environments without a graphical desktop need both
+a virtual display and a window manager: Xvfb provides the display, while Openbox handles the native minimize and
+restore requests exercised by `HelpWindowIntegrationTest`. Xvfb alone cannot verify those window transitions.
+
+On Ubuntu, install the test tools with `sudo apt-get install --no-install-recommends xvfb xauth openbox`, then run:
+
+```bash
+xvfb-run --auto-servernum sh -eu -c '
+  openbox --sm-disable &
+  window_manager_pid=$!
+  trap "kill $window_manager_pid 2>/dev/null || true" EXIT
+  ./gradlew clean test
+'
+```
+
+The Linux CI job uses this setup with `./gradlew check coverage`. Openbox is a test-environment dependency;
+users running Doc on a normal desktop do not need to install it.
 
 <box type="info" seamless>
 

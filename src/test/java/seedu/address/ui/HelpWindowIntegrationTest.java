@@ -138,22 +138,28 @@ public class HelpWindowIntegrationTest {
 
     @Test
     public void handleHelp_minimizedWindow_restoresExistingWindow() throws InterruptedException {
-        Stage[] helpStageHolder = new Stage[1];
+        Stage[] helpStages = new Stage[1];
         runOnFxThread(() -> {
             mainWindow.handleHelp();
             Stage helpStage = getOnlyShowingHelpStage();
-            helpStageHolder[0] = helpStage;
+            helpStages[0] = helpStage;
             assertNull(helpStage.getOwner(), "Help must remain independently minimizable");
-            helpStage.setIconified(true);
-            assertTrue(helpStage.isIconified());
-            assertFalse(primaryStage.isIconified());
+        });
+        Stage helpStage = helpStages[0];
+        waitForFxCondition(helpStage::isFocused, "Help to receive focus after opening");
 
+        runOnFxThread(() -> helpStage.setIconified(true));
+        // isIconified changes before the window manager finishes; focus loss confirms the transition.
+        waitForFxCondition(() -> helpStage.isIconified() && !helpStage.isFocused(), "Help to finish minimizing");
+        runOnFxThread(() -> {
+            assertFalse(primaryStage.isIconified());
             mainWindow.handleHelp();
         });
-        waitForFxCondition(() -> !helpStageHolder[0].isIconified());
+        waitForFxCondition(() -> !helpStage.isIconified() && helpStage.isFocused(),
+                "Help to restore and receive focus");
         runOnFxThread(() -> {
-            assertSame(helpStageHolder[0], getOnlyShowingHelpStage());
-            assertFalse(helpStageHolder[0].isIconified());
+            assertSame(helpStage, getOnlyShowingHelpStage());
+            assertFalse(primaryStage.isIconified());
         });
     }
 
@@ -269,7 +275,8 @@ public class HelpWindowIntegrationTest {
         });
     }
 
-    private void waitForFxCondition(BooleanSupplier condition) throws InterruptedException {
+    /** Waits off the FX thread so native window events can finish, reporting the transition on timeout. */
+    private void waitForFxCondition(BooleanSupplier condition, String transition) throws InterruptedException {
         CountDownLatch conditionMet = new CountDownLatch(1);
         AnimationTimer[] timerHolder = new AnimationTimer[1];
         runOnFxThread(() -> {
@@ -285,9 +292,11 @@ public class HelpWindowIntegrationTest {
             timerHolder[0].start();
         });
 
-        boolean conditionWasMet = conditionMet.await(10, TimeUnit.SECONDS);
-        runOnFxThread(() -> timerHolder[0].stop());
-        assertTrue(conditionWasMet, "Timed out while waiting for JavaFX state to settle");
+        try {
+            assertTrue(conditionMet.await(10, TimeUnit.SECONDS), "Timed out waiting for " + transition);
+        } finally {
+            runOnFxThread(() -> timerHolder[0].stop());
+        }
     }
 
     private Stage getOnlyShowingHelpStage() {
