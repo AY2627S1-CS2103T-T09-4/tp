@@ -13,6 +13,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 import org.junit.jupiter.api.AfterEach;
@@ -21,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import javafx.animation.AnimationTimer;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -133,19 +137,23 @@ public class HelpWindowIntegrationTest {
     }
 
     @Test
-    public void handleHelp_minimizedWindow_restoresExistingWindow() {
+    public void handleHelp_minimizedWindow_restoresExistingWindow() throws InterruptedException {
+        Stage[] helpStageHolder = new Stage[1];
         runOnFxThread(() -> {
             mainWindow.handleHelp();
             Stage helpStage = getOnlyShowingHelpStage();
+            helpStageHolder[0] = helpStage;
             assertNull(helpStage.getOwner(), "Help must remain independently minimizable");
             helpStage.setIconified(true);
             assertTrue(helpStage.isIconified());
             assertFalse(primaryStage.isIconified());
 
             mainWindow.handleHelp();
-
-            assertSame(helpStage, getOnlyShowingHelpStage());
-            assertFalse(helpStage.isIconified());
+        });
+        waitForFxCondition(() -> !helpStageHolder[0].isIconified());
+        runOnFxThread(() -> {
+            assertSame(helpStageHolder[0], getOnlyShowingHelpStage());
+            assertFalse(helpStageHolder[0].isIconified());
         });
     }
 
@@ -259,6 +267,27 @@ public class HelpWindowIntegrationTest {
             assertSame(helpStage, getOnlyShowingHelpStage());
             assertSame(helpStage.getScene().lookup("#closeButton"), helpStage.getScene().getFocusOwner());
         });
+    }
+
+    private void waitForFxCondition(BooleanSupplier condition) throws InterruptedException {
+        CountDownLatch conditionMet = new CountDownLatch(1);
+        AnimationTimer[] timerHolder = new AnimationTimer[1];
+        runOnFxThread(() -> {
+            timerHolder[0] = new AnimationTimer() {
+                @Override
+                public void handle(long now) {
+                    if (condition.getAsBoolean()) {
+                        stop();
+                        conditionMet.countDown();
+                    }
+                }
+            };
+            timerHolder[0].start();
+        });
+
+        boolean conditionWasMet = conditionMet.await(10, TimeUnit.SECONDS);
+        runOnFxThread(() -> timerHolder[0].stop());
+        assertTrue(conditionWasMet, "Timed out while waiting for JavaFX state to settle");
     }
 
     private Stage getOnlyShowingHelpStage() {

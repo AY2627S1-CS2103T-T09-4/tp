@@ -39,6 +39,7 @@ public class MainWindow extends UiPart<Stage> {
     private PatientDetailsPanel patientDetailsPanel;
     private ResultDisplay resultDisplay;
     private HelpWindow helpWindow;
+    private CommandBox commandBox;
 
     @FXML
     private StackPane commandBoxPlaceholder;
@@ -133,7 +134,7 @@ public class MainWindow extends UiPart<Stage> {
         StatusBarFooter statusBarFooter = new StatusBarFooter(dataFilePath);
         statusbarPlaceholder.getChildren().add(statusBarFooter.getRoot());
 
-        CommandBox commandBox = new CommandBox(this::executeCommand, logic::isInputRequestPending);
+        commandBox = new CommandBox(this::executeCommand, logic::isInputRequestPending);
         commandBoxPlaceholder.getChildren().add(commandBox.getRoot());
         helpWindow.getRoot().addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> {
             if (primaryStage.isShowing()) {
@@ -160,6 +161,7 @@ public class MainWindow extends UiPart<Stage> {
      */
     @FXML
     public void handleHelp() {
+        commandBox.saveSelection();
         if (!helpWindow.isShowing()) {
             helpWindow.show();
         } else {

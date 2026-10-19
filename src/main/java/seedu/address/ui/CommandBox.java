@@ -65,6 +65,19 @@ public class CommandBox extends UiPart<Region> {
     }
 
     /**
+     * Saves the current edit position when command entry is focused.
+     *
+     * <p>This is needed before another window is shown because some window managers do not deliver
+     * a focus-loss event when a JavaFX event opens a separate window.</p>
+     */
+    void saveSelection() {
+        if (commandTextField.isFocused()) {
+            lastAnchor = commandTextField.getAnchor();
+            lastCaretPosition = commandTextField.getCaretPosition();
+        }
+    }
+
+    /**
      * Handles the Enter button pressed event.
      */
     @FXML
