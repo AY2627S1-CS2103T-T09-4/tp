@@ -8,6 +8,7 @@ import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
+import java.util.List;
 import java.util.Locale;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -63,8 +64,11 @@ public class AddCommandIntegrationTest {
     @Test
     public void execute_duplicatePerson_throwsCommandException() {
         Person personInList = model.getAddressBook().getPersonList().get(0);
-        assertCommandFailure(new AddCommand(personInList), model,
-                String.format(AddCommand.MESSAGE_NOT_ADDED, AddCommand.MESSAGE_DUPLICATE_PERSON));
+        String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, AddCommand.MESSAGE_DUPLICATE_PERSON);
+
+        assertThrows(CommandException.class, expectedMessage, () -> new AddCommand(personInList).execute(model));
+
+        assertEquals(List.of(personInList), model.getFilteredPersonList());
     }
 
     @Test
@@ -92,6 +96,7 @@ public class AddCommandIntegrationTest {
         assertTrue(result.getInputRequest().isPresent());
         assertFalse(result.shouldSaveAddressBook());
         assertFalse(model.getAddressBook().getPersonList().contains(sameNameDifferentPhone));
+        assertEquals(List.of(personInList), model.getFilteredPersonList());
     }
 
     @Test
@@ -109,6 +114,7 @@ public class AddCommandIntegrationTest {
                 result.getFeedbackToUser());
         assertTrue(result.getInputRequest().isPresent());
         assertFalse(model.getAddressBook().getPersonList().contains(sameNameDifferentPhone));
+        assertEquals(List.of(personInList), model.getFilteredPersonList());
     }
 
     @Test
@@ -118,8 +124,27 @@ public class AddCommandIntegrationTest {
                 .replace(" ", "   ") + " ";
         Person trueDuplicate = new PersonBuilder(personInList).withName(normalizedNameVariant).build();
 
-        assertCommandFailure(new AddCommand(trueDuplicate), model,
-                String.format(AddCommand.MESSAGE_NOT_ADDED, AddCommand.MESSAGE_DUPLICATE_PERSON));
+        String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, AddCommand.MESSAGE_DUPLICATE_PERSON);
+        assertThrows(CommandException.class, expectedMessage, () -> new AddCommand(trueDuplicate).execute(model));
+
+        assertEquals(List.of(personInList), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_multipleDuplicateNames_displaysAllMatches() throws Exception {
+        Person firstMatch = model.getAddressBook().getPersonList().get(0);
+        Person secondMatch = new PersonBuilder(firstMatch).withPhone("91234567")
+                .withVisitDate(AVAILABLE_VISIT_DATE).build();
+        Person personToAdd = new PersonBuilder(firstMatch).withPhone("92345678")
+                .withVisitDate("3/1/2026 0900").build();
+        model.addPerson(secondMatch);
+
+        CommandResult result = new AddCommand(personToAdd).execute(model);
+
+        assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_DUPLICATE_NAMES,
+                personToAdd.getName(), 2), result.getFeedbackToUser());
+        assertEquals(List.of(firstMatch, secondMatch), model.getFilteredPersonList());
+        assertFalse(model.getAddressBook().getPersonList().contains(personToAdd));
     }
 
     @Test
@@ -135,6 +160,7 @@ public class AddCommandIntegrationTest {
                 confirmedResult.getFeedbackToUser());
         assertTrue(confirmedResult.shouldSaveAddressBook());
         assertTrue(model.getAddressBook().getPersonList().contains(sameNameDifferentPhone));
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
     }
 
     @Test
@@ -149,6 +175,7 @@ public class AddCommandIntegrationTest {
         assertEquals(AddCommand.MESSAGE_ADD_CANCELLED, cancelledResult.getFeedbackToUser());
         assertFalse(cancelledResult.shouldSaveAddressBook());
         assertFalse(model.getAddressBook().getPersonList().contains(sameNameDifferentPhone));
+        assertEquals(List.of(personInList), model.getFilteredPersonList());
     }
 
     @Test
@@ -231,6 +258,7 @@ public class AddCommandIntegrationTest {
         String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, AddCommand.MESSAGE_DUPLICATE_PERSON);
         assertThrows(CommandException.class, expectedMessage, () ->
                 requestResult.getInputRequest().orElseThrow().respond("y", model));
+        assertEquals(List.of(sameNameDifferentPhone), model.getFilteredPersonList());
     }
 
     @Test

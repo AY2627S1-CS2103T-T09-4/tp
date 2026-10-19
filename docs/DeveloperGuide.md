@@ -190,7 +190,11 @@ accepted without confirmation. This preserves phone numbers shared by a househol
 phone together to identify a patient record.
 
 `Model#hasPerson` exposes the true-duplicate check, while `Model#hasPersonWithSameName` exposes the weaker warning
-check. Phone comparison continues to use exact `Phone` value equality.
+check. Phone comparison continues to use exact `Phone` value equality. When either check detects a duplicate,
+`AddCommand` or `EditCommand` uses `Model#updateFilteredPersonList` to replace the displayed list with the matching
+records. A true duplicate is filtered by `Person#isSamePerson`; a name duplicate is filtered by
+`Person#hasSameName`, so every existing record with that normalized name is displayed. Filtering also returns the
+displayed list to stored order, consistent with `find`.
 
 Visit dates and times form a separate scheduling invariant. `UniquePersonList#containsSameVisitDate` compares
 `VisitDate` values, whose equality is based on their parsed `LocalDateTime`. `add`, `setPerson`, and `setPersons` throw
@@ -198,17 +202,24 @@ Visit dates and times form a separate scheduling invariant. `UniquePersonList#co
 model replacement, sample data, and direct model use. `JsonSerializableAddressBook` performs the same check while
 loading and reports an invalid data file with a visit-date-specific message.
 
-`Model#hasPersonWithSameVisitDate` exposes the scheduling check. `AddCommand` rejects a true duplicate first, then a
-visit-date conflict. For a name duplicate with an available visit time, it captures the proposed immutable `Person` in
-a `CommandInputRequest#createConfirmation` action. Confirmation rechecks both rejection rules before adding, which
+`Model#hasPersonWithSameVisitDate` exposes the scheduling check. `AddCommand` rejects a true duplicate first, showing
+the matching record, and then checks for a visit-date conflict. For a name duplicate with an available visit time, it
+shows all matching names and captures the proposed immutable `Person` in a
+`CommandInputRequest#createConfirmation` action. Confirmation rechecks both rejection rules before adding, which
 prevents a conflicting record from being introduced if model state changes while the prompt is pending.
 
-`EditCommand` similarly rejects a true duplicate or a changed visit date that another patient uses before requesting
-confirmation. Re-entering the selected patient's existing visit date is allowed because it does not allocate another
+`EditCommand` captures the selected patient before changing the displayed list. It similarly rejects a true duplicate
+or a changed visit date that another patient uses before requesting confirmation, showing the true duplicate when
+applicable. Re-entering the selected patient's existing visit date is allowed because it does not allocate another
 slot. The command asks for confirmation only when the requested edit changes the name to one already in use; editing
-other fields of a patient whose name is already shared does not prompt again. It captures the original and edited
-`Person` objects, then verifies on confirmation that the original record still exists and that the edit still creates
-neither a true duplicate nor a visit-date conflict.
+other fields of a patient whose name is already shared does not prompt again. It shows all matching names, captures the
+original and edited `Person` objects, then verifies on confirmation that the original record still exists and that the
+edit still creates neither a true duplicate nor a visit-date conflict.
+
+A successful add or edit restores the full patient list. A rejected exact duplicate or cancelled name-duplicate
+confirmation leaves the matching records displayed so the doctor can inspect them; the existing `list` command restores
+the full list. While a confirmation is pending, the command box treats the next submission as the confirmation response,
+so the temporary displayed indices cannot be used by another command until the doctor confirms or cancels.
 
 #### Duplicate-detection limitations
 
@@ -573,12 +584,13 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * 1b. A patient with the same name and phone number already exists.
 
     * 1b1. Doc shows an error message identifying the existing patient.
+    * 1b2. Doc displays the matching existing patient in the patient list.
 
       Use case resumes at step 1.
 
 * 1c. A patient with the same name but a different phone number already exists.
 
-    * 1c1. Doc asks the doctor to confirm adding the patient.
+    * 1c1. Doc displays all existing patients with that name and asks the doctor to confirm adding the patient.
     * 1c2. The doctor confirms the addition.
     * 1c3. Doc adds the patient to the caseload and shows the newly added patient record.
 
@@ -638,13 +650,14 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 * 3d. The requested changes would create a true duplicate with the same name and phone number as another patient.
 
-    * 3d1. Doc shows an error message explaining that the patient record already exists.
+    * 3d1. Doc shows an error message explaining that the patient record already exists and displays the matching
+      existing patient.
 
       Use case resumes at step 3.
 
 * 3e. The requested changes would use another patient's name with a different phone number.
 
-    * 3e1. Doc asks the doctor to confirm the name duplicate.
+    * 3e1. Doc displays all existing patients with that name and asks the doctor to confirm the name duplicate.
     * 3e2. The doctor confirms the changes.
     * 3e3. Doc updates the patient's details and shows the updated record.
 
@@ -907,14 +920,18 @@ Use a disposable copy of the data file for these tests. Start with a patient nam
 `91234567`. Use a different unused visit date and time for every proposed additional patient.
 
 1. Add another patient named `Alex Tan` with phone number `92345678`. Expect a confirmation prompt and no immediate
-   change. Enter `y`; expect both patients to be present and the data file to be saved once.
+   data change. Expect the patient list to show only the existing `Alex Tan`. Enter `y`; expect both patients to be
+   present, the full patient list to be restored, and the data file to be saved once.
+1. Add a third patient named `Alex Tan` with another unused phone number. Expect both existing `Alex Tan` records to be
+   shown. Enter `n`; expect `Addition cancelled.`, both matches to remain displayed, and no data file change. Run
+   `list`; expect the full patient list to be restored.
 1. Add `alex   tan` with another unused phone number. Expect the same confirmation prompt because case and repeated
    spaces are ignored for duplicate detection. Enter `y`; expect the name to retain its entered capitalization and
    spacing when displayed and saved.
 1. Repeat with another unused phone number, then enter `n`. Expect `Addition cancelled.`, no new patient, and no data
    file change.
 1. Try to add another patient named `ALEX  TAN` with phone number `91234567`. Expect the true-duplicate error without
-   a confirmation prompt, even if the remaining fields differ.
+   a confirmation prompt, even if the remaining fields differ. Expect only the matching existing patient to be shown.
 1. Close and reopen the application after confirming a name duplicate. Expect both same-name patients to load.
 
 ### Editing patient details
@@ -949,12 +966,15 @@ nonempty notes, and record the selected patient's existing details before editin
 1. Show a filtered or sorted list with a different first patient, then run `edit 1 note/Review medication`.
    Expect that displayed patient to be edited, followed by the full list in stored order.
 1. With patients `Alex Tan` and `Betsy Crowe` using different phone numbers, rename Betsy to `Alex Tan`. Expect a
-   confirmation prompt and no immediate change. Enter `y`; expect both records to use the name `Alex Tan`.
+   confirmation prompt, no immediate data change, and only the existing `Alex Tan` records to be shown. Enter `y`;
+   expect both records to use the name `Alex Tan` and the full patient list to be restored.
 1. Repeat the rename using `alex   tan`. Expect the same confirmation prompt because the normalized name matches.
 1. Change only Alex's capitalization or repeated spacing. Expect the edit to succeed without a confirmation prompt
    because the patient's normalized name has not changed, while the entered form is preserved for display and storage.
-1. Repeat the rename setup, then enter `n`. Expect `Edit cancelled.` and the original record to remain unchanged.
-1. Give Betsy both Alex's name and phone number. Expect the true-duplicate error without a confirmation prompt.
+1. Repeat the rename setup, then enter `n`. Expect `Edit cancelled.`, the original record to remain unchanged, and the
+   matching `Alex Tan` records to remain displayed. Run `list`; expect the full patient list to be restored.
+1. Give Betsy both Alex's name and phone number. Expect the true-duplicate error without a confirmation prompt and only
+   Alex's matching record to be shown.
 1. After confirming two patients with the same name, edit only one patient's note. Expect the edit to succeed without
    another confirmation prompt.
 1. Close and reopen the application after replacing notes, then repeat after clearing them.

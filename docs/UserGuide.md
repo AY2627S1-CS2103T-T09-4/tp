@@ -112,10 +112,15 @@ Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES
 * On success, the app shows `Added patient NAME` and the new patient appears in the list.
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
 * A patient with the same normalized name and phone number as an existing patient is a duplicate and cannot be added.
+  The matching existing patient is shown in the patient list.
 * If only the name matches an existing patient, the app asks
-  `A patient named NAME already exists. Add this patient anyway? Type y to confirm. Any other input cancels.`
+  `A patient named NAME already exists and is shown in the patient list. Add this patient anyway? Type y to confirm.
+  Any other input cancels.` If several patients have that normalized name, the app instead reports their count. All
+  matching patients are shown in the patient list.
 * Type `y` and press Enter to add the patient. Surrounding spaces and letter case are ignored. Any other input cancels
   the addition and is not run as a command. Confirmation rechecks that the visit date and time are still available.
+  A successful addition restores the full patient list. After a rejection or cancellation, the matching existing
+  patients remain displayed for inspection; use `list` to restore the full patient list.
 * If 7 or more patients already have a visit on the same day (at any time), the app warns you before adding another,
   e.g. `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Add Jane Tan anyway? Type y to confirm. Any other
   input cancels.` Type `y` to add the patient anyway. If the name also matches an existing patient, you are asked to
@@ -224,12 +229,17 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [not
 * Existing values will be updated to the input values.
 * When editing tags, all of the patient's existing tags are removed; adding tags is not cumulative.
 * To remove all of a patient's tags, enter `t/` without a tag after it.
-* An edit that would give a patient the same normalized name and phone number as another patient is rejected.
+* An edit that would give a patient the same normalized name and phone number as another patient is rejected, and the
+  matching existing patient is shown in the patient list.
 * When an edit changes the patient's name to one already used by another patient with a different phone number, the
-  app asks `A patient named NAME already exists. Apply this edit anyway? Type y to confirm. Any other input cancels.`
+  app asks `A patient named NAME already exists and is shown in the patient list. Apply this edit anyway? Type y to
+  confirm. Any other input cancels.` If several patients have that normalized name, the app instead reports their
+  count. All matching patients are shown in the patient list.
 * Type `y` and press Enter to apply the edit. Surrounding spaces and letter case are ignored. Any other input cancels
   the edit and is not run as a command. Editing other details of a patient whose name is already shared does not ask
   for confirmation again. A confirmed name-duplicate edit rechecks that its requested visit slot is still available.
+  A successful edit restores the full patient list. After a rejection or cancellation, the matching existing patients
+  remain displayed for inspection; use `list` to restore the full patient list.
 * When an edit moves a patient's visit to a different day that already has 7 or more visits, the app asks, e.g.
   `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Schedule Jane Tan on that day anyway? Type y to confirm.
   Any other input cancels.` Changing only the time within the same day, or editing other fields, does not ask. If the

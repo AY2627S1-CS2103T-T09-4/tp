@@ -14,6 +14,7 @@ import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
 
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -182,10 +183,12 @@ public class AddCommandTest {
      */
     private class ModelStubWithPerson extends ModelStub {
         private final Person person;
+        private final ObservableList<Person> filteredPersons = FXCollections.observableArrayList();
 
         ModelStubWithPerson(Person person) {
             requireNonNull(person);
             this.person = person;
+            filteredPersons.add(person);
         }
 
         @Override
@@ -210,6 +213,17 @@ public class AddCommandTest {
         public int countPersonsWithSameVisitDay(Person person) {
             requireNonNull(person);
             return this.person.getVisitDate().isSameDay(person.getVisitDate()) ? 1 : 0;
+        }
+
+        @Override
+        public ObservableList<Person> getFilteredPersonList() {
+            return filteredPersons;
+        }
+
+        @Override
+        public void updateFilteredPersonList(Predicate<Person> predicate) {
+            requireNonNull(predicate);
+            filteredPersons.setAll(predicate.test(person) ? List.of(person) : List.of());
         }
     }
 

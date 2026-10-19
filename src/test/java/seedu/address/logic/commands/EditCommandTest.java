@@ -21,6 +21,7 @@ import static seedu.address.testutil.TypicalIndexes.INDEX_SECOND_PERSON;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 
 import org.junit.jupiter.api.Test;
@@ -151,7 +152,9 @@ public class EditCommandTest {
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder(firstPerson).build();
         EditCommand editCommand = new EditCommand(INDEX_SECOND_PERSON, descriptor);
 
-        assertCommandFailure(editCommand, model, EditCommand.MESSAGE_DUPLICATE_PERSON);
+        assertThrows(CommandException.class, EditCommand.MESSAGE_DUPLICATE_PERSON, () -> editCommand.execute(model));
+
+        assertEquals(List.of(firstPerson), model.getFilteredPersonList());
     }
 
     @Test
@@ -163,7 +166,9 @@ public class EditCommandTest {
         EditCommand editCommand = new EditCommand(INDEX_FIRST_PERSON,
                 new EditPersonDescriptorBuilder(personInList).build());
 
-        assertCommandFailure(editCommand, model, EditCommand.MESSAGE_DUPLICATE_PERSON);
+        assertThrows(CommandException.class, EditCommand.MESSAGE_DUPLICATE_PERSON, () -> editCommand.execute(model));
+
+        assertEquals(List.of(personInList), model.getFilteredPersonList());
     }
 
     @Test
@@ -383,7 +388,8 @@ public class EditCommandTest {
                 result.getFeedbackToUser());
         assertTrue(result.getInputRequest().isPresent());
         assertFalse(result.shouldSaveAddressBook());
-        assertEquals(expectedModel, model);
+        assertEquals(expectedModel.getAddressBook(), model.getAddressBook());
+        assertEquals(List.of(firstPerson), model.getFilteredPersonList());
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
     }
 
@@ -400,7 +406,26 @@ public class EditCommandTest {
         assertEquals(String.format(EditCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, normalizedNameVariant),
                 result.getFeedbackToUser());
         assertTrue(result.getInputRequest().isPresent());
+        assertEquals(List.of(firstPerson), model.getFilteredPersonList());
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
+    }
+
+    @Test
+    public void execute_multipleDuplicateNames_displaysAllMatches() throws Exception {
+        Person firstMatch = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person personToEdit = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        Person secondMatch = new PersonBuilder(firstMatch).withPhone("91234567")
+                .withVisitDate(VALID_VISIT_DATE_BOB).build();
+        model.addPerson(secondMatch);
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withName(firstMatch.getName().fullName).build();
+
+        CommandResult result = new EditCommand(INDEX_SECOND_PERSON, descriptor).execute(model);
+
+        assertEquals(String.format(EditCommand.MESSAGE_CONFIRM_DUPLICATE_NAMES,
+                firstMatch.getName(), 2), result.getFeedbackToUser());
+        assertEquals(List.of(firstMatch, secondMatch), model.getFilteredPersonList());
+        assertTrue(model.getAddressBook().getPersonList().contains(personToEdit));
     }
 
     @Test
@@ -419,6 +444,7 @@ public class EditCommandTest {
         assertTrue(confirmedResult.shouldSaveAddressBook());
         assertTrue(model.getAddressBook().getPersonList().contains(editedPerson));
         assertFalse(model.getAddressBook().getPersonList().contains(secondPerson));
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
     }
 
     @Test
@@ -433,6 +459,7 @@ public class EditCommandTest {
 
         assertEquals(EditCommand.MESSAGE_EDIT_CANCELLED, cancelledResult.getFeedbackToUser());
         assertFalse(cancelledResult.shouldSaveAddressBook());
+        assertEquals(List.of(firstPerson), model.getFilteredPersonList());
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
     }
 
@@ -490,6 +517,7 @@ public class EditCommandTest {
 
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
         assertTrue(model.getAddressBook().getPersonList().contains(trueDuplicate));
+        assertEquals(List.of(trueDuplicate), model.getFilteredPersonList());
     }
 
     @Test

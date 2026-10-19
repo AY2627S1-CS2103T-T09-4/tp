@@ -40,11 +40,15 @@ public class AddCommand extends Command {
 
     public static final String MESSAGE_SUCCESS = "Added patient %1$s";
     public static final String MESSAGE_DUPLICATE_PERSON =
-            "A patient with the same name and phone number already exists in the address book.";
+            "A patient with the same name and phone number already exists in the address book. "
+                    + "The existing patient is shown in the patient list.";
     public static final String MESSAGE_DUPLICATE_VISIT_DATE =
             "Another patient already has a visit scheduled for %1$s. Choose a different date and time.";
     public static final String MESSAGE_CONFIRM_DUPLICATE_NAME =
-            "A patient named %1$s already exists. Add this patient anyway? "
+            "A patient named %1$s already exists and is shown in the patient list. Add this patient anyway? "
+                    + "Type y to confirm. Any other input cancels.";
+    public static final String MESSAGE_CONFIRM_DUPLICATE_NAMES =
+            "%2$d patients named %1$s already exist and are shown in the patient list. Add this patient anyway? "
                     + "Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_CONFIRM_FULL_DAY =
             "Heads up: you already have %1$d visits on %2$s. Add %3$s anyway? "
@@ -69,7 +73,8 @@ public class AddCommand extends Command {
         validateNoConflicts(model);
 
         if (model.hasPersonWithSameName(toAdd)) {
-            String prompt = String.format(MESSAGE_CONFIRM_DUPLICATE_NAME, toAdd.getName());
+            model.updateFilteredPersonList(toAdd::hasSameName);
+            String prompt = formatDuplicateNamePrompt(model.getFilteredPersonList().size());
             return requestConfirmation(prompt, this::addPersonAfterVisitDayCheck);
         }
 
@@ -120,12 +125,24 @@ public class AddCommand extends Command {
      */
     private void validateNoConflicts(Model model) throws CommandException {
         if (model.hasPerson(toAdd)) {
+            model.updateFilteredPersonList(toAdd::isSamePerson);
             throw new CommandException(String.format(MESSAGE_NOT_ADDED, MESSAGE_DUPLICATE_PERSON));
         }
         if (model.hasPersonWithSameVisitDate(toAdd)) {
             String conflictMessage = String.format(MESSAGE_DUPLICATE_VISIT_DATE, toAdd.getVisitDate());
             throw new CommandException(String.format(MESSAGE_NOT_ADDED, conflictMessage));
         }
+    }
+
+    /**
+     * Returns a grammatically correct confirmation prompt for the displayed duplicate-name matches.
+     */
+    private String formatDuplicateNamePrompt(int duplicateCount) {
+        assert duplicateCount > 0;
+
+        return (duplicateCount == 1)
+                ? String.format(MESSAGE_CONFIRM_DUPLICATE_NAME, toAdd.getName())
+                : String.format(MESSAGE_CONFIRM_DUPLICATE_NAMES, toAdd.getName(), duplicateCount);
     }
 
     @Override

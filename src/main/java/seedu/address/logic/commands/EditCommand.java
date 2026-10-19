@@ -59,11 +59,15 @@ public class EditCommand extends Command {
     public static final String MESSAGE_EDIT_PERSON_SUCCESS = "Edited person: %1$s";
     public static final String MESSAGE_NOT_EDITED = "At least one field to edit must be provided.";
     public static final String MESSAGE_DUPLICATE_PERSON =
-            "A patient with the same name and phone number already exists in the address book.";
+            "A patient with the same name and phone number already exists in the address book. "
+                    + "The existing patient is shown in the patient list.";
     public static final String MESSAGE_DUPLICATE_VISIT_DATE =
             "Another patient already has a visit scheduled for %1$s. Choose a different date and time.";
     public static final String MESSAGE_CONFIRM_DUPLICATE_NAME =
-            "A patient named %1$s already exists. Apply this edit anyway? "
+            "A patient named %1$s already exists and is shown in the patient list. Apply this edit anyway? "
+                    + "Type y to confirm. Any other input cancels.";
+    public static final String MESSAGE_CONFIRM_DUPLICATE_NAMES =
+            "%2$d patients named %1$s already exist and are shown in the patient list. Apply this edit anyway? "
                     + "Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_CONFIRM_FULL_DAY =
             "Heads up: you already have %1$d visits on %2$s. Schedule %3$s on that day anyway? "
@@ -109,7 +113,8 @@ public class EditCommand extends Command {
 
         boolean isNormalizedNameChanged = !personToEdit.hasSameName(editedPerson);
         if (isNormalizedNameChanged && model.hasPersonWithSameName(editedPerson)) {
-            String prompt = String.format(MESSAGE_CONFIRM_DUPLICATE_NAME, editedPerson.getName());
+            model.updateFilteredPersonList(editedPerson::hasSameName);
+            String prompt = formatDuplicateNamePrompt(editedPerson, model.getFilteredPersonList().size());
             return requestConfirmation(prompt,
                     confirmedModel -> editPersonAfterVisitDayCheck(confirmedModel, personToEdit, editedPerson));
         }
@@ -175,6 +180,7 @@ public class EditCommand extends Command {
     private static void validateNoConflicts(Model model, Person personToEdit, Person editedPerson)
             throws CommandException {
         if (!personToEdit.isSamePerson(editedPerson) && model.hasPerson(editedPerson)) {
+            model.updateFilteredPersonList(editedPerson::isSamePerson);
             throw new CommandException(MESSAGE_DUPLICATE_PERSON);
         }
 
@@ -182,6 +188,17 @@ public class EditCommand extends Command {
         if (isVisitDateChanged && model.hasPersonWithSameVisitDate(editedPerson)) {
             throw new CommandException(String.format(MESSAGE_DUPLICATE_VISIT_DATE, editedPerson.getVisitDate()));
         }
+    }
+
+    /**
+     * Returns a grammatically correct confirmation prompt for the displayed duplicate-name matches.
+     */
+    private static String formatDuplicateNamePrompt(Person editedPerson, int duplicateCount) {
+        assert duplicateCount > 0;
+
+        return (duplicateCount == 1)
+                ? String.format(MESSAGE_CONFIRM_DUPLICATE_NAME, editedPerson.getName())
+                : String.format(MESSAGE_CONFIRM_DUPLICATE_NAMES, editedPerson.getName(), duplicateCount);
     }
 
     /**
