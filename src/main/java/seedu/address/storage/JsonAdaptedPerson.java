@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.person.Address;
+import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
@@ -28,6 +29,7 @@ class JsonAdaptedPerson {
     public static final String MISSING_FIELD_MESSAGE_FORMAT = "Person's %s field is missing!";
 
     private final String name;
+    private final String dateOfBirth;
     private final String phone;
     private final String email;
     private final String address;
@@ -47,13 +49,23 @@ class JsonAdaptedPerson {
     /**
      * Constructs a stored patient, accepting a missing emergency contact from older files.
      */
+    public JsonAdaptedPerson(String name, String phone, String email, String address,
+            String visitDate, String note, String emergencyContact, List<JsonAdaptedTag> tags) {
+        this(name, null, phone, email, address, visitDate, note, emergencyContact, tags);
+    }
+
+    /**
+     * Constructs a stored patient, accepting a missing date of birth from older files.
+     */
     @JsonCreator
-    public JsonAdaptedPerson(@JsonProperty("name") String name, @JsonProperty("phone") String phone,
+    public JsonAdaptedPerson(@JsonProperty("name") String name, @JsonProperty("dateOfBirth") String dateOfBirth,
+            @JsonProperty("phone") String phone,
             @JsonProperty("email") String email, @JsonProperty("address") String address,
             @JsonProperty("visitDate") String visitDate, @JsonProperty("note") String note,
             @JsonProperty("emergencyContact") String emergencyContact,
             @JsonProperty("tags") List<JsonAdaptedTag> tags) {
         this.name = name;
+        this.dateOfBirth = dateOfBirth;
         this.phone = phone;
         this.email = email;
         this.address = address;
@@ -70,6 +82,7 @@ class JsonAdaptedPerson {
      */
     public JsonAdaptedPerson(Person source) {
         name = source.getName().fullName;
+        dateOfBirth = source.getDateOfBirth().toString();
         phone = source.getPhone().value;
         email = source.getEmail().value;
         address = source.getAddress().value;
@@ -108,6 +121,12 @@ class JsonAdaptedPerson {
         }
         final Phone modelPhone = new Phone(phone);
 
+        String storedDateOfBirth = dateOfBirth == null ? "" : dateOfBirth;
+        if (!DateOfBirth.isValidDateOfBirth(storedDateOfBirth)) {
+            throw new IllegalValueException(DateOfBirth.MESSAGE_CONSTRAINTS);
+        }
+        final DateOfBirth modelDateOfBirth = new DateOfBirth(storedDateOfBirth);
+
         if (email == null) {
             throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, Email.class.getSimpleName()));
         }
@@ -143,7 +162,7 @@ class JsonAdaptedPerson {
         final EmergencyContact modelEmergencyContact = new EmergencyContact(storedContact);
 
         final Set<Tag> modelTags = new HashSet<>(personTags);
-        return new Person(modelName, modelPhone, modelEmail, modelAddress, modelVisitDate, modelNote,
+        return new Person(modelName, modelDateOfBirth, modelPhone, modelEmail, modelAddress, modelVisitDate, modelNote,
                 modelEmergencyContact, modelTags);
     }
 

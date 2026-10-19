@@ -320,7 +320,7 @@ The visit-date rule prevents only exact scheduling collisions:
 ### Editing patient details
 
 `EditCommandParser` accepts optional replacement fields, including `vd/` and `note/`. The displayed format is
-`edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`.
+`edit INDEX [n/NAME] [dob/DATE] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`.
 It checks index syntax and duplicate single-valued prefixes before parsing field values, then rejects a
 descriptor with no supplied fields. When `vd/` is supplied, `ParserUtil#parseVisitDate` reuses the existing strict
 `VisitDate` validation
@@ -911,6 +911,22 @@ testers are expected to do more *exploratory* testing.
        Expected: The most recent window size and location are retained.
 
 1. _{ more test cases … }_
+
+### Dates of birth
+
+Use a disposable data file and available visit slots.
+
+1. Run `add n/Dob Patient dob/15/6/1990 p/81234567 a/10 Test Road vd/22/10/2026 1000`, then `view 1`.
+   Expect `Date of birth: 15/6/1990 (N years old)` immediately below the name, with the age in completed years
+   on the computer's current local date. A leap-day birthday advances on March 1 in non-leap years.
+1. Run `edit 1 n/Dob Patient dob/20/7/1985`, then `view 1`; expect the replacement date and recalculated age.
+1. Edit another field and run `next 1 1/1/2099 1000`; expect the date of birth to remain unchanged.
+1. Restart the application and run `view 1`; expect the saved date of birth to remain.
+1. Try `edit 1 dob/`, `edit 1 dob/31/2/2000`, a future date, and repeated `dob/` prefixes.
+   Expect errors and unchanged data. Repeat these invalid cases using `add`; no patient should be added.
+1. Add another patient without `dob/` and view it; expect no date of birth row or stale text. View the first
+   patient again; expect the row to reappear. Set the second patient's DOB using `edit INDEX dob/1/1/2000`.
+1. Load an older valid data file without `dateOfBirth`; expect the patients to load with the DOB row hidden.
 
 ### Emergency contacts
 

@@ -116,6 +116,13 @@ public class PersonTest {
         Person editedAlice = new PersonBuilder(ALICE).withName(VALID_NAME_BOB).build();
         assertFalse(ALICE.equals(editedAlice));
 
+        // different date of birth changes data equality but preserves patient identity
+        editedAlice = new PersonBuilder(ALICE).withDateOfBirth("15/6/1990").build();
+        assertFalse(ALICE.equals(editedAlice));
+        assertTrue(ALICE.isSamePerson(editedAlice));
+        assertEquals(editedAlice, new PersonBuilder(editedAlice).build());
+        assertEquals(editedAlice.hashCode(), new PersonBuilder(editedAlice).build().hashCode());
+
         // different phone -> returns false
         editedAlice = new PersonBuilder(ALICE).withPhone(VALID_PHONE_BOB).build();
         assertFalse(ALICE.equals(editedAlice));
@@ -135,7 +142,9 @@ public class PersonTest {
 
     @Test
     public void toStringMethod() {
-        String expected = Person.class.getCanonicalName() + "{name=" + ALICE.getName() + ", phone=" + ALICE.getPhone()
+        String expected = Person.class.getCanonicalName() + "{name=" + ALICE.getName()
+                + ", dateOfBirth=" + ALICE.getDateOfBirth()
+                + ", phone=" + ALICE.getPhone()
                 + ", email=" + ALICE.getEmail() + ", address=" + ALICE.getAddress()
                 + ", visitDate=" + ALICE.getVisitDate() + ", note=" + ALICE.getNote()
                 + ", emergencyContact=" + ALICE.getEmergencyContact() + ", tags=" + ALICE.getTags() + "}";

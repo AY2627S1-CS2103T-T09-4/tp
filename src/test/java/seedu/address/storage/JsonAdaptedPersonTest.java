@@ -13,11 +13,14 @@ import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.person.Address;
+import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
+import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
 import seedu.address.model.person.VisitDate;
+import seedu.address.testutil.PersonBuilder;
 
 public class JsonAdaptedPersonTest {
     private static final String INVALID_NAME = "R@chel";
@@ -55,6 +58,21 @@ public class JsonAdaptedPersonTest {
         JsonAdaptedPerson person = new JsonAdaptedPerson(VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS,
                 VALID_VISIT_DATE, VALID_NOTE, "Mary Tan, invalid", VALID_TAGS);
         assertThrows(IllegalValueException.class, EmergencyContact.MESSAGE_CONSTRAINTS, person::toModelType);
+    }
+
+    @Test
+    public void toModelType_dateOfBirth_roundTripsPatient() throws Exception {
+        Person patient = new PersonBuilder(BENSON).withDateOfBirth("15/6/1990").build();
+        assertEquals(patient, new JsonAdaptedPerson(patient).toModelType());
+    }
+
+    @Test
+    public void toModelType_invalidDateOfBirth_throwsIllegalValueException() {
+        for (String date : List.of("31/2/2000", "1/1/9999", " ")) {
+            JsonAdaptedPerson person = new JsonAdaptedPerson(VALID_NAME, date, VALID_PHONE, VALID_EMAIL,
+                    VALID_ADDRESS, VALID_VISIT_DATE, VALID_NOTE, null, VALID_TAGS);
+            assertThrows(IllegalValueException.class, DateOfBirth.MESSAGE_CONSTRAINTS, person::toModelType);
+        }
     }
 
     @Test
