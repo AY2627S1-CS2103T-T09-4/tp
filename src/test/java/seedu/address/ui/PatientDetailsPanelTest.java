@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.ui.JavaFxTestUtil.runOnFxThread;
 import static seedu.address.ui.JavaFxTestUtil.startJavaFx;
 
+import java.time.LocalDate;
+import java.time.Period;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -67,6 +70,37 @@ public class PatientDetailsPanelTest {
             assertTrue(detailsContainer.isManaged());
             assertTrue(detailsContainer.isVisible());
         });
+    }
+
+    @Test
+    public void setPerson_dateOfBirth_displaysAgeBelowNameAndHidesWhenAbsent() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            panel.setPerson(new PersonBuilder().withDateOfBirth("15/6/1990").build());
+            Label birthDate = getLabel(panel, "dateOfBirth");
+            int age = Period.between(LocalDate.of(1990, 6, 15), LocalDate.now()).getYears();
+            assertEquals("Date of birth: 15/6/1990 (" + age + " years old)", birthDate.getText());
+            assertFieldVisible(panel, "dateOfBirth", true);
+            assertTrue(birthDate.isWrapText());
+            VBox container = getDetailsContainer(panel);
+            assertEquals(container.getChildren().indexOf(getLabel(panel, "name")) + 1,
+                    container.getChildren().indexOf(birthDate));
+
+            panel.setPerson(new PersonBuilder().build());
+            assertFieldVisible(panel, "dateOfBirth", false);
+            panel.setPerson(new PersonBuilder().withDateOfBirth("1/1/2000").build());
+            assertFieldVisible(panel, "dateOfBirth", true);
+            assertTrue(birthDate.getText().startsWith("Date of birth: 1/1/2000 ("));
+        });
+    }
+
+    private static void assertFieldVisible(PatientDetailsPanel panel, String labelId, boolean isVisible) {
+        Label label = getLabel(panel, labelId);
+        assertEquals(isVisible, label.isVisible(), labelId);
+        assertEquals(isVisible, label.isManaged(), labelId);
+        if (!isVisible) {
+            assertEquals("", label.getText(), labelId);
+        }
     }
 
     private static VBox getDetailsContainer(PatientDetailsPanel patientDetailsPanel) {

@@ -33,7 +33,7 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 
    * `list` : Lists all patients.
 
-   * `add n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01 vd/18/9/2026 1000` : Adds a patient named `John Doe` to Doc.
+   * `add n/John Doe dob/15/6/1990 p/98765432 e/johnd@example.com a/John street, block 123, #01-01 vd/18/9/2026 1000` : Adds a patient named `John Doe` to Doc.
 
    * `delete 3` : Asks for confirmation before deleting the 3rd patient shown in the current list.
 
@@ -103,12 +103,18 @@ Format: `help`
 
 Adds a patient record to Doc.
 
-Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [t/TAG]... `
+Format: `add n/NAME [dob/DATE] p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [t/TAG]... `
 
 * `VISIT_DATE` must be a date and time in the format `d/M/yyyy HHmm`, e.g. `18/9/2026 1000`. Past dates are allowed.
 * Each patient must have a unique visit date and time. If another patient already uses the supplied date and time,
   the addition is rejected and the app asks you to choose a different slot.
-* `EMAIL` and `NOTES` are optional.
+* Date of birth, `EMAIL`, and `NOTES` are optional.
+* Use `dob/DATE` to record the date of birth in `d/M/yyyy` format, e.g. `dob/15/6/1990`.
+  The year must have four digits, from `0001` onwards. The date must exist and must not be in the future;
+  today's date is allowed. An empty or repeated `dob/` is rejected. Surrounding whitespace is trimmed.
+  Leading zeroes in the day and month are accepted and removed when displaying or saving.
+  Omitting `dob/` leaves the date of birth unrecorded. Existing saved records without this field still load.
+  It does not change how duplicate patients are identified.
 * On success, the app shows `Added patient NAME` and the new patient appears in the list.
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
 * A patient with the same normalized name and phone number as an existing patient is a duplicate and cannot be added.
@@ -146,7 +152,7 @@ Visit-time conflict detection has these limitations:
 </box>
 
 Examples:
-* `add n/John Doe p/98765432 a/John street, block 123, #01-01 vd/18/9/2026 1000 e/JohnDoe@gmail.com note/This man is sick`
+* `add n/John Doe dob/15/6/1990 p/98765432 a/John street, block 123, #01-01 vd/18/9/2026 1000 e/JohnDoe@gmail.com note/This man is sick`
 * `add n/Betsy Crowe t/friend a/Newgate Prison p/1234567 vd/1/10/2026 1430 t/criminal`
 
 ### Listing all patients: `list`
@@ -186,12 +192,18 @@ Displays the selected patient's full record in the details panel on the right.
 
 Format: `view INDEX`
 
+* If recorded, the date of birth appears immediately below the name in both the left-hand patient list
+  and the right-hand details panel as
+  `Date of birth: 15/6/1990 (N years old)`. Age is calculated in completed years using the computer's local
+  date when the record is viewed. For a February 29 birthday, age increases on March 1 in non-leap years.
+  The row is hidden when no date of birth is recorded.
 * Displays the patient at the specified `INDEX`.
 * The index refers to the index number shown in the currently displayed patient list.
 * The index **must be a positive integer** 1, 2, 3, ...
 * The command works on lists produced by commands such as `find` and `sort date`.
 * The currently displayed patient list remains visible on the left.
 * Viewing a patient does not change their stored details.
+* After editing a patient, run `view INDEX` again to display their updated details.
 
 Example:
 * `view 1` displays the first patient's full record in the details panel.
@@ -200,11 +212,16 @@ Example:
 
 Edits an existing patient record in Doc.
 
-Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`
+Format: `edit INDEX [n/NAME] [dob/DATE] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`
 
 * Edits the patient at the specified `INDEX`. The index refers to the index number shown in the displayed patient
   list. The index **must be a positive integer** 1, 2, 3, ...
 * All editable fields are optional, but at least one must be provided.
+* Use `dob/DATE` to add or replace the date of birth, e.g. `edit 1 n/John Doe dob/15/6/1990`.
+  The same date rules as `add` apply to nonempty values. Omitting `dob/` preserves the current value.
+  Use an empty `dob/`, e.g. `edit 1 dob/`, to clear the date of birth. Whitespace-only values also clear it.
+  Clearing an already empty date of birth is allowed. Run `view INDEX` again to hide the date of birth row.
+  Repeated `dob/` prefixes are rejected, including when one or both values are empty.
 * To update the visit date and time, use `vd/` with the format `d/M/yyyy HHmm`
   (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted.
 * The visit date and time can be edited by itself. Omitting `vd/` preserves the existing visit date and time.
@@ -398,10 +415,10 @@ Doc home folder.
 
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-**Add**    | `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
+**Add**    | `add n/NAME [dob/DATE] p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
-**Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
+**Edit**   | `edit INDEX [n/NAME] [dob/DATE] [p/PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (use an available future appointment)

@@ -70,8 +70,8 @@ public class NextCommand extends Command {
         Person personToUpdate = displayedPersons.get(index.getZeroBased());
         validateVisitDate(model, personToUpdate);
 
-        Person updatedPerson = new Person(personToUpdate.getName(), personToUpdate.getPhone(),
-                personToUpdate.getEmail(), personToUpdate.getAddress(), visitDate,
+        Person updatedPerson = new Person(personToUpdate.getName(), personToUpdate.getDateOfBirth(),
+                personToUpdate.getPhone(), personToUpdate.getEmail(), personToUpdate.getAddress(), visitDate,
                 personToUpdate.getNote(), personToUpdate.getTags());
         model.setPerson(personToUpdate, updatedPerson);
         model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);

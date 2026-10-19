@@ -23,6 +23,9 @@ public class PatientDetailsPanel extends UiPart<Region> {
     private Label name;
 
     @FXML
+    private Label dateOfBirth;
+
+    @FXML
     private Label phone;
 
     @FXML
@@ -54,6 +57,10 @@ public class PatientDetailsPanel extends UiPart<Region> {
      */
     public void setPerson(Person person) {
         name.setText(person.getName().fullName);
+        boolean hasDateOfBirth = !person.getDateOfBirth().isEmpty();
+        dateOfBirth.setText(hasDateOfBirth ? "Date of birth: " + person.getDateOfBirth().toDisplayString() : "");
+        dateOfBirth.setVisible(hasDateOfBirth);
+        dateOfBirth.setManaged(hasDateOfBirth);
         phone.setText("Phone: " + person.getPhone().value);
         email.setText("Email: " + person.getEmail().value);
         address.setText("Address: " + person.getAddress().value);

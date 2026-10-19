@@ -21,6 +21,7 @@ public class Person {
     private final Phone phone;
 
     // Data fields
+    private final DateOfBirth dateOfBirth;
     private final Email email;
     private final Address address;
     private final VisitDate visitDate;
@@ -32,7 +33,16 @@ public class Person {
      */
     public Person(Name name, Phone phone, Email email, Address address, VisitDate visitDate, Note note,
             Set<Tag> tags) {
-        requireAllNonNull(name, phone, email, address, visitDate, note, tags);
+        this(name, new DateOfBirth(""), phone, email, address, visitDate, note, tags);
+    }
+
+    /**
+     * Creates a patient with an optional date of birth. Every field must be non-null.
+     */
+    public Person(Name name, DateOfBirth dateOfBirth, Phone phone, Email email, Address address,
+            VisitDate visitDate, Note note, Set<Tag> tags) {
+        requireAllNonNull(name, dateOfBirth, phone, email, address, visitDate, note, tags);
+        this.dateOfBirth = dateOfBirth;
         this.name = name;
         this.phone = phone;
         this.email = email;
@@ -44,6 +54,10 @@ public class Person {
 
     public Name getName() {
         return name;
+    }
+
+    public DateOfBirth getDateOfBirth() {
+        return dateOfBirth;
     }
 
     public Phone getPhone() {
@@ -111,6 +125,7 @@ public class Person {
         }
 
         return name.equals(otherPerson.name)
+                && dateOfBirth.equals(otherPerson.dateOfBirth)
                 && phone.equals(otherPerson.phone)
                 && email.equals(otherPerson.email)
                 && address.equals(otherPerson.address)
@@ -122,13 +137,14 @@ public class Person {
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(name, phone, email, address, visitDate, note, tags);
+        return Objects.hash(name, dateOfBirth, phone, email, address, visitDate, note, tags);
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
                 .add("name", name)
+                .add("dateOfBirth", dateOfBirth)
                 .add("phone", phone)
                 .add("email", email)
                 .add("address", address)
