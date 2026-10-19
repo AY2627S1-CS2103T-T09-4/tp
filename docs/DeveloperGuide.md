@@ -851,26 +851,31 @@ testers are expected to do more *exploratory* testing.
 
 ### Sorting visits by date
 
-`SortCommandParser` accepts the `date` field and rejects missing, unsupported, or additional
-arguments with the command usage message. The model exposes a `SortedList` backed by its
-`FilteredList`. `SortCommand` preserves the current filter and sorts its displayed patients
-into two groups using the local date at execution time: visits today or later first, followed
-by past visits. Each group is ordered by visit date and time, earliest first. Stored patient
-order is unchanged. Updating the filter resets the displayed order, preserving the usual
-behavior of `list` and `find`.
+`SortCommandParser` accepts the `date` field followed by an optional cutoff date in `d/M/yyyy`
+format. It rejects missing fields, invalid dates, and additional arguments with the command
+usage message. The model exposes a `SortedList` backed by its `FilteredList`. `SortCommand`
+preserves the current filter and sorts its displayed patients into two groups around the
+supplied cutoff date, or the local date at execution time when the cutoff is omitted: visits
+on or after the cutoff first, followed by visits before it. Each group is ordered by visit date
+and time, earliest first. Stored patient order is unchanged. Updating the filter resets the
+displayed order, preserving the usual behavior of `list` and `find`.
 
 1. Prepare patients with visits two days ago, yesterday, today at 0000, today at 2300, and tomorrow,
    entered in a different order from their visit dates.
 1. Run `sort date`. Expect today's and tomorrow's patients first, followed by the two past visits;
    expect each group to be in ascending date-time order.
+1. Run `sort date` with a cutoff equal to yesterday's date. Expect yesterday's, today's, and tomorrow's patients
+   first, followed by the visit from two days ago.
+1. Run `sort date` with a cutoff equal to tomorrow's date. Expect tomorrow's patient first, followed by all earlier
+   visits in ascending date-time order.
 1. Run `find` for one patient, then `sort date`. Expect only that matching patient to remain displayed.
 1. Run `sort date` twice. Expect the same order; equal visit times retain stored order.
 1. Run `delete 1`, then `y`. Expect the first displayed patient to be deleted, with the remaining visits still sorted.
 1. Run `list`. Expect every remaining patient, including yesterday's, in stored order.
 1. Try `sort date` on an empty patient list. Expect an empty list. Try it on a patient list containing only past
    visits; expect all visits in ascending date-time order.
-1. Run `sort`, `sort name`, and `sort date name`. Expect each command to show the required format and the
-   `sort date` example without changing the displayed list.
+1. Run `sort`, `sort name`, `sort date name`, `sort date 31/2/2026`, and `sort date 18/9/2026 extra`. Expect each
+   command to show the required format and both examples without changing the displayed list.
 
 ### Distinguishing past visits in the patient list
 
