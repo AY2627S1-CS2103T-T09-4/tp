@@ -21,6 +21,21 @@ import seedu.address.testutil.PersonBuilder;
 public class PersonTest {
 
     @Test
+    public void constructor_withoutEmergencyContact_preservesOtherFields() {
+        Person expectedPerson = new PersonBuilder(ALICE)
+                .withNote("Monitor blood pressure")
+                .withTags("family", "priority")
+                .build();
+
+        Person person = new Person(expectedPerson.getName(), expectedPerson.getPhone(), expectedPerson.getEmail(),
+                expectedPerson.getAddress(), expectedPerson.getVisitDate(), expectedPerson.getNote(),
+                expectedPerson.getTags());
+
+        assertTrue(person.getEmergencyContact().isEmpty());
+        assertEquals(expectedPerson, person);
+    }
+
+    @Test
     public void asObservableList_modifyList_throwsUnsupportedOperationException() {
         Person person = new PersonBuilder().build();
         assertThrows(UnsupportedOperationException.class, () -> person.getTags().remove(0));
