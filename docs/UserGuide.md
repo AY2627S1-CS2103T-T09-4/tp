@@ -216,6 +216,10 @@ Format: `view INDEX`
 * The command works on lists produced by commands such as `find` and `sort date`.
 * The currently displayed patient list remains visible on the left.
 * Viewing a patient does not change their stored details.
+* Empty email, notes, tags, and emergency contact fields are hidden together with their labels, without leaving
+  blank rows. Fields with values remain visible. Required fields (name, phone, address, and visit date) stay visible.
+* After editing a patient, run `view INDEX` again to display their updated details. Optional rows appear or disappear
+  according to the selected patient's saved values, including when switching between patients.
 * If an emergency contact is recorded, it appears directly below the patient's phone number as
   `Emergency Contact : 98765432 (Mary Tan)`. The emergency contact row is hidden when no contact is recorded.
 

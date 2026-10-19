@@ -51,29 +51,36 @@ public class PatientDetailsPanel extends UiPart<Region> {
     }
 
     /**
-     * Displays all details of the specified person.
+     * Displays the specified person's details, hiding empty optional fields and their labels.
      *
      * @param person Person whose details should be displayed.
      */
     public void setPerson(Person person) {
         name.setText(person.getName().fullName);
         phone.setText("Phone: " + person.getPhone().value);
-        email.setText("Email: " + person.getEmail().value);
         address.setText("Address: " + person.getAddress().value);
         visitDate.setText("Visit date: " + person.getVisitDate());
-        note.setText("Note: " + person.getNote().value);
-        emergencyContact.setText("Emergency Contact : " + person.getEmergencyContact().toDisplayString());
-        boolean hasEmergencyContact = !person.getEmergencyContact().isEmpty();
-        emergencyContact.setVisible(hasEmergencyContact);
-        emergencyContact.setManaged(hasEmergencyContact);
+        setOptionalField(email, "Email: ", person.getEmail().value);
+        setOptionalField(note, "Note: ", person.getNote().value);
+        setOptionalField(emergencyContact, "Emergency Contact : ", person.getEmergencyContact().toDisplayString());
 
         String tagNames = person.getTags().stream()
                 .sorted(Comparator.comparing(tag -> tag.tagName))
                 .map(tag -> tag.tagName)
                 .collect(Collectors.joining(", "));
-        tags.setText("Tags: " + tagNames);
+        setOptionalField(tags, "Tags: ", tagNames);
 
         detailsContainer.setManaged(true);
         detailsContainer.setVisible(true);
+    }
+
+    /**
+     * Displays a nonempty optional value with its label, or hides the entire row without reserving layout space.
+     */
+    private void setOptionalField(Label label, String prefix, String value) {
+        boolean hasValue = !value.isEmpty();
+        label.setText(hasValue ? prefix + value : "");
+        label.setVisible(hasValue);
+        label.setManaged(hasValue);
     }
 }

@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.ui.JavaFxTestUtil.runOnFxThread;
 import static seedu.address.ui.JavaFxTestUtil.startJavaFx;
 
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -89,6 +91,75 @@ public class PatientDetailsPanelTest {
             assertFalse(contact.isManaged());
             assertFalse(contact.getText().contains("Mary Tan"));
         });
+    }
+
+    @Test
+    public void setPerson_emptyOptionalFields_hidesRowsAndKeepsRequiredFieldsVisible() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            panel.setPerson(new PersonBuilder().withEmail("").withNote("").withTags().build());
+
+            assertOptionalFieldsVisible(panel, false);
+            for (String labelId : List.of("name", "phone", "address", "visitDate")) {
+                assertFieldVisible(panel, labelId, true);
+            }
+        });
+    }
+
+    @Test
+    public void setPerson_switchBetweenPopulatedAndEmptyFields_restoresRowsAndClearsOldText() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            Person populated = new PersonBuilder().withEmail("alex@example.com").withNote("Review medication")
+                    .withTags("priority").withEmergencyContact("Mary Tan, 91234567").build();
+            Person empty = new PersonBuilder().withEmail("").withNote("").withTags().build();
+
+            panel.setPerson(populated);
+            assertOptionalFieldsVisible(panel, true);
+            panel.setPerson(empty);
+            assertOptionalFieldsVisible(panel, false);
+            panel.setPerson(populated);
+            assertOptionalFieldsVisible(panel, true);
+            assertEquals("Email: alex@example.com", getLabel(panel, "email").getText());
+            assertEquals("Note: Review medication", getLabel(panel, "note").getText());
+            assertEquals("Tags: priority", getLabel(panel, "tags").getText());
+            assertEquals("Emergency Contact : 91234567 (Mary Tan)", getLabel(panel, "emergencyContact").getText());
+        });
+    }
+
+    @Test
+    public void setPerson_mixedOptionalFields_updatesVisibilityIndependently() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            panel.setPerson(new PersonBuilder().withEmail("alex@example.com").withNote("").withTags()
+                    .withEmergencyContact("Mary Tan, 91234567").build());
+            assertFieldVisible(panel, "email", true);
+            assertFieldVisible(panel, "emergencyContact", true);
+            assertFieldVisible(panel, "note", false);
+            assertFieldVisible(panel, "tags", false);
+
+            panel.setPerson(new PersonBuilder().withEmail("").withNote("Review medication")
+                    .withTags("priority").build());
+            assertFieldVisible(panel, "email", false);
+            assertFieldVisible(panel, "emergencyContact", false);
+            assertFieldVisible(panel, "note", true);
+            assertFieldVisible(panel, "tags", true);
+        });
+    }
+
+    private static void assertOptionalFieldsVisible(PatientDetailsPanel panel, boolean isVisible) {
+        for (String labelId : List.of("email", "note", "tags", "emergencyContact")) {
+            assertFieldVisible(panel, labelId, isVisible);
+        }
+    }
+
+    private static void assertFieldVisible(PatientDetailsPanel panel, String labelId, boolean isVisible) {
+        Label label = getLabel(panel, labelId);
+        assertEquals(isVisible, label.isVisible(), labelId);
+        assertEquals(isVisible, label.isManaged(), labelId);
+        if (!isVisible) {
+            assertEquals("", label.getText(), labelId);
+        }
     }
 
     private static VBox getDetailsContainer(PatientDetailsPanel patientDetailsPanel) {

@@ -169,6 +169,20 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 
 This section describes some noteworthy details on how certain features are implemented.
 
+### Optional field visibility in patient details
+
+`PatientDetailsPanel#setPerson` updates the patient's required fields and uses `setOptionalField` for email, notes,
+formatted tags, and emergency contact. A nonempty value shows its label and value. An empty value clears the label
+text and sets both `visible` and `managed` to false, so the `VBox` does not reserve space for the hidden row.
+Each update also restores both properties for populated fields, preventing stale visibility when switching patients.
+This changes only how a supplied patient is displayed; refreshing the panel automatically after edits is separate.
+
+`PatientDetailsPanelTest` covers all-empty records, populated-to-empty-to-populated transitions, mixed optional
+fields, and required-field visibility. To verify manually, view a patient with email, notes, and tags, then clear
+these with `edit INDEX e/ note/ t/` and run `view INDEX` again. Expect the empty rows and labels to disappear.
+Add the details back and view the patient again; expect the populated rows to return. View another patient without
+an emergency contact and expect that row to be hidden too. Required fields should remain visible throughout.
+
 ### Optional emergency contacts
 
 `Person` stores an immutable `EmergencyContact` value. Its empty string represents an absent contact, so
