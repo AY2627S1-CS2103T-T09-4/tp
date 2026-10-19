@@ -19,35 +19,45 @@ import seedu.address.model.tag.Tag;
  * Contains utility methods for populating {@code AddressBook} with sample data.
  */
 public class SampleDataUtil {
+    /**
+     * Returns the patients shown when Doc starts without an existing data file.
+     */
     public static Person[] getSamplePersons() {
         return new Person[] {
-            new Person(new Name("Alex Yeoh"), new Phone("87438807"), new Email("alexyeoh@example.com"),
-                new Address("Blk 30 Geylang Street 29, #06-40"),
-                new VisitDate("18/9/2026 1000"), new Note(""),
-                getTagSet("friends")),
-            new Person(new Name("Bernice Yu"), new Phone("99272758"), new Email("berniceyu@example.com"),
-                new Address("Blk 30 Lorong 3 Serangoon Gardens, #07-18"),
-                new VisitDate("18/9/2026 1030"), new Note(""),
-                getTagSet("colleagues", "friends")),
-            new Person(new Name("Charlotte Oliveiro"), new Phone("93210283"), new Email("charlotte@example.com"),
-                new Address("Blk 11 Ang Mo Kio Street 74, #11-04"),
-                new VisitDate("18/9/2026 1100"), new Note(""),
-                getTagSet("neighbours")),
-            new Person(new Name("David Li"), new Phone("91031282"), new Email("lidavid@example.com"),
-                new Address("Blk 436 Serangoon Gardens Street 26, #16-43"),
-                new VisitDate("18/9/2026 1130"), new Note(""),
-                getTagSet("family")),
-            new Person(new Name("Irfan Ibrahim"), new Phone("92492021"), new Email("irfan@example.com"),
-                new Address("Blk 47 Tampines Street 20, #17-35"),
-                new VisitDate("18/9/2026 1200"), new Note(""),
-                getTagSet("classmates")),
-            new Person(new Name("Roy Balakrishnan"), new Phone("92624417"), new Email("royb@example.com"),
-                new Address("Blk 45 Aljunied Street 85, #11-31"),
-                new VisitDate("18/9/2026 1230"), new Note(""),
-                getTagSet("colleagues"))
+            new Person(new Name("George Miller"), new Phone("88765432"),
+                new Email("george.miller@example.com"), new Address("8 Maple Grove"),
+                new VisitDate("5/10/2026 1530"), new Note("Review mobility exercises"),
+                getTagSet("routine")),
+            new Person(new Name("Priya Nair"), new Phone("81234567"),
+                new Email("priya.nair@example.com"), new Address("21 Bukit Timah Road, #05-12"),
+                new VisitDate("15/10/2026 0900"), new Note("Check blood pressure"),
+                getTagSet("morning")),
+            new Person(new Name("Aisha Rahman"), new Phone("82345678"),
+                new Email("aisha.rahman@example.com"), new Address("12 Cedar Close"),
+                new VisitDate("12/10/2026 1000"), new Note("Discuss glucose readings"),
+                getTagSet("followup")),
+            new Person(new Name("Marcus Lim"), new Phone("87654321"),
+                new Email("marcus.lim@example.com"), new Address("46 Tampines Street 21, #08-03"),
+                new VisitDate("16/10/2026 1400"), new Note("Review medication dosage"),
+                getTagSet("afternoon")),
+            new Person(new Name("Mei Lin Tan"), new Phone("83456789"),
+                new Email("meilin.tan@example.com"), new Address("77 Ang Mo Kio Avenue 4, #03-18"),
+                new VisitDate("14/10/2026 0800"), new Note("Routine wound dressing"),
+                getTagSet("today")),
+            new Person(new Name("Daniel Wong"), new Phone("84567890"),
+                new Email("daniel.wong@example.com"), new Address("17 Sunset Way"),
+                new VisitDate("20/10/2026 1100"), new Note("Check recovery progress"),
+                getTagSet("followup")),
+            new Person(new Name("Noor Aziz"), new Phone("85678901"),
+                new Email("noor.aziz@example.com"), new Address("30 Bedok North Street 3, #10-22"),
+                new VisitDate("1/10/2026 1330"), new Note("Confirm next prescription"),
+                getTagSet("routine"))
         };
     }
 
+    /**
+     * Returns an address book populated with the sample patients.
+     */
     public static ReadOnlyAddressBook getSampleAddressBook() {
         AddressBook sampleAb = new AddressBook();
         for (Person samplePerson : getSamplePersons()) {

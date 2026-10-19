@@ -159,6 +159,11 @@ The `Storage` component,
 * is implemented by `StorageManager`, which delegates the actual JSON file access to `JsonAddressBookStorage` and `JsonUserPrefsStorage` (one class per data file).
 * depends on some classes in the `Model` component (because the `Storage` component's job is to save/retrieve objects that belong to the `Model`)
 
+When the patient data file does not exist, `MainApp` initializes the model with the seven records returned by
+`SampleDataUtil#getSampleAddressBook`. The sample patients are George Miller, Priya Nair, Aisha Rahman, Marcus Lim,
+Mei Lin Tan, Daniel Wong, and Noor Aziz. If a data file exists, including one with no records, its contents take
+precedence over these samples.
+
 ### Common classes
 
 Classes used by multiple components are in the `seedu.address.commons` package.
@@ -238,9 +243,6 @@ new duplicate rules:
 * For either conflict, Doc reports the loading problem and starts with an empty patient list. The conflicting file is
   not backed up automatically, and a command that triggers saving, such as `list`, can replace it with the empty
   patient list. Users must back up the file and resolve the conflicts manually before migration.
-* Automated tests do not currently construct `SampleDataUtil#getSampleAddressBook`. Consequently, an accidental
-  duplicate among the sample visit times could break first-run sample-data initialization without failing the test
-  suite.
 
 #### Visit-time conflict limitations
 
@@ -838,7 +840,8 @@ testers are expected to do more *exploratory* testing.
    1. Download the JAR file and copy it into an empty folder.
 
    1. Double-click the JAR file.<br>
-      Expected: The GUI opens with a set of sample patient records. The window size may not be optimal.
+      Expected: The GUI opens with seven sample patient records in this order: George Miller, Priya Nair, Aisha
+      Rahman, Marcus Lim, Mei Lin Tan, Daniel Wong, and Noor Aziz. The window size may not be optimal.
 
 1. Saving window preferences
 
