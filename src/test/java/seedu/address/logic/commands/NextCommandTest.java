@@ -69,6 +69,27 @@ public class NextCommandTest {
     }
 
     @Test
+    public void execute_existingPreviousDates_preservesVisitRecord() throws Exception {
+        Person original = new PersonBuilder(CARL).withPreviousVisitDates("1/8/2026 1000", "2/8/2026 1000").build();
+        model.setPerson(CARL, original);
+
+        assertScheduleSuccess(Index.fromOneBased(3), original, NEW_VISIT_DATE);
+        assertEquals(original.getPreviousVisitDates(),
+                model.getAddressBook().getPersonList().get(2).getPreviousVisitDates());
+    }
+
+    @Test
+    public void execute_requestedDateBeforePreviousDate_preservesDataAndDisplay() {
+        Person original = new PersonBuilder(AMY).withPreviousVisitDates("1/11/2026 1000").build();
+        model.setPerson(AMY, original);
+        model.updateFilteredPersonList(person -> person.equals(original));
+        model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
+
+        assertScheduleFailure(INDEX_FIRST_PERSON, new VisitDate("14/10/2026 1201"), FIXED_CLOCK,
+                Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS);
+    }
+
+    @Test
     public void execute_filteredIndex_updatesDisplayedPatientAndRestoresFullList() throws Exception {
         new FindCommand(new NameContainsKeywordsPredicate(List.of("Meier"))).execute(model);
         assertEquals(List.of(BENSON), model.getFilteredPersonList());

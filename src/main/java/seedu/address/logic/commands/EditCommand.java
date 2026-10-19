@@ -187,8 +187,11 @@ public class EditCommand extends Command {
     /**
      * Creates and returns a {@code Person} with the details of {@code personToEdit}
      * edited with {@code editPersonDescriptor}.
+     *
+     * @throws CommandException If the proposed current date would invalidate the retained previous dates.
      */
-    private static Person createEditedPerson(Person personToEdit, EditPersonDescriptor editPersonDescriptor) {
+    private static Person createEditedPerson(Person personToEdit, EditPersonDescriptor editPersonDescriptor)
+            throws CommandException {
         assert personToEdit != null;
 
         Name updatedName = editPersonDescriptor.getName().orElse(personToEdit.getName());
@@ -199,8 +202,12 @@ public class EditCommand extends Command {
         Note updatedNote = editPersonDescriptor.getNote().orElse(personToEdit.getNote());
         Set<Tag> updatedTags = editPersonDescriptor.getTags().orElse(personToEdit.getTags());
 
-        return new Person(updatedName, updatedPhone, updatedEmail, updatedAddress,
-                updatedVisitDate, updatedNote, updatedTags);
+        try {
+            return new Person(updatedName, updatedPhone, updatedEmail, updatedAddress,
+                    updatedVisitDate, personToEdit.getPreviousVisitDates(), updatedNote, updatedTags);
+        } catch (IllegalArgumentException e) {
+            throw new CommandException(Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS, e);
+        }
     }
 
     @Override

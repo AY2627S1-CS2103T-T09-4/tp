@@ -70,12 +70,25 @@ public class NextCommand extends Command {
         Person personToUpdate = displayedPersons.get(index.getZeroBased());
         validateVisitDate(model, personToUpdate);
 
-        Person updatedPerson = new Person(personToUpdate.getName(), personToUpdate.getPhone(),
-                personToUpdate.getEmail(), personToUpdate.getAddress(), visitDate,
-                personToUpdate.getNote(), personToUpdate.getTags());
+        Person updatedPerson = createUpdatedPerson(personToUpdate);
         model.setPerson(personToUpdate, updatedPerson);
         model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
         return new CommandResult(String.format(MESSAGE_SUCCESS, updatedPerson.getName(), visitDate));
+    }
+
+    /**
+     * Returns a replacement patient preserving the previous dates and all other fields.
+     *
+     * @throws CommandException If the requested date would invalidate the retained previous dates.
+     */
+    private Person createUpdatedPerson(Person personToUpdate) throws CommandException {
+        try {
+            return new Person(personToUpdate.getName(), personToUpdate.getPhone(),
+                    personToUpdate.getEmail(), personToUpdate.getAddress(), visitDate,
+                    personToUpdate.getPreviousVisitDates(), personToUpdate.getNote(), personToUpdate.getTags());
+        } catch (IllegalArgumentException e) {
+            throw new CommandException(Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS, e);
+        }
     }
 
     /**

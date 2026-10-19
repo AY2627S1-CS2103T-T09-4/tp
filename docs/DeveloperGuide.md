@@ -169,6 +169,24 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 
 This section describes some noteworthy details on how certain features are implemented.
 
+### Visit record model
+
+Each immutable `Person` has one required current `VisitDate` and a non-null `List<VisitDate>` named
+`previousVisitDates`. The previous dates are strictly increasing, oldest first, and each must be strictly earlier
+than the current date. Comparisons use parsed `LocalDateTime` values, including the time: leading-zero variants
+of the same datetime are equal, while different times on one day are allowed. These invariants do not depend on
+the clock, so the passage of time does not invalidate a record.
+
+The constructor takes an immutable defensive copy and rejects null entries or invalid chronology rather than
+sorting or repairing the input. The constructor without previous dates creates an empty list. Equality and hashing
+include previous dates; patient identity still uses the normalized name and phone number. Existing `edit` and `next`
+replacement paths, and `PersonBuilder` copies, preserve previous dates. A replacement current date that would
+invalidate the record produces a command error before model or list changes.
+
+This model groundwork does not yet create previous dates through commands, persist them in JSON, or display them
+in patient details. Those integration steps follow separately. Previous dates represent retained datetimes, not
+verified attendance or completion, and there is no arbitrary limit on their number.
+
 ### Duplicate patient identity, visit dates, and name confirmation
 
 Doc normalizes names only for duplicate detection. Normalization trims surrounding whitespace, replaces each sequence
