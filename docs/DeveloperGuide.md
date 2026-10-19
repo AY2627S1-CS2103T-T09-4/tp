@@ -175,9 +175,10 @@ This section describes some noteworthy details on how certain features are imple
 existing constructors and records remain compatible. Nonempty values contain a name and phone number separated
 by one comma, validated using the existing `Name` and `Phone` rules. Contact details do not affect patient identity.
 
-`AddCommandParser` and `EditCommandParser` recognize `ec/NAME, PHONE_NUMBER` and reject empty, incomplete,
-invalid, or repeated contact fields before execution. `EditPersonDescriptor` distinguishes an omitted contact
-from a replacement. `EditCommand` and `NextCommand` preserve contacts when updating unrelated fields.
+`AddCommandParser` and `EditCommandParser` recognize `ec/NAME, PHONE_NUMBER` and reject incomplete, invalid,
+or repeated contact fields before execution. `add` rejects an empty `ec/`; `edit` uses it to clear the contact.
+`EditPersonDescriptor` distinguishes an omitted contact from a replacement or an explicitly empty contact.
+`EditCommand` and `NextCommand` preserve contacts when updating unrelated fields.
 
 `JsonAdaptedPerson` saves the canonical `NAME, PHONE_NUMBER` string and maps missing or null contact fields from
 older records to an absent contact. Invalid nonempty stored contacts cause a data-loading error.
@@ -187,9 +188,11 @@ number and hides the row for absent contacts.
 #### Representation and validation
 
 The model uses an empty `EmergencyContact` value rather than a null field. This preserves the non-null invariant
-of `Person` and allows callers of the existing constructor to create patients without contacts. A supplied `ec/`
-must nevertheless be nonempty: `ParserUtil#parseEmergencyContact` rejects blank input before constructing the value.
-There is no contact-removal command or empty-prefix clearing behavior.
+of `Person` and allows callers of the existing constructor to create patients without contacts.
+`ParserUtil#parseEmergencyContact` rejects blank input for additions and validates nonempty replacement contacts.
+For edits, `EditCommandParser` maps an explicitly empty or whitespace-only `ec/` to `EmergencyContact("")`.
+An omitted prefix leaves the descriptor field null, preserving the existing contact. An empty contact object
+counts as a supplied field and clears the saved value, even when no contact was previously recorded.
 
 Validation requires exactly two comma-separated details. The name must satisfy `Name#isValidName`, and the phone
 must satisfy `Phone#isValidPhone`. The constructor trims surrounding whitespace from each detail and stores the
@@ -201,7 +204,7 @@ normalized name and phone. Sharing an emergency contact does not make two patien
 
 * `EmergencyContactTest` covers valid, absent, malformed, and null values, formatting, equality, and patient identity.
 * `EmergencyContactIntegrationTest` exercises parsing, execution, viewing, and storage through `LogicManager`.
-  It checks adding and replacing contacts, field order, whitespace, duplicate prefixes, invalid indices,
+  It checks adding, replacing, and clearing contacts, field order, whitespace, duplicate prefixes, invalid indices,
   filtered-list selection, and preservation during unrelated commands. Rejected inputs must leave both the model
   and saved file unchanged.
 * `JsonAdaptedPersonTest` checks missing contact fields and invalid stored contact details.
@@ -315,7 +318,7 @@ for `d/M/yyyy HHmm`; valid past dates are accepted, while an empty `vd/` is reje
 `EditPersonDescriptor` stores the supplied visit date and time and note along with the optional replacement fields.
 `EditCommand` copies the descriptor, resolves the patient using the displayed list, and replaces the immutable
 `Person`. Omitted fields, including the visit date/time and notes, are preserved. An explicitly empty
-email, note, or tag field clears its existing value and counts as a supplied field.
+email, note, emergency contact, or tag field clears its existing value and counts as a supplied field.
 
 Before replacement, `EditCommand` permits an unchanged visit date but rejects a changed value already assigned to
 another patient. This check is repeated after a name-duplicate confirmation so a slot taken while the prompt was
@@ -907,7 +910,10 @@ Use a disposable data file. Start with no patients and use available visit slots
 1. Run `edit 1 ec/David Tan, 87654321`, then `view 1`; expect the replacement contact in the same position.
 1. Run `edit 1 note/Review medication`, then `next 1 1/1/2099 1000`. Run `view 1`; expect the contact unchanged.
 1. Restart the application and run `view 1`; expect the saved contact to remain.
-1. Try `edit 1 ec/`, `edit 1 ec/Mary Tan`, `edit 1 ec/Mary Tan, abc`, and
+1. Run `edit 1 ec/`, then `view 1`; expect the emergency contact row to be hidden and other details unchanged.
+   Restart and view the patient again; expect the contact to remain cleared. Repeating `edit 1 ec/` or using
+   `edit 1 ec/   ` should also succeed. Add a contact again before testing invalid replacements.
+1. Try `edit 1 ec/Mary Tan`, `edit 1 ec/Mary Tan, abc`, `edit 1 ec/ ec/`, and
    `edit 1 ec/Mary Tan, 98765432 ec/David Tan, 87654321`. Expect errors and unchanged patient details.
 1. Add another patient without `ec/`, then view that patient; expect no emergency contact row or stale details
    from the previous patient. Add a contact using `edit INDEX ec/Mary Tan, 98765432` and view it again.

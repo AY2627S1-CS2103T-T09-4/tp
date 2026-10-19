@@ -166,12 +166,13 @@ share the same emergency contact. Enter the contact inside the existing `add` or
 | `ec/Mary Tan,98765432` | Accepts the details; a space after the comma is optional. |
 | `ec/Mary Tan` | Rejects the contact because the comma and phone number are missing. |
 | `ec/Mary Tan, abc` | Rejects the contact because the phone number contains letters. |
-| `ec/` | Rejects the contact because both details are missing. |
+| `ec/` | Rejects the field in `add`; clears the emergency contact in `edit`. |
 
 To update an existing patient's contact, run `edit 2 ec/David Tan, 87654321`, replacing `2` with the patient's
 current displayed index. Run `view 2` afterwards to see `Emergency Contact : 87654321 (David Tan)` below the
 patient's phone number. Editing only the emergency contact keeps the patient's other details unchanged.
 Changes to other fields, including scheduling a visit with `next`, keep the emergency contact unchanged.
+To remove the contact, run `edit 2 ec/`. Run `view 2` again; the emergency contact row will be hidden.
 
 ### Listing all patients: `list`
 
@@ -232,8 +233,9 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [ec/NAME, PHONE_NUMBER] [a/ADDRESS] [vd/D
   list. The index **must be a positive integer** 1, 2, 3, ...
 * All editable fields are optional, but at least one must be provided.
 * Use `ec/NAME, PHONE_NUMBER` to add or replace the emergency contact, e.g. `edit 1 ec/Mary Tan, 98765432`.
-  The same validation rules as `add` apply. Omitting `ec/` preserves the existing contact; an empty `ec/` is
-  rejected. Emergency contacts cannot be cleared through a command.
+  Nonempty values follow the same validation rules as `add`. Omitting `ec/` preserves the existing contact.
+  Use an empty `ec/` to clear the contact, e.g. `edit 1 ec/`. Whitespace-only values also clear it.
+  Clearing an already-empty contact succeeds; repeated `ec/` prefixes are rejected.
 * To update the visit date and time, use `vd/` with the format `d/M/yyyy HHmm`
   (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted.
 * The visit date and time can be edited by itself. Omitting `vd/` preserves the existing visit date and time.
@@ -271,6 +273,7 @@ Examples:
 * `edit 1 p/91234567 vd/8/10/2026 1000 e/johndoe@example.com` Updates the visit, phone number, and email.
 * `edit 1 p/91234567 e/johndoe@example.com` Updates the phone number and email, keeping the visit unchanged.
 * `edit 1 ec/Mary Tan, 98765432` Adds or replaces the emergency contact, keeping other details unchanged.
+* `edit 1 ec/` Clears the emergency contact, keeping other details unchanged.
 * `edit 1 e/` Clears the email, keeping the visit and other details unchanged.
 * `edit 1 note/Patient requests a morning visit` Replaces the notes, keeping all other details unchanged.
 * `edit 1 note/` Clears the notes, keeping all other details unchanged.

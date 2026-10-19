@@ -233,7 +233,8 @@ public class EditCommand extends Command {
 
     /**
      * Stores the details to edit the person with. Each supplied field replaces the corresponding
-     * value, including explicitly empty email, note, and tag values. Omitted fields remain unchanged.
+     * value, including explicitly empty email, note, emergency contact, and tag values.
+     * Omitted fields remain unchanged.
      */
     public static class EditPersonDescriptor {
         private Name name;

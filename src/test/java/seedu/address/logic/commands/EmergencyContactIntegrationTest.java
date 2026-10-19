@@ -98,6 +98,44 @@ public class EmergencyContactIntegrationTest {
     }
 
     @Test
+    public void execute_emptyContactEdit_clearsAndPersistsContact() throws Exception {
+        logic.execute(ADD_COMMAND + " ec/" + CONTACT);
+        Person expected = new PersonBuilder(model.getFilteredPersonList().getFirst())
+                .withEmergencyContact("").build();
+
+        for (String emptyContact : List.of("", "   ", " \t ")) {
+            logic.execute("edit 1 ec/" + CONTACT);
+            logic.execute("edit 1 ec/" + emptyContact);
+
+            assertStoredPerson(expected);
+            CommandResult result = logic.execute("view 1");
+            assertTrue(result.getPersonToView().orElseThrow().getEmergencyContact().isEmpty());
+        }
+    }
+
+    @Test
+    public void execute_emptyContactWithOtherFields_clearsContactAndUpdatesNote() throws Exception {
+        logic.execute(ADD_COMMAND + " ec/" + CONTACT);
+        Person expected = new PersonBuilder(model.getFilteredPersonList().getFirst())
+                .withEmergencyContact("").withNote("Review medication").build();
+
+        logic.execute("edit 1 ec/ note/Review medication");
+        assertStoredPerson(expected);
+
+        logic.execute("edit 1 ec/");
+        assertStoredPerson(expected);
+    }
+
+    @Test
+    public void execute_emptyContactAdd_rejectsWithoutChangingData() throws Exception {
+        logic.execute(ADD_COMMAND);
+        for (String emptyContact : List.of("", "   ", " \t ")) {
+            assertRejectedCommand("add n/Jane Tan p/82345678 a/Other Road vd/23/10/2026 1000 ec/" + emptyContact,
+                    String.format(AddCommand.MESSAGE_NOT_ADDED, EmergencyContact.MESSAGE_CONSTRAINTS));
+        }
+    }
+
+    @Test
     public void execute_unrelatedEditAndNext_preservesContact() throws Exception {
         logic.execute(ADD_COMMAND + " ec/" + CONTACT);
         Person original = model.getFilteredPersonList().getFirst();
@@ -123,7 +161,7 @@ public class EmergencyContactIntegrationTest {
     @Test
     public void execute_invalidContact_preservesModelAndFile() throws Exception {
         logic.execute(ADD_COMMAND + " ec/" + CONTACT);
-        for (String invalid : List.of("", " ", "Mary Tan", "Mary Tan 98765432", "Mary Tan,",
+        for (String invalid : List.of("Mary Tan", "Mary Tan 98765432", "Mary Tan,",
                 ",98765432", "Mary Tan, 12", "Mary Tan, abc", "Mary@Tan, 98765432",
                 "Mary Tan, 98765432, 87654321")) {
             assertRejectedCommand("edit 1 ec/" + invalid, EmergencyContact.MESSAGE_CONSTRAINTS);
@@ -137,6 +175,9 @@ public class EmergencyContactIntegrationTest {
         logic.execute(ADD_COMMAND + " ec/" + CONTACT);
         String reason = Messages.getErrorMessageForDuplicatePrefixes(PREFIX_EMERGENCY_CONTACT);
         assertRejectedCommand("edit 1 ec/" + CONTACT + " ec/" + REPLACEMENT_CONTACT, reason);
+        assertRejectedCommand("edit 1 ec/ ec/", reason);
+        assertRejectedCommand("edit 1 ec/" + CONTACT + " ec/", reason);
+        assertRejectedCommand("edit 1 ec/ ec/" + CONTACT, reason);
         assertRejectedCommand(ADD_COMMAND + " ec/invalid ec/" + CONTACT,
                 String.format(AddCommand.MESSAGE_NOT_ADDED, reason));
     }
@@ -147,6 +188,7 @@ public class EmergencyContactIntegrationTest {
         AddressBook before = new AddressBook(model.getAddressBook());
         String saved = Files.readString(storage.getAddressBookFilePath());
         assertThrows(CommandException.class, () -> logic.execute("edit 2 ec/" + REPLACEMENT_CONTACT));
+        assertThrows(CommandException.class, () -> logic.execute("edit 2 ec/"));
         assertEquals(before, model.getAddressBook());
         assertEquals(saved, Files.readString(storage.getAddressBookFilePath()));
     }
@@ -168,6 +210,12 @@ public class EmergencyContactIntegrationTest {
         List<Person> patients = storage.readAddressBook().orElseThrow().getPersonList();
         assertEquals(CONTACT, patients.get(0).getEmergencyContact().toString());
         assertEquals(REPLACEMENT_CONTACT, patients.get(1).getEmergencyContact().toString());
+
+        logic.execute("find Jane");
+        logic.execute("edit 1 ec/");
+        patients = storage.readAddressBook().orElseThrow().getPersonList();
+        assertEquals(CONTACT, patients.get(0).getEmergencyContact().toString());
+        assertTrue(patients.get(1).getEmergencyContact().isEmpty());
     }
 
     @Test
