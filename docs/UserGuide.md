@@ -192,6 +192,10 @@ Format: `view INDEX`
 * The index **must be a positive integer** 1, 2, 3, ...
 * The command works on lists produced by commands such as `find` and `sort date`.
 * The currently displayed patient list remains visible on the left.
+* The current visit date and time remain visible as `Visit date`. The `Previous visit dates:` section immediately
+  below it lists retained datetimes in `d/M/yyyy HHmm` format, oldest first and latest last. The note follows.
+* A patient with no previous dates shows `No previous visit dates`. Scroll the details panel to read long records;
+  all previous dates are included.
 * Viewing a patient does not change their stored details.
 
 Example:
@@ -272,7 +276,7 @@ Format: `next INDEX DATETIME`
   The [visit-time conflict limitations under add](#adding-a-patient-add) also apply.
 * Success appends the old current date and time to the previous dates, then sets the new current date and time.
   All other details, including empty optional fields, are preserved. Previous dates are saved in order in the
-  JSON data file but are not yet shown in patient details.
+  JSON data file and appear below the current visit date when you run `view INDEX`.
 * If no further visit is planned, leave the current date and time unchanged, even after it passes.
 * Success shows `Next visit scheduled for patient NAME: DATETIME`, saves the record, and restores the full list in
   stored order, clearing the filter and sort. Check the new indices; run `view` again to refresh the details panel.
@@ -419,7 +423,7 @@ Action     | Format, Examples
 **Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
-q**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (current visit must have arrived or passed; use an unused future datetime)
+**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (current visit must have arrived or passed; use an unused future datetime)
 **Sort**   | `sort date`
 **View**   | `view INDEX`<br> e.g., `view 1`
 **Help**   | `help`

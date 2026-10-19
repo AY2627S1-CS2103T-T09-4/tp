@@ -188,9 +188,15 @@ arrays load as empty lists for compatibility with older files. Non-arrays, null 
 chronology, and duplicates within a record are rejected through the existing invalid-data path. The required
 `visitDate` field remains required. No entries are sorted, deduplicated, or dropped to repair an invalid file.
 
-Previous dates are created by `next` and persisted, but displaying them in patient details follows separately.
-They represent retained datetimes, not verified attendance or completion, and there is no arbitrary limit on their
-number.
+Previous dates are created by `next`, persisted, and shown by `view INDEX`. They represent retained datetimes,
+not verified attendance or completion, and there is no arbitrary limit on their number.
+
+`PatientDetailsPanel` retains the current visit datetime and adds `Previous visit dates:` immediately below it,
+followed by the note.
+It formats the immutable previous dates with `VisitDate#toString`, one full datetime per line in stored order,
+or shows `No previous visit dates` for an empty record. The label keeps its preferred height inside the existing
+`ScrollPane`, so long records remain accessible by scrolling. Rendering does not change the patient's dates.
+Run `view` again after a mutation to refresh the details.
 
 ### Duplicate patient identity, visit dates, and name confirmation
 
@@ -950,8 +956,9 @@ Use a disposable data file and close Doc before editing it. For the first patien
 `10/10/2026 1000` and add `"previousVisitDates": ["1/10/2026 1000", "2/10/2026 1000"]`.
 Give every other patient's current and previous dates different datetimes.
 
-1. Reopen Doc and run `edit 1 note/Review medication`. Close Doc and inspect the file. Expect the two previous
-   dates in their original order and the updated note. This intermediate step does not display previous dates.
+1. Reopen Doc and run `edit 1 note/Review medication`, then `view 1`. Expect `Previous visit dates:` below the current
+   datetime, with the two previous datetimes in their original order, followed by the updated note. Close Doc and
+   inspect the file. Expect the same dates and updated note.
 1. Reopen Doc and try `edit 1 vd/2/10/2026 1000`, then `edit 1 vd/1/10/2026 1000`. Expect a chronology error with
    `2/10/2026 1000` identified as the latest previous visit. The record, saved file, and displayed list stay unchanged.
 1. Run `edit 1 vd/3/10/2026 1000`. Expect success even though the date is in the past; the previous dates stay
@@ -1083,9 +1090,9 @@ successful advances in one session without waiting or changing the system clock.
    Expect Nextbeta to change, retaining empty email, notes, and tags. Its previous dates contain `[P3]`.
 
 1. Close and reopen the application. Find and view each test patient.<br>
-   Expect Nextalpha at `F2`, Nextbeta at `F1`, and every other field preserved. Previous dates persist in the JSON;
-   this intermediate step does not yet display them in the details panel. Use the newly displayed indices after
-   each successful mutation.
+   Expect Nextalpha at `F2` with previous dates `[P1, P2]`, Nextbeta at `F1` with previous dates `[P3]`, and every
+   other field preserved. Check the previous-date section below the current datetime and the persisted JSON.
+   Use the newly displayed indices after each successful mutation.
 
 1. Repeat the conflict case using another patient's previous datetime, loaded through the disposable-file setup in
    [Loading and validating previous visit dates](#loading-and-validating-previous-visit-dates). Choose a future
@@ -1103,6 +1110,17 @@ becoming past as time advances. These boundaries are not reliably reproducible b
    first patient's complete details to appear on the right.
 1. Run `sort date`, followed by `view 1`. Expect the sorted list to remain on the left and the first patient's complete
    details to appear on the right.
+1. View a newly added patient with no previous dates. Expect `Previous visit dates:` immediately below `Visit date`,
+   followed by `No previous visit dates`, with the note below the previous-date section.
+1. View the patient from [Testing the next command](#testing-the-next-command) with previous dates `[P1, P2]`.
+   Expect one full datetime per line, with `P1` above `P2` and the time included for both. View the empty-record
+   patient again; expect the empty-state text to replace the other patient's dates.
+1. With Doc closed, extend a disposable patient's JSON `previousVisitDates` array with hundreds of globally unused
+   datetimes in strictly increasing order, all earlier than that patient's current datetime. Reopen and view the
+   patient. Scroll the details panel to the bottom; expect every entry to be accessible, including the final date
+   and the note and tags below it. Repeat with a long note and a narrower window to check wrapping and scrolling.
+1. Record the data file contents, run `view` repeatedly for patients with empty and populated previous dates, and
+   close Doc. Expect both the saved dates and their order to remain unchanged.
 1. Run `view 999`. Expect an invalid-index error, no change to the displayed list, and no changes to stored patient
    data.
 1. Close and reopen the application. Expect all patient data to remain unchanged.

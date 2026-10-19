@@ -161,6 +161,11 @@ public class AddCommandTest {
             throw new AssertionError("This method should not be called.");
         }
 
+        /**
+         * Fails if the replacement-only conflict check is called while testing an add command.
+         *
+         * @throws AssertionError Whenever this method is called.
+         */
         @Override
         public boolean hasPersonWithSameVisitDate(Person person, Person excludedPerson) {
             throw new AssertionError("This method should not be called.");
