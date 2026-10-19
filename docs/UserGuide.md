@@ -226,7 +226,7 @@ Example:
 
 Edits an existing patient record in Doc.
 
-Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [ec/NAME, PHONE_NUMBER] [t/TAG]...`
+Format: `edit INDEX [n/NAME] [p/PHONE] [ec/NAME, PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`
 
 * Edits the patient at the specified `INDEX`. The index refers to the index number shown in the displayed patient
   list. The index **must be a positive integer** 1, 2, 3, ...
@@ -440,7 +440,7 @@ Action     | Format, Examples
 **Add**    | `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [ec/NAME, PHONE_NUMBER] [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
-**Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [ec/NAME, PHONE_NUMBER] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
+**Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [ec/NAME, PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (use an available future appointment)
