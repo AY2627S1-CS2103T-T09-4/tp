@@ -231,7 +231,11 @@ public class EditCommandTest {
         String expectedMessage = String.format(EditCommand.MESSAGE_DUPLICATE_VISIT_DATE,
                 firstPerson.getVisitDate());
 
-        assertCommandFailure(new EditCommand(INDEX_SECOND_PERSON, descriptor), model, expectedMessage);
+        AddressBook originalAddressBook = new AddressBook(model.getAddressBook());
+        assertThrows(CommandException.class, expectedMessage, () ->
+                new EditCommand(INDEX_SECOND_PERSON, descriptor).execute(model));
+        assertEquals(originalAddressBook, model.getAddressBook());
+        assertEquals(List.of(firstPerson), model.getFilteredPersonList());
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
     }
 
@@ -540,6 +544,7 @@ public class EditCommandTest {
 
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
         assertTrue(model.getAddressBook().getPersonList().contains(conflictingVisit));
+        assertEquals(List.of(conflictingVisit), model.getFilteredPersonList());
     }
 
     @Test

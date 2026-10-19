@@ -43,7 +43,8 @@ public class AddCommand extends Command {
             "A patient with the same name and phone number already exists in the address book. "
                     + "The existing patient is shown in the patient list.";
     public static final String MESSAGE_DUPLICATE_VISIT_DATE =
-            "Another patient already has a visit scheduled for %1$s. Choose a different date and time.";
+            "Another patient already has a visit scheduled for %1$s. "
+                    + "The patient is shown in the patient list. Choose a different date and time.";
     public static final String MESSAGE_CONFIRM_DUPLICATE_NAME =
             "A patient named %1$s already exists and is shown in the patient list. Add this patient anyway? "
                     + "Type y to confirm. Any other input cancels.";
@@ -129,6 +130,7 @@ public class AddCommand extends Command {
             throw new CommandException(String.format(MESSAGE_NOT_ADDED, MESSAGE_DUPLICATE_PERSON));
         }
         if (model.hasPersonWithSameVisitDate(toAdd)) {
+            model.updateFilteredPersonList(person -> person.getVisitDate().equals(toAdd.getVisitDate()));
             String conflictMessage = String.format(MESSAGE_DUPLICATE_VISIT_DATE, toAdd.getVisitDate());
             throw new CommandException(String.format(MESSAGE_NOT_ADDED, conflictMessage));
         }

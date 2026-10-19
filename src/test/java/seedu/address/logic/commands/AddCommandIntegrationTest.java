@@ -3,7 +3,6 @@ package seedu.address.logic.commands;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static seedu.address.logic.commands.CommandTestUtil.assertCommandFailure;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
@@ -79,8 +78,10 @@ public class AddCommandIntegrationTest {
         String conflictMessage = String.format(AddCommand.MESSAGE_DUPLICATE_VISIT_DATE,
                 personWithConflictingVisit.getVisitDate());
 
-        assertCommandFailure(new AddCommand(personWithConflictingVisit), model,
-                String.format(AddCommand.MESSAGE_NOT_ADDED, conflictMessage));
+        String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, conflictMessage);
+        assertThrows(CommandException.class, expectedMessage, () ->
+                new AddCommand(personWithConflictingVisit).execute(model));
+        assertEquals(List.of(personInList), model.getFilteredPersonList());
     }
 
     @Test
@@ -276,6 +277,7 @@ public class AddCommandIntegrationTest {
         String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, conflictMessage);
         assertThrows(CommandException.class, expectedMessage, () ->
                 requestResult.getInputRequest().orElseThrow().respond("y", model));
+        assertEquals(List.of(conflictingVisit), model.getFilteredPersonList());
     }
 
 }

@@ -190,7 +190,7 @@ accepted without confirmation. This preserves phone numbers shared by a househol
 phone together to identify a patient record.
 
 `Model#hasPerson` exposes the true-duplicate check, while `Model#hasPersonWithSameName` exposes the weaker warning
-check. Phone comparison continues to use exact `Phone` value equality. When either check detects a duplicate,
+check. Phone comparison continues to use exact `Phone` value equality. When either identity check detects a duplicate,
 `AddCommand` or `EditCommand` uses `Model#updateFilteredPersonList` to replace the displayed list with the matching
 records. A true duplicate is filtered by `Person#isSamePerson`; a name duplicate is filtered by
 `Person#hasSameName`, so every existing record with that normalized name is displayed. Filtering also returns the
@@ -203,23 +203,25 @@ model replacement, sample data, and direct model use. `JsonSerializableAddressBo
 loading and reports an invalid data file with a visit-date-specific message.
 
 `Model#hasPersonWithSameVisitDate` exposes the scheduling check. `AddCommand` rejects a true duplicate first, showing
-the matching record, and then checks for a visit-date conflict. For a name duplicate with an available visit time, it
-shows all matching names and captures the proposed immutable `Person` in a
+the matching record, and then checks for a visit-date conflict. A conflict filters the displayed list by the exact
+`VisitDate`, showing the patient who occupies the requested slot. For a name duplicate with an available visit time,
+the command shows all matching names and captures the proposed immutable `Person` in a
 `CommandInputRequest#createConfirmation` action. Confirmation rechecks both rejection rules before adding, which
 prevents a conflicting record from being introduced if model state changes while the prompt is pending.
 
 `EditCommand` captures the selected patient before changing the displayed list. It similarly rejects a true duplicate
-or a changed visit date that another patient uses before requesting confirmation, showing the true duplicate when
-applicable. Re-entering the selected patient's existing visit date is allowed because it does not allocate another
-slot. The command asks for confirmation only when the requested edit changes the name to one already in use; editing
-other fields of a patient whose name is already shared does not prompt again. It shows all matching names, captures the
-original and edited `Person` objects, then verifies on confirmation that the original record still exists and that the
-edit still creates neither a true duplicate nor a visit-date conflict.
+or a changed visit date that another patient uses before requesting confirmation, showing the matching identity or
+visit-date record. Re-entering the selected patient's existing visit date is allowed because it does not allocate
+another slot. The command asks for confirmation only when the requested edit changes the name to one already in use;
+editing other fields of a patient whose name is already shared does not prompt again. It shows all matching names,
+captures the original and edited `Person` objects, then verifies on confirmation that the original record still exists
+and that the edit still creates neither a true duplicate nor a visit-date conflict.
 
-A successful add or edit restores the full patient list. A rejected exact duplicate or cancelled name-duplicate
-confirmation leaves the matching records displayed so the doctor can inspect them; the existing `list` command restores
-the full list. While a confirmation is pending, the command box treats the next submission as the confirmation response,
-so the temporary displayed indices cannot be used by another command until the doctor confirms or cancels.
+A successful add or edit restores the full patient list. A rejected exact duplicate, rejected visit-date conflict, or
+cancelled name-duplicate confirmation leaves the matching records displayed so the doctor can inspect them; the
+existing `list` command restores the full list. While a confirmation is pending, the command box treats the next
+submission as the confirmation response, so the temporary displayed indices cannot be used by another command until
+the doctor confirms or cancels.
 
 #### Duplicate-detection limitations
 
@@ -318,8 +320,10 @@ On success, `NextCommand` replaces Betsy's immutable `Person`, preserving every 
 list in stored order by clearing the filter and sort. `LogicManager` then saves the updated patient data before
 returning the success result to the UI.
 
-Validation failures stop before any mutation or save. Storage failure happens after the in-memory update and follows
-the existing error handling without rollback.
+Validation failures stop before any patient mutation or save. When the requested time belongs to another patient,
+`NextCommand` filters the displayed list by the requested `VisitDate`, showing the conflicting patient and returning
+the list to stored order. Other validation failures preserve the displayed list. Storage failure happens after the
+in-memory update and follows the existing error handling without rollback.
 
 The design keeps three decisions explicit:
 
@@ -605,6 +609,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * 1d. Another patient already has the requested visit date and time.
 
     * 1d1. Doc shows an error asking the doctor to choose a different date and time.
+    * 1d2. Doc displays the patient using the requested date and time.
 
       Use case resumes at step 1.
 
@@ -672,6 +677,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * 3f. The requested changes would use another patient's visit date and time.
 
     * 3f1. Doc shows an error asking the doctor to choose a different date and time.
+    * 3f2. Doc displays the patient using the requested date and time.
 
       Use case resumes at step 3.
 
@@ -766,7 +772,8 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 **Guarantees**
 
 * Only the selected patient's appointment changes; completed-visit recording is outside this use case.
-* Rejected input leaves patient records and the displayed list unchanged.
+* Rejected input leaves patient records unchanged. Appointment conflicts display the conflicting patient; other
+  rejected input leaves the displayed list unchanged.
 
 **MSS**
 
@@ -792,6 +799,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * 1c. Another patient already has the requested appointment.
 
     * 1c1. Doc identifies the conflicting patient and time.
+    * 1c2. Doc displays the conflicting patient in the patient list.
 
       Use case resumes at step 1.
 
@@ -906,10 +914,11 @@ the styling belongs to the card rather than `SortCommand`, it applies to every p
 Use a disposable copy of the data file. Start with `Alex Tan` scheduled for `8/10/2026 1000`.
 
 1. Try to add a different patient scheduled for `8/10/2026 1000`. Expect an error identifying the occupied slot and
-   no change to the displayed list or data file.
+   only Alex to be shown in the patient list, with no change to the data file.
 1. Add a different patient, using a different name and phone number, scheduled for `8/10/2026 1030`. Expect the
    addition to succeed.
-1. Try to edit the second patient to `vd/8/10/2026 1000`. Expect the occupied-slot error and unchanged details.
+1. Try to edit the second patient to `vd/8/10/2026 1000`. Expect the occupied-slot error, unchanged details, and only
+   Alex to be shown in the patient list.
 1. Re-enter `vd/8/10/2026 1000` for Alex. Expect the edit to succeed because Alex retains the existing slot.
 1. Try to add another `Alex Tan` with a different phone number but with `vd/8/10/2026 1000`. Expect the occupied-slot
    error without a duplicate-name confirmation prompt.
@@ -1001,7 +1010,7 @@ These placeholders must be replaced before submitting commands.
    The success message names Nextalpha and the new appointment. This checks a future time earlier than the old one.
 
 1. Run `find Nextalpha`, then `next 1 DAY 0900`.<br>
-   Expect a conflict naming hidden Nextbeta and the occupied time, with data and the filtered list unchanged.
+   Expect a conflict naming hidden Nextbeta and the occupied time, with data unchanged and only Nextbeta displayed.
    Repeat with a leading-zero day or month when applicable; expect the same conflict.
 
 1. While only Nextalpha is displayed, try each of these commands:
@@ -1020,8 +1029,9 @@ These placeholders must be replaced before submitting commands.
    | `next 1 vd/DAY 0930` | Prefix misuse and usage. |
    | `next 1 DAY 0930 extra` | Extra arguments and usage. |
 
-   Each rejection must preserve records, file contents, and the displayed list. Also test today's current local
-   minute; expect rejection. Repeat the unchanged-date test with equivalent leading zeros when applicable.
+   Each rejection in this table must preserve records, file contents, and the displayed list. Also test today's
+   current local minute; expect rejection. Repeat the unchanged-date test with equivalent leading zeros when
+   applicable.
 
 1. Run `find Nextalpha Nextbeta`, then `sort date`.<br>
    Expect Nextbeta first. Try `next 1 DAY 0900`; expect rejection with the sorted order preserved.

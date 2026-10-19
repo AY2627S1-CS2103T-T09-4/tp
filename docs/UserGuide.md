@@ -107,7 +107,8 @@ Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES
 
 * `VISIT_DATE` must be a date and time in the format `d/M/yyyy HHmm`, e.g. `18/9/2026 1000`. Past dates are allowed.
 * Each patient must have a unique visit date and time. If another patient already uses the supplied date and time,
-  the addition is rejected and the app asks you to choose a different slot.
+  the addition is rejected, the existing patient is shown in the patient list, and the app asks you to choose a
+  different slot.
 * `EMAIL` and `NOTES` are optional.
 * On success, the app shows `Added patient NAME` and the new patient appears in the list.
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
@@ -214,7 +215,7 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [not
   (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted.
 * The visit date and time can be edited by itself. Omitting `vd/` preserves the existing visit date and time.
 * Re-entering the selected patient's existing visit date and time is allowed. Changing it to a slot used by another
-  patient is rejected, including when the edit also changes other fields.
+  patient is rejected and shows that patient in the patient list, including when the edit also changes other fields.
 * Omitted fields, including email and existing notes, keep their values. Use an empty `e/` to clear email.
 * Use `note/NOTES` to replace the entire stored note. Use an empty `note/` to clear it; notes can be edited
   without `vd/`. An explicitly empty note counts as a supplied field, even when the note is already empty.
@@ -278,8 +279,9 @@ Format: `next INDEX DATETIME`
 * Only the visit date and time change; all other details, including empty optional fields, are preserved.
 * Success shows `Next visit scheduled for patient NAME: DATETIME`, saves the record, and restores the full list in
   stored order, clearing the filter and sort. Check the new indices; run `view` again to refresh the details panel.
-* Validation errors preserve data and the displayed list. A save failure reports a storage error; the in-memory
-  appointment may already have changed.
+* Validation errors preserve data. An appointment conflict replaces the displayed list with the patient using that
+  slot; other validation errors preserve the displayed list. Use `list` to restore the full patient list. A save
+  failure reports a storage error; the in-memory appointment may already have changed.
 
 Common errors:
 
@@ -287,7 +289,7 @@ Common errors:
 | --- | --- |
 | Time at or before now | `The next visit must be in the future.` |
 | Unchanged appointment | `Patient NAME already has an appointment at DATETIME.` |
-| Another patient's appointment | `Patient NAME already has an appointment at DATETIME. Choose a different date and time.` |
+| Another patient's appointment | `Patient NAME already has an appointment at DATETIME and is shown in the patient list. Choose a different date and time.` |
 
 Bare `next` shows usage. Missing or extra arguments, `vd/` syntax, and incorrect index syntax show a reason and usage.
 Invalid dates show the required format; an index outside the displayed list shows the existing invalid-index error.

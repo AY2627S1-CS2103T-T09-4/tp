@@ -108,16 +108,20 @@ public class NextCommandTest {
     }
 
     @Test
-    public void execute_hiddenPatientConflict_preservesFilterAndSort() {
+    public void execute_hiddenPatientConflict_displaysConflictingPatient() {
         model.updateFilteredPersonList(person -> !person.equals(BENSON));
         model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
         assertEquals(List.of(AMY, CARL), model.getFilteredPersonList());
 
-        assertScheduleFailure(INDEX_FIRST_PERSON, new VisitDate("01/11/2026 1000"), FIXED_CLOCK,
-                String.format(NextCommand.MESSAGE_DUPLICATE_VISIT_DATE, BENSON.getName(), BENSON.getVisitDate()));
-        model.setPerson(CARL, new PersonBuilder(CARL).withVisitDate("3/11/2026 1000").build());
-        assertEquals("Carl Kurz", model.getFilteredPersonList().getFirst().getName().fullName);
-        assertEquals(2, model.getFilteredPersonList().size());
+        AddressBook originalAddressBook = new AddressBook(model.getAddressBook());
+        NextCommand command = new NextCommand(INDEX_FIRST_PERSON, new VisitDate("01/11/2026 1000"), FIXED_CLOCK);
+        String expectedMessage = String.format(NextCommand.MESSAGE_DUPLICATE_VISIT_DATE,
+                BENSON.getName(), BENSON.getVisitDate());
+
+        assertThrows(CommandException.class, expectedMessage, () -> command.execute(model));
+
+        assertEquals(originalAddressBook, model.getAddressBook());
+        assertEquals(List.of(BENSON), model.getFilteredPersonList());
     }
 
     @Test

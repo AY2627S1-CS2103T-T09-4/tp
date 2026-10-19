@@ -32,7 +32,8 @@ public class NextCommand extends Command {
     public static final String MESSAGE_UNCHANGED_VISIT_DATE = "Patient %1$s already has an appointment at %2$s.";
     public static final String MESSAGE_NON_FUTURE_VISIT_DATE = "The next visit must be in the future.";
     public static final String MESSAGE_DUPLICATE_VISIT_DATE =
-            "Patient %1$s already has an appointment at %2$s. Choose a different date and time.";
+            "Patient %1$s already has an appointment at %2$s and is shown in the patient list. "
+                    + "Choose a different date and time.";
 
     private final Index index;
     private final VisitDate visitDate;
@@ -92,9 +93,10 @@ public class NextCommand extends Command {
             throw new CommandException(MESSAGE_NON_FUTURE_VISIT_DATE);
         }
 
-        // The shared boolean conflict check cannot identify the patient for the error message.
         for (Person person : model.getAddressBook().getPersonList()) {
             if (!person.equals(personToUpdate) && visitDate.equals(person.getVisitDate())) {
+                model.updateFilteredPersonList(
+                        existingPerson -> visitDate.equals(existingPerson.getVisitDate()));
                 throw new CommandException(String.format(MESSAGE_DUPLICATE_VISIT_DATE, person.getName(), visitDate));
             }
         }

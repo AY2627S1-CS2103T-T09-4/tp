@@ -65,6 +65,7 @@ public class AddCommandTest {
                 personWithConflictingVisit.getVisitDate());
         String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, conflictMessage);
         assertThrows(CommandException.class, expectedMessage, () -> addCommand.execute(modelStub));
+        assertEquals(List.of(existingPerson), modelStub.getFilteredPersonList());
     }
 
     @Test
