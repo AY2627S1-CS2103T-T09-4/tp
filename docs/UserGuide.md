@@ -92,7 +92,10 @@ The command box keeps commands submitted during the current application session 
 
 ### Viewing help: `help`
 
-Shows a message explaining how to access the help page.
+Opens a non-modal help window with a link to the online User Guide. The window
+can be resized and its content can be scrolled vertically when needed. Use
+**Copy URL** to copy the guide link, **Close** to dismiss the window, or press
+**Escape**. You can continue using the main window while help is open.
 
 ![help message](images/helpMessage.png)
 
