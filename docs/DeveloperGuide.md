@@ -917,12 +917,14 @@ testers are expected to do more *exploratory* testing.
 Use a disposable data file and available visit slots.
 
 1. Run `add n/Dob Patient dob/15/6/1990 p/81234567 a/10 Test Road vd/22/10/2026 1000`, then `view 1`.
-   Expect `Date of birth: 15/6/1990 (N years old)` immediately below the name, with the age in completed years
+   Expect `Date of birth: 15/6/1990 (N years old)` immediately below the name in both the left-hand patient
+   card and the right-hand details panel, with the age in completed years
    on the computer's current local date. A leap-day birthday advances on March 1 in non-leap years.
 1. Run `edit 1 n/Dob Patient dob/20/7/1985`, then `view 1`; expect the replacement date and recalculated age.
 1. Edit another field and run `next 1 1/1/2099 1000`; expect the date of birth to remain unchanged.
 1. Restart the application and run `view 1`; expect the saved date of birth to remain.
-1. Run `edit 1 dob/`, then `view 1`; expect the date of birth row to disappear and all other details to remain.
+1. Run `edit 1 dob/`, then `view 1`; expect the date of birth rows in both panels to disappear and all other
+   details to remain.
    Restart and view the patient; expect the row to stay hidden. Whitespace-only `dob/` also clears the field,
    and clearing an already empty date of birth succeeds. Set a new DOB to restore the row.
 1. Try `edit 1 dob/31/2/2000`, a future date, and repeated `dob/` prefixes (including `edit 1 dob/ dob/`).

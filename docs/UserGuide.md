@@ -216,7 +216,8 @@ Displays the selected patient's full record in the details panel on the right.
 
 Format: `view INDEX`
 
-* If recorded, the date of birth appears immediately below the name as
+* If recorded, the date of birth appears immediately below the name in both the left-hand patient list
+  and the right-hand details panel as
   `Date of birth: 15/6/1990 (N years old)`. Age is calculated in completed years using the computer's local
   date when the record is viewed. For a February 29 birthday, age increases on March 1 in non-leap years.
   The row is hidden when no date of birth is recorded.

@@ -33,6 +33,8 @@ public class PersonCard extends UiPart<Region> {
     @FXML
     private Label name;
     @FXML
+    private Label dateOfBirth;
+    @FXML
     private Label id;
     @FXML
     private Label phone;
@@ -62,6 +64,10 @@ public class PersonCard extends UiPart<Region> {
         this.person = person;
         id.setText(displayedIndex + ". ");
         name.setText(person.getName().fullName);
+        boolean hasDateOfBirth = !person.getDateOfBirth().isEmpty();
+        dateOfBirth.setText(hasDateOfBirth ? "Date of birth: " + person.getDateOfBirth().toDisplayString() : "");
+        dateOfBirth.setVisible(hasDateOfBirth);
+        dateOfBirth.setManaged(hasDateOfBirth);
         phone.setText(person.getPhone().value);
         address.setText(person.getAddress().value);
         email.setText(person.getEmail().value);
