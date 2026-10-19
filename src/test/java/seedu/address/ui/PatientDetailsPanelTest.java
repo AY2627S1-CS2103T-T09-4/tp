@@ -69,6 +69,28 @@ public class PatientDetailsPanelTest {
         });
     }
 
+    @Test
+    public void setPerson_emergencyContact_displaysBelowPhoneAndHidesWhenAbsent() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            Person patient = new PersonBuilder().withEmergencyContact("Mary Tan, 91234567").build();
+            panel.setPerson(patient);
+            Label contact = getLabel(panel, "emergencyContact");
+            assertEquals("Emergency Contact : 91234567 (Mary Tan)", contact.getText());
+            assertTrue(contact.isVisible());
+            assertTrue(contact.isManaged());
+            assertTrue(contact.isWrapText());
+            VBox container = getDetailsContainer(panel);
+            assertEquals(container.getChildren().indexOf(getLabel(panel, "phone")) + 1,
+                    container.getChildren().indexOf(contact));
+
+            panel.setPerson(new PersonBuilder().build());
+            assertFalse(contact.isVisible());
+            assertFalse(contact.isManaged());
+            assertFalse(contact.getText().contains("Mary Tan"));
+        });
+    }
+
     private static VBox getDetailsContainer(PatientDetailsPanel patientDetailsPanel) {
         ScrollPane scrollPane = (ScrollPane) patientDetailsPanel.getRoot();
         VBox detailsContainer = (VBox) scrollPane.getContent();

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Phone;
 import seedu.address.model.person.VisitDate;
@@ -40,6 +41,20 @@ public class JsonAdaptedPersonTest {
     public void toModelType_validPersonDetails_returnsPerson() throws Exception {
         JsonAdaptedPerson person = new JsonAdaptedPerson(BENSON);
         assertEquals(BENSON, person.toModelType());
+    }
+
+    @Test
+    public void toModelType_missingEmergencyContact_loadsOlderRecord() throws Exception {
+        JsonAdaptedPerson person = new JsonAdaptedPerson(VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS,
+                VALID_VISIT_DATE, VALID_NOTE, VALID_TAGS);
+        assertEquals(BENSON, person.toModelType());
+    }
+
+    @Test
+    public void toModelType_invalidEmergencyContact_throwsIllegalValueException() {
+        JsonAdaptedPerson person = new JsonAdaptedPerson(VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS,
+                VALID_VISIT_DATE, VALID_NOTE, "Mary Tan, invalid", VALID_TAGS);
+        assertThrows(IllegalValueException.class, EmergencyContact.MESSAGE_CONSTRAINTS, person::toModelType);
     }
 
     @Test

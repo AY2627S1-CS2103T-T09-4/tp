@@ -38,6 +38,9 @@ public class PatientDetailsPanel extends UiPart<Region> {
     private Label note;
 
     @FXML
+    private Label emergencyContact;
+
+    @FXML
     private Label tags;
 
     /**
@@ -59,6 +62,10 @@ public class PatientDetailsPanel extends UiPart<Region> {
         address.setText("Address: " + person.getAddress().value);
         visitDate.setText("Visit date: " + person.getVisitDate());
         note.setText("Note: " + person.getNote().value);
+        emergencyContact.setText("Emergency Contact : " + person.getEmergencyContact().toDisplayString());
+        boolean hasEmergencyContact = !person.getEmergencyContact().isEmpty();
+        emergencyContact.setVisible(hasEmergencyContact);
+        emergencyContact.setManaged(hasEmergencyContact);
 
         String tagNames = person.getTags().stream()
                 .sorted(Comparator.comparing(tag -> tag.tagName))

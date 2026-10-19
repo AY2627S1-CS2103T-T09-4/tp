@@ -5,6 +5,7 @@ import java.util.Set;
 
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
@@ -31,6 +32,7 @@ public class PersonBuilder {
     private Address address;
     private VisitDate visitDate;
     private Note note;
+    private EmergencyContact emergencyContact;
     private Set<Tag> tags;
 
     /**
@@ -43,6 +45,7 @@ public class PersonBuilder {
         address = new Address(DEFAULT_ADDRESS);
         visitDate = new VisitDate(DEFAULT_VISIT_DATE);
         note = new Note(DEFAULT_NOTE);
+        emergencyContact = new EmergencyContact("");
         tags = new HashSet<>();
     }
 
@@ -56,6 +59,7 @@ public class PersonBuilder {
         address = personToCopy.getAddress();
         visitDate = personToCopy.getVisitDate();
         note = personToCopy.getNote();
+        emergencyContact = personToCopy.getEmergencyContact();
         tags = new HashSet<>(personToCopy.getTags());
     }
 
@@ -115,8 +119,19 @@ public class PersonBuilder {
         return this;
     }
 
+    /**
+     * Sets the optional emergency contact of the patient being built.
+     */
+    public PersonBuilder withEmergencyContact(String emergencyContact) {
+        this.emergencyContact = new EmergencyContact(emergencyContact);
+        return this;
+    }
+
+    /**
+     * Returns a patient with the configured details.
+     */
     public Person build() {
-        return new Person(name, phone, email, address, visitDate, note, tags);
+        return new Person(name, phone, email, address, visitDate, note, emergencyContact, tags);
     }
 
 }

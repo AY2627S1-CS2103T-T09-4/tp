@@ -25,6 +25,7 @@ public class Person {
     private final Address address;
     private final VisitDate visitDate;
     private final Note note;
+    private final EmergencyContact emergencyContact;
     private final Set<Tag> tags = new HashSet<>();
 
     /**
@@ -32,13 +33,22 @@ public class Person {
      */
     public Person(Name name, Phone phone, Email email, Address address, VisitDate visitDate, Note note,
             Set<Tag> tags) {
-        requireAllNonNull(name, phone, email, address, visitDate, note, tags);
+        this(name, phone, email, address, visitDate, note, new EmergencyContact(""), tags);
+    }
+
+    /**
+     * Creates a patient with an optional emergency contact. Every field must be non-null.
+     */
+    public Person(Name name, Phone phone, Email email, Address address, VisitDate visitDate, Note note,
+            EmergencyContact emergencyContact, Set<Tag> tags) {
+        requireAllNonNull(name, phone, email, address, visitDate, note, emergencyContact, tags);
         this.name = name;
         this.phone = phone;
         this.email = email;
         this.address = address;
         this.visitDate = visitDate;
         this.note = note;
+        this.emergencyContact = emergencyContact;
         this.tags.addAll(tags);
     }
 
@@ -60,6 +70,10 @@ public class Person {
 
     public VisitDate getVisitDate() {
         return visitDate;
+    }
+
+    public EmergencyContact getEmergencyContact() {
+        return emergencyContact;
     }
 
     public Note getNote() {
@@ -116,13 +130,14 @@ public class Person {
                 && address.equals(otherPerson.address)
                 && visitDate.equals(otherPerson.visitDate)
                 && note.equals(otherPerson.note)
+                && emergencyContact.equals(otherPerson.emergencyContact)
                 && tags.equals(otherPerson.tags);
     }
 
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(name, phone, email, address, visitDate, note, tags);
+        return Objects.hash(name, phone, email, address, visitDate, note, emergencyContact, tags);
     }
 
     @Override
@@ -134,6 +149,7 @@ public class Person {
                 .add("address", address)
                 .add("visitDate", visitDate)
                 .add("note", note)
+                .add("emergencyContact", emergencyContact)
                 .add("tags", tags)
                 .toString();
     }

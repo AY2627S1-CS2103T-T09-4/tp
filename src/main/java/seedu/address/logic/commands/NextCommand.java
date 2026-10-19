@@ -72,7 +72,7 @@ public class NextCommand extends Command {
 
         Person updatedPerson = new Person(personToUpdate.getName(), personToUpdate.getPhone(),
                 personToUpdate.getEmail(), personToUpdate.getAddress(), visitDate,
-                personToUpdate.getNote(), personToUpdate.getTags());
+                personToUpdate.getNote(), personToUpdate.getEmergencyContact(), personToUpdate.getTags());
         model.setPerson(personToUpdate, updatedPerson);
         model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
         return new CommandResult(String.format(MESSAGE_SUCCESS, updatedPerson.getName(), visitDate));

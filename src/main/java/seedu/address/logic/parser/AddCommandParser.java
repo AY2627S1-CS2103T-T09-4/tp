@@ -3,6 +3,7 @@ package seedu.address.logic.parser;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_EMERGENCY_CONTACT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
@@ -16,6 +17,7 @@ import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
@@ -50,7 +52,7 @@ public class AddCommandParser implements Parser<AddCommand> {
     private Person parsePerson(String args) throws ParseException {
         ArgumentMultimap argMultimap =
                 ArgumentTokenizer.tokenize(args, PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_ADDRESS,
-                        PREFIX_VISIT_DATE, PREFIX_NOTE, PREFIX_TAG);
+                        PREFIX_VISIT_DATE, PREFIX_NOTE, PREFIX_EMERGENCY_CONTACT, PREFIX_TAG);
 
         if (!arePrefixesPresent(argMultimap, PREFIX_NAME, PREFIX_ADDRESS, PREFIX_PHONE, PREFIX_VISIT_DATE)
                 || !argMultimap.getPreamble().isEmpty()) {
@@ -58,7 +60,7 @@ public class AddCommandParser implements Parser<AddCommand> {
         }
 
         argMultimap.verifyNoDuplicatePrefixesFor(PREFIX_NAME, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_ADDRESS,
-                PREFIX_VISIT_DATE, PREFIX_NOTE);
+                PREFIX_VISIT_DATE, PREFIX_NOTE, PREFIX_EMERGENCY_CONTACT);
         Name name = ParserUtil.parseName(argMultimap.getValue(PREFIX_NAME).get());
         Phone phone = ParserUtil.parsePhone(argMultimap.getValue(PREFIX_PHONE).get());
         Email email = ParserUtil.parseEmail(argMultimap.getValue(PREFIX_EMAIL).orElse(""));
@@ -67,7 +69,10 @@ public class AddCommandParser implements Parser<AddCommand> {
         Note note = new Note(argMultimap.getValue(PREFIX_NOTE).orElse(""));
         Set<Tag> tagList = ParserUtil.parseTags(argMultimap.getAllValues(PREFIX_TAG));
 
-        return new Person(name, phone, email, address, visitDate, note, tagList);
+        EmergencyContact emergencyContact = argMultimap.getValue(PREFIX_EMERGENCY_CONTACT).isPresent()
+                ? ParserUtil.parseEmergencyContact(argMultimap.getValue(PREFIX_EMERGENCY_CONTACT).get())
+                : new EmergencyContact("");
+        return new Person(name, phone, email, address, visitDate, note, emergencyContact, tagList);
     }
 
     /**

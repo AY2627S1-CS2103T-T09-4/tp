@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
@@ -32,15 +33,25 @@ class JsonAdaptedPerson {
     private final String address;
     private final String visitDate;
     private final String note;
+    private final String emergencyContact;
     private final List<JsonAdaptedTag> tags = new ArrayList<>();
 
     /**
      * Constructs a {@code JsonAdaptedPerson} with the given person details.
      */
+    public JsonAdaptedPerson(String name, String phone, String email, String address,
+            String visitDate, String note, List<JsonAdaptedTag> tags) {
+        this(name, phone, email, address, visitDate, note, null, tags);
+    }
+
+    /**
+     * Constructs a stored patient, accepting a missing emergency contact from older files.
+     */
     @JsonCreator
     public JsonAdaptedPerson(@JsonProperty("name") String name, @JsonProperty("phone") String phone,
             @JsonProperty("email") String email, @JsonProperty("address") String address,
             @JsonProperty("visitDate") String visitDate, @JsonProperty("note") String note,
+            @JsonProperty("emergencyContact") String emergencyContact,
             @JsonProperty("tags") List<JsonAdaptedTag> tags) {
         this.name = name;
         this.phone = phone;
@@ -48,6 +59,7 @@ class JsonAdaptedPerson {
         this.address = address;
         this.visitDate = visitDate;
         this.note = note;
+        this.emergencyContact = emergencyContact;
         if (tags != null) {
             this.tags.addAll(tags);
         }
@@ -63,6 +75,7 @@ class JsonAdaptedPerson {
         address = source.getAddress().value;
         visitDate = source.getVisitDate().toString();
         note = source.getNote().value;
+        emergencyContact = source.getEmergencyContact().toString();
         tags.addAll(source.getTags().stream()
                 .map(JsonAdaptedTag::new)
                 .collect(Collectors.toList()));
@@ -123,9 +136,15 @@ class JsonAdaptedPerson {
         // notes are optional, so a missing note is treated as no notes
         final Note modelNote = new Note(note == null ? "" : note);
 
+        String storedContact = emergencyContact == null ? "" : emergencyContact;
+        if (!EmergencyContact.isValidEmergencyContact(storedContact)) {
+            throw new IllegalValueException(EmergencyContact.MESSAGE_CONSTRAINTS);
+        }
+        final EmergencyContact modelEmergencyContact = new EmergencyContact(storedContact);
+
         final Set<Tag> modelTags = new HashSet<>(personTags);
         return new Person(modelName, modelPhone, modelEmail, modelAddress, modelVisitDate, modelNote,
-                modelTags);
+                modelEmergencyContact, modelTags);
     }
 
 }

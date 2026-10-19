@@ -3,6 +3,7 @@ package seedu.address.logic.commands;
 import static java.util.Objects.requireNonNull;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_EMERGENCY_CONTACT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
@@ -25,6 +26,7 @@ import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
@@ -49,6 +51,7 @@ public class EditCommand extends Command {
             + "[" + PREFIX_VISIT_DATE + "DATE_TIME] "
             + "[" + PREFIX_EMAIL + "EMAIL] "
             + "[" + PREFIX_NOTE + "NOTES] "
+            + "[" + PREFIX_EMERGENCY_CONTACT + "NAME, PHONE_NUMBER] "
             + "[" + PREFIX_TAG + "TAG]...\n"
             + "Example: " + COMMAND_WORD + " 1 "
             + PREFIX_PHONE + "91234567 "
@@ -197,10 +200,12 @@ public class EditCommand extends Command {
         Address updatedAddress = editPersonDescriptor.getAddress().orElse(personToEdit.getAddress());
         VisitDate updatedVisitDate = editPersonDescriptor.getVisitDate().orElse(personToEdit.getVisitDate());
         Note updatedNote = editPersonDescriptor.getNote().orElse(personToEdit.getNote());
+        EmergencyContact updatedEmergencyContact = editPersonDescriptor.getEmergencyContact()
+                .orElse(personToEdit.getEmergencyContact());
         Set<Tag> updatedTags = editPersonDescriptor.getTags().orElse(personToEdit.getTags());
 
         return new Person(updatedName, updatedPhone, updatedEmail, updatedAddress,
-                updatedVisitDate, updatedNote, updatedTags);
+                updatedVisitDate, updatedNote, updatedEmergencyContact, updatedTags);
     }
 
     @Override
@@ -237,6 +242,7 @@ public class EditCommand extends Command {
         private Address address;
         private VisitDate visitDate;
         private Note note;
+        private EmergencyContact emergencyContact;
         private Set<Tag> tags;
 
         /**
@@ -255,6 +261,7 @@ public class EditCommand extends Command {
             setAddress(toCopy.address);
             setVisitDate(toCopy.visitDate);
             setNote(toCopy.note);
+            setEmergencyContact(toCopy.emergencyContact);
             setTags(toCopy.tags);
         }
 
@@ -262,7 +269,7 @@ public class EditCommand extends Command {
          * Returns true if at least one field is edited.
          */
         public boolean isAnyFieldEdited() {
-            return CollectionUtil.isAnyNonNull(name, phone, email, address, visitDate, note, tags);
+            return CollectionUtil.isAnyNonNull(name, phone, email, address, visitDate, note, emergencyContact, tags);
         }
 
         public void setName(Name name) {
@@ -303,6 +310,14 @@ public class EditCommand extends Command {
 
         public Optional<VisitDate> getVisitDate() {
             return Optional.ofNullable(visitDate);
+        }
+
+        public void setEmergencyContact(EmergencyContact emergencyContact) {
+            this.emergencyContact = emergencyContact;
+        }
+
+        public Optional<EmergencyContact> getEmergencyContact() {
+            return Optional.ofNullable(emergencyContact);
         }
 
         public void setNote(Note note) {
@@ -347,6 +362,7 @@ public class EditCommand extends Command {
                     && Objects.equals(address, otherEditPersonDescriptor.address)
                     && Objects.equals(visitDate, otherEditPersonDescriptor.visitDate)
                     && Objects.equals(note, otherEditPersonDescriptor.note)
+                    && Objects.equals(emergencyContact, otherEditPersonDescriptor.emergencyContact)
                     && Objects.equals(tags, otherEditPersonDescriptor.tags);
         }
 
@@ -359,6 +375,7 @@ public class EditCommand extends Command {
                     .add("address", address)
                     .add("visitDate", visitDate)
                     .add("note", note)
+                    .add("emergencyContact", emergencyContact)
                     .add("tags", tags)
                     .toString();
         }
