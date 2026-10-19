@@ -86,6 +86,11 @@ The `UI` component,
 `CommandBox` owns a session-scoped `CommandHistory`. It records ordinary command submissions and uses it to replace
 the command box text when the user presses the Up or Down arrow key.
 
+`MainApp` passes `HostServices.showDocument` through `UiManager` and `MainWindow` to `HelpWindow` as a browser-opening
+action. `HelpWindow` also accepts a replaceable clipboard action for isolated tests. It logs detectable failures
+and displays feedback without disabling help. Browser feedback confirms only a launch request, not page loading;
+clipboard success requires `Clipboard.setContent` to return `true`. No network preflight is performed.
+
 ### Logic component
 
 **API** : [`Logic.java`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/java/seedu/address/logic/Logic.java)
@@ -852,7 +857,8 @@ testers are expected to do more *exploratory* testing.
 ### Help window lifecycle
 
 1. With no follow-up prompt pending, enter `help`, then repeat with `help add` and `help 123`.
-   Expect the same non-modal Help window each time, showing the User Guide URL and working Copy URL and Close controls.
+   Expect the same non-modal Help window each time, showing the User Guide URL and working Open User Guide,
+   Copy URL, and Close controls.
    Move and resize Help, then request it again; expect its position and size to remain unchanged.
 1. Use Help's native minimize control. Expect Help to minimize independently while the main window stays usable.
    Request Help again using `help`, F1, and **Help → Help**, minimizing it before each attempt.
@@ -874,6 +880,19 @@ testers are expected to do more *exploratory* testing.
 1. Repeat the relevant flows at 1920×1080 with 100% and 125% OS scaling, and at 1280×720 with 150% OS scaling.
    Check that Help's guide text and buttons remain accessible after resizing. Automated scene-layout checks do not
    replace these OS-level checks.
+
+### User Guide actions
+
+1. Open Help and choose **Open User Guide**. Expect a request to the default browser for the displayed URL and
+   feedback saying that the launch was requested. Separately check whether a browser actually opens and loads the
+   guide; Doc cannot confirm that. Repeat using Tab and Space (or Enter where the platform supports it).
+1. Choose **Copy URL**, then paste into a disposable text field. Expect the displayed URL and copy-success feedback
+   only when the clipboard accepts it. Do not confuse this with confirmation that the guide is reachable.
+1. If the browser does not appear, use **Copy URL** and open the address manually. With networking unavailable,
+   expect the help window and its URL to remain usable; page-loading errors belong to the browser.
+1. Use `HelpWindowActionsTest` to simulate a browser exception, clipboard rejection, and clipboard exception without
+   launching a browser or modifying the system clipboard. Expect specific fallback feedback, a readable URL,
+   working alternative controls, successful retries, and a working Close button after each recoverable failure.
 
 ### Sorting visits by date
 

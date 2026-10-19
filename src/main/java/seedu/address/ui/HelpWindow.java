@@ -1,5 +1,10 @@
 package seedu.address.ui;
 
+import static java.util.Objects.requireNonNull;
+
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javafx.fxml.FXML;
@@ -20,11 +25,17 @@ public class HelpWindow extends UiPart<Stage> {
     public static final String USERGUIDE_URL = "https://ay2627s1-cs2103t-t09-4.github.io/tp/UserGuide.html";
     public static final String HELP_MESSAGE = "Refer to the user guide: " + USERGUIDE_URL;
 
+    static final String MESSAGE_BROWSER_REQUESTED = "Browser launch requested. If nothing opens, use Copy URL.";
+    static final String MESSAGE_BROWSER_FAILURE =
+            "Could not launch the browser. Use Copy URL or enter the URL manually.";
+    static final String MESSAGE_COPY_SUCCESS = "User Guide URL copied to the clipboard.";
+    static final String MESSAGE_COPY_FAILURE = "Could not copy the URL. Try again or enter the URL in your browser.";
+
     private static final Logger logger = LogsCenter.getLogger(HelpWindow.class);
     private static final String FXML = "HelpWindow.fxml";
 
-    @FXML
-    private Button copyButton;
+    private final Consumer<String> openDocument;
+    private final BooleanSupplier copyUrlToClipboard;
 
     @FXML
     private Label helpMessage;
@@ -32,22 +43,29 @@ public class HelpWindow extends UiPart<Stage> {
     @FXML
     private Button closeButton;
 
+    @FXML
+    private Label guideStatus;
+
     /**
-     * Creates a new HelpWindow.
-     *
-     * @param root Stage to use as the root of the HelpWindow.
+     * Creates a help window using the supplied browser-opening action and the system clipboard.
      */
-    public HelpWindow(Stage root) {
-        super(FXML, root);
-        helpMessage.setText(HELP_MESSAGE);
-        getRoot().getScene().addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
+    public HelpWindow(Consumer<String> openDocument) {
+        this(new Stage(), openDocument, HelpWindow::copyGuideUrlToClipboard);
     }
 
     /**
-     * Creates a new HelpWindow.
+     * Creates a help window with replaceable external actions for testing.
+     *
+     * @param root Stage to use as the root of the help window.
+     * @param openDocument Requests a browser launch for the supplied URL.
+     * @param copyUrlToClipboard Copies {@link #USERGUIDE_URL} and reports whether the clipboard accepted it.
      */
-    public HelpWindow() {
-        this(new Stage());
+    HelpWindow(Stage root, Consumer<String> openDocument, BooleanSupplier copyUrlToClipboard) {
+        super(FXML, root);
+        this.openDocument = requireNonNull(openDocument);
+        this.copyUrlToClipboard = requireNonNull(copyUrlToClipboard);
+        helpMessage.setText(HELP_MESSAGE);
+        getRoot().getScene().addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
     }
 
     /**
@@ -101,13 +119,53 @@ public class HelpWindow extends UiPart<Stage> {
     }
 
     /**
-     * Copies the URL to the user guide to the clipboard.
+     * Requests that the browser open the User Guide, retaining manual fallback after a detectable failure.
+     */
+    @FXML
+    private void openUserGuide() {
+        try {
+            openDocument.accept(USERGUIDE_URL);
+        } catch (RuntimeException e) {
+            logger.log(Level.WARNING, "Could not request a browser launch for the User Guide", e);
+            showGuideStatus(MESSAGE_BROWSER_FAILURE);
+            return;
+        }
+        showGuideStatus(MESSAGE_BROWSER_REQUESTED);
+    }
+
+    /**
+     * Copies the User Guide URL and reports success only when the clipboard accepts it.
      */
     @FXML
     private void copyUrl() {
+        boolean wasCopied;
+        try {
+            wasCopied = copyUrlToClipboard.getAsBoolean();
+        } catch (RuntimeException e) {
+            logger.log(Level.WARNING, "Could not copy the User Guide URL to the clipboard", e);
+            showGuideStatus(MESSAGE_COPY_FAILURE);
+            return;
+        }
+        if (wasCopied) {
+            showGuideStatus(MESSAGE_COPY_SUCCESS);
+        } else {
+            logger.warning("The clipboard did not accept the User Guide URL");
+            showGuideStatus(MESSAGE_COPY_FAILURE);
+        }
+    }
+
+    /** Shows action feedback without hiding the guide or disabling its controls. */
+    private void showGuideStatus(String message) {
+        guideStatus.setText(message);
+        guideStatus.setManaged(true);
+        guideStatus.setVisible(true);
+    }
+
+    /** Copies the User Guide URL and returns whether the system clipboard accepted it. */
+    private static boolean copyGuideUrlToClipboard() {
         final Clipboard clipboard = Clipboard.getSystemClipboard();
         final ClipboardContent url = new ClipboardContent();
         url.putString(USERGUIDE_URL);
-        clipboard.setContent(url);
+        return clipboard.setContent(url);
     }
 }

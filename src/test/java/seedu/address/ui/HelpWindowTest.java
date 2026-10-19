@@ -31,7 +31,7 @@ public class HelpWindowTest {
     @Test
     public void helpWindow_layoutIsResizableAndScrollable() {
         runOnFxThread(() -> {
-            HelpWindow helpWindow = new HelpWindow();
+            HelpWindow helpWindow = new HelpWindow(url -> { });
             Stage stage = helpWindow.getRoot();
             helpWindow.show();
 
@@ -58,7 +58,7 @@ public class HelpWindowTest {
     @Test
     public void helpWindow_closeButton_closesWindow() {
         runOnFxThread(() -> {
-            HelpWindow helpWindow = new HelpWindow();
+            HelpWindow helpWindow = new HelpWindow(url -> { });
             Stage stage = helpWindow.getRoot();
             helpWindow.show();
 
@@ -76,7 +76,7 @@ public class HelpWindowTest {
     @Test
     public void helpWindow_escapeKey_closesWindow() {
         runOnFxThread(() -> {
-            HelpWindow helpWindow = new HelpWindow();
+            HelpWindow helpWindow = new HelpWindow(url -> { });
             Stage stage = helpWindow.getRoot();
             helpWindow.show();
 
@@ -94,7 +94,7 @@ public class HelpWindowTest {
     @Test
     public void show_minimizedWindow_restoresWindow() {
         runOnFxThread(() -> {
-            HelpWindow helpWindow = new HelpWindow();
+            HelpWindow helpWindow = new HelpWindow(url -> { });
             Stage stage = helpWindow.getRoot();
             try {
                 helpWindow.show();

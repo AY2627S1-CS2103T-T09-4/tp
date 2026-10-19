@@ -92,10 +92,17 @@ The command box keeps commands submitted during the current application session 
 
 ### Viewing help: `help`
 
-Opens a non-modal help window with a link to the online User Guide. The window
-can be resized and its content can be scrolled vertically when needed. Use
-**Copy URL** to copy the guide link, **Close** to dismiss the window, or press
-**Escape**. You can continue using the main window while help is open.
+Opens a non-modal help window with the online User Guide's URL. Choose
+**Open User Guide** to request opening it in your default browser, or **Copy URL**
+to copy the address. Use Tab to reach the buttons and Space to activate them.
+The window can be resized and scrolled vertically. Choose **Close** or press
+**Escape** to dismiss it. You can continue using the main window while help is open.
+
+Opening the guide requires a browser and an Internet connection. A browser-launch
+request does not confirm that the page loaded. If no browser appears, try **Copy URL**
+and open the address manually. Detectable browser and clipboard failures are shown
+in the help window; you can retry or enter the displayed URL in your browser.
+Copy success is reported only when the clipboard accepts the URL.
 
 Press **F1** or choose **Help → Help** to open the same window. Repeating a help
 request brings that window to the front and restores it if it was minimized.

@@ -11,6 +11,7 @@ import static seedu.address.ui.JavaFxTestUtil.startJavaFx;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -55,6 +56,7 @@ public class HelpWindowIntegrationTest {
     private Stage primaryStage;
     private TextField commandTextField;
     private TextArea resultDisplay;
+    private List<String> requestedUrls;
 
     @BeforeAll
     public static void setUpJavaFx() throws InterruptedException {
@@ -70,7 +72,8 @@ public class HelpWindowIntegrationTest {
                     new JsonUserPrefsStorage(temporaryFolder.resolve("preferences.json")));
             logic = new LogicManager(model, storage);
             primaryStage = new Stage();
-            mainWindow = new MainWindow(primaryStage, logic, patientDataPath);
+            requestedUrls = new ArrayList<>();
+            mainWindow = new MainWindow(primaryStage, logic, patientDataPath, requestedUrls::add);
             mainWindow.show();
             mainWindow.fillInnerParts();
             primaryStage.getScene().getRoot().applyCss();
@@ -87,6 +90,20 @@ public class HelpWindowIntegrationTest {
                 helpStage.close();
             }
             primaryStage.close();
+        });
+    }
+
+    @Test
+    public void openUserGuide_fromHelpWindow_usesSuppliedBrowserAction() {
+        runOnFxThread(() -> {
+            mainWindow.handleHelp();
+            Stage helpStage = getOnlyShowingHelpStage();
+
+            Button openGuideButton = (Button) helpStage.getScene().lookup("#openGuideButton");
+            openGuideButton.fire();
+
+            assertEquals(List.of(HelpWindow.USERGUIDE_URL), requestedUrls);
+            assertTrue(helpStage.isShowing());
         });
     }
 
