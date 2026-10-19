@@ -80,7 +80,7 @@ public class NextCommandTest {
 
     @Test
     public void execute_requestedDateBeforePreviousDate_preservesDataAndDisplay() {
-        Person original = new PersonBuilder(AMY).withPreviousVisitDates("1/11/2026 1000").build();
+        Person original = new PersonBuilder(AMY).withPreviousVisitDates("31/10/2026 1000").build();
         model.setPerson(AMY, original);
         model.updateFilteredPersonList(person -> person.equals(original));
         model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
@@ -139,6 +139,17 @@ public class NextCommandTest {
         model.setPerson(CARL, new PersonBuilder(CARL).withVisitDate("3/11/2026 1000").build());
         assertEquals("Carl Kurz", model.getFilteredPersonList().getFirst().getName().fullName);
         assertEquals(2, model.getFilteredPersonList().size());
+    }
+
+    @Test
+    public void execute_hiddenPreviousDateConflict_preservesFilterAndSort() {
+        Person hiddenPatient = new PersonBuilder(BENSON).withPreviousVisitDates("31/10/2026 1000").build();
+        model.setPerson(BENSON, hiddenPatient);
+        model.updateFilteredPersonList(person -> !person.equals(hiddenPatient));
+        model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
+
+        assertScheduleFailure(INDEX_FIRST_PERSON, new VisitDate("31/10/2026 1000"), FIXED_CLOCK,
+                String.format(NextCommand.MESSAGE_DUPLICATE_VISIT_DATE, hiddenPatient.getName(), "31/10/2026 1000"));
     }
 
     @Test

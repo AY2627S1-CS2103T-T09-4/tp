@@ -51,9 +51,17 @@ public interface Model {
     boolean hasPersonWithSameName(Person person);
 
     /**
-     * Returns true if a person with the same visit date and time as {@code person} exists in the address book.
+     * Returns true if any stored patient shares a current or previous datetime with {@code person}.
      */
     boolean hasPersonWithSameVisitDate(Person person);
+
+    /**
+     * Returns true if any stored patient other than {@code excludedPerson} shares a visit datetime with {@code person}.
+     * Includes patients hidden by the active filter.
+     *
+     * @throws NullPointerException If either argument is null.
+     */
+    boolean hasPersonWithSameVisitDate(Person person, Person excludedPerson);
 
     /**
      * Returns the number of persons whose visit falls on the same day as {@code person}'s visit.

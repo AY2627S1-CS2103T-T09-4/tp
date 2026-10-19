@@ -2,6 +2,7 @@ package seedu.address.logic.commands;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.DESC_BOB;
@@ -21,8 +22,10 @@ import static seedu.address.testutil.TypicalIndexes.INDEX_SECOND_PERSON;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.core.index.Index;
@@ -49,6 +52,47 @@ public class EditCommandTest {
     private static final String FULL_DAY_VISIT_DATE = "1/1/2026 1500";
 
     private Model model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
+
+    @Test
+    public void execute_hiddenPreviousDateConflict_preservesDataFilterAndSort() {
+        Person hiddenPatient = setExistingNoteAndPreviousDates(INDEX_SECOND_PERSON);
+        Person original = model.getFilteredPersonList().getFirst();
+        model.updateFilteredPersonList(person -> !person.equals(hiddenPatient));
+        model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
+        Index displayedIndex = Index.fromZeroBased(model.getFilteredPersonList().indexOf(original));
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withVisitDate("01/01/2024 0900")
+                .withNote(REPLACEMENT_NOTE).build();
+        String expectedMessage = String.format(EditCommand.MESSAGE_DUPLICATE_VISIT_DATE, "1/1/2024 0900");
+
+        assertCommandFailure(new EditCommand(displayedIndex, descriptor), model, expectedMessage);
+        Person changedOriginal = new PersonBuilder(original).withVisitDate("1/1/2027 1000").build();
+        model.setPerson(original, changedOriginal);
+        assertEquals(changedOriginal, model.getFilteredPersonList().getFirst());
+        assertFalse(model.getFilteredPersonList().contains(hiddenPatient));
+    }
+
+    @Test
+    public void confirmation_previousDateConflictAppeared_preservesDataFilterAndSort() throws Exception {
+        Person firstPerson = model.getFilteredPersonList().getFirst();
+        Person original = setExistingNoteAndPreviousDates(INDEX_SECOND_PERSON);
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withName(firstPerson.getName().fullName)
+                .withVisitDate("1/10/2026 1000").build();
+        CommandResult requestResult = new EditCommand(INDEX_SECOND_PERSON, descriptor).execute(model);
+        Person conflicting = new PersonBuilder().withName("Conflicting Patient").withVisitDate("2/10/2026 1000")
+                .withPreviousVisitDates("01/10/2026 1000").build();
+        model.addPerson(conflicting);
+        model.updateFilteredPersonList(person -> person.equals(original) || person.equals(firstPerson));
+        model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
+        AddressBook before = new AddressBook(model.getAddressBook());
+        List<Person> displayedBefore = List.copyOf(model.getFilteredPersonList());
+
+        assertThrows(CommandException.class,
+                String.format(EditCommand.MESSAGE_DUPLICATE_VISIT_DATE, "1/10/2026 1000"), () ->
+                requestResult.getInputRequest().orElseThrow().respond("y", model));
+
+        assertEquals(before, model.getAddressBook());
+        assertEquals(displayedBefore, model.getFilteredPersonList());
+    }
 
     @Test
     public void execute_allFieldsSpecifiedUnfilteredList_success() {
@@ -238,12 +282,35 @@ public class EditCommandTest {
         model.updateFilteredPersonList(person -> person.equals(original));
         model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
 
-        for (String visitDate : new String[]{"1/1/2024 0900", "2/1/2024 0900", "1/1/2023 0900"}) {
+        for (String visitDate : List.of("1/1/2024 0900", "1/1/2024 0901", "2/1/2024 0859",
+                "2/1/2024 0900", "1/1/2023 0900")) {
             EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withVisitDate(visitDate)
                     .withNote(REPLACEMENT_NOTE).build();
             assertCommandFailure(new EditCommand(INDEX_FIRST_PERSON, descriptor), model,
-                    Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS);
+                    String.format(EditCommand.MESSAGE_VISIT_DATE_NOT_AFTER_PREVIOUS, "2/1/2024 0900"));
         }
+    }
+
+    @Test
+    public void execute_dateBeforePreviousDate_reportsLatestDateAndPreservesCause() {
+        setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
+        EditCommand command = new EditCommand(INDEX_FIRST_PERSON,
+                new EditPersonDescriptorBuilder().withVisitDate("1/1/2024 0900").build());
+
+        CommandException exception = Assertions.assertThrows(CommandException.class, () -> command.execute(model));
+
+        assertEquals("The current visit date and time must be later than the latest previous visit (2/1/2024 0900).",
+                exception.getMessage());
+        assertInstanceOf(IllegalArgumentException.class, exception.getCause());
+    }
+
+    @Test
+    public void execute_sameDayAfterLatestPreviousDate_success() {
+        Person original = setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
+        Person editedPerson = new PersonBuilder(original).withVisitDate("2/1/2024 0901").build();
+
+        assertEditSuccess(INDEX_FIRST_PERSON, original, editedPerson,
+                new EditPersonDescriptorBuilder().withVisitDate("2/1/2024 0901").build());
     }
 
     @Test

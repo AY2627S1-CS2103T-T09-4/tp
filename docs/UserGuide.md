@@ -106,7 +106,8 @@ Adds a patient record to Doc.
 Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [t/TAG]... `
 
 * `VISIT_DATE` must be a date and time in the format `d/M/yyyy HHmm`, e.g. `18/9/2026 1000`. Past dates are allowed.
-* Each patient must have a unique visit date and time. If another patient already uses the supplied date and time,
+* Each current or previous visit date and time must be unique across patients. If another patient's visit record
+  already uses the supplied date and time, including a patient hidden by filtering,
   the addition is rejected and the app asks you to choose a different slot.
 * `EMAIL` and `NOTES` are optional.
 * On success, the app shows `Added patient NAME` and the new patient appears in the list.
@@ -138,7 +139,7 @@ Visit-time conflict detection has these limitations:
 * It compares the parsed date and time exactly to the minute. It does not account for appointment duration, travel
   time, preparation time, or partially overlapping visits.
 * It does not manage doctor availability, time zones, recurring visits, or separate schedules for multiple doctors.
-* Past visit dates are subject to the same uniqueness rule because every patient record has one visit date and time.
+* Past datetimes are subject to the same uniqueness rule, including dates retained as previous visits.
 
 <box type="tip" seamless>
 
@@ -208,8 +209,10 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [not
 * To update the visit date and time, use `vd/` with the format `d/M/yyyy HHmm`
   (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted.
 * The visit date and time can be edited by itself. Omitting `vd/` preserves the existing visit date and time.
+* Editing preserves any previous visit dates. The current datetime must remain strictly later than the latest
+  previous datetime, when one exists.
 * Re-entering the selected patient's existing visit date and time is allowed. Changing it to a slot used by another
-  patient is rejected, including when the edit also changes other fields.
+  patient's current or previous visits is rejected, including hidden patients and edits to other fields.
 * Omitted fields, including email and existing notes, keep their values. Use an empty `e/` to clear email.
 * Use `note/NOTES` to replace the entire stored note. Use an empty `note/` to clear it; notes can be edited
   without `vd/`. An explicitly empty note counts as a supplied field, even when the note is already empty.
@@ -360,6 +363,11 @@ to save manually.
 
 Doc's patient data is saved automatically as a JSON file at `[JAR file location]/data/addressbook.json`. Advanced
 users may update the data directly by editing that file.
+
+Each patient has a required `visitDate` and a `previousVisitDates` array of datetime strings in `d/M/yyyy HHmm`
+format. Previous dates must be strictly increasing, oldest first, and earlier than the current date. All current
+and previous datetimes must be unique across patients. Missing or `null` previous-date arrays in older files load
+as empty arrays. Invalid records are rejected without sorting, deduplicating, or dropping entries.
 
 <box type="warning" seamless>
 

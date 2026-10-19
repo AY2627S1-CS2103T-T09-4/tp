@@ -183,9 +183,14 @@ include previous dates; patient identity still uses the normalized name and phon
 replacement paths, and `PersonBuilder` copies, preserve previous dates. A replacement current date that would
 invalidate the record produces a command error before model or list changes.
 
-This model groundwork does not yet create previous dates through commands, persist them in JSON, or display them
-in patient details. Those integration steps follow separately. Previous dates represent retained datetimes, not
-verified attendance or completion, and there is no arbitrary limit on their number.
+`JsonAdaptedPerson` writes `previousVisitDates` as an ordered array of visit-date strings. Missing or JSON-null
+arrays load as empty lists for compatibility with older files. Non-arrays, null or malformed entries, invalid
+chronology, and duplicates within a record are rejected through the existing invalid-data path. The required
+`visitDate` field remains required. No entries are sorted, deduplicated, or dropped to repair an invalid file.
+
+Commands do not yet create previous dates or display them in patient details. Those integration steps follow
+separately. Previous dates represent retained datetimes, not verified attendance or completion, and there is no
+arbitrary limit on their number.
 
 ### Duplicate patient identity, visit dates, and name confirmation
 
@@ -210,9 +215,11 @@ phone together to identify a patient record.
 `Model#hasPerson` exposes the true-duplicate check, while `Model#hasPersonWithSameName` exposes the weaker warning
 check. Phone comparison continues to use exact `Phone` value equality.
 
-Visit dates and times form a separate scheduling invariant. `UniquePersonList#containsSameVisitDate` compares
-`VisitDate` values, whose equality is based on their parsed `LocalDateTime`. `add`, `setPerson`, and `setPersons` throw
-`DuplicateVisitDateException` rather than allowing two records to use the same value. This covers command mutations,
+Visit dates and times form a separate invariant across all current and previous dates.
+`Person#hasCommonVisitDate` compares the complete records using parsed `VisitDate` equality.
+`UniquePersonList#containsSameVisitDate` checks the full stored collection, including patients hidden by a filter.
+`add`, `setPerson`, and `setPersons` throw `DuplicateVisitDateException` rather than allowing two records to use
+the same value. This covers command mutations,
 model replacement, sample data, and direct model use. `JsonSerializableAddressBook` performs the same check while
 loading and reports an invalid data file with a visit-date-specific message.
 
@@ -221,9 +228,10 @@ visit-date conflict. For a name duplicate with an available visit time, it captu
 a `CommandInputRequest#createConfirmation` action. Confirmation rechecks both rejection rules before adding, which
 prevents a conflicting record from being introduced if model state changes while the prompt is pending.
 
-`EditCommand` similarly rejects a true duplicate or a changed visit date that another patient uses before requesting
-confirmation. Re-entering the selected patient's existing visit date is allowed because it does not allocate another
-slot. The command asks for confirmation only when the requested edit changes the name to one already in use; editing
+`EditCommand` similarly rejects a true duplicate or a datetime shared with another patient's current or previous dates
+before requesting confirmation. Replacement checks compare the complete candidate while excluding the original
+target. This permits unchanged dates and moving a patient's own dates between current and previous fields.
+The command asks for confirmation only when the requested edit changes the name to one already in use; editing
 other fields of a patient whose name is already shared does not prompt again. It captures the original and edited
 `Person` objects, then verifies on confirmation that the original record still exists and that the edit still creates
 neither a true duplicate nor a visit-date conflict.
@@ -267,8 +275,8 @@ The visit-date rule prevents only exact scheduling collisions:
 * Equality is checked to the minute using the parsed `LocalDateTime`. The rule does not model visit duration, travel
   time, preparation time, or partial overlaps.
 * Doc has one schedule and does not model multiple doctors, doctor availability, time zones, or recurring visits.
-* Past visit dates are also unique because every current `Person` has one required `VisitDate`; the model does not
-  distinguish an historical visit from an upcoming appointment.
+* All current and previous datetimes are unique across patients, including past datetimes. These records do not
+  verify attendance or completion. Previous dates do not count toward per-day current-appointment capacity.
 * A data file created by an older version may contain duplicate visit dates. The migration and data-preservation risks
   are described under the current implementation limitations above.
 
@@ -286,9 +294,12 @@ for `d/M/yyyy HHmm`; valid past dates are accepted, while an empty `vd/` is reje
 `Person`. Omitted fields, including the visit date/time and notes, are preserved. An explicitly empty
 email, note, or tag field clears its existing value and counts as a supplied field.
 
-Before replacement, `EditCommand` permits an unchanged visit date but rejects a changed value already assigned to
-another patient. This check is repeated after a name-duplicate confirmation so a slot taken while the prompt was
-pending cannot be introduced into the model.
+Before replacement, `EditCommand` requires the current datetime to remain strictly later than the latest previous
+datetime. A valid past datetime is still allowed, and history is preserved unchanged. It permits an unchanged current
+date but rejects a value already used by another patient's current or previous dates, including hidden patients.
+The conflict check is repeated after confirmation so a slot taken while the prompt was pending cannot be introduced
+into the model. Chronology failures produce a command error explaining that the current datetime must be later
+than the latest previous visit and showing that previous datetime. The domain exception is retained as its cause.
 
 The descriptor's nullable `Note` distinguishes omission from an explicitly empty `Note("")`.
 When `note/` is present, the parser constructs the existing immutable `Note` from the tokenizer's value;
@@ -918,6 +929,29 @@ Use a disposable copy of the data file. Start with `Alex Tan` scheduled for `8/1
 1. Re-enter `vd/8/10/2026 1000` for Alex. Expect the edit to succeed because Alex retains the existing slot.
 1. Try to add another `Alex Tan` with a different phone number but with `vd/8/10/2026 1000`. Expect the occupied-slot
    error without a duplicate-name confirmation prompt.
+
+### Loading and validating previous visit dates
+
+Use a disposable data file and close Doc before editing it. For the first patient, set `visitDate` to
+`10/10/2026 1000` and add `"previousVisitDates": ["1/10/2026 1000", "2/10/2026 1000"]`.
+Give every other patient's current and previous dates different datetimes.
+
+1. Reopen Doc and run `edit 1 note/Review medication`. Close Doc and inspect the file. Expect the two previous
+   dates in their original order and the updated note. This intermediate step does not display previous dates.
+1. Reopen Doc and try `edit 1 vd/2/10/2026 1000`, then `edit 1 vd/1/10/2026 1000`. Expect a chronology error with
+   `2/10/2026 1000` identified as the latest previous visit. The record, saved file, and displayed list stay unchanged.
+1. Run `edit 1 vd/3/10/2026 1000`. Expect success even though the date is in the past; the previous dates stay
+   unchanged. Re-enter that datetime and expect success again.
+1. Try to add a different patient at `01/10/2026 1000`. Expect a conflict with the first patient's previous date.
+   Adding that patient at `1/10/2026 1030` succeeds. Use `find` to show only this second patient, then try
+   `edit 1 vd/2/10/2026 1000`. Expect a conflict even though the first patient is hidden.
+1. With Doc closed, try removing `previousVisitDates`, setting it to `null`, then setting it to `[]`, reopening
+   after each separate edit. Expect each form to load with empty previous dates.
+1. With Doc closed, test a non-array value, a null array entry, a malformed datetime, reversed dates, equivalent
+   duplicate datetimes, a previous date equal to the current date, and a datetime shared by two patients.
+   Expect the existing invalid-data handling for each file. Do not run saving commands after a load failure:
+   the existing startup fallback can overwrite the file with an empty list. Restore the disposable fixture
+   between cases. Removing or nulling the required `visitDate` remains invalid even with populated previous dates.
 
 ### Adding patients with duplicate names
 

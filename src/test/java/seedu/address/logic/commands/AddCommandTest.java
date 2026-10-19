@@ -19,12 +19,27 @@ import seedu.address.commons.core.GuiSettings;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
+import seedu.address.model.ModelManager;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.ReadOnlyUserPrefs;
 import seedu.address.model.person.Person;
 import seedu.address.testutil.PersonBuilder;
 
 public class AddCommandTest {
+
+    @Test
+    public void execute_hiddenPreviousDateConflict_preservesModel() {
+        Model model = new ModelManager();
+        Person existing = new PersonBuilder().withName("Existing Patient").withVisitDate("10/10/2026 1000")
+                .withPreviousVisitDates("1/10/2026 1000").build();
+        model.addPerson(existing);
+        model.updateFilteredPersonList(person -> false);
+        Person candidate = new PersonBuilder().withVisitDate("01/10/2026 1000").build();
+        String conflictMessage = String.format(AddCommand.MESSAGE_DUPLICATE_VISIT_DATE, candidate.getVisitDate());
+
+        CommandTestUtil.assertCommandFailure(new AddCommand(candidate), model,
+                String.format(AddCommand.MESSAGE_NOT_ADDED, conflictMessage));
+    }
 
     @Test
     public void constructor_nullPerson_throwsNullPointerException() {
@@ -147,6 +162,11 @@ public class AddCommandTest {
         }
 
         @Override
+        public boolean hasPersonWithSameVisitDate(Person person, Person excludedPerson) {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
         public int countPersonsWithSameVisitDay(Person person) {
             throw new AssertionError("This method should not be called.");
         }
@@ -203,7 +223,7 @@ public class AddCommandTest {
         @Override
         public boolean hasPersonWithSameVisitDate(Person person) {
             requireNonNull(person);
-            return this.person.getVisitDate().equals(person.getVisitDate());
+            return this.person.hasCommonVisitDate(person);
         }
 
         @Override
@@ -235,7 +255,7 @@ public class AddCommandTest {
         public boolean hasPersonWithSameVisitDate(Person person) {
             requireNonNull(person);
             return personsAdded.stream()
-                    .anyMatch(existingPerson -> existingPerson.getVisitDate().equals(person.getVisitDate()));
+                    .anyMatch(person::hasCommonVisitDate);
         }
 
         @Override

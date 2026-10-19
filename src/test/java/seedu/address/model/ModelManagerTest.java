@@ -26,6 +26,24 @@ public class ModelManagerTest {
     private ModelManager modelManager = new ModelManager();
 
     @Test
+    public void hasPersonWithSameVisitDate_hiddenPreviousDate_checksFullCollectionAndExcludesTarget() {
+        Person existing = new PersonBuilder(ALICE).withVisitDate("10/10/2026 1000")
+                .withPreviousVisitDates("1/10/2026 1000").build();
+        modelManager.addPerson(existing);
+        modelManager.addPerson(BENSON);
+        modelManager.updateFilteredPersonList(person -> person.equals(BENSON));
+        Person candidate = new PersonBuilder(BENSON).withVisitDate("01/10/2026 1000").build();
+
+        assertTrue(modelManager.hasPersonWithSameVisitDate(candidate));
+        assertTrue(modelManager.hasPersonWithSameVisitDate(candidate, BENSON));
+        assertFalse(modelManager.hasPersonWithSameVisitDate(existing, existing));
+        assertFalse(modelManager.hasPersonWithSameVisitDate(BENSON, BENSON));
+        assertEquals(List.of(BENSON), modelManager.getFilteredPersonList());
+        assertThrows(NullPointerException.class, () -> modelManager.hasPersonWithSameVisitDate(null, BENSON));
+        assertThrows(NullPointerException.class, () -> modelManager.hasPersonWithSameVisitDate(candidate, null));
+    }
+
+    @Test
     public void constructor() {
         assertEquals(new UserPrefs(), modelManager.getUserPrefs());
         assertEquals(new GuiSettings(), modelManager.getGuiSettings());

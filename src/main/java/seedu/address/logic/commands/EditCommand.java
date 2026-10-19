@@ -61,7 +61,9 @@ public class EditCommand extends Command {
     public static final String MESSAGE_DUPLICATE_PERSON =
             "A patient with the same name and phone number already exists in the address book.";
     public static final String MESSAGE_DUPLICATE_VISIT_DATE =
-            "Another patient already has a visit scheduled for %1$s. Choose a different date and time.";
+            "Another patient already has a current or previous visit at %1$s. Choose a different date and time.";
+    public static final String MESSAGE_VISIT_DATE_NOT_AFTER_PREVIOUS =
+            "The current visit date and time must be later than the latest previous visit (%1$s).";
     public static final String MESSAGE_CONFIRM_DUPLICATE_NAME =
             "A patient named %1$s already exists. Apply this edit anyway? "
                     + "Type y to confirm. Any other input cancels.";
@@ -178,8 +180,7 @@ public class EditCommand extends Command {
             throw new CommandException(MESSAGE_DUPLICATE_PERSON);
         }
 
-        boolean isVisitDateChanged = !personToEdit.getVisitDate().equals(editedPerson.getVisitDate());
-        if (isVisitDateChanged && model.hasPersonWithSameVisitDate(editedPerson)) {
+        if (model.hasPersonWithSameVisitDate(editedPerson, personToEdit)) {
             throw new CommandException(String.format(MESSAGE_DUPLICATE_VISIT_DATE, editedPerson.getVisitDate()));
         }
     }
@@ -206,7 +207,9 @@ public class EditCommand extends Command {
             return new Person(updatedName, updatedPhone, updatedEmail, updatedAddress,
                     updatedVisitDate, personToEdit.getPreviousVisitDates(), updatedNote, updatedTags);
         } catch (IllegalArgumentException e) {
-            throw new CommandException(Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS, e);
+            VisitDate latestPreviousVisitDate = personToEdit.getPreviousVisitDates().getLast();
+            throw new CommandException(String.format(MESSAGE_VISIT_DATE_NOT_AFTER_PREVIOUS,
+                    latestPreviousVisitDate), e);
         }
     }
 

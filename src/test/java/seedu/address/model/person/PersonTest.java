@@ -29,6 +29,25 @@ public class PersonTest {
     private static final VisitDate LATER_VISIT_DATE = new VisitDate("1/10/2026 1100");
 
     @Test
+    public void hasCommonVisitDate_currentAndPreviousDates_comparesParsedDatetimes() {
+        Person original = createPerson(CURRENT_VISIT_DATE, List.of(EARLIER_VISIT_DATE));
+        Person sameCurrent = createPerson(CURRENT_VISIT_DATE, List.of());
+        Person currentInHistory = createPerson(new VisitDate("01/10/2026 1000"), List.of());
+        Person historyContainsCurrent = createPerson(new VisitDate("11/10/2026 1000"), List.of(CURRENT_VISIT_DATE));
+        Person sameHistory = createPerson(new VisitDate("12/10/2026 1000"), List.of(EARLIER_VISIT_DATE));
+        Person differentTimes = createPerson(LATER_VISIT_DATE, List.of());
+
+        for (Person conflicting : List.of(original, sameCurrent, currentInHistory, historyContainsCurrent,
+                sameHistory)) {
+            assertTrue(original.hasCommonVisitDate(conflicting));
+            assertTrue(conflicting.hasCommonVisitDate(original));
+        }
+        assertFalse(original.hasCommonVisitDate(differentTimes));
+        assertFalse(differentTimes.hasCommonVisitDate(original));
+        assertThrows(NullPointerException.class, () -> original.hasCommonVisitDate(null));
+    }
+
+    @Test
     public void constructor_emptyPreviousVisitDates_success() {
         assertEquals(List.of(), new PersonBuilder().build().getPreviousVisitDates());
         Person person = new Person(ALICE.getName(), ALICE.getPhone(), ALICE.getEmail(), ALICE.getAddress(),

@@ -1,5 +1,6 @@
 package seedu.address.model.person;
 
+import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.AppUtil.checkArgument;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
@@ -101,6 +102,20 @@ public class Person {
      */
     public List<VisitDate> getPreviousVisitDates() {
         return previousVisitDates;
+    }
+
+    /**
+     * Returns true if the two patients share any current or previous visit datetime.
+     *
+     * @throws NullPointerException If {@code other} is null.
+     */
+    public boolean hasCommonVisitDate(Person other) {
+        requireNonNull(other);
+        if (visitDate.equals(other.visitDate) || previousVisitDates.contains(other.visitDate)
+                || other.previousVisitDates.contains(visitDate)) {
+            return true;
+        }
+        return previousVisitDates.stream().anyMatch(other.previousVisitDates::contains);
     }
 
     public Note getNote() {
