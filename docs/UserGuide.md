@@ -73,6 +73,18 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </box>
 
+### Visit records
+
+Each patient has one required **current visit date and time** and zero or more **previous visit dates**.
+Together, these form the patient's **visit record**.
+
+* The current datetime may be in the past, present, or future. It stays stored until you change it using `edit` or `next`.
+* Previous datetimes are retained by `next`, oldest first. `edit` preserves them, including when changing other details.
+* Notes belong to the patient record; separate notes are not stored for each previous datetime.
+
+Use [view](#viewing-a-patient-s-details-view) to see the visit record. Retained datetimes do not verify attendance,
+cancellation, or completion.
+
 ### Navigating command history
 
 The command box keeps commands submitted during the current application session so that you can reuse or edit them.
@@ -227,7 +239,10 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [not
 * Prefixes can appear in any order. Repeated single-valued prefixes, including `note/`, are rejected,
   even when their values are identical or empty. Multiple `t/TAG` prefixes are allowed.
 * Editing replaces the stored visit date and time; it does not append a visit-history entry.
-  Use `edit ... vd/` to correct an appointment, or [next](#scheduling-the-next-visit-next) to schedule the following visit.
+  Use `edit ... vd/` to correct a missed or rescheduled appointment, or
+  [next](#scheduling-the-next-visit-next) to schedule the following visit.
+* A successful edit restores the full patient list in stored order, clearing the filter and sort. Check the displayed
+  indices and run `view INDEX` again to refresh the details panel.
 * Existing values will be updated to the input values.
 * When editing tags, all of the patient's existing tags are removed; adding tags is not cumulative.
 * To remove all of a patient's tags, enter `t/` without a tag after it.

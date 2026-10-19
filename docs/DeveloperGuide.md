@@ -20,6 +20,7 @@
 ## **Setting up, getting started**
 
 Refer to the guide [_Setting up and getting started_](SettingUp.md).
+Before relying on internal assertions, follow the [assertion setup instructions](Testing.md#assertions).
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -171,6 +172,11 @@ This section describes some noteworthy details on how certain features are imple
 
 ### Visit record model
 
+A visit record contains the patient's current datetime and the previous datetimes retained by `next`.
+The current datetime is always required, even when no further visit is planned. Retained datetimes do not verify
+attendance or completion, and notes remain patient-level. See the [User Guide](UserGuide.md#visit-records) for the
+user-facing distinction between advancing and rescheduling.
+
 Each immutable `Person` has one required current `VisitDate` and a non-null `List<VisitDate>` named
 `previousVisitDates`. The previous dates are strictly increasing, oldest first, and each must be strictly earlier
 than the current date. Comparisons use parsed `LocalDateTime` values, including the time: leading-zero variants
@@ -188,14 +194,12 @@ arrays load as empty lists for compatibility with older files. Non-arrays, null 
 chronology, and duplicates within a record are rejected through the existing invalid-data path. The required
 `visitDate` field remains required. No entries are sorted, deduplicated, or dropped to repair an invalid file.
 
-Previous dates are created by `next`, persisted, and shown by `view INDEX`. They represent retained datetimes,
-not verified attendance or completion, and there is no arbitrary limit on their number.
+Previous dates are persisted and shown by `view INDEX`, with no arbitrary limit on their number.
 
 `PatientDetailsPanel` retains the current visit datetime and adds `Previous visit dates:` immediately below it,
-followed by the note.
-It formats the immutable previous dates with `VisitDate#toString`, one full datetime per line in stored order,
-or shows `No previous visit dates` for an empty record. The label keeps its preferred height inside the existing
-`ScrollPane`, so long records remain accessible by scrolling. Rendering does not change the patient's dates.
+followed by the note. It formats the immutable previous dates with `VisitDate#toString`, one full datetime per line
+in stored order, or shows `No previous visit dates` for an empty record. The label keeps its preferred height inside
+the existing `ScrollPane`, so long records remain accessible by scrolling. Rendering does not change the patient's dates.
 Run `view` again after a mutation to refresh the details.
 
 ### Duplicate patient identity, visit dates, and name confirmation
@@ -326,33 +330,38 @@ it does not append visit-history entries or per-visit notes.
 ### Scheduling the next visit
 
 `next INDEX DATETIME` retains the current datetime and schedules the following appointment for a displayed patient.
-Success appends the old current datetime to the previous dates, sets the new current datetime, and restores the full
-caseload in stored order. Corrections use `edit ... vd/`, which preserves the previous dates unchanged. Retained
-datetimes do not verify attendance or completion. See the
+Corrections use `edit ... vd/`, which preserves the previous dates unchanged. See the
 [User Guide](UserGuide.md#scheduling-the-next-visit-next) for syntax and errors.
 
-For example, assume the clock reads `31/10/2026 1200`, `find Betsy` displays only Betsy, and her existing
-appointment is `30/10/2026 1000`. The doctor enters `next 1 1/11/2026 0930`, requesting an available future slot.
+For example, assume the clock reads `31/10/2026 1200`, Betsy is displayed at index 1, and the requested slot is unused.
+The two commands below are alternatives applied to the same initial record:
 
-`AddressBookParser` delegates argument parsing to `NextCommandParser` and returns a `NextCommand` to `LogicManager`.
-`LogicManager` executes the command against the model. The command selects Betsy from the displayed list and rejects
-an unchanged requested datetime. It reads the injected clock once and requires `current <= now < requested`, using
-the full execution-time precision, including seconds and nanoseconds. A future current visit is rejected with advice
-to reschedule using `edit`. A requested datetime at or before now is rejected with the same captured local time
-formatted as `d/M/yyyy HHmm`, without seconds. The command constructs a candidate with the old current datetime
-appended, then compares its complete visit record against every other stored patient, including hidden patients
-and excluding Betsy's
-original record. Parsed equality detects equivalent spellings; the
-[visit-time conflict limitations](#visit-time-conflict-limitations) apply.
+| Operation | Current datetime | Previous datetimes |
+| --- | --- | --- |
+| Initial record | `30/10/2026 1000` | `[10/10/2026 1000]` |
+| `next 1 1/11/2026 0930` | `1/11/2026 0930` | `[10/10/2026 1000, 30/10/2026 1000]` |
+| `edit 1 vd/1/11/2026 0930` | `1/11/2026 0930` | `[10/10/2026 1000]` |
 
-On success, `NextCommand` replaces Betsy's immutable `Person`, preserving every other field and the previous-date
-order. Her record now contains `30/10/2026 1000` at the end of the previous dates and `1/11/2026 0930` as the current
-datetime. The command restores the full list in stored order by clearing the filter and sort. `LogicManager` then
-saves the updated patient data before returning the success result to the UI. An immediate second `next` is rejected
-because the new current visit is still in the future. Details are not refreshed automatically.
+The command follows the existing parser, model, and storage flow:
 
-Validation failures stop before any mutation or save. Storage failure happens after the in-memory update and follows
-the existing error handling without rollback.
+1. `NextCommandParser` parses the displayed index and datetime, then passes its injected clock to `NextCommand`.
+1. `NextCommand` selects the displayed patient and rejects an unchanged requested datetime. It reads the clock once
+   and requires `current <= now < requested`, retaining seconds and nanoseconds for both comparisons.
+1. It constructs a replacement `Person`, appending the old current datetime and preserving every other field.
+   Before mutation, it compares the candidate's complete visit record against every other stored patient,
+   including hidden patients and excluding the original record. The
+   [visit-time conflict limitations](#visit-time-conflict-limitations) apply.
+1. On success, it replaces the patient and restores the full list in stored order, clearing the filter and sort.
+   `LogicManager` saves through the existing storage flow before returning the result to the UI.
+
+A future current visit is rejected with advice to use `edit`. A requested datetime at or before now is rejected
+with the captured local time formatted as `d/M/yyyy HHmm`, without seconds. An immediate second `next` is rejected
+because the new current visit is still in the future. Details do not refresh automatically; users run `view` again
+using the patient's newly displayed index.
+
+Validation failures stop before any mutation or save. A storage I/O failure happens after the in-memory update;
+the existing error handling reports it without rolling back the record or list. If no further visit is planned,
+the current datetime remains stored as it becomes past. There is no attendance or completion state to update.
 
 The design keeps three decisions explicit:
 
@@ -754,12 +763,6 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case ends.
 
-* 3a. Some of the shown patients have no next visit date.
-
-    * 3a1. Doc lists those patients last.
-
-      Use case resumes at step 4.
-
 **Use case: UC05 - Archive a patient**
 
 **MSS**
@@ -854,13 +857,15 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * **Active patient record**: A patient record included in the doctor's current caseload and visit planning.
 * **Archived patient record**: A patient record retained for future reference but excluded from the active caseload and visit planning.
 * **Caseload**: The collection of active patient records currently managed by a doctor.
+* **Current visit date**: The required date and time stored in `visitDate`. It can be past, present, or future and
+  remains stored until changed using `edit` or `next`. It must differ from every other current or previous datetime.
 * **House call**: A medical consultation carried out at the patient's home rather than at a clinic.
 * **House-call doctor**: A doctor who travels to patients' homes to provide medical consultations and follow-up care.
 * **Medical condition**: An ongoing health issue recorded in a patient's notes to help the doctor prepare for future visits.
 * **MSS**: Main Success Scenario; the sequence of steps in a use case when nothing goes wrong.
-* **Next visit date**: The date and time at which a patient is next scheduled to receive a house call. No two active
-  patient records can use the same value.
-* **Overdue visit**: A scheduled visit whose next visit date has passed without the visit being recorded or rescheduled.
+* **Next visit date**: The current visit datetime used for planning. The field remains required after its time passes.
+* **Overdue visit**: A planning term for a current visit datetime that has passed. Doc does not determine whether the
+  visit took place.
 * **Patient record**: The information Doc stores for one patient, including their contact details, medical notes,
   tags, current visit date and time, and previous visit dates and times retained by `next`.
 * **Priority level**: A label indicating how closely a patient needs to be followed up, used when ordering planned visits.
