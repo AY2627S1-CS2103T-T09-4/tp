@@ -294,7 +294,7 @@ it does not append visit-history entries or per-visit notes.
 date and time and restores the full caseload in stored order. Corrections use `edit ... vd/`; completed-visit recording
 and history remain deferred. See the [User Guide](UserGuide.md#scheduling-the-next-visit-next) for syntax and errors.
 
-For example, assume the clock reads `31/10/2026 1200`, `find Betsy` displays only Betsy, and her existing
+For example, assume the clock reads `31/10/2026 1200`, `find n/Betsy` displays only Betsy, and her existing
 appointment is `2/11/2026 1000`. The doctor enters `next 1 1/11/2026 0930`, requesting an available future slot.
 
 `AddressBookParser` delegates argument parsing to `NextCommandParser` and returns a `NextCommand` to `LogicManager`.
@@ -976,11 +976,11 @@ These placeholders must be replaced before submitting commands.
 
    Expect success, with nonempty optional fields for Nextalpha and empty email, notes, and tags for Nextbeta.
 
-1. Run `find Nextalpha`, then `next 1 DAY 0930`.<br>
+1. Run `find n/Nextalpha`, then `next 1 DAY 0930`.<br>
    Expect Nextalpha to move to 0930, preserving all other fields, followed by the full list in stored order.
    The success message names Nextalpha and the new appointment. This checks a future time earlier than the old one.
 
-1. Run `find Nextalpha`, then `next 1 DAY 0900`.<br>
+1. Run `find n/Nextalpha`, then `next 1 DAY 0900`.<br>
    Expect a conflict naming hidden Nextbeta and the occupied time, with data and the filtered list unchanged.
    Repeat with a leading-zero day or month when applicable; expect the same conflict.
 
@@ -1003,25 +1003,25 @@ These placeholders must be replaced before submitting commands.
    Each rejection must preserve records, file contents, and the displayed list. Also test today's current local
    minute; expect rejection. Repeat the unchanged-date test with equivalent leading zeros when applicable.
 
-1. Run `find Nextalpha Nextbeta`, then `sort date`.<br>
+1. Run `find n/Nextalpha Nextbeta`, then `sort date`.<br>
    Expect Nextbeta first. Try `next 1 DAY 0900`; expect rejection with the sorted order preserved.
    Run `view 1`, then `next 1 DAY 1030`; expect Nextbeta to change, retaining empty optional fields, and the full list
-   to return in stored order. Run `find Nextbeta`, then `view 1`, to refresh its details.
+   to return in stored order. Run `find n/Nextbeta`, then `view 1`, to refresh its details.
 
-1. Run `find Nextalpha`, then `next   1   DAY   1100`.<br>
+1. Run `find n/Nextalpha`, then `next   1   DAY   1100`.<br>
    Expect repeated spaces to be accepted, Nextalpha to move to 1100, and the full list to return.
 
 1. Close and reopen the application. Find and view each test patient.<br>
    Expect Nextalpha at 1100, Nextbeta at 1030, and every other field preserved, with no visit-history entry.
 
-1. After the persistence checks, run `find Nextalpha`, then `edit 1 vd/PAST_DAY 1000`. Close and reopen the app.<br>
+1. After the persistence checks, run `find n/Nextalpha`, then `edit 1 vd/PAST_DAY 1000`. Close and reopen the app.<br>
    Expect the past appointment to load. Integration tests also cover saved appointments becoming past as time advances.
 
 ### Viewing one patient
 
 1. Run `list`, followed by `view 1`. Expect the full list to remain on the left and the first patient's complete
    details to appear on the right.
-1. Run `list`, followed by `find Alex`, and then `view 1`. Expect the search results to remain on the left and the
+1. Run `list`, followed by `find n/Alex`, and then `view 1`. Expect the search results to remain on the left and the
    first patient's complete details to appear on the right.
 1. Run `sort date`, followed by `view 1`. Expect the sorted list to remain on the left and the first patient's complete
    details to appear on the right.
@@ -1033,32 +1033,32 @@ These placeholders must be replaced before submitting commands.
 
 1. Recalling submitted commands
 
-   1. Restart the application. Enter `list`, then enter `find Alex`.<br>
+   1. Restart the application. Enter `list`, then enter `find n/Alex`.<br>
       Expected: Both commands run normally.
 
    1. Press the Up arrow key once, then again.<br>
-      Expected: The command box shows `find Alex`, then `list`. The caret is after the recalled text. Further Up arrow
+      Expected: The command box shows `find n/Alex`, then `list`. The caret is after the recalled text. Further Up arrow
       presses leave `list` displayed.
 
    1. Press the Down arrow key twice.<br>
-      Expected: The command box shows `find Alex`, then becomes empty. Further Down arrow presses leave it empty.
+      Expected: The command box shows `find n/Alex`, then becomes empty. Further Down arrow presses leave it empty.
 
 1. Restoring unfinished text
 
-   1. Type `find Be` without pressing Enter, press the Up arrow key, then press the Down arrow key.<br>
-      Expected: A previous command is recalled, then the unfinished text `find Be` is restored exactly.
+   1. Type `find n/Be` without pressing Enter, press the Up arrow key, then press the Down arrow key.<br>
+      Expected: A previous command is recalled, then the unfinished text `find n/Be` is restored exactly.
 
 1. Recording command text
 
    1. Submit an invalid command containing leading or trailing spaces, then press the Up arrow key.<br>
       Expected: The invalid command is recalled with its original spaces.
 
-   1. Restart the application. Submit `list`, then submit `find Alex` twice. Press the Up arrow key twice.<br>
-      Expected: The command box shows `find Alex`, then `list`. The consecutive duplicate occupies one history
+   1. Restart the application. Submit `list`, then submit `find n/Alex` twice. Press the Up arrow key twice.<br>
+      Expected: The command box shows `find n/Alex`, then `list`. The consecutive duplicate occupies one history
       position.
 
-   1. Restart the application. Submit `list`, `find Alex`, then `list`. Press the Up arrow key three times.<br>
-      Expected: The command box shows `list`, `find Alex`, then `list`. Identical commands separated by another
+   1. Restart the application. Submit `list`, `find n/Alex`, then `list`. Press the Up arrow key three times.<br>
+      Expected: The command box shows `list`, `find n/Alex`, then `list`. Identical commands separated by another
       command occupy separate history positions.
 
 1. Excluding follow-up responses

@@ -4,21 +4,29 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.assertCommandSuccess;
+import static seedu.address.testutil.TypicalPersons.ALICE;
 import static seedu.address.testutil.TypicalPersons.BENSON;
 import static seedu.address.testutil.TypicalPersons.CARL;
+import static seedu.address.testutil.TypicalPersons.DANIEL;
 import static seedu.address.testutil.TypicalPersons.ELLE;
 import static seedu.address.testutil.TypicalPersons.FIONA;
 import static seedu.address.testutil.TypicalPersons.GEORGE;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
 
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.person.AddressContainsKeywordsPredicate;
+import seedu.address.model.person.MatchesAllCriteriaPredicate;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
+import seedu.address.model.person.Person;
+import seedu.address.model.person.PhoneContainsKeywordsPredicate;
+import seedu.address.model.person.TagContainsKeywordsPredicate;
 
 /**
  * Contains integration tests (interaction with the Model) for {@code FindCommand}.
@@ -57,7 +65,7 @@ public class FindCommandTest {
     @Test
     public void execute_zeroKeywords_noPersonFound() {
         String expectedMessage = "No patients found. "
-                + "find matches the start of any word in a name, e.g. \"find b\" matches \"Bernice Yu\".";
+                + "Name keywords match the start of any word in a name, e.g. \"find n/b\" matches \"Bernice Yu\".";
         NameContainsKeywordsPredicate predicate = preparePredicate(" ");
         FindCommand command = new FindCommand(predicate);
         expectedModel.updateFilteredPersonList(predicate);
@@ -98,11 +106,53 @@ public class FindCommandTest {
     }
 
     @Test
+    public void execute_phoneKeyword_matchesAnyPartOfNumber() {
+        assertFindSuccess(new PhoneContainsKeywordsPredicate(List.of("9482")), "3 patients found.",
+                List.of(ELLE, FIONA, GEORGE));
+
+        // the last four digits are enough
+        assertFindSuccess(new PhoneContainsKeywordsPredicate(List.of("2442")), "1 patient found.",
+                List.of(GEORGE));
+    }
+
+    @Test
+    public void execute_addressKeyword_matchesStartOfAddressWords() {
+        assertFindSuccess(new AddressContainsKeywordsPredicate(List.of("street")), "3 patients found.",
+                List.of(CARL, DANIEL, GEORGE));
+        assertFindSuccess(new AddressContainsKeywordsPredicate(List.of("clem")), "1 patient found.",
+                List.of(BENSON));
+    }
+
+    @Test
+    public void execute_tagKeyword_matchesStartOfTags() {
+        assertFindSuccess(new TagContainsKeywordsPredicate(List.of("friend")), "3 patients found.",
+                List.of(ALICE, BENSON, DANIEL));
+    }
+
+    @Test
+    public void execute_multipleFields_onlyPersonsMatchingAllFieldsFound() {
+        // "Meier" alone matches BENSON and DANIEL; the address narrows it to BENSON
+        MatchesAllCriteriaPredicate predicate = new MatchesAllCriteriaPredicate(List.of(
+                new NameContainsKeywordsPredicate(List.of("Meier")),
+                new AddressContainsKeywordsPredicate(List.of("clementi"))));
+        assertFindSuccess(predicate, "1 patient found.", List.of(BENSON));
+    }
+
+    @Test
     public void toStringMethod() {
         NameContainsKeywordsPredicate predicate = new NameContainsKeywordsPredicate(List.of("keyword"));
         FindCommand findCommand = new FindCommand(predicate);
         String expected = FindCommand.class.getCanonicalName() + "{predicate=" + predicate + "}";
         assertEquals(expected, findCommand.toString());
+    }
+
+    /**
+     * Checks that finding with {@code predicate} shows {@code expectedMessage} and lists {@code expectedPersons}.
+     */
+    private void assertFindSuccess(Predicate<Person> predicate, String expectedMessage, List<Person> expectedPersons) {
+        expectedModel.updateFilteredPersonList(predicate);
+        assertCommandSuccess(new FindCommand(predicate), model, expectedMessage, expectedModel);
+        assertEquals(expectedPersons, model.getFilteredPersonList());
     }
 
     /**

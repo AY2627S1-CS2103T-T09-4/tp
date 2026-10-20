@@ -98,7 +98,7 @@ public class NextCommandIntegrationTest {
 
     @Test
     public void execute_filteredIndex_persistsDisplayedPatientAndRestoresStoredOrder() throws Exception {
-        logic.execute("find Meier");
+        logic.execute("find n/Meier");
         assertEquals(List.of(benson), model.getFilteredPersonList());
 
         logic.execute("next\t1 \t01/11/2026  0930");
@@ -119,7 +119,7 @@ public class NextCommandIntegrationTest {
 
     @Test
     public void execute_hiddenConflict_preservesDataDiskFilterAndSort() throws Exception {
-        logic.execute("find Amy");
+        logic.execute("find n/Amy");
         model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
 
         assertRejectedNext("next 1 01/11/2026 1000", CommandException.class,
@@ -128,7 +128,7 @@ public class NextCommandIntegrationTest {
 
     @Test
     public void execute_validationFailures_preservesDataDiskAndDisplay() throws Exception {
-        logic.execute("find Amy");
+        logic.execute("find n/Amy");
         model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
         assertRejectedNext("next 1 02/11/2026 1000", CommandException.class,
                 String.format(NextCommand.MESSAGE_UNCHANGED_VISIT_DATE, amy.getName(), amy.getVisitDate()));

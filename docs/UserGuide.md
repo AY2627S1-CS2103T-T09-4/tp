@@ -170,7 +170,7 @@ Format: `sort FIELD`
 * Today is determined using your computer's local date when you run the command. Earlier times today are included.
 * Past visits are visually muted in the patient list, whether or not the list has been sorted.
 * Within the upcoming and past groups, visits are ordered by date and time, earliest first.
-* The command preserves the current displayed set. For example, `find Tan` followed by `sort date` sorts only the
+* The command preserves the current displayed set. For example, `find n/Tan` followed by `sort date` sorts only the
   matching patients.
 * Use the displayed indices for subsequent commands such as `edit` or `delete`.
 * `list` shows all patients again in stored order; a new `find` also returns its matches in stored order.
@@ -285,29 +285,37 @@ Invalid dates show the required format; an index outside the displayed list show
 Examples (choose a future date and time that no patient already uses):
 
 * `next 1 1/11/2026 0930` schedules the first displayed patient's next appointment for 1 November 2026 at 09:30.
-* `find Betsy`, then `next 1 2/11/2026 1430`, schedules the first matching patient and restores the full list.
+* `find n/Betsy`, then `next 1 2/11/2026 1430`, schedules the first matching patient and restores the full list.
 
-### Locating patients by name: `find`
+### Locating patients: `find`
 
-Finds patients with a word in their name that starts with any of the given keywords.
+Finds patients by name, phone number, address or tag.
 
-Format: `find KEYWORD [MORE_KEYWORDS]`
+Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...]`
 
-* The search is case-insensitive; for example, `hans` matches `Hans`.
-* A keyword matches the start of any word in the name, whether first name or surname. For example, `b` matches
-  `Bernice Yu` and `Roy Balakrishnan`, and `Han` matches `Hans`.
-* A keyword in the middle of a word does not match; for example, `ans` does not match `Hans`.
-* Keyword order does not matter; for example, `Hans Bo` matches `Bo Hans`.
-* The search considers only names.
-* Patients matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
+* Give at least one field. Every keyword must follow a prefix; for example, use `find n/alex`, not `find alex`.
+* How each field matches (all case-insensitive):
+  * `n/`: the start of any word in the name, first name or surname. For example, `n/b` matches `Bernice Yu` and
+    `Roy Balakrishnan`, but `n/ans` does not match `Hans`.
+  * `p/`: any part of the phone number, so the last few digits are enough. For example, `p/4567` matches `91234567`.
+    Phone keywords may contain only digits.
+  * `a/`: the start of any word in the address. For example, `a/clem` matches `311, Clementi Ave 2`.
+  * `t/`: the start of any tag. For example, `t/diab` matches a patient tagged `diabetic`.
+* Several keywords for one field find patients matching **any** of them (an `OR` search); for example, `n/Hans Bo`
+  returns `Hans Gruber` and `Bo Yang`.
+* Different fields must **all** match (an `AND` search); for example, `n/alex a/clementi` returns only patients named
+  Alex who live in Clementi.
+* Fields can be given in any order, but each prefix can appear only once. Put several keywords after one prefix
+  instead, e.g. `n/alex ben` rather than `n/alex n/ben`.
 * The app shows how many patients were found, e.g. `3 patients found.` If none match, it shows `No patients found.`
-  with a reminder of how keywords are matched.
+  with a reminder of how name keywords are matched.
 
 Examples:
-* `find b` returns `Bernice Yu` and `Roy Balakrishnan`
-* `find John` returns `john` and `John Doe`
-* `find alex david` returns `Alex Yeoh`, `David Li`<br>
+* `find n/b` returns `Bernice Yu` and `Roy Balakrishnan`
+* `find n/alex david` returns `Alex Yeoh`, `David Li`<br>
   ![result for 'find alex david'](images/findAlexDavidResult.png)
+* `find p/4417` returns `Roy Balakrishnan`, whose number ends in `4417`
+* `find a/serangoon t/friends` returns `Bernice Yu`; `David Li` also lives in Serangoon but is not tagged `friends`
 
 ### Deleting a patient: `delete`
 
@@ -326,7 +334,7 @@ Format: `delete INDEX`
 
 Examples:
 * `list` followed by `delete 2`, then `y`, deletes the 2nd patient in Doc.
-* `find Betsy` followed by `delete 1`, then `y`, deletes the 1st patient in the results of the `find` command.
+* `find n/Betsy` followed by `delete 1`, then `y`, deletes the 1st patient in the results of the `find` command.
 
 ### Clearing all entries: `clear`
 
@@ -402,7 +410,7 @@ Action     | Format, Examples
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
 **Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
-**Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
+**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...]`<br> e.g., `find n/James Jake a/clementi`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (use an available future appointment)
 **Sort**   | `sort date`
