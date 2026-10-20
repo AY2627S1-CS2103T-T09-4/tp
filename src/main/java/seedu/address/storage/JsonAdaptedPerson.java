@@ -31,22 +31,35 @@ class JsonAdaptedPerson {
     private final String email;
     private final String address;
     private final String visitDate;
+    private final List<String> previousVisitDates = new ArrayList<>();
     private final String note;
     private final List<JsonAdaptedTag> tags = new ArrayList<>();
 
     /**
      * Constructs a {@code JsonAdaptedPerson} with the given person details.
      */
+    public JsonAdaptedPerson(String name, String phone, String email, String address,
+            String visitDate, String note, List<JsonAdaptedTag> tags) {
+        this(name, phone, email, address, visitDate, null, note, tags);
+    }
+
+    /**
+     * Constructs an adapted patient, treating missing or null previous dates as an empty record.
+     */
     @JsonCreator
     public JsonAdaptedPerson(@JsonProperty("name") String name, @JsonProperty("phone") String phone,
             @JsonProperty("email") String email, @JsonProperty("address") String address,
-            @JsonProperty("visitDate") String visitDate, @JsonProperty("note") String note,
-            @JsonProperty("tags") List<JsonAdaptedTag> tags) {
+            @JsonProperty("visitDate") String visitDate,
+            @JsonProperty("previousVisitDates") List<String> previousVisitDates,
+            @JsonProperty("note") String note, @JsonProperty("tags") List<JsonAdaptedTag> tags) {
         this.name = name;
         this.phone = phone;
         this.email = email;
         this.address = address;
         this.visitDate = visitDate;
+        if (previousVisitDates != null) {
+            this.previousVisitDates.addAll(previousVisitDates);
+        }
         this.note = note;
         if (tags != null) {
             this.tags.addAll(tags);
@@ -62,6 +75,8 @@ class JsonAdaptedPerson {
         email = source.getEmail().value;
         address = source.getAddress().value;
         visitDate = source.getVisitDate().toString();
+        previousVisitDates.addAll(source.getPreviousVisitDates().stream()
+                .map(VisitDate::toString).toList());
         note = source.getNote().value;
         tags.addAll(source.getTags().stream()
                 .map(JsonAdaptedTag::new)
@@ -124,8 +139,28 @@ class JsonAdaptedPerson {
         final Note modelNote = new Note(note == null ? "" : note);
 
         final Set<Tag> modelTags = new HashSet<>(personTags);
-        return new Person(modelName, modelPhone, modelEmail, modelAddress, modelVisitDate, modelNote,
-                modelTags);
+        final List<VisitDate> modelPreviousVisitDates = parsePreviousVisitDates();
+        try {
+            return new Person(modelName, modelPhone, modelEmail, modelAddress, modelVisitDate,
+                    modelPreviousVisitDates, modelNote, modelTags);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalValueException(Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS, e);
+        }
     }
 
+    /**
+     * Converts the stored previous-date strings into {@code VisitDate} objects.
+     *
+     * @throws IllegalValueException If any previous date is null or malformed.
+     */
+    private List<VisitDate> parsePreviousVisitDates() throws IllegalValueException {
+        List<VisitDate> modelPreviousVisitDates = new ArrayList<>();
+        for (String previousVisitDate : previousVisitDates) {
+            if (previousVisitDate == null || !VisitDate.isValidVisitDate(previousVisitDate)) {
+                throw new IllegalValueException("Invalid previous visit date. " + VisitDate.MESSAGE_CONSTRAINTS);
+            }
+            modelPreviousVisitDates.add(new VisitDate(previousVisitDate));
+        }
+        return modelPreviousVisitDates;
+    }
 }

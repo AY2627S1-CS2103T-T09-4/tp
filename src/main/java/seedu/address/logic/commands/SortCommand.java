@@ -41,6 +41,22 @@ public class SortCommand extends Command {
         this(Clock.systemDefaultZone());
     }
 
+    private final Optional<LocalDate> specifiedCutoffDate;
+
+    /**
+     * Creates a command that uses the computer's local date at execution time as the cutoff date.
+     */
+    public SortCommand() {
+        specifiedCutoffDate = Optional.empty();
+    }
+
+    /**
+     * Creates a command that uses the supplied cutoff date.
+     */
+    public SortCommand(LocalDate cutoffDate) {
+        specifiedCutoffDate = Optional.of(requireNonNull(cutoffDate));
+    }
+
     /**
      * Creates a command that uses the supplied cutoff date.
      */

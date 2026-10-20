@@ -65,11 +65,20 @@ public class AddressBook implements ReadOnlyAddressBook {
     }
 
     /**
-     * Returns true if a person with the same visit date and time as {@code person} exists in the address book.
+     * Returns true if any stored patient shares a current or previous datetime with {@code person}.
      */
     public boolean hasPersonWithSameVisitDate(Person person) {
         requireNonNull(person);
         return persons.containsSameVisitDate(person);
+    }
+
+    /**
+     * Returns true if any patient other than {@code excludedPerson} shares a visit datetime with {@code person}.
+     *
+     * @throws NullPointerException If either argument is null.
+     */
+    public boolean hasPersonWithSameVisitDate(Person person, Person excludedPerson) {
+        return persons.containsSameVisitDate(person, excludedPerson);
     }
 
     /**

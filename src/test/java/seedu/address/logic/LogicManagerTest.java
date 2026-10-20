@@ -18,7 +18,10 @@ import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,6 +60,79 @@ public class LogicManagerTest {
     @BeforeEach
     public void setUp() {
         logic = createLogic(model);
+    }
+
+    @Test
+    public void execute_editVisitDateWithPreviousDates_savesCompleteRecord() throws Exception {
+        Person original = new PersonBuilder().withVisitDate("10/10/2026 1000")
+                .withPreviousVisitDates("1/10/2026 1000", "1/10/2026 1100").build();
+        model.addPerson(original);
+        Person expected = new PersonBuilder(original).withVisitDate("2/10/2026 1000").build();
+
+        CommandResult result = logic.execute("edit 1 vd/2/10/2026 1000");
+
+        assertTrue(result.shouldSaveAddressBook());
+        assertTrue(result.getPersonToView().isEmpty());
+        assertEquals(1, addressBookSaveCount);
+        ReadOnlyAddressBook reloaded = new JsonAddressBookStorage(temporaryFolder.resolve("addressBook.json"))
+                .readAddressBook().orElseThrow();
+        assertEquals(List.of(expected), reloaded.getPersonList());
+    }
+
+    @Test
+    public void execute_invalidVisitRecordEdit_preservesSavedDataFilterAndSort() throws Exception {
+        Person original = new PersonBuilder().withVisitDate("10/10/2026 1000")
+                .withPreviousVisitDates("1/10/2026 1000").build();
+        Person hidden = new PersonBuilder().withName("Hidden Patient").withVisitDate("12/10/2026 1000")
+                .withPreviousVisitDates("2/10/2026 1000").build();
+        model.addPerson(original);
+        model.addPerson(hidden);
+        logic.execute("list");
+        Path savedFile = temporaryFolder.resolve("addressBook.json");
+        String savedBefore = Files.readString(savedFile);
+        model.updateFilteredPersonList(person -> person.equals(original));
+        model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
+
+        assertThrows(CommandException.class,
+                String.format(EditCommand.MESSAGE_VISIT_DATE_NOT_AFTER_PREVIOUS, "1/10/2026 1000"), () ->
+                logic.execute("edit 1 vd/1/10/2026 1000 note/Changed"));
+        assertThrows(CommandException.class,
+                String.format(EditCommand.MESSAGE_DUPLICATE_VISIT_DATE, "2/10/2026 1000"), () ->
+                logic.execute("edit 1 vd/02/10/2026 1000 note/Changed"));
+
+        assertEquals(1, addressBookSaveCount);
+        assertEquals(savedBefore, Files.readString(savedFile));
+        assertEquals(List.of(original, hidden), model.getAddressBook().getPersonList());
+        assertEquals(List.of(original), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_cancelVisitRecordEditAtEitherConfirmation_preservesSavedData() throws Exception {
+        for (boolean shouldConfirmName : List.of(false, true)) {
+            model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
+            Person original = new PersonBuilder().withName("Other Patient").withVisitDate("2/1/2026 1000")
+                    .withPreviousVisitDates("1/1/2024 1000").build();
+            model.addPerson(original);
+            logic = createLogic(model);
+            logic.execute("list");
+            Path savedFile = temporaryFolder.resolve("addressBook.json");
+            String savedBefore = Files.readString(savedFile);
+            List<Person> recordsBefore = List.copyOf(model.getAddressBook().getPersonList());
+            String duplicateName = recordsBefore.getFirst().getName().fullName;
+
+            logic.execute("edit 8 n/" + duplicateName + " vd/1/1/2026 1500");
+            if (shouldConfirmName) {
+                logic.execute("y");
+                assertTrue(logic.isInputRequestPending());
+            }
+            CommandResult result = logic.execute("n");
+
+            assertEquals(EditCommand.MESSAGE_EDIT_CANCELLED, result.getFeedbackToUser());
+            assertEquals(1, addressBookSaveCount);
+            assertEquals(savedBefore, Files.readString(savedFile));
+            assertEquals(recordsBefore, model.getAddressBook().getPersonList());
+            assertEquals(recordsBefore, model.getFilteredPersonList());
+        }
     }
 
     /**
