@@ -173,16 +173,15 @@ public class MainWindowTest {
         @Override
         public CommandResult execute(String commandText) throws CommandException, ParseException {
             lastCommandText = commandText;
-            if (executionOutcome == ExecutionOutcome.COMMAND_ERROR_WITH_PREVIEW) {
-                throw new CommandException("Duplicate patient", personToView);
-            }
-            if (executionOutcome == ExecutionOutcome.COMMAND_ERROR) {
-                throw new CommandException("Command error");
-            }
-            if (executionOutcome == ExecutionOutcome.PARSE_ERROR) {
-                throw new ParseException("Parse error");
-            }
-            return CommandResult.viewPerson("Viewing person: " + personToView.getName(), personToView);
+            return switch (executionOutcome) {
+                case SUCCESS -> CommandResult.viewPerson(
+                        "Viewing person: " + personToView.getName(), personToView);
+                case COMMAND_ERROR_WITH_PREVIEW -> throw new CommandException(
+                        "Duplicate patient", personToView);
+                case COMMAND_ERROR -> throw new CommandException("Command error");
+                case PARSE_ERROR -> throw new ParseException("Parse error");
+                default -> throw new AssertionError("Unexpected execution outcome: " + executionOutcome);
+            };
         }
 
         @Override
