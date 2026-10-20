@@ -161,8 +161,9 @@ The `Storage` component,
 
 When the patient data file does not exist, `MainApp` initializes the model with the seven records returned by
 `SampleDataUtil#getSampleAddressBook`. The sample patients are George Miller, Priya Nair, Aisha Rahman, Marcus Lim,
-Mei Lin Tan, Daniel Wong, and Noor Aziz. If a data file exists, including one with no records, its contents take
-precedence over these samples.
+Mei Lin Tan, Daniel Wong, and Noor Aziz. If an existing data file can be loaded successfully, including one with no
+records, its contents take precedence over these samples. If an existing data file cannot be loaded—for example,
+because it is malformed or contains conflicting records—`MainApp` starts with an empty address book.
 
 ### Common classes
 
