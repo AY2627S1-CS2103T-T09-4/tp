@@ -135,7 +135,7 @@
         "viewing-help-help": "Viewing help: help",
         "adding-a-patient-add": "Adding a patient: add",
         "listing-all-patients-list": "Listing all patients: list",
-        "sorting-visits-by-date-sort-date": "Sorting visits by date: sort date",
+        "sorting-visits-by-date-sort-date-start-date": "Sorting visits by date: sort date [START_DATE]",
         "viewing-a-patient-s-details-view": "Viewing a patient's details: view",
         "editing-a-patient-edit": "Editing a patient: edit",
         "scheduling-the-next-visit-next": "Scheduling the next visit: next",
