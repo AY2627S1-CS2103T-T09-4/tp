@@ -1,12 +1,17 @@
 package seedu.address.logic.commands;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -21,7 +26,9 @@ import seedu.address.testutil.PersonBuilder;
 
 public class SortCommandTest {
 
-    private static final LocalDate CUTOFF_DATE = LocalDate.of(2026, 10, 19);
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-19T04:00:00Z"),
+            ZoneId.of("Asia/Singapore"));
+    private static final LocalDate CUTOFF_DATE = LocalDate.now(FIXED_CLOCK);
 
     private final Person olderBeforeCutoff = personWithVisit("Older before", CUTOFF_DATE.minusDays(2), 23);
     private final Person beforeCutoff = personWithVisit("Before", CUTOFF_DATE.minusDays(1), 23);
@@ -37,19 +44,22 @@ public class SortCommandTest {
 
     @Test
     public void constructor_nullCutoffDate_throwsNullPointerException() {
-        assertThrows(NullPointerException.class, () -> new SortCommand(null));
+        assertThrows(NullPointerException.class, () -> new SortCommand((LocalDate) null));
+        assertThrows(NullPointerException.class, () -> new SortCommand((Clock) null));
     }
 
     @Test
     public void execute_unspecifiedCutoffDate_usesCurrentDate() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(FIXED_CLOCK);
         Person beforeToday = personWithVisit("Before today", today.minusDays(1), 23);
         Person onToday = personWithVisit("On today", today, 0);
         addPersons(beforeToday, onToday);
 
-        new SortCommand().execute(model);
+        CommandResult result = new SortCommand(FIXED_CLOCK).execute(model);
 
         assertEquals(List.of(onToday, beforeToday), model.getFilteredPersonList());
+        assertEquals(String.format(SortCommand.MESSAGE_SUCCESS, today.format(SortCommand.CUTOFF_DATE_FORMATTER)),
+                result.getFeedbackToUser());
     }
 
     @Test
@@ -59,7 +69,8 @@ public class SortCommandTest {
 
         CommandResult result = new SortCommand(CUTOFF_DATE).execute(model);
 
-        assertEquals(SortCommand.MESSAGE_SUCCESS, result.getFeedbackToUser());
+        assertEquals(String.format(SortCommand.MESSAGE_SUCCESS,
+                CUTOFF_DATE.format(SortCommand.CUTOFF_DATE_FORMATTER)), result.getFeedbackToUser());
         assertEquals(List.of(earlyOnCutoff, lateOnCutoff, afterCutoff, olderBeforeCutoff, beforeCutoff),
                 displayedPersons);
         assertSame(displayedPersons, model.getFilteredPersonList());
@@ -129,6 +140,23 @@ public class SortCommandTest {
 
         assertEquals(List.of(lateOnCutoff, afterCutoff, beforeCutoff), model.getFilteredPersonList());
         assertEquals(List.of(afterCutoff, beforeCutoff, lateOnCutoff), model.getAddressBook().getPersonList());
+    }
+
+    @Test
+    public void equals() {
+        SortCommand command = new SortCommand(CUTOFF_DATE);
+        SortCommand equivalentCommand = new SortCommand(LocalDate.of(2026, 10, 19));
+
+        assertEquals(command, command);
+        assertEquals(command, equivalentCommand);
+        assertEquals(command.hashCode(), equivalentCommand.hashCode());
+        assertEquals(new SortCommand(), new SortCommand());
+        assertNotEquals(command, new SortCommand());
+        assertNotEquals(command, new SortCommand(CUTOFF_DATE.plusDays(1)));
+        assertNotEquals(new SortCommand(FIXED_CLOCK),
+                new SortCommand(Clock.offset(FIXED_CLOCK, Duration.ofDays(1))));
+        assertNotEquals(command, null);
+        assertNotEquals(command, new ListCommand());
     }
 
     private void addPersons(Person... persons) {

@@ -195,26 +195,28 @@ Patients with a visit date before today are shown using darker backgrounds and m
 also appears in patient lists produced by commands such as `find` and `sort date`. Past patients remain selectable,
 and their complete details remain readable in the details panel.
 
-### Sorting visits by date: `sort date`
+### Sorting visits by date: `sort date [START_DATE]`
 
-Sorts the currently displayed patients by visit date and time. Visits today or later are shown first, followed by
-past visits.
+Sorts the currently displayed patients by visit date and time around an optional cutoff date. Visits on or after the
+cutoff date are shown first, followed by visits before it.
 
-Format: `sort FIELD`
+Format: `sort date [START_DATE]`
 
-* `FIELD` must be `date`.
-* Today is determined using your computer's local date when you run the command. Earlier times today are included.
-* Past visits are visually muted in the patient list, whether or not the list has been sorted.
-* Within the upcoming and past groups, visits are ordered by date and time, earliest first.
+* `START_DATE` must use the format `d/M/yyyy`, e.g. `18/9/2026`.
+* If `START_DATE` is omitted, the cutoff is your computer's local date when you run the command.
+* Visits earlier on the cutoff date remain in the first group because the cutoff applies to the whole calendar day.
+* Visual muting is always based on today's date, not `START_DATE`. A custom cutoff changes the order only.
+* Within the on-or-after and before-cutoff groups, visits are ordered by date and time, earliest first.
 * The command preserves the current displayed set. For example, `find Tan` followed by `sort date` sorts only the
   matching patients.
 * Use the displayed indices for subsequent commands such as `edit` or `delete`.
 * `list` shows all patients again in stored order; a new `find` also returns its matches in stored order.
-* Running `sort` without a field, or with a field other than `date`, shows the required format and an example command.
-* Run `sort date` again to refresh which visits belong to the upcoming and past groups after midnight.
+* Missing, invalid, or additional arguments show the required format and example commands.
+* When omitting `START_DATE`, run `sort date` again after midnight to refresh which visits belong to each group.
 
-Example:
-* `sort date` sorts the currently displayed patients by their visit date and time.
+Examples:
+* `sort date` uses today as the cutoff date.
+* `sort date 18/9/2026` places visits on or after 18 September 2026 before earlier visits.
 
 ### Viewing a patient's details: `view`
 
@@ -459,7 +461,7 @@ Action     | Format, Examples
 **Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
-**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (current visit must have arrived or passed; use an unused future datetime)
-**Sort**   | `sort date`
+**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (use an available future appointment)
+**Sort**   | `sort date [START_DATE]`<br> e.g., `sort date 18/9/2026`
 **View**   | `view INDEX`<br> e.g., `view 1`
 **Help**   | `help`
