@@ -2,6 +2,7 @@ package seedu.address.model.person;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_ADDRESS_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_EMAIL_BOB;
@@ -12,6 +13,9 @@ import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.ALICE;
 import static seedu.address.testutil.TypicalPersons.BOB;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 import org.junit.jupiter.api.Test;
@@ -19,6 +23,124 @@ import org.junit.jupiter.api.Test;
 import seedu.address.testutil.PersonBuilder;
 
 public class PersonTest {
+
+    private static final VisitDate CURRENT_VISIT_DATE = new VisitDate("10/10/2026 1000");
+    private static final VisitDate EARLIER_VISIT_DATE = new VisitDate("1/10/2026 1000");
+    private static final VisitDate LATER_VISIT_DATE = new VisitDate("1/10/2026 1100");
+
+    @Test
+    public void hasCommonVisitDate_currentAndPreviousDates_comparesParsedDatetimes() {
+        Person original = createPerson(CURRENT_VISIT_DATE, List.of(EARLIER_VISIT_DATE));
+        Person sameCurrent = createPerson(CURRENT_VISIT_DATE, List.of());
+        Person currentInHistory = createPerson(new VisitDate("01/10/2026 1000"), List.of());
+        Person historyContainsCurrent = createPerson(new VisitDate("11/10/2026 1000"), List.of(CURRENT_VISIT_DATE));
+        Person sameHistory = createPerson(new VisitDate("12/10/2026 1000"), List.of(EARLIER_VISIT_DATE));
+        Person differentTimes = createPerson(LATER_VISIT_DATE, List.of());
+
+        for (Person conflicting : List.of(original, sameCurrent, currentInHistory, historyContainsCurrent,
+                sameHistory)) {
+            assertTrue(original.hasCommonVisitDate(conflicting));
+            assertTrue(conflicting.hasCommonVisitDate(original));
+        }
+        assertFalse(original.hasCommonVisitDate(differentTimes));
+        assertFalse(differentTimes.hasCommonVisitDate(original));
+        assertThrows(NullPointerException.class, () -> original.hasCommonVisitDate(null));
+    }
+
+    @Test
+    public void constructor_emptyPreviousVisitDates_success() {
+        assertEquals(List.of(), new PersonBuilder().build().getPreviousVisitDates());
+        Person person = new Person(ALICE.getName(), ALICE.getPhone(), ALICE.getEmail(), ALICE.getAddress(),
+                ALICE.getVisitDate(), ALICE.getNote(), ALICE.getTags());
+        assertEquals(List.of(), person.getPreviousVisitDates());
+    }
+
+    @Test
+    public void constructor_orderedPreviousVisitDates_preservesOrderAndOtherFields() {
+        List<VisitDate> previousVisitDates = List.of(EARLIER_VISIT_DATE, LATER_VISIT_DATE);
+        Person person = createPerson(CURRENT_VISIT_DATE, previousVisitDates);
+
+        assertEquals(previousVisitDates, person.getPreviousVisitDates());
+        assertEquals(CURRENT_VISIT_DATE, person.getVisitDate());
+        assertEquals(ALICE.getName(), person.getName());
+        assertEquals(ALICE.getPhone(), person.getPhone());
+        assertEquals(ALICE.getEmail(), person.getEmail());
+        assertEquals(ALICE.getAddress(), person.getAddress());
+        assertEquals(ALICE.getNote(), person.getNote());
+        assertEquals(ALICE.getTags(), person.getTags());
+    }
+
+    @Test
+    public void constructor_nullVisitRecord_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> createPerson(CURRENT_VISIT_DATE, null));
+        assertThrows(NullPointerException.class, () -> createPerson(CURRENT_VISIT_DATE,
+                Arrays.asList(EARLIER_VISIT_DATE, null)));
+        assertThrows(NullPointerException.class, () -> createPerson(null, List.of()));
+        assertThrows(NullPointerException.class, () -> new Person(ALICE.getName(), ALICE.getPhone(),
+                ALICE.getEmail(), ALICE.getAddress(), null, ALICE.getNote(), ALICE.getTags()));
+    }
+
+    @Test
+    public void constructor_unorderedOrDuplicatePreviousVisitDates_throwsIllegalArgumentException() {
+        for (List<VisitDate> previousVisitDates : List.of(
+                List.of(LATER_VISIT_DATE, EARLIER_VISIT_DATE),
+                List.of(EARLIER_VISIT_DATE, new VisitDate("01/10/2026 1000")))) {
+            assertThrows(IllegalArgumentException.class, Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS, () ->
+                    createPerson(CURRENT_VISIT_DATE, previousVisitDates));
+        }
+    }
+
+    @Test
+    public void constructor_previousDateAtOrAfterCurrent_throwsIllegalArgumentException() {
+        for (VisitDate previousVisitDate : List.of(new VisitDate("10/10/2026 1001"),
+                new VisitDate("10/10/2026 1000"))) {
+            assertThrows(IllegalArgumentException.class, Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS, () ->
+                    createPerson(CURRENT_VISIT_DATE, List.of(previousVisitDate)));
+        }
+    }
+
+    @Test
+    public void constructor_sameDayDifferentTimes_success() {
+        Person person = createPerson(LATER_VISIT_DATE, List.of(EARLIER_VISIT_DATE));
+        assertEquals(List.of(EARLIER_VISIT_DATE), person.getPreviousVisitDates());
+        assertEquals(LATER_VISIT_DATE, person.getVisitDate());
+    }
+
+    @Test
+    public void constructor_mutablePreviousVisitDates_defensivelyCopiesList() {
+        List<VisitDate> previousVisitDates = new ArrayList<>(List.of(EARLIER_VISIT_DATE, LATER_VISIT_DATE));
+        Person person = createPerson(CURRENT_VISIT_DATE, previousVisitDates);
+        previousVisitDates.clear();
+        previousVisitDates.add(CURRENT_VISIT_DATE);
+
+        assertEquals(List.of(EARLIER_VISIT_DATE, LATER_VISIT_DATE), person.getPreviousVisitDates());
+    }
+
+    @Test
+    public void getPreviousVisitDates_modifyList_throwsUnsupportedOperationException() {
+        Person person = createPerson(CURRENT_VISIT_DATE, List.of(EARLIER_VISIT_DATE, LATER_VISIT_DATE));
+        List<VisitDate> previousVisitDates = person.getPreviousVisitDates();
+        assertThrows(UnsupportedOperationException.class, () -> previousVisitDates.add(CURRENT_VISIT_DATE));
+        assertThrows(UnsupportedOperationException.class, () -> previousVisitDates.remove(0));
+        assertThrows(UnsupportedOperationException.class, () -> previousVisitDates.set(0, CURRENT_VISIT_DATE));
+        assertThrows(UnsupportedOperationException.class, previousVisitDates::clear);
+        assertEquals(List.of(EARLIER_VISIT_DATE, LATER_VISIT_DATE), person.getPreviousVisitDates());
+    }
+
+    @Test
+    public void equalsAndHashCode_previousVisitDates_comparesVisitRecord() {
+        Person person = createPerson(CURRENT_VISIT_DATE, List.of(EARLIER_VISIT_DATE, LATER_VISIT_DATE));
+        Person equivalent = createPerson(new VisitDate("10/10/2026 1000"),
+                List.of(new VisitDate("01/10/2026 1000"), new VisitDate("01/10/2026 1100")));
+        Person differentHistory = createPerson(CURRENT_VISIT_DATE, List.of(EARLIER_VISIT_DATE));
+
+        assertEquals(person, equivalent);
+        assertEquals(person.hashCode(), equivalent.hashCode());
+        assertNotEquals(person, differentHistory);
+        assertNotEquals(person.hashCode(), differentHistory.hashCode());
+        assertTrue(person.isSamePerson(differentHistory));
+        assertTrue(person.hasSameName(differentHistory));
+    }
 
     @Test
     public void asObservableList_modifyList_throwsUnsupportedOperationException() {
@@ -122,8 +244,14 @@ public class PersonTest {
     public void toStringMethod() {
         String expected = Person.class.getCanonicalName() + "{name=" + ALICE.getName() + ", phone=" + ALICE.getPhone()
                 + ", email=" + ALICE.getEmail() + ", address=" + ALICE.getAddress()
-                + ", visitDate=" + ALICE.getVisitDate() + ", note=" + ALICE.getNote()
+                + ", visitDate=" + ALICE.getVisitDate() + ", previousVisitDates=" + ALICE.getPreviousVisitDates()
+                + ", note=" + ALICE.getNote()
                 + ", tags=" + ALICE.getTags() + "}";
         assertEquals(expected, ALICE.toString());
+    }
+
+    private static Person createPerson(VisitDate visitDate, List<VisitDate> previousVisitDates) {
+        return new Person(ALICE.getName(), ALICE.getPhone(), ALICE.getEmail(), ALICE.getAddress(),
+                visitDate, previousVisitDates, ALICE.getNote(), ALICE.getTags());
     }
 }

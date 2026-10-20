@@ -47,12 +47,23 @@ public class UniquePersonList implements Iterable<Person> {
     }
 
     /**
-     * Returns true if the list contains a person with the same visit date and time as the given argument.
+     * Returns true if any stored patient shares a current or previous datetime with {@code toCheck}.
      */
     public boolean containsSameVisitDate(Person toCheck) {
         requireNonNull(toCheck);
+        return internalList.stream().anyMatch(toCheck::hasCommonVisitDate);
+    }
+
+    /**
+     * Returns true if a patient other than {@code excludedPerson} shares any visit datetime with {@code toCheck}.
+     *
+     * @throws NullPointerException If either argument is null.
+     */
+    public boolean containsSameVisitDate(Person toCheck, Person excludedPerson) {
+        requireAllNonNull(toCheck, excludedPerson);
         return internalList.stream()
-                .anyMatch(person -> person.getVisitDate().equals(toCheck.getVisitDate()));
+                .filter(person -> !person.equals(excludedPerson))
+                .anyMatch(toCheck::hasCommonVisitDate);
     }
 
     /**
@@ -96,7 +107,7 @@ public class UniquePersonList implements Iterable<Person> {
         if (!target.isSamePerson(editedPerson) && contains(editedPerson)) {
             throw new DuplicatePersonException();
         }
-        if (!target.getVisitDate().equals(editedPerson.getVisitDate()) && containsSameVisitDate(editedPerson)) {
+        if (containsSameVisitDate(editedPerson, target)) {
             throw new DuplicateVisitDateException();
         }
 
@@ -191,7 +202,7 @@ public class UniquePersonList implements Iterable<Person> {
     private boolean visitDatesAreUnique(List<Person> persons) {
         for (int i = 0; i < persons.size() - 1; i++) {
             for (int j = i + 1; j < persons.size(); j++) {
-                if (persons.get(i).getVisitDate().equals(persons.get(j).getVisitDate())) {
+                if (persons.get(i).hasCommonVisitDate(persons.get(j))) {
                     return false;
                 }
             }

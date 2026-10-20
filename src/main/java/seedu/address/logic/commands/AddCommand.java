@@ -42,7 +42,7 @@ public class AddCommand extends Command {
     public static final String MESSAGE_DUPLICATE_PERSON =
             "A patient with the same name and phone number already exists in the address book.";
     public static final String MESSAGE_DUPLICATE_VISIT_DATE =
-            "Another patient already has a visit scheduled for %1$s. Choose a different date and time.";
+            "Another patient already has a current or previous visit at %1$s. Choose a different date and time.";
     public static final String MESSAGE_CONFIRM_DUPLICATE_NAME =
             "A patient named %1$s already exists. Add this patient anyway? "
                     + "Type y to confirm. Any other input cancels.";

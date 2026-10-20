@@ -73,6 +73,19 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </box>
 
+### Visit records
+
+Each patient has one required **current visit date and time** and zero or more **previous visit dates**.
+Together, these form the patient's **visit record**.
+
+* The current datetime may be in the past, present, or future. It stays stored until you change it using `edit` or `next`.
+* Previous datetimes are retained by `next` and stored oldest first. `view` displays them newest first.
+  `edit` preserves them, including when changing other details.
+* Notes belong to the patient record; separate notes are not stored for each previous datetime.
+
+Use [view](#viewing-a-patient-s-details-view) to see the visit record. Retained datetimes do not verify attendance,
+cancellation, or completion.
+
 ### Navigating command history
 
 The command box keeps commands submitted during the current application session so that you can reuse or edit them.
@@ -106,7 +119,8 @@ Adds a patient record to Doc.
 Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [t/TAG]... `
 
 * `VISIT_DATE` must be a date and time in the format `d/M/yyyy HHmm`, e.g. `18/9/2026 1000`. Past dates are allowed.
-* Each patient must have a unique visit date and time. If another patient already uses the supplied date and time,
+* Each current or previous visit date and time must be unique across patients. If another patient's visit record
+  already uses the supplied date and time, including a patient hidden by filtering,
   the addition is rejected and the app asks you to choose a different slot.
 * `EMAIL` and `NOTES` are optional.
 * On success, the app shows `Added patient NAME` and the new patient appears in the list.
@@ -138,7 +152,7 @@ Visit-time conflict detection has these limitations:
 * It compares the parsed date and time exactly to the minute. It does not account for appointment duration, travel
   time, preparation time, or partially overlapping visits.
 * It does not manage doctor availability, time zones, recurring visits, or separate schedules for multiple doctors.
-* Past visit dates are subject to the same uniqueness rule because every patient record has one visit date and time.
+* Past datetimes are subject to the same uniqueness rule, including dates retained as previous visits.
 
 <box type="tip" seamless>
 
@@ -191,6 +205,10 @@ Format: `view INDEX`
 * The index **must be a positive integer** 1, 2, 3, ...
 * The command works on lists produced by commands such as `find` and `sort date`.
 * The currently displayed patient list remains visible on the left.
+* The current visit date and time remain visible as `Visit date`. The `Previous visit dates:` section immediately
+  below it lists retained datetimes in `d/M/yyyy HHmm` format, newest first and oldest last. The note follows.
+* A patient with no previous dates shows `No previous visit dates`. Scroll the details panel to read long records;
+  all previous dates are included.
 * Viewing a patient does not change their stored details.
 
 Example:
@@ -208,8 +226,10 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [not
 * To update the visit date and time, use `vd/` with the format `d/M/yyyy HHmm`
   (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted.
 * The visit date and time can be edited by itself. Omitting `vd/` preserves the existing visit date and time.
+* Editing preserves any previous visit dates. The current datetime must remain strictly later than the latest
+  previous datetime, when one exists.
 * Re-entering the selected patient's existing visit date and time is allowed. Changing it to a slot used by another
-  patient is rejected, including when the edit also changes other fields.
+  patient's current or previous visits is rejected, including hidden patients and edits to other fields.
 * Omitted fields, including email and existing notes, keep their values. Use an empty `e/` to clear email.
 * Use `note/NOTES` to replace the entire stored note. Use an empty `note/` to clear it; notes can be edited
   without `vd/`. An explicitly empty note counts as a supplied field, even when the note is already empty.
@@ -220,7 +240,10 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [not
 * Prefixes can appear in any order. Repeated single-valued prefixes, including `note/`, are rejected,
   even when their values are identical or empty. Multiple `t/TAG` prefixes are allowed.
 * Editing replaces the stored visit date and time; it does not append a visit-history entry.
-  Use `edit ... vd/` to correct an appointment, or [next](#scheduling-the-next-visit-next) to schedule the following visit.
+  Use `edit ... vd/` to correct a missed or rescheduled appointment, or
+  [next](#scheduling-the-next-visit-next) to schedule the following visit.
+* A successful edit restores the full patient list in stored order, clearing the filter and sort. Check the displayed
+  indices and run `view INDEX` again to refresh the details panel.
 * Existing values will be updated to the input values.
 * When editing tags, all of the patient's existing tags are removed; adding tags is not cumulative.
 * To remove all of a patient's tags, enter `t/` without a tag after it.
@@ -250,8 +273,9 @@ Examples:
 
 ### Scheduling the next visit: `next`
 
-Schedules a patient's following appointment. It replaces the stored visit date and time without recording a
-completed visit or visit history. Use `edit ... vd/` to correct an existing appointment.
+Schedules a patient's following appointment and retains the current visit date and time in their visit record.
+Use `next` after handling the current visit and planning another. Retained dates do not verify attendance or
+completion. Use `edit ... vd/` to correct or reschedule an existing appointment without adding a previous date.
 
 Format: `next INDEX DATETIME`
 
@@ -259,13 +283,17 @@ Format: `next INDEX DATETIME`
   `view` keeps that list and its indices unchanged.
 * Enter `DATETIME` as `d/M/yyyy HHmm`, with a four-digit 24-hour time. Spaces or tabs separate the arguments;
   repeated and outer whitespace are accepted. Do not use `vd/`, quotation marks, or extra arguments.
-* The appointment must be strictly after your computer's current local time at execution; the current minute's
-  start is rejected. It may be earlier than the existing appointment, which need not be past.
-* The appointment must differ from the patient's existing one and every other patient's appointment, including
-  hidden patients. Leading-zero dates compare equally: `1/11/2026 0930` and `01/11/2026 0930` are the same time.
+* The current visit must be at or before your computer's current local time at execution. If it is still in the
+  future, use `edit ... vd/` to reschedule it.
+* The requested appointment must be strictly after that execution time; the current minute's start is rejected.
+* The requested appointment must differ from every other patient's current and previous visit dates and times,
+  including hidden patients. Leading-zero dates compare equally: `1/11/2026 0930` and `01/11/2026 0930` are the same time.
 * Conflict detection covers identical start times, not visit duration, travel time, or partial overlaps.
   The [visit-time conflict limitations under add](#adding-a-patient-add) also apply.
-* Only the visit date and time change; all other details, including empty optional fields, are preserved.
+* Success appends the old current date and time to the previous dates, then sets the new current date and time.
+  All other details, including empty optional fields, are preserved. Previous dates are saved in order in the
+  JSON data file and appear below the current visit date when you run `view INDEX`.
+* If no further visit is planned, leave the current date and time unchanged, even after it passes.
 * Success shows `Next visit scheduled for patient NAME: DATETIME`, saves the record, and restores the full list in
   stored order, clearing the filter and sort. Check the new indices; run `view` again to refresh the details panel.
 * Validation errors preserve data and the displayed list. A save failure reports a storage error; the in-memory
@@ -275,14 +303,16 @@ Common errors:
 
 | Input problem | Feedback |
 | --- | --- |
-| Time at or before now | `The next visit must be in the future.` |
+| Current visit still in the future | `Patient NAME has a current visit at DATETIME that is still in the future. Use edit to reschedule it.` |
+| Time at or before now | `The next visit must be later than the current time (DATETIME). Choose a later date and time.` |
 | Unchanged appointment | `Patient NAME already has an appointment at DATETIME.` |
-| Another patient's appointment | `Patient NAME already has an appointment at DATETIME. Choose a different date and time.` |
+| Another patient's current or previous visit | `Patient NAME already has a current or previous visit at DATETIME. Choose a different date and time.` |
 
 Bare `next` shows usage. Missing or extra arguments, `vd/` syntax, and incorrect index syntax show a reason and usage.
 Invalid dates show the required format; an index outside the displayed list shows the existing invalid-index error.
+The current time in the error uses `d/M/yyyy HHmm`, without seconds; validation still uses the full execution time.
 
-Examples (choose a future date and time that no patient already uses):
+Examples (the selected patient's current visit must have arrived or passed; choose an unused future datetime):
 
 * `next 1 1/11/2026 0930` schedules the first displayed patient's next appointment for 1 November 2026 at 09:30.
 * `find Betsy`, then `next 1 2/11/2026 1430`, schedules the first matching patient and restores the full list.
@@ -361,6 +391,11 @@ to save manually.
 Doc's patient data is saved automatically as a JSON file at `[JAR file location]/data/addressbook.json`. Advanced
 users may update the data directly by editing that file.
 
+Each patient has a required `visitDate` and a `previousVisitDates` array of datetime strings in `d/M/yyyy HHmm`
+format. Previous dates must be strictly increasing, oldest first, and earlier than the current date. All current
+and previous datetimes must be unique across patients. Missing or `null` previous-date arrays in older files load
+as empty arrays. Invalid records are rejected without sorting, deduplicating, or dropping entries.
+
 <box type="warning" seamless>
 
 **Caution:**
@@ -404,7 +439,7 @@ Action     | Format, Examples
 **Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
-**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (use an available future appointment)
+**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (current visit must have arrived or passed; use an unused future datetime)
 **Sort**   | `sort date`
 **View**   | `view INDEX`<br> e.g., `view 1`
 **Help**   | `help`
