@@ -1,6 +1,7 @@
 package seedu.address.ui;
 
 import java.nio.file.Path;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import javafx.event.ActionEvent;
@@ -11,6 +12,7 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.logic.Logic;
@@ -37,6 +39,7 @@ public class MainWindow extends UiPart<Stage> {
     private PatientDetailsPanel patientDetailsPanel;
     private ResultDisplay resultDisplay;
     private HelpWindow helpWindow;
+    private CommandBox commandBox;
 
     @FXML
     private StackPane commandBoxPlaceholder;
@@ -58,9 +61,9 @@ public class MainWindow extends UiPart<Stage> {
 
     /**
      * Creates a {@code MainWindow} with the given {@code Stage}, {@code Logic},
-     * and the data file path to show in the status bar.
+     * the data file path to show in the status bar, and a browser-opening action.
      */
-    public MainWindow(Stage primaryStage, Logic logic, Path dataFilePath) {
+    public MainWindow(Stage primaryStage, Logic logic, Path dataFilePath, Consumer<String> openDocument) {
         super(FXML, primaryStage);
 
         // Set dependencies
@@ -73,7 +76,8 @@ public class MainWindow extends UiPart<Stage> {
 
         setAccelerators();
 
-        helpWindow = new HelpWindow();
+        helpWindow = new HelpWindow(openDocument);
+        primaryStage.addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> helpWindow.hide());
     }
 
     public Stage getPrimaryStage() {
@@ -130,8 +134,14 @@ public class MainWindow extends UiPart<Stage> {
         StatusBarFooter statusBarFooter = new StatusBarFooter(dataFilePath);
         statusbarPlaceholder.getChildren().add(statusBarFooter.getRoot());
 
-        CommandBox commandBox = new CommandBox(this::executeCommand, logic::isInputRequestPending);
+        commandBox = new CommandBox(this::executeCommand, logic::isInputRequestPending);
         commandBoxPlaceholder.getChildren().add(commandBox.getRoot());
+        helpWindow.getRoot().addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> {
+            if (primaryStage.isShowing()) {
+                primaryStage.requestFocus();
+                commandBox.focus();
+            }
+        });
     }
 
     /**
@@ -151,6 +161,7 @@ public class MainWindow extends UiPart<Stage> {
      */
     @FXML
     public void handleHelp() {
+        commandBox.saveSelection();
         if (!helpWindow.isShowing()) {
             helpWindow.show();
         } else {
@@ -170,7 +181,6 @@ public class MainWindow extends UiPart<Stage> {
         GuiSettings guiSettings = new GuiSettings(primaryStage.getWidth(), primaryStage.getHeight(),
                 (int) primaryStage.getX(), (int) primaryStage.getY());
         logic.setGuiSettings(guiSettings);
-        helpWindow.hide();
         primaryStage.hide();
     }
 

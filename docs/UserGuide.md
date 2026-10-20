@@ -105,7 +105,27 @@ The command box keeps commands submitted during the current application session 
 
 ### Viewing help: `help`
 
-Shows a message explaining how to access the help page.
+Opens a non-modal help window with the online User Guide's URL. Choose
+**Open User Guide** to request opening it in your default browser, or **Copy URL**
+to copy the address. Use Tab to reach the buttons and Space to activate them.
+The window can be resized and scrolled vertically. Choose **Close** or press
+**Escape** to dismiss it. You can continue using the main window while help is open.
+
+Opening the guide requires a browser and an Internet connection. A browser-launch
+request does not confirm that the page loaded. If no browser appears, try **Copy URL**
+and open the address manually. Detectable browser and clipboard failures are shown
+in the help window; you can retry or enter the displayed URL in your browser.
+Copy success is reported only when the clipboard accepts the URL.
+
+Press **F1** or choose **Help → Help** to open the same window. Repeating a help
+request brings that window to the front and restores it if it was minimized.
+After closing help, focus returns to the command box without submitting or
+discarding unfinished input. You can reopen help after using **Close**,
+**Escape**, or the window's native close control.
+
+If a confirmation or follow-up prompt is pending, use **F1** or **Help → Help**
+to consult the guide without answering the prompt. Typing `help` and pressing
+Enter still counts as the response to the pending prompt.
 
 ![help message](images/helpMessage.png)
 
@@ -425,7 +445,6 @@ Doc home folder.
 ## Known issues
 
 1. **When using multiple screens**, if you move the application to a secondary screen, and later switch to using only the primary screen, the GUI will open off-screen. The remedy is to delete the `preferences.json` file created by the application before running the application again.
-2. **If you minimize the Help Window** and then run the `help` command (or use the `Help` menu, or the keyboard shortcut `F1`) again, the original Help Window will remain minimized, and no new Help Window will appear. The remedy is to manually restore the minimized Help Window.
 
 --------------------------------------------------------------------------------------------------------------------
 

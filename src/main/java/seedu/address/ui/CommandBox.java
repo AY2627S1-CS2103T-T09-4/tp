@@ -22,6 +22,8 @@ public class CommandBox extends UiPart<Region> {
     private final CommandExecutor commandExecutor;
     private final BooleanSupplier isInputRequestPending;
     private final CommandHistory commandHistory = new CommandHistory();
+    private int lastAnchor;
+    private int lastCaretPosition;
 
     @FXML
     private TextField commandTextField;
@@ -45,6 +47,34 @@ public class CommandBox extends UiPart<Region> {
         this.isInputRequestPending = isInputRequestPending;
         // calls #setStyleToDefault() whenever there is a change to the text of the command box.
         commandTextField.textProperty().addListener((unused1, unused2, unused3) -> setStyleToDefault());
+        // Save the edit position before JavaFX resets the selection when focus leaves the text field.
+        commandTextField.focusedProperty().addListener((observable, wasFocused, isFocused) -> {
+            if (!isFocused) {
+                lastAnchor = commandTextField.getAnchor();
+                lastCaretPosition = commandTextField.getCaretPosition();
+            }
+        });
+    }
+
+    /**
+     * Focuses command entry and restores its edit position without submitting unfinished input.
+     */
+    void focus() {
+        commandTextField.requestFocus();
+        commandTextField.selectRange(lastAnchor, lastCaretPosition);
+    }
+
+    /**
+     * Saves the current edit position when command entry is focused.
+     *
+     * <p>This is needed before another window is shown because some window managers do not deliver
+     * a focus-loss event when a JavaFX event opens a separate window.</p>
+     */
+    void saveSelection() {
+        if (commandTextField.isFocused()) {
+            lastAnchor = commandTextField.getAnchor();
+            lastCaretPosition = commandTextField.getCaretPosition();
+        }
     }
 
     /**

@@ -28,9 +28,22 @@ jobs:
           java-version: '25'
           java-package: jdk+fx
 
+      - name: Install Linux window manager
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes openbox
+
       - name: Build and check with Gradle on Linux
         if: runner.os == 'Linux'
-        run: xvfb-run --auto-servernum ./gradlew check coverage
+        # Xvfb provides a display; Openbox handles native minimize/restore requests.
+        run: |
+          xvfb-run --auto-servernum sh -eu -c '
+            openbox --sm-disable &
+            window_manager_pid=$!
+            trap "kill $window_manager_pid 2>/dev/null || true" EXIT
+            ./gradlew check coverage
+          '
 
       - name: Build and check with Gradle
         if: runner.os != 'Linux'

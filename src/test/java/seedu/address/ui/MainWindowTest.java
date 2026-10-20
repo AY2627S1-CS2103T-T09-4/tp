@@ -42,7 +42,7 @@ public class MainWindowTest {
             Stage stage = new Stage();
 
             try {
-                MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH);
+                MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH, url -> { });
                 mainWindow.fillInnerParts();
 
                 try {
