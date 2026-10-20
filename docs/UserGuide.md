@@ -79,7 +79,8 @@ Each patient has one required **current visit date and time** and zero or more *
 Together, these form the patient's **visit record**.
 
 * The current datetime may be in the past, present, or future. It stays stored until you change it using `edit` or `next`.
-* Previous datetimes are retained by `next`, oldest first. `edit` preserves them, including when changing other details.
+* Previous datetimes are retained by `next` and stored oldest first. `view` displays them newest first.
+  `edit` preserves them, including when changing other details.
 * Notes belong to the patient record; separate notes are not stored for each previous datetime.
 
 Use [view](#viewing-a-patient-s-details-view) to see the visit record. Retained datetimes do not verify attendance,
@@ -205,7 +206,7 @@ Format: `view INDEX`
 * The command works on lists produced by commands such as `find` and `sort date`.
 * The currently displayed patient list remains visible on the left.
 * The current visit date and time remain visible as `Visit date`. The `Previous visit dates:` section immediately
-  below it lists retained datetimes in `d/M/yyyy HHmm` format, oldest first and latest last. The note follows.
+  below it lists retained datetimes in `d/M/yyyy HHmm` format, newest first and oldest last. The note follows.
 * A patient with no previous dates shows `No previous visit dates`. Scroll the details panel to read long records;
   all previous dates are included.
 * Viewing a patient does not change their stored details.

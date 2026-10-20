@@ -53,6 +53,7 @@ public class PatientDetailsPanel extends UiPart<Region> {
 
     /**
      * Displays all details of the specified person.
+     * Shows previous visit dates newest first without changing their stored order.
      *
      * @param person Person whose details should be displayed.
      */
@@ -64,7 +65,7 @@ public class PatientDetailsPanel extends UiPart<Region> {
         visitDate.setText("Visit date: " + person.getVisitDate());
         previousVisitDates.setText(person.getPreviousVisitDates().isEmpty()
                 ? "No previous visit dates"
-                : person.getPreviousVisitDates().stream()
+                : person.getPreviousVisitDates().reversed().stream()
                         .map(VisitDate::toString)
                         .collect(Collectors.joining("\n")));
         note.setText("Note: " + person.getNote().value);

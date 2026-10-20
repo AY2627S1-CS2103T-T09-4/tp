@@ -80,7 +80,7 @@ public class PatientDetailsPanelTest {
     }
 
     @Test
-    public void setPerson_populatedPreviousDates_displaysChronologyWithoutChangingPerson() {
+    public void setPerson_populatedPreviousDates_displaysNewestFirstWithoutChangingPerson() {
         runOnFxThread(() -> {
             Person person = new PersonBuilder()
                     .withPreviousVisitDates("01/08/2026 0930", "2/8/2026 0900", "2/8/2026 1030")
@@ -91,7 +91,7 @@ public class PatientDetailsPanelTest {
             patientDetailsPanel.setPerson(person);
             patientDetailsPanel.setPerson(person);
 
-            assertEquals("1/8/2026 0930\n2/8/2026 0900\n2/8/2026 1030",
+            assertEquals("2/8/2026 1030\n2/8/2026 0900\n1/8/2026 0930",
                     getLabel(patientDetailsPanel, "previousVisitDates").getText());
             assertEquals("Visit date: 18/9/2026 1000", getLabel(patientDetailsPanel, "visitDate").getText());
             assertEquals(originalPerson, person);
@@ -139,7 +139,7 @@ public class PatientDetailsPanelTest {
             patientDetailsPanel.setPerson(person);
 
             Label previousVisitDates = getLabel(patientDetailsPanel, "previousVisitDates");
-            assertEquals(List.of(previousDates), previousVisitDates.getText().lines().toList());
+            assertEquals(List.of(previousDates).reversed(), previousVisitDates.getText().lines().toList());
             assertTrue(previousVisitDates.isWrapText());
             assertRecordCanScrollToBottom(patientDetailsPanel);
             assertEquals(originalPerson, person);
