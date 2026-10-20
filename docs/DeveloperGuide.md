@@ -309,7 +309,8 @@ datetime. A valid past datetime is still allowed, and history is preserved uncha
 date but rejects a value already used by another patient's current or previous dates, including hidden patients.
 The conflict check is repeated after confirmation so a slot taken while the prompt was pending cannot be introduced
 into the model. Chronology failures produce a command error explaining that the current datetime must be later
-than the latest previous visit and showing that previous datetime. The domain exception is retained as its cause.
+than the latest previous visit and showing that previous datetime. This check occurs before constructing the
+replacement patient; the `Person` constructor independently enforces the record invariants for all callers.
 
 The descriptor's nullable `Note` distinguishes omission from an explicitly empty `Note("")`.
 When `note/` is present, the parser constructs the existing immutable `Note` from the tokenizer's value;

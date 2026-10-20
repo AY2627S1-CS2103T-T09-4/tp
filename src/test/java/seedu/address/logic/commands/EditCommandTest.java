@@ -2,7 +2,6 @@ package seedu.address.logic.commands;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.DESC_BOB;
@@ -25,7 +24,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.core.index.Index;
@@ -292,16 +290,14 @@ public class EditCommandTest {
     }
 
     @Test
-    public void execute_dateBeforePreviousDate_reportsLatestDateAndPreservesCause() {
+    public void execute_dateBeforePreviousDate_reportsLatestDate() {
         setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
         EditCommand command = new EditCommand(INDEX_FIRST_PERSON,
                 new EditPersonDescriptorBuilder().withVisitDate("1/1/2024 0900").build());
+        String expectedMessage = "The current visit date and time must be later than the latest previous visit "
+                + "(2/1/2024 0900).";
 
-        CommandException exception = Assertions.assertThrows(CommandException.class, () -> command.execute(model));
-
-        assertEquals("The current visit date and time must be later than the latest previous visit (2/1/2024 0900).",
-                exception.getMessage());
-        assertInstanceOf(IllegalArgumentException.class, exception.getCause());
+        assertThrows(CommandException.class, expectedMessage, () -> command.execute(model));
     }
 
     @Test

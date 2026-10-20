@@ -203,14 +203,15 @@ public class EditCommand extends Command {
         Note updatedNote = editPersonDescriptor.getNote().orElse(personToEdit.getNote());
         Set<Tag> updatedTags = editPersonDescriptor.getTags().orElse(personToEdit.getTags());
 
-        try {
-            return new Person(updatedName, updatedPhone, updatedEmail, updatedAddress,
-                    updatedVisitDate, personToEdit.getPreviousVisitDates(), updatedNote, updatedTags);
-        } catch (IllegalArgumentException e) {
-            VisitDate latestPreviousVisitDate = personToEdit.getPreviousVisitDates().getLast();
+        List<VisitDate> previousVisitDates = personToEdit.getPreviousVisitDates();
+        if (!previousVisitDates.isEmpty()
+                && !updatedVisitDate.value.isAfter(previousVisitDates.getLast().value)) {
             throw new CommandException(String.format(MESSAGE_VISIT_DATE_NOT_AFTER_PREVIOUS,
-                    latestPreviousVisitDate), e);
+                    previousVisitDates.getLast()));
         }
+
+        return new Person(updatedName, updatedPhone, updatedEmail, updatedAddress,
+                updatedVisitDate, previousVisitDates, updatedNote, updatedTags);
     }
 
     @Override
