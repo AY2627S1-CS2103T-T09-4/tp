@@ -25,7 +25,9 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 1. Copy the file to the folder you want to use as the _home folder_ for Doc.
 
 1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar addressbook.jar`.<br>
-   A GUI similar to the one below should appear in a few seconds. Note how the app contains some sample data.<br>
+   A GUI similar to the one below should appear in a few seconds. When no saved data file exists, Doc starts with
+   seven sample patient records: George Miller, Priya Nair, Aisha Rahman, Marcus Lim, Mei Lin Tan, Daniel Wong, and
+   Noor Aziz.<br>
    ![Ui](images/Ui.png)
 
 1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
@@ -344,8 +346,8 @@ Finds patients with a word in their name that starts with any of the given keywo
 Format: `find KEYWORD [MORE_KEYWORDS]`
 
 * The search is case-insensitive; for example, `hans` matches `Hans`.
-* A keyword matches the start of any word in the name, whether first name or surname. For example, `b` matches
-  `Bernice Yu` and `Roy Balakrishnan`, and `Han` matches `Hans`.
+* A keyword matches the start of any word in the name, whether first name or surname. For example, `m` matches
+  `George Miller`, `Marcus Lim`, and `Mei Lin Tan`, and `Han` matches `Hans`.
 * A keyword in the middle of a word does not match; for example, `ans` does not match `Hans`.
 * Keyword order does not matter; for example, `Hans Bo` matches `Bo Hans`.
 * The search considers only names.
@@ -354,10 +356,9 @@ Format: `find KEYWORD [MORE_KEYWORDS]`
   with a reminder of how keywords are matched.
 
 Examples:
-* `find b` returns `Bernice Yu` and `Roy Balakrishnan`
+* `find m` returns `George Miller`, `Marcus Lim`, and `Mei Lin Tan`
 * `find John` returns `john` and `John Doe`
-* `find alex david` returns `Alex Yeoh`, `David Li`<br>
-  ![result for 'find alex david'](images/findAlexDavidResult.png)
+* `find george priya` returns `George Miller` and `Priya Nair`
 
 ### Deleting a patient: `delete`
 
