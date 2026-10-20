@@ -43,7 +43,7 @@ public class SampleDataUtil {
             new Person(new Name("Mei Lin Tan"), new Phone("83456789"),
                 new Email("meilin.tan@example.com"), new Address("77 Ang Mo Kio Avenue 4, #03-18"),
                 new VisitDate("14/10/2026 0800"), new Note("Routine wound dressing"),
-                getTagSet("today")),
+                getTagSet("morning")),
             new Person(new Name("Daniel Wong"), new Phone("84567890"),
                 new Email("daniel.wong@example.com"), new Address("17 Sunset Way"),
                 new VisitDate("20/10/2026 1100"), new Note("Check recovery progress"),

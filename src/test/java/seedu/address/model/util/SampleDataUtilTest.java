@@ -32,7 +32,7 @@ public class SampleDataUtilTest {
         new PersonBuilder().withName("Mei Lin Tan").withPhone("83456789")
                 .withEmail("meilin.tan@example.com").withAddress("77 Ang Mo Kio Avenue 4, #03-18")
                 .withVisitDate("14/10/2026 0800").withNote("Routine wound dressing")
-                .withTags("today").build(),
+                .withTags("morning").build(),
         new PersonBuilder().withName("Daniel Wong").withPhone("84567890")
                 .withEmail("daniel.wong@example.com").withAddress("17 Sunset Way")
                 .withVisitDate("20/10/2026 1100").withNote("Check recovery progress")
