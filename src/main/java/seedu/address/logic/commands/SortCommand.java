@@ -2,10 +2,12 @@ package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.ResolverStyle;
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.Optional;
 
 import seedu.address.model.Model;
@@ -30,19 +32,32 @@ public class SortCommand extends Command {
             "Sorted displayed visits by date, with visits on or after %1$s first.";
 
     private final Optional<LocalDate> specifiedCutoffDate;
+    private final Clock clock;
 
     /**
      * Creates a command that uses the computer's local date at execution time as the cutoff date.
      */
     public SortCommand() {
-        specifiedCutoffDate = Optional.empty();
+        this(Clock.systemDefaultZone());
     }
 
     /**
      * Creates a command that uses the supplied cutoff date.
      */
     public SortCommand(LocalDate cutoffDate) {
-        specifiedCutoffDate = Optional.of(requireNonNull(cutoffDate));
+        this(Optional.of(requireNonNull(cutoffDate)), Clock.systemDefaultZone());
+    }
+
+    /**
+     * Creates a command that uses the supplied clock to determine the cutoff date at execution time.
+     */
+    SortCommand(Clock clock) {
+        this(Optional.empty(), clock);
+    }
+
+    private SortCommand(Optional<LocalDate> specifiedCutoffDate, Clock clock) {
+        this.specifiedCutoffDate = requireNonNull(specifiedCutoffDate);
+        this.clock = requireNonNull(clock);
     }
 
     /**
@@ -51,7 +66,7 @@ public class SortCommand extends Command {
     @Override
     public CommandResult execute(Model model) {
         requireNonNull(model);
-        LocalDate cutoffDate = specifiedCutoffDate.orElseGet(LocalDate::now);
+        LocalDate cutoffDate = specifiedCutoffDate.orElseGet(() -> LocalDate.now(clock));
         Comparator<Person> visitDateComparator = Comparator
                 .comparing((Person person) -> isBeforeCutoff(person, cutoffDate))
                 .thenComparing(person -> person.getVisitDate().value);
@@ -71,11 +86,12 @@ public class SortCommand extends Command {
         if (!(other instanceof SortCommand otherSortCommand)) {
             return false;
         }
-        return specifiedCutoffDate.equals(otherSortCommand.specifiedCutoffDate);
+        return specifiedCutoffDate.equals(otherSortCommand.specifiedCutoffDate)
+                && clock.equals(otherSortCommand.clock);
     }
 
     @Override
     public int hashCode() {
-        return specifiedCutoffDate.hashCode();
+        return Objects.hash(specifiedCutoffDate, clock);
     }
 }
