@@ -204,9 +204,11 @@ public class MainWindow extends UiPart<Stage> {
 
             return commandResult;
         } catch (CommandException e) {
-            logger.info("An error occurred while executing command: " + commandText);
             resultDisplay.setFeedbackToUser(e.getMessage());
             e.getPersonToView().ifPresent(patientDetailsPanel::setPerson);
+            logger.info("An error occurred while executing command: " + commandText
+                    + "; reason: " + e.getMessage()
+                    + "; related patient displayed: " + e.getPersonToView().isPresent());
             throw e;
         } catch (ParseException e) {
             logger.info("An error occurred while parsing command: " + commandText);
