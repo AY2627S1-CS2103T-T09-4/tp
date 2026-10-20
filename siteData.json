@@ -51,6 +51,7 @@
         "storage-component": "Storage component",
         "common-classes": "Common classes",
         "implementation": "Implementation",
+        "visit-record-model": "Visit record model",
         "duplicate-patient-identity-visit-dates-and-name-confirmation": "Duplicate patient identity, visit dates, and name confirmation",
         "editing-patient-details": "Editing patient details",
         "scheduling-the-next-visit": "Scheduling the next visit",
@@ -70,6 +71,7 @@
         "sorting-visits-by-date": "Sorting visits by date",
         "distinguishing-past-visits-in-the-patient-list": "Distinguishing past visits in the patient list",
         "preventing-duplicate-visit-dates-and-times": "Preventing duplicate visit dates and times",
+        "loading-and-validating-previous-visit-dates": "Loading and validating previous visit dates",
         "adding-patients-with-duplicate-names": "Adding patients with duplicate names",
         "editing-patient-details-2": "Editing patient details",
         "testing-the-next-command": "Testing the next command",
@@ -113,6 +115,8 @@
       "headings": {
         "testing-guide": "Testing guide",
         "running-tests": "Running tests",
+        "assertions": "Assertions",
+        "visit-record-verification": "Visit record verification",
         "types-of-tests": "Types of tests"
       },
       "headingKeywords": {}
@@ -124,6 +128,7 @@
         "doc-user-guide": "Doc User Guide",
         "quick-start": "Quick start",
         "features": "Features",
+        "visit-records": "Visit records",
         "navigating-command-history": "Navigating command history",
         "viewing-help-help": "Viewing help: help",
         "adding-a-patient-add": "Adding a patient: add",
