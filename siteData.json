@@ -68,6 +68,8 @@
         "glossary": "Glossary",
         "appendix-instructions-for-manual-testing": "Appendix: Instructions for manual testing",
         "launch-and-shutdown": "Launch and shutdown",
+        "help-window-lifecycle": "Help window lifecycle",
+        "user-guide-actions": "User Guide actions",
         "sorting-visits-by-date": "Sorting visits by date",
         "distinguishing-past-visits-in-the-patient-list": "Distinguishing past visits in the patient list",
         "preventing-duplicate-visit-dates-and-times": "Preventing duplicate visit dates and times",
