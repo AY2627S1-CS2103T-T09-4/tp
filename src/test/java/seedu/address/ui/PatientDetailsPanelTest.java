@@ -69,6 +69,36 @@ public class PatientDetailsPanelTest {
         });
     }
 
+    @Test
+    public void setPerson_bloodType_displaysBelowNameAndHidesWhenAbsent() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            panel.setPerson(new PersonBuilder().withBloodType("A+").build());
+            Label bloodTypeLabel = getLabel(panel, "bloodType");
+            assertEquals("Blood type: A+", bloodTypeLabel.getText());
+            assertFieldVisible(panel, "bloodType", true);
+            assertTrue(bloodTypeLabel.isWrapText());
+            VBox container = getDetailsContainer(panel);
+            assertEquals(container.getChildren().indexOf(getLabel(panel, "name")) + 1,
+                    container.getChildren().indexOf(bloodTypeLabel));
+
+            panel.setPerson(new PersonBuilder().build());
+            assertFieldVisible(panel, "bloodType", false);
+            panel.setPerson(new PersonBuilder().withBloodType("O-").build());
+            assertFieldVisible(panel, "bloodType", true);
+            assertEquals("Blood type: O-", bloodTypeLabel.getText());
+        });
+    }
+
+    private static void assertFieldVisible(PatientDetailsPanel panel, String labelId, boolean isVisible) {
+        Label label = getLabel(panel, labelId);
+        assertEquals(isVisible, label.isVisible(), labelId);
+        assertEquals(isVisible, label.isManaged(), labelId);
+        if (!isVisible) {
+            assertEquals("", label.getText(), labelId);
+        }
+    }
+
     private static VBox getDetailsContainer(PatientDetailsPanel patientDetailsPanel) {
         ScrollPane scrollPane = (ScrollPane) patientDetailsPanel.getRoot();
         VBox detailsContainer = (VBox) scrollPane.getContent();

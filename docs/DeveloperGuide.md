@@ -254,10 +254,22 @@ The visit-date rule prevents only exact scheduling collisions:
 * A data file created by an older version may contain duplicate visit dates. The migration and data-preservation risks
   are described under the current implementation limitations above.
 
+### Optional blood type
+
+`Person` stores a `BloodType` enum containing the eight blood types and `UNKNOWN` for unrecorded values.
+The existing constructor defaults to `UNKNOWN`. `ParserUtil#parseBloodType` trims whitespace, ignores letter
+case, and rejects empty or invalid input. Add and edit recognize `bt/` and reject repeated prefixes;
+edit maps an explicitly empty value to `UNKNOWN`. Other edits and visit rescheduling preserve blood type.
+
+`JsonAdaptedPerson` stores the display value (e.g. `A+`) in the `bloodType` property. Missing or null properties
+from older files load as `UNKNOWN`; an empty string represents a cleared value. Invalid stored values are rejected.
+Both patient cards and the details panel show recorded blood type below the name, hiding and unmanaging the row
+when it is unrecorded. Patient identity continues to use name and phone number.
+
 ### Editing patient details
 
 `EditCommandParser` accepts optional replacement fields, including `vd/` and `note/`. The displayed format is
-`edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`.
+`edit INDEX [n/NAME] [bt/BLOOD_TYPE] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`.
 It checks index syntax and duplicate single-valued prefixes before parsing field values, then rejects a
 descriptor with no supplied fields. When `vd/` is supplied, `ParserUtil#parseVisitDate` reuses the existing strict
 `VisitDate` validation
@@ -848,6 +860,25 @@ testers are expected to do more *exploratory* testing.
        Expected: The most recent window size and location are retained.
 
 1. _{ more test cases … }_
+
+### Blood types
+
+Use a disposable data file, starting with no patients, and available visit slots.
+
+1. Run `add n/Blood Test bt/a+ p/81234567 a/10 Test Road vd/1/12/2099 1000`, then `view 1`.
+   Expect `Blood type: A+` directly below the name in the patient list and the details panel.
+1. Run `edit 1 bt/ab-`, then `view 1`; expect `Blood type: AB-` in both panels.
+1. Edit a different field and run `next 1 2/12/2099 1000`; blood type should remain unchanged.
+1. Restart the app and view the patient; expect the saved blood type to remain.
+1. Run `edit 1 bt/`, then `view 1`; expect the blood type row to disappear without leaving a gap.
+   Restart and view the patient; expect the value to remain cleared. Whitespace-only input also clears it.
+   Clearing an already empty blood type succeeds; `edit 1 bt/O+` restores the row.
+1. Try all eight blood types using add and edit. Expect normalized uppercase values.
+   Try `bt/A`, `bt/C+`, `bt/A +`, `bt/UNKNOWN`, and repeated prefixes, including `bt/ bt/`.
+   Expect errors and unchanged data. An empty `bt/` is invalid for add.
+1. Add a patient without `bt/` in a different visit slot. Switch between patients using `view INDEX`;
+   expect the row to disappear or reappear according to the selected patient's recorded blood type.
+1. Load a valid older record without `bloodType`; expect it to load with no blood type row.
 
 ### Sorting visits by date
 

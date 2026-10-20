@@ -21,6 +21,7 @@ public class Person {
     private final Phone phone;
 
     // Data fields
+    private final BloodType bloodType;
     private final Email email;
     private final Address address;
     private final VisitDate visitDate;
@@ -32,7 +33,16 @@ public class Person {
      */
     public Person(Name name, Phone phone, Email email, Address address, VisitDate visitDate, Note note,
             Set<Tag> tags) {
-        requireAllNonNull(name, phone, email, address, visitDate, note, tags);
+        this(name, BloodType.UNKNOWN, phone, email, address, visitDate, note, tags);
+    }
+
+    /**
+     * Creates a patient with an optional blood type. Every field must be non-null.
+     */
+    public Person(Name name, BloodType bloodType, Phone phone, Email email, Address address,
+            VisitDate visitDate, Note note, Set<Tag> tags) {
+        requireAllNonNull(name, bloodType, phone, email, address, visitDate, note, tags);
+        this.bloodType = bloodType;
         this.name = name;
         this.phone = phone;
         this.email = email;
@@ -44,6 +54,10 @@ public class Person {
 
     public Name getName() {
         return name;
+    }
+
+    public BloodType getBloodType() {
+        return bloodType;
     }
 
     public Phone getPhone() {
@@ -111,6 +125,7 @@ public class Person {
         }
 
         return name.equals(otherPerson.name)
+                && bloodType.equals(otherPerson.bloodType)
                 && phone.equals(otherPerson.phone)
                 && email.equals(otherPerson.email)
                 && address.equals(otherPerson.address)
@@ -122,13 +137,14 @@ public class Person {
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(name, phone, email, address, visitDate, note, tags);
+        return Objects.hash(name, bloodType, phone, email, address, visitDate, note, tags);
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
                 .add("name", name)
+                .add("bloodType", bloodType)
                 .add("phone", phone)
                 .add("email", email)
                 .add("address", address)

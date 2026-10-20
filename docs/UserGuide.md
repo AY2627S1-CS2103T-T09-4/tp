@@ -33,7 +33,7 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 
    * `list` : Lists all patients.
 
-   * `add n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01 vd/18/9/2026 1000` : Adds a patient named `John Doe` to Doc.
+   * `add n/John Doe bt/A+ p/98765432 e/johnd@example.com a/John street, block 123, #01-01 vd/18/9/2026 1000` : Adds a patient named `John Doe` to Doc.
 
    * `delete 3` : Asks for confirmation before deleting the 3rd patient shown in the current list.
 
@@ -103,12 +103,17 @@ Format: `help`
 
 Adds a patient record to Doc.
 
-Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [t/TAG]... `
+Format: `add n/NAME [bt/BLOOD_TYPE] p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [t/TAG]... `
 
 * `VISIT_DATE` must be a date and time in the format `d/M/yyyy HHmm`, e.g. `18/9/2026 1000`. Past dates are allowed.
 * Each patient must have a unique visit date and time. If another patient already uses the supplied date and time,
   the addition is rejected and the app asks you to choose a different slot.
-* `EMAIL` and `NOTES` are optional.
+* Blood type, `EMAIL`, and `NOTES` are optional.
+* Use `bt/BLOOD_TYPE` after the name, e.g. `bt/A+`. Prefixes can appear in any order.
+  Accepted blood types are `A+`, `A-`, `B+`, `B-`, `AB+`, `AB-`, `O+`, and `O-`.
+  Letter case is ignored and surrounding whitespace is trimmed; `bt/ab-` is stored as `AB-`.
+  Omitting `bt/` leaves blood type unrecorded. An empty or repeated `bt/` is rejected when adding a patient.
+  Blood type does not affect duplicate-patient detection. Older saved records without blood type still load.
 * On success, the app shows `Added patient NAME` and the new patient appears in the list.
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
 * A patient with the same normalized name and phone number as an existing patient is a duplicate and cannot be added.
@@ -146,7 +151,7 @@ Visit-time conflict detection has these limitations:
 </box>
 
 Examples:
-* `add n/John Doe p/98765432 a/John street, block 123, #01-01 vd/18/9/2026 1000 e/JohnDoe@gmail.com note/This man is sick`
+* `add n/John Doe bt/A+ p/98765432 a/John street, block 123, #01-01 vd/18/9/2026 1000 e/JohnDoe@gmail.com note/This man is sick`
 * `add n/Betsy Crowe t/friend a/Newgate Prison p/1234567 vd/1/10/2026 1430 t/criminal`
 
 ### Listing all patients: `list`
@@ -192,6 +197,9 @@ Format: `view INDEX`
 * The command works on lists produced by commands such as `find` and `sort date`.
 * The currently displayed patient list remains visible on the left.
 * Viewing a patient does not change their stored details.
+* Recorded blood type appears immediately below the name as `Blood type: A+` in both the left-hand patient
+  list and the right-hand details panel. The row is hidden without reserving space when blood type is unrecorded.
+* After editing blood type, run `view INDEX` again to refresh the selected patient's details.
 
 Example:
 * `view 1` displays the first patient's full record in the details panel.
@@ -200,11 +208,15 @@ Example:
 
 Edits an existing patient record in Doc.
 
-Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`
+Format: `edit INDEX [n/NAME] [bt/BLOOD_TYPE] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`
 
 * Edits the patient at the specified `INDEX`. The index refers to the index number shown in the displayed patient
   list. The index **must be a positive integer** 1, 2, 3, ...
 * All editable fields are optional, but at least one must be provided.
+* Use `bt/BLOOD_TYPE` to add or replace blood type, e.g. `edit 1 bt/O-`. The same valid values and normalization
+  rules as `add` apply. Omitted `bt/` preserves the current blood type.
+  Use an empty `bt/`, e.g. `edit 1 bt/`, to clear it; whitespace-only values also clear it.
+  Repeated `bt/` prefixes are rejected, including identical or empty values.
 * To update the visit date and time, use `vd/` with the format `d/M/yyyy HHmm`
   (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted.
 * The visit date and time can be edited by itself. Omitting `vd/` preserves the existing visit date and time.
@@ -398,10 +410,10 @@ Doc home folder.
 
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-**Add**    | `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
+**Add**    | `add n/NAME [bt/BLOOD_TYPE] p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
-**Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
+**Edit**   | `edit INDEX [n/NAME] [bt/BLOOD_TYPE] [p/PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (use an available future appointment)

@@ -13,10 +13,13 @@ import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.person.Address;
+import seedu.address.model.person.BloodType;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
+import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
 import seedu.address.model.person.VisitDate;
+import seedu.address.testutil.PersonBuilder;
 
 public class JsonAdaptedPersonTest {
     private static final String INVALID_NAME = "R@chel";
@@ -40,6 +43,21 @@ public class JsonAdaptedPersonTest {
     public void toModelType_validPersonDetails_returnsPerson() throws Exception {
         JsonAdaptedPerson person = new JsonAdaptedPerson(BENSON);
         assertEquals(BENSON, person.toModelType());
+    }
+
+    @Test
+    public void toModelType_bloodType_roundTripsPatient() throws Exception {
+        Person patient = new PersonBuilder(BENSON).withBloodType("A+").build();
+        assertEquals(patient, new JsonAdaptedPerson(patient).toModelType());
+    }
+
+    @Test
+    public void toModelType_invalidBloodType_throwsIllegalValueException() {
+        for (String bloodType : List.of("C+", "A", "UNKNOWN")) {
+            JsonAdaptedPerson person = new JsonAdaptedPerson(VALID_NAME, bloodType, VALID_PHONE, VALID_EMAIL,
+                    VALID_ADDRESS, VALID_VISIT_DATE, VALID_NOTE, VALID_TAGS);
+            assertThrows(IllegalValueException.class, BloodType.MESSAGE_CONSTRAINTS, person::toModelType);
+        }
     }
 
     @Test

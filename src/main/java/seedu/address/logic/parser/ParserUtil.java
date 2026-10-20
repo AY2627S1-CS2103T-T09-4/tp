@@ -10,6 +10,7 @@ import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.Address;
+import seedu.address.model.person.BloodType;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Phone;
@@ -49,6 +50,24 @@ public class ParserUtil {
             throw new ParseException(Name.MESSAGE_CONSTRAINTS);
         }
         return new Name(trimmedName);
+    }
+
+    /**
+     * Parses a recorded blood type, rejecting empty input.
+     *
+     * @throws ParseException If the supplied blood type is empty or invalid.
+     */
+    public static BloodType parseBloodType(String bloodType) throws ParseException {
+        requireNonNull(bloodType);
+        try {
+            BloodType parsedBloodType = BloodType.fromString(bloodType);
+            if (parsedBloodType.isEmpty()) {
+                throw new ParseException(BloodType.MESSAGE_CONSTRAINTS);
+            }
+            return parsedBloodType;
+        } catch (IllegalArgumentException exception) {
+            throw new ParseException(BloodType.MESSAGE_CONSTRAINTS, exception);
+        }
     }
 
     /**

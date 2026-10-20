@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import seedu.address.model.person.Address;
+import seedu.address.model.person.BloodType;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Note;
@@ -26,6 +27,7 @@ public class PersonBuilder {
     public static final String DEFAULT_NOTE = "";
 
     private Name name;
+    private BloodType bloodType;
     private Phone phone;
     private Email email;
     private Address address;
@@ -38,6 +40,7 @@ public class PersonBuilder {
      */
     public PersonBuilder() {
         name = new Name(DEFAULT_NAME);
+        bloodType = BloodType.UNKNOWN;
         phone = new Phone(DEFAULT_PHONE);
         email = new Email(DEFAULT_EMAIL);
         address = new Address(DEFAULT_ADDRESS);
@@ -51,6 +54,7 @@ public class PersonBuilder {
      */
     public PersonBuilder(Person personToCopy) {
         name = personToCopy.getName();
+        bloodType = personToCopy.getBloodType();
         phone = personToCopy.getPhone();
         email = personToCopy.getEmail();
         address = personToCopy.getAddress();
@@ -64,6 +68,14 @@ public class PersonBuilder {
      */
     public PersonBuilder withName(String name) {
         this.name = new Name(name);
+        return this;
+    }
+
+    /**
+     * Sets the optional blood type of the patient being built.
+     */
+    public PersonBuilder withBloodType(String bloodType) {
+        this.bloodType = BloodType.fromString(bloodType);
         return this;
     }
 
@@ -115,8 +127,11 @@ public class PersonBuilder {
         return this;
     }
 
+    /**
+     * Returns a patient with the configured details.
+     */
     public Person build() {
-        return new Person(name, phone, email, address, visitDate, note, tags);
+        return new Person(name, bloodType, phone, email, address, visitDate, note, tags);
     }
 
 }
