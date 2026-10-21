@@ -271,7 +271,7 @@ public class HelpWindowIntegrationTest {
             assertFalse(Files.exists(patientDataPath));
             fireKey(commandTextField, KeyCode.F1);
             assertSame(helpStage, getOnlyShowingHelpStage());
-            assertSame(helpStage.getScene().lookup("#closeButton"), helpStage.getScene().getFocusOwner());
+            assertSame(helpStage.getScene().lookup("#helpScrollPane"), helpStage.getScene().getFocusOwner());
         });
     }
 

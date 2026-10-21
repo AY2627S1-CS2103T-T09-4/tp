@@ -7,11 +7,12 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.image.Image?>
+<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.stage.Stage?>
 
-<fx:root height="420.0" minHeight="280.0" minWidth="460.0" resizable="true" title="Help"
+<fx:root height="500.0" minHeight="280.0" minWidth="460.0" resizable="true" title="Help"
          type="javafx.stage.Stage" width="640.0" xmlns="http://javafx.com/javafx/17"
          xmlns:fx="http://javafx.com/fxml/1">
   <icons>
@@ -23,12 +24,56 @@
         <URL value="@HelpWindow.css" />
       </stylesheets>
 
-      <ScrollPane fx:id="helpScrollPane" fitToWidth="true" hbarPolicy="NEVER" pannable="true"
-                  vbarPolicy="AS_NEEDED">
-        <content>
-          <VBox alignment="TOP_LEFT" fillWidth="true" fx:id="helpMessageContainer" spacing="16.0">
+      <BorderPane fx:id="helpMessageContainer">
+        <center>
+          <ScrollPane fx:id="helpScrollPane" fitToWidth="true" focusTraversable="true" hbarPolicy="NEVER" pannable="true"
+                      vbarPolicy="AS_NEEDED">
+            <content>
+              <VBox alignment="TOP_LEFT" fillWidth="true" spacing="8.0">
+                <children>
+                  <Label styleClass="helpTitle" text="Available commands" />
+                  <Label fx:id="keyboardHint" styleClass="helpNavigationHint" wrapText="true"
+                         text="↑/↓ Scroll · Tab/Shift+Tab Move focus · Esc Close" />
+                  <VBox fx:id="patientCommands" fillWidth="true" spacing="2.0">
+                    <children>
+                      <Label styleClass="helpSectionTitle" text="Patient management" />
+                      <Label styleClass="helpCommand" text="add — Add a patient." wrapText="true" />
+                      <Label styleClass="helpCommand" text="list — Show all patients." wrapText="true" />
+                      <Label styleClass="helpCommand" text="find — Find patients." wrapText="true" />
+                      <Label styleClass="helpCommand" text="view — Show a patient's details." wrapText="true" />
+                      <Label styleClass="helpCommand" text="edit — Update a patient's details." wrapText="true" />
+                      <Label styleClass="helpCommand" text="delete — Delete a patient." wrapText="true" />
+                      <Label styleClass="helpCommand" text="clear — Remove all patients." wrapText="true" />
+                    </children>
+                  </VBox>
+                  <VBox fx:id="visitCommands" fillWidth="true" spacing="2.0">
+                    <children>
+                      <Label styleClass="helpSectionTitle" text="Visit planning" />
+                      <Label styleClass="helpCommand" text="next — Schedule a patient's next visit." wrapText="true" />
+                      <Label styleClass="helpCommand" text="prev — Restore the latest previous visit date."
+                             wrapText="true" />
+                      <Label styleClass="helpCommand" text="sort — Sort displayed patients by visit date."
+                             wrapText="true" />
+                    </children>
+                  </VBox>
+                  <VBox fx:id="applicationCommands" fillWidth="true" spacing="2.0">
+                    <children>
+                      <Label styleClass="helpSectionTitle" text="Application controls" />
+                      <Label styleClass="helpCommand" text="help — Open this help window." wrapText="true" />
+                      <Label styleClass="helpCommand" text="exit — Close Doc." wrapText="true" />
+                    </children>
+                  </VBox>
+                </children>
+                <padding>
+                  <Insets bottom="8.0" left="16.0" right="16.0" top="12.0" />
+                </padding>
+              </VBox>
+            </content>
+          </ScrollPane>
+        </center>
+        <bottom>
+          <VBox alignment="TOP_LEFT" fillWidth="true" spacing="4.0">
             <children>
-              <Label styleClass="helpTitle" text="User Guide" />
               <Label fx:id="helpMessage" styleClass="helpMessage" text="Label" wrapText="true" />
               <HBox alignment="CENTER_LEFT" spacing="10.0">
                 <children>
@@ -40,14 +85,13 @@
                 </children>
               </HBox>
               <Label fx:id="guideStatus" managed="false" styleClass="helpHint" visible="false" wrapText="true" />
-              <Label styleClass="helpHint" text="Press Escape to close this window." wrapText="true" />
             </children>
             <padding>
-              <Insets bottom="24.0" left="24.0" right="24.0" top="24.0" />
+              <Insets bottom="8.0" left="16.0" right="16.0" top="6.0" />
             </padding>
           </VBox>
-        </content>
-      </ScrollPane>
+        </bottom>
+      </BorderPane>
     </Scene>
   </scene>
 </fx:root>

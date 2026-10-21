@@ -87,10 +87,8 @@ The `UI` component,
 `CommandBox` owns a session-scoped `CommandHistory`. It records ordinary command submissions and uses it to replace
 the command box text when the user presses the Up or Down arrow key.
 
-`MainApp` passes `HostServices.showDocument` through `UiManager` and `MainWindow` to `HelpWindow` as a browser-opening
-action. `HelpWindow` also accepts a replaceable clipboard action for isolated tests. It logs detectable failures
-and displays feedback without disabling help. Browser feedback confirms only a launch request, not page loading;
-clipboard success requires `Clipboard.setContent` to return `true`. No network preflight is performed.
+`MainWindow` manages a separate `HelpWindow` for offline command discovery and access to the full User Guide.
+See [Help window](#help-window) for its layout, lifecycle, and external-action boundaries.
 
 ### Logic component
 
@@ -180,6 +178,43 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 ## **Implementation**
 
 This section describes some noteworthy details on how certain features are implemented.
+
+### Help window
+
+Help is an offline command directory with access to the full User Guide for syntax and examples.
+See [Viewing help](UserGuide.md#viewing-help-help) for user instructions.
+
+`MainWindow` retains one `HelpWindow` and reuses it for command, F1, and menu requests. The window is non-modal,
+so the main window remains usable. Closing Help returns focus to `CommandBox`, which restores the saved caret
+and selection. F1 and the menu call the UI directly; unlike typed `help`, they do not answer a pending input request.
+
+#### Layout and content
+
+`HelpWindow.fxml` places the command groups in one column inside a `ScrollPane`, in the centre of a `BorderPane`.
+Compact rows keep the whole directory visible at the default size. A fixed footer holds the URL, buttons,
+and feedback so these controls remain accessible while a smaller window's command list scrolls.
+`HelpWindow.css` supplies the presentation styles.
+
+`HelpWindow.show()` focuses the command list, which is a Tab stop so users can return from the guide buttons.
+A muted keyboard hint introduces scrolling, focus navigation, and dismissal. It belongs to the scrolling content,
+not the fixed footer, to preserve command space in small windows.
+
+Static labels keep the directory independent of changing parameter syntax; the User Guide remains the detailed
+reference. The trade-off is manual upkeep: when `AddressBookParser` gains, loses, or renames a command, update
+its FXML entry and the expected inventory in `HelpWindowTest`. That test also checks the hint, initial focus,
+default-size fit, and minimum-size command space with feedback shown.
+
+#### External guide actions
+
+`MainApp` passes `HostServices.showDocument` through `UiManager` and `MainWindow` as a browser-opening action.
+`HelpWindow` also accepts a replaceable clipboard action, so tests can simulate failures without opening a browser
+or changing the system clipboard. For example, when copying is rejected, **Copy URL** shows failure feedback but
+**Open User Guide** remains available.
+
+Browser feedback confirms only a launch request, not page loading; no network preflight is performed.
+Clipboard success requires `Clipboard.setContent` to return `true`. Detectable failures are logged and shown
+without hiding the URL or disabling the controls. `HelpWindowActionsTest` checks failure feedback, fallback actions,
+and retries. The [manual checks](#help-window-lifecycle) cover native window behaviour and real browser/clipboard integration.
 
 ### Visit record model
 
@@ -916,43 +951,75 @@ testers are expected to do more *exploratory* testing.
 
 ### Help window lifecycle
 
-1. With no follow-up prompt pending, enter `help`, then repeat with `help add` and `help 123`.
-   Expect the same non-modal Help window each time, showing the User Guide URL and working Open User Guide,
-   Copy URL, and Close controls.
-   Move and resize Help, then request it again; expect its position and size to remain unchanged.
-1. Use Help's native minimize control. Expect Help to minimize independently while the main window stays usable.
-   Request Help again using `help`, F1, and **Help → Help**, minimizing it before each attempt.
-   Expect the existing window to restore and receive focus rather than remain minimized or create another window.
-1. Type `find Be` without submitting it. Press F1 with the command box focused, then close Help using Close.
-   Expect focus to return to the command box with `find Be` unchanged and unsubmitted. Repeat using Escape and the
-   native window close control, reopening Help each time. Repeat after selecting part of the draft; expect the caret
-   and selection to return to their earlier positions.
-1. Focus the result display and press F1. Expect Help to open. Dismiss it; expect command entry to receive focus.
-   Also verify that Tab moves between Help's buttons, that focused buttons have a visible outline, and that Space
-   activates Close without submitting text in the main window.
-1. With a disposable patient data copy, enter `delete 1`, then type `y` without submitting it.
-   Open Help using F1 and the Help menu, dismissing it after each attempt. Expect the confirmation prompt and `y`
-   draft to remain unchanged, with no deletion or data-file write. Enter `n` to cancel.
-1. Request `delete 1` again, then enter `help`. Expect deletion to be cancelled without opening Help: the typed
-   input remains a confirmation response rather than bypassing the pending-input flow.
-1. Open Help and exit Doc using `exit`, **File → Exit**, and the main window's native close control, restarting
-   between attempts. Repeat with Help minimized. Expect both windows to close with no orphan Help window.
-1. Repeat the relevant flows at 1920×1080 with 100% and 125% OS scaling, and at 1280×720 with 150% OS scaling.
-   Check that Help's guide text and buttons remain accessible after resizing. Automated scene-layout checks do not
-   replace these OS-level checks.
+1. **Offline access:** Open Help with F1 while disconnected from the Internet.<br>
+   Expected: The command directory remains available, and no browser opens automatically.
+
+1. **Command directory:** Open Help at its default size.<br>
+   Expected: Each command appears once, with a short description, under patient management, visit planning,
+   or application controls. The directory and keyboard hint are visible without scrolling.
+
+1. **Small window:** Resize Help to its minimum size and scroll through the list. Repeat after a guide action
+   shows feedback.<br>
+   Expected: Several command entries remain readable, all groups can be reached by scrolling, and text wraps
+   without horizontal clipping. The URL, feedback, and buttons remain visible below the list.
+
+1. **Window reuse:** With no confirmation or follow-up prompt pending, enter `help`. Move and resize Help,
+   then enter `help add` and `help 123` in the main window.<br>
+   Expected: Each request focuses the same window without changing its size or position. Extra arguments are ignored.
+
+1. **Minimize and restore:** Minimize Help using its native control. Request it again using `help`, F1, and
+   **Help → Help**, minimizing it before each attempt.<br>
+   Expected: Help minimizes independently, the main window stays usable, and each request restores and focuses the
+   existing window.
+
+1. **Draft preservation:** Type `find Be` without submitting it, select part of the text, and press F1. Close Help
+   using **Close**, **Escape**, and the native close control, reopening it for each attempt.<br>
+   Expected: Focus returns to the command box with the draft unsubmitted and its caret and selection restored.
+
+1. **Keyboard scrolling:** Focus the result display and press F1. Resize Help to its minimum size. Use Down and
+   End to scroll, then Home and Up to return towards the top.<br>
+   Expected: Help opens with focus on the command list, and the keys allow every group to be reached.
+
+1. **Button navigation:** Open Help. Press Tab to reach **Open User Guide**, then Shift+Tab to return to the list.
+   Use Tab to reach **Close**, then press Space.<br>
+   Expected: Focus moves between the list and buttons, focused buttons have a visible outline, and Space activates Close.
+
+1. **Help during confirmation:** Use disposable patient data with at least one patient.
+
+   1. Enter `delete 1`, then type `y` without submitting it. Open and dismiss Help using F1 and the Help menu.<br>
+      Expected: The confirmation prompt and draft remain unchanged, with no deletion or data-file write.<br>
+      Cleanup: Replace the draft with `n` and submit it to cancel.
+
+   1. Enter `delete 1`, then submit `help`.<br>
+      Expected: Deletion is cancelled without opening Help or changing patient data. The typed input is treated
+      as the confirmation response.
+
+1. **Shutdown:** Open Help and exit Doc using `exit`, **File → Exit**, and the main window's native close control,
+   restarting between attempts. Repeat with Help minimized.<br>
+   Expected: Both windows close; no Help window remains.
+
+1. **Display scaling:** Repeat the layout and keyboard checks at 1920×1080 with 100% and 125% OS scaling, and at
+   1280×720 with 150% OS scaling.<br>
+   Expected: Text and controls remain readable and accessible after resizing. Scene-layout tests do not replace
+   these OS-level checks.
 
 ### User Guide actions
 
-1. Open Help and choose **Open User Guide**. Expect a request to the default browser for the displayed URL and
-   feedback saying that the launch was requested. Separately check whether a browser actually opens and loads the
-   guide; Doc cannot confirm that. Repeat using Tab and Space (or Enter where the platform supports it).
-1. Choose **Copy URL**, then paste into a disposable text field. Expect the displayed URL and copy-success feedback
-   only when the clipboard accepts it. Do not confuse this with confirmation that the guide is reachable.
-1. If the browser does not appear, use **Copy URL** and open the address manually. With networking unavailable,
-   expect the help window and its URL to remain usable; page-loading errors belong to the browser.
-1. Use `HelpWindowActionsTest` to simulate a browser exception, clipboard rejection, and clipboard exception without
-   launching a browser or modifying the system clipboard. Expect specific fallback feedback, a readable URL,
-   working alternative controls, successful retries, and a working Close button after each recoverable failure.
+Open Help for these checks.
+
+1. **Open the guide:** With an Internet connection and a default browser configured, choose **Open User Guide**.
+   Repeat using Tab and Space, then Enter on Windows and Linux.<br>
+   Expected: The browser opens the displayed URL. Doc reports a launch request, not confirmation that the page loaded.
+
+1. **Copy the address:** Choose **Copy URL** (replacing the current clipboard contents), then paste into a scratch
+   text field.<br>
+   Expected: The pasted text matches the displayed URL exactly, and Doc reports copy success.
+
+1. **Offline guide request:** Disconnect from the Internet and choose **Open User Guide**.<br>
+   Expected: Help remains usable. Doc may still report a browser launch request; any connection errors appear in the browser.
+
+Browser-launch and clipboard rejection cases are simulated by `HelpWindowActionsTest`; see
+[External guide actions](#external-guide-actions). They do not require changing OS permissions or browser settings.
 
 ### Sorting visits by date
 
