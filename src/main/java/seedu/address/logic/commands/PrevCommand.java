@@ -15,18 +15,19 @@ import seedu.address.model.person.Person;
 import seedu.address.model.person.VisitDate;
 
 /**
- * Restores a patient's latest previous visit date and discards the former current date.
+ * Restores a patient's latest previous visit date and time.
+ * Discards the visit date and time stored before rollback.
  */
 public class PrevCommand extends Command {
 
     public static final String COMMAND_WORD = "prev";
     public static final String MESSAGE_USAGE = COMMAND_WORD
             + ": Restores the latest previous visit for the patient identified by the displayed index.\n"
-            + "The former current visit date is discarded. There is no redo.\n"
+            + "The visit date and time stored before rollback is discarded. There is no redo.\n"
             + "Parameters: INDEX (must be a positive integer)\n"
             + "Example: " + COMMAND_WORD + " 1";
     public static final String MESSAGE_SUCCESS = "Visit date restored for %1$s: %2$s\n"
-            + "Discarded former current visit date: %3$s";
+            + "Discarded visit date and time: %3$s";
     public static final String MESSAGE_NO_PREVIOUS_VISIT_DATES =
             "Patient %1$s has no previous visit dates to restore.";
 

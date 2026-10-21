@@ -89,7 +89,7 @@ Choose the command according to what you want to change:
 | --- | --- | --- |
 | Correct or reschedule the current appointment. | [edit](#editing-a-patient-edit) `INDEX vd/DATETIME` | Replace the current datetime; keep previous dates unchanged. |
 | Plan the following visit after the current visit time has arrived. | [next](#scheduling-the-next-visit-next) `INDEX DATETIME` | Retain the old current datetime and set an unused future datetime. |
-| Restore the latest previous datetime. | [prev](#restoring-the-previous-visit-prev) `INDEX` | Remove the latest previous datetime from the list and make it current; discard the former current datetime. |
+| Restore the latest previous datetime. | [prev](#restoring-the-previous-visit-prev) `INDEX` | Remove the latest previous datetime from the list and use it to replace the current datetime; discard the replaced datetime. |
 | Leave a final visit recorded without planning another. | No command needed. | Keep the current datetime, including after it becomes past. |
 
 Successful `edit`, `next`, and `prev` commands show the full patient list in stored order, clearing filtering and
@@ -362,14 +362,14 @@ Format: `prev INDEX`
 
 * Use a positive `INDEX` from the currently displayed list, including results of `find` or `sort date`.
   Supply only the index, without a datetime or `vd/` prefix.
-* The latest previous datetime becomes the current datetime and is removed from the previous-date list.
-  The former current datetime is discarded. There is no redo.
+* The current datetime is discarded and replaced with the latest previous datetime.
+  The restored datetime is removed from the previous-date list. There is no redo.
 * Rollback is allowed even when the current or restored datetime is in the future. It does not apply `next`'s
   clock restrictions and does not ask for confirmation.
 * Rollback also works after an intervening `edit`. It preserves the patient's latest name, contact details,
   address, note, and tags; it restores only visit-date state.
 * Success shows `Visit date restored for NAME: RESTORED_DATETIME` followed by
-  `Discarded former current visit date: DISCARDED_DATETIME` on the next line. Both values include the time.
+  `Discarded visit date and time: DISCARDED_DATETIME` on the next line. Both values include the time.
   It saves the record. Follow the [visit-record interaction rules](#visit-records) to find the patient and refresh details.
 * Repeating `prev` restores one earlier datetime each time. When none remain, it reports
   `Patient NAME has no previous visit dates to restore.` without changing data or the displayed list.
@@ -519,7 +519,7 @@ Action     | Format, Examples
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (current visit must have arrived; choose an available future appointment)
-**Prev**   | `prev INDEX`<br> e.g., `prev 1` (requires a previous datetime; discards the former current datetime; no redo)
+**Prev**   | `prev INDEX`<br> e.g., `prev 1` (requires a previous datetime; replaces and discards the current datetime; no redo)
 **Sort**   | `sort date [START_DATE]`<br> e.g., `sort date 18/9/2026`
 **View**   | `view INDEX`<br> e.g., `view 1` (refreshes details and the calendar label)
 **Help**   | `help`

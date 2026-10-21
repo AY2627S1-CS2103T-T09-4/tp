@@ -378,8 +378,9 @@ Manual cases appear under [Testing the next command](#testing-the-next-command).
 
 ### Restoring the previous visit
 
-`PrevCommand` removes the latest previous datetime and makes it current, discarding the former current datetime
-without a redo. It copies all other fields from the selected patient's latest record, preserving intervening edits.
+`PrevCommand` discards the current datetime and replaces it with the latest previous datetime, removing the
+restored datetime from the previous-date list. There is no redo. It copies all other fields from the selected
+patient's latest record, preserving intervening edits.
 The [User Guide](UserGuide.md#restoring-the-previous-visit-prev) includes syntax, feedback, and a running example.
 
 There is no clock eligibility check: rollback must allow immediate correction of mistaken advancement, even while
@@ -854,7 +855,8 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 **Guarantees**
 
 * Only the selected patient's current and previous visit datetimes change; intervening edits to other fields remain.
-* The former current datetime is discarded, with no redo. Rollback does not verify attendance or completion.
+* The datetime stored as current before rollback is discarded, with no redo. Rollback does not verify attendance
+  or completion.
 * Invalid selection or empty previous dates leave patient data, saved data, list context, and details unchanged.
 
 **MSS**
@@ -919,7 +921,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * **Patient record**: The information Doc stores for one patient, including their contact details, medical notes,
   tags, current visit date and time, and previous visit dates and times retained by `next`.
 * **Priority level**: A label indicating how closely a patient needs to be followed up, used when ordering planned visits.
-* **Rollback**: Restoring the latest previous visit datetime with `prev`, discarding the former current datetime
+* **Rollback**: Restoring the latest previous visit datetime with `prev`, replacing and discarding the current datetime
   while preserving the patient's other details. It is not a general undo operation and has no redo.
 * **Visit**: A single house call. Doc stores one current datetime, ordered previous datetimes, and one patient-level note.
 * **Visit record**: A patient's current and previous visit datetimes. These record scheduled times retained by the

@@ -82,7 +82,7 @@ public class PrevCommandIntegrationTest {
                 .withPreviousVisitDates("10/10/2026 1000").build();
 
         assertEquals("Visit date restored for Amy Bee: 20/10/2026 1000\n"
-                + "Discarded former current visit date: 30/10/2026 1000", result.getFeedbackToUser());
+                + "Discarded visit date and time: 30/10/2026 1000", result.getFeedbackToUser());
         assertPersistedPatient(expectedPerson);
         assertEquals(1, saveCount);
         assertTrue(result.shouldSaveAddressBook());
@@ -100,7 +100,7 @@ public class PrevCommandIntegrationTest {
         Person expectedPerson = new PersonBuilder(AMY).withVisitDate("10/10/2026 1000")
                 .withPreviousVisitDates().build();
         assertEquals("Visit date restored for Amy Bee: 10/10/2026 1000\n"
-                + "Discarded former current visit date: 20/10/2026 1000", result.getFeedbackToUser());
+                + "Discarded visit date and time: 20/10/2026 1000", result.getFeedbackToUser());
         assertPersistedPatient(expectedPerson);
         assertEquals(2, saveCount);
         assertRejectedCommand("prev 1", CommandException.class,
@@ -118,7 +118,7 @@ public class PrevCommandIntegrationTest {
                 .withEmail("updated@example.com").withAddress("20 New Road")
                 .withNote("Updated note").withTags("followup").build();
         assertEquals("Visit date restored for Amy Updated: 20/10/2026 1000\n"
-                + "Discarded former current visit date: 2/11/2026 1000", result.getFeedbackToUser());
+                + "Discarded visit date and time: 2/11/2026 1000", result.getFeedbackToUser());
         assertPersistedPatient(expectedPerson);
         assertEquals(2, saveCount);
     }
