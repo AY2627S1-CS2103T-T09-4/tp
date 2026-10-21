@@ -363,6 +363,13 @@ The visit-date rule prevents only exact scheduling collisions:
 * A data file created by an older version may contain duplicate visit dates. The migration and data-preservation risks
   are described under the current implementation limitations above.
 
+### Optional date of birth
+
+`Person` retains an optional `DateOfBirth` alongside blood type, emergency contact, and visit history.
+Add and edit accept `dob/`; omitted values preserve existing data, while an empty value clears it during edit.
+Storage defaults missing or null `dateOfBirth` fields to an unrecorded value for older files.
+Patient cards and details show the recorded date and completed age below the name, before blood type.
+
 ### Optional blood type
 
 `Person` stores a `BloodType` enum containing the eight blood types and `UNKNOWN` for unrecorded values.
@@ -372,13 +379,14 @@ edit maps an explicitly empty value to `UNKNOWN`. Other edits and visit reschedu
 
 `JsonAdaptedPerson` stores the display value (e.g. `A+`) in the `bloodType` property. Missing or null properties
 from older files load as `UNKNOWN`; an empty string represents a cleared value. Invalid stored values are rejected.
-Both patient cards and the details panel show recorded blood type below the name, hiding and unmanaging the row
+Both patient cards and the details panel show recorded blood type below the date of birth (or the name when
+DOB is absent), hiding and unmanaging the row
 when it is unrecorded. Patient identity continues to use name and phone number.
 
 ### Editing patient details
 
 `EditCommandParser` accepts optional replacement fields, including `vd/` and `note/`. The displayed format is
-`edit INDEX [n/NAME] [bt/BLOOD_TYPE] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`.
+`edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`.
 It checks index syntax and duplicate single-valued prefixes before parsing field values, then rejects a
 descriptor with no supplied fields. When `vd/` is supplied, `ParserUtil#parseVisitDate` reuses the existing strict
 `VisitDate` validation
@@ -993,6 +1001,29 @@ testers are expected to do more *exploratory* testing.
        Expected: The most recent window size and location are retained.
 
 1. _{ more test cases … }_
+
+### Dates of birth
+
+Use a disposable data file and available visit slots.
+
+1. Run `add n/Dob Patient dob/15/6/1990 p/81234567 a/10 Test Road vd/22/10/2026 1000`, then `view 1`.
+   Expect `Date of birth: 15/6/1990 (N years old)` immediately below the name in both the left-hand patient
+   card and the right-hand details panel, with the age in completed years
+   on the computer's current local date. A leap-day birthday advances on March 1 in non-leap years.
+1. Run `edit 1 n/Dob Patient dob/20/7/1985`, then `view 1`; expect the replacement date and recalculated age.
+1. Edit another field, then run `edit 1 vd/1/1/2000 1000` so the current visit has passed.
+   Run `next 1 1/1/2099 1000`; expect the date of birth unchanged and the previous visit retained.
+1. Restart the application and run `view 1`; expect the saved date of birth to remain.
+1. Run `edit 1 dob/`, then `view 1`; expect the date of birth rows in both panels to disappear and all other
+   details to remain.
+   Restart and view the patient; expect the row to stay hidden. Whitespace-only `dob/` also clears the field,
+   and clearing an already empty date of birth succeeds. Set a new DOB to restore the row.
+1. Try `edit 1 dob/31/2/2000`, a future date, and repeated `dob/` prefixes (including `edit 1 dob/ dob/`).
+   Expect errors and unchanged data. Repeat these invalid cases using `add`, and try an empty DOB with `add`;
+   no patient should be added.
+1. Add another patient without `dob/` and view it; expect no date of birth row or stale text. View the first
+   patient again; expect the row to reappear. Set the second patient's DOB using `edit INDEX dob/1/1/2000`.
+1. Load an older valid data file without `dateOfBirth`; expect the patients to load with the DOB row hidden.
 
 ### Blood types
 

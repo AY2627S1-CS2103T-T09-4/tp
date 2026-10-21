@@ -7,7 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.ui.JavaFxTestUtil.runOnFxThread;
 import static seedu.address.ui.JavaFxTestUtil.startJavaFx;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -29,6 +31,28 @@ public class PatientDetailsPanelTest {
     @BeforeAll
     public static void setUpJavaFx() throws InterruptedException {
         startJavaFx();
+    }
+
+    @Test
+    public void setPerson_dateOfBirth_displaysAgeBelowNameAndHidesWhenAbsent() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            panel.setPerson(new PersonBuilder().withDateOfBirth("15/6/1990").build());
+            Label birthDate = getLabel(panel, "dateOfBirth");
+            int age = Period.between(LocalDate.of(1990, 6, 15), LocalDate.now()).getYears();
+            assertEquals("Date of birth: 15/6/1990 (" + age + " years old)", birthDate.getText());
+            assertFieldVisible(panel, "dateOfBirth", true);
+            assertTrue(birthDate.isWrapText());
+            VBox container = getDetailsContainer(panel);
+            assertEquals(container.getChildren().indexOf(getLabel(panel, "name")) + 1,
+                    container.getChildren().indexOf(birthDate));
+
+            panel.setPerson(new PersonBuilder().build());
+            assertFieldVisible(panel, "dateOfBirth", false);
+            panel.setPerson(new PersonBuilder().withDateOfBirth("1/1/2000").build());
+            assertFieldVisible(panel, "dateOfBirth", true);
+            assertTrue(birthDate.getText().startsWith("Date of birth: 1/1/2000 ("));
+        });
     }
 
     @Test
@@ -80,16 +104,16 @@ public class PatientDetailsPanelTest {
     }
 
     @Test
-    public void setPerson_bloodType_displaysBelowNameAndHidesWhenAbsent() {
+    public void setPerson_bloodType_displaysBelowDateOfBirthAndHidesWhenAbsent() {
         runOnFxThread(() -> {
             PatientDetailsPanel panel = new PatientDetailsPanel();
-            panel.setPerson(new PersonBuilder().withBloodType("A+").build());
+            panel.setPerson(new PersonBuilder().withDateOfBirth("15/6/1990").withBloodType("A+").build());
             Label bloodTypeLabel = getLabel(panel, "bloodType");
             assertEquals("Blood type: A+", bloodTypeLabel.getText());
             assertFieldVisible(panel, "bloodType", true);
             assertTrue(bloodTypeLabel.isWrapText());
             VBox container = getDetailsContainer(panel);
-            assertEquals(container.getChildren().indexOf(getLabel(panel, "name")) + 1,
+            assertEquals(container.getChildren().indexOf(getLabel(panel, "dateOfBirth")) + 1,
                     container.getChildren().indexOf(bloodTypeLabel));
 
             panel.setPerson(new PersonBuilder().build());

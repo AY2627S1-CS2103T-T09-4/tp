@@ -3,6 +3,7 @@ package seedu.address.logic.commands;
 import static java.util.Objects.requireNonNull;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_BLOOD_TYPE;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_DATE_OF_BIRTH;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMERGENCY_CONTACT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
@@ -18,7 +19,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.logging.Logger;
 
+import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.CollectionUtil;
 import seedu.address.commons.util.ToStringBuilder;
@@ -27,6 +30,7 @@ import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.BloodType;
+import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
@@ -48,6 +52,7 @@ public class EditCommand extends Command {
             + "Existing values will be overwritten by the input values.\n"
             + "Parameters: INDEX (must be a positive integer) "
             + "[" + PREFIX_NAME + "NAME] "
+            + "[" + PREFIX_DATE_OF_BIRTH + "DATE] "
             + "[" + PREFIX_BLOOD_TYPE + "BLOOD_TYPE] "
             + "[" + PREFIX_PHONE + "PHONE] "
             + "[" + PREFIX_EMERGENCY_CONTACT + "[NAME, ]PHONE_NUMBER] "
@@ -58,6 +63,7 @@ public class EditCommand extends Command {
             + "[" + PREFIX_TAG + "TAG]...\n"
             + "Example: " + COMMAND_WORD + " 1 "
             + PREFIX_NAME + "John Doe "
+            + PREFIX_DATE_OF_BIRTH + "15/6/1990 "
             + PREFIX_BLOOD_TYPE + "A+ "
             + PREFIX_PHONE + "91234567 "
             + PREFIX_VISIT_DATE + "8/10/2026 1000 "
@@ -86,6 +92,8 @@ public class EditCommand extends Command {
     public static final String MESSAGE_EDIT_CANCELLED = "Edit cancelled.";
     public static final String MESSAGE_PERSON_NO_LONGER_EXISTS =
             "The person selected for editing no longer exists.";
+
+    private static final Logger logger = LogsCenter.getLogger(EditCommand.class);
 
     private final Index index;
     private final EditPersonDescriptor editPersonDescriptor;
@@ -201,8 +209,21 @@ public class EditCommand extends Command {
         validateNoConflicts(model, personToEdit, editedPerson);
 
         model.setPerson(personToEdit, editedPerson);
+        logOptionalFieldUpdates();
         model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
         return new CommandResult(String.format(MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)));
+    }
+
+    /**
+     * Logs supplied optional-field updates after the model accepts the edit, without including patient values.
+     */
+    private void logOptionalFieldUpdates() {
+        editPersonDescriptor.getDateOfBirth().ifPresent(dateOfBirth -> logger.fine(dateOfBirth.isEmpty()
+                ? "Cleared patient date of birth in model" : "Set patient date of birth in model"));
+        editPersonDescriptor.getBloodType().ifPresent(bloodType -> logger.fine(bloodType.isEmpty()
+                ? "Cleared patient blood type in model" : "Set patient blood type in model"));
+        editPersonDescriptor.getEmergencyContact().ifPresent(emergencyContact -> logger.fine(emergencyContact.isEmpty()
+                ? "Cleared patient emergency contact in model" : "Set patient emergency contact in model"));
     }
 
     /**
@@ -251,6 +272,7 @@ public class EditCommand extends Command {
         assert personToEdit != null;
 
         Name updatedName = editPersonDescriptor.getName().orElse(personToEdit.getName());
+        DateOfBirth updatedDateOfBirth = editPersonDescriptor.getDateOfBirth().orElse(personToEdit.getDateOfBirth());
         BloodType updatedBloodType = editPersonDescriptor.getBloodType().orElse(personToEdit.getBloodType());
         Phone updatedPhone = editPersonDescriptor.getPhone().orElse(personToEdit.getPhone());
         Email updatedEmail = editPersonDescriptor.getEmail().orElse(personToEdit.getEmail());
@@ -268,7 +290,7 @@ public class EditCommand extends Command {
                     previousVisitDates.getLast()));
         }
 
-        return new Person(updatedName, updatedBloodType, updatedPhone, updatedEmail, updatedAddress,
+        return new Person(updatedName, updatedDateOfBirth, updatedBloodType, updatedPhone, updatedEmail, updatedAddress,
                 updatedVisitDate, previousVisitDates, updatedNote, updatedEmergencyContact, updatedTags);
     }
 
@@ -297,11 +319,12 @@ public class EditCommand extends Command {
 
     /**
      * Stores the details to edit the person with. Each supplied field replaces the corresponding
-     * value, including explicitly empty blood type, email, note, emergency contact, and tag values.
+     * value, including explicitly empty date of birth, blood type, email, note, emergency contact, and tag values.
      * Omitted fields remain unchanged.
      */
     public static class EditPersonDescriptor {
         private Name name;
+        private DateOfBirth dateOfBirth;
         private BloodType bloodType;
         private Phone phone;
         private Email email;
@@ -322,6 +345,7 @@ public class EditCommand extends Command {
          */
         public EditPersonDescriptor(EditPersonDescriptor toCopy) {
             setName(toCopy.name);
+            setDateOfBirth(toCopy.dateOfBirth);
             setBloodType(toCopy.bloodType);
             setPhone(toCopy.phone);
             setEmail(toCopy.email);
@@ -336,7 +360,7 @@ public class EditCommand extends Command {
          * Returns true if at least one field is edited.
          */
         public boolean isAnyFieldEdited() {
-            return CollectionUtil.isAnyNonNull(name, bloodType, phone, email, address, visitDate,
+            return CollectionUtil.isAnyNonNull(name, dateOfBirth, bloodType, phone, email, address, visitDate,
                     note, emergencyContact, tags);
         }
 
@@ -346,6 +370,14 @@ public class EditCommand extends Command {
 
         public Optional<Name> getName() {
             return Optional.ofNullable(name);
+        }
+
+        public void setDateOfBirth(DateOfBirth dateOfBirth) {
+            this.dateOfBirth = dateOfBirth;
+        }
+
+        public Optional<DateOfBirth> getDateOfBirth() {
+            return Optional.ofNullable(dateOfBirth);
         }
 
         public void setBloodType(BloodType bloodType) {
@@ -433,6 +465,7 @@ public class EditCommand extends Command {
             }
 
             return Objects.equals(name, otherEditPersonDescriptor.name)
+                    && Objects.equals(dateOfBirth, otherEditPersonDescriptor.dateOfBirth)
                     && Objects.equals(bloodType, otherEditPersonDescriptor.bloodType)
                     && Objects.equals(phone, otherEditPersonDescriptor.phone)
                     && Objects.equals(email, otherEditPersonDescriptor.email)
@@ -447,6 +480,7 @@ public class EditCommand extends Command {
         public String toString() {
             return new ToStringBuilder(this)
                     .add("name", name)
+                    .add("dateOfBirth", dateOfBirth)
                     .add("bloodType", bloodType)
                     .add("phone", phone)
                     .add("email", email)
