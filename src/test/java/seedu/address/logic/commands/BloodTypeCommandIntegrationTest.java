@@ -63,7 +63,31 @@ public class BloodTypeCommandIntegrationTest {
         logic.execute("edit 1 note/Review medication");
         logic.execute("next 1 1/1/2099 1000");
         assertStoredPatient(new PersonBuilder(edited).withNote("Review medication")
-                .withVisitDate("1/1/2099 1000").build());
+                .withVisitDate("1/1/2099 1000").withPreviousVisitDates(edited.getVisitDate().toString()).build());
+    }
+
+    @Test
+    public void execute_bloodTypeContactAndHistory_preservesCombinedRecord() throws Exception {
+        logic.execute(ADD_PATIENT + " ec/91234567");
+        Person original = new PersonBuilder().withBloodType("A+").withEmergencyContact("91234567").build();
+        assertStoredPatient(original);
+
+        logic.execute("next 1 1/1/2099 1000");
+        Person scheduled = new PersonBuilder(original).withVisitDate("1/1/2099 1000")
+                .withPreviousVisitDates(original.getVisitDate().toString()).build();
+        assertStoredPatient(scheduled);
+
+        logic.execute("edit 1 bt/O- ec/Mary Tan, 98765432");
+        Person edited = new PersonBuilder(scheduled).withBloodType("O-")
+                .withEmergencyContact("Mary Tan, 98765432").build();
+        assertStoredPatient(edited);
+        assertEquals(edited, logic.execute("view 1").getPersonToView().orElseThrow());
+
+        logic.execute("edit 1 bt/");
+        Person withoutBloodType = new PersonBuilder(edited).withBloodType("").build();
+        assertStoredPatient(withoutBloodType);
+        logic.execute("edit 1 ec/");
+        assertStoredPatient(new PersonBuilder(withoutBloodType).withEmergencyContact("").build());
     }
 
     @Test

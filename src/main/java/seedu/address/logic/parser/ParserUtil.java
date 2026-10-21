@@ -12,6 +12,7 @@ import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.BloodType;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Phone;
 import seedu.address.model.person.VisitDate;
@@ -128,6 +129,20 @@ public class ParserUtil {
             throw new ParseException(VisitDate.MESSAGE_CONSTRAINTS);
         }
         return new VisitDate(trimmedVisitDate);
+    }
+
+    /**
+     * Parses a supplied emergency contact, rejecting blank or incomplete details.
+     *
+     * @throws ParseException If the contact lacks a valid phone number or supplies an invalid name.
+     */
+    public static EmergencyContact parseEmergencyContact(String emergencyContact) throws ParseException {
+        requireNonNull(emergencyContact);
+        String trimmedContact = emergencyContact.trim();
+        if (trimmedContact.isEmpty() || !EmergencyContact.isValidEmergencyContact(trimmedContact)) {
+            throw new ParseException(EmergencyContact.MESSAGE_CONSTRAINTS);
+        }
+        return new EmergencyContact(trimmedContact);
     }
 
     /**

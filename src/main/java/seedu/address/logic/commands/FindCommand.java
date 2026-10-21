@@ -18,15 +18,18 @@ public class FindCommand extends Command {
             + "starts with any of the specified keywords (case-insensitive) "
             + "and displays them as a list with index numbers.\n"
             + "Parameters: KEYWORD [MORE_KEYWORDS]...\n"
-            + "Example: " + COMMAND_WORD + " b ali";
+            + "Example: " + COMMAND_WORD + " george priya";
 
     public static final String MESSAGE_PATIENTS_FOUND = "%1$d patients found.";
     public static final String MESSAGE_ONE_PATIENT_FOUND = "1 patient found.";
     public static final String MESSAGE_NO_PATIENTS_FOUND = "No patients found. "
-            + "find matches the start of any word in a name, e.g. \"find b\" matches \"Bernice Yu\".";
+            + "find matches the start of any word in a name, e.g. \"find g\" matches \"George Miller\".";
 
     private final NameContainsKeywordsPredicate predicate;
 
+    /**
+     * Creates a command that finds patients matching the given name predicate.
+     */
     public FindCommand(NameContainsKeywordsPredicate predicate) {
         this.predicate = predicate;
     }

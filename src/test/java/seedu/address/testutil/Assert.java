@@ -14,9 +14,11 @@ public class Assert {
      * with our custom {@link #assertThrows(Class, String, Executable)} method.
      * To standardize API calls in this project, users should use this method instead of
      * {@link Assertions#assertThrows(Class, Executable)}.
+     *
+     * @return Exception thrown by {@code executable}.
      */
-    public static void assertThrows(Class<? extends Throwable> expectedType, Executable executable) {
-        Assertions.assertThrows(expectedType, executable);
+    public static <T extends Throwable> T assertThrows(Class<T> expectedType, Executable executable) {
+        return Assertions.assertThrows(expectedType, executable);
     }
 
     /**
@@ -24,11 +26,13 @@ public class Assert {
      * If there's no need for the verification of the exception's error message, call
      * {@link #assertThrows(Class, Executable)} instead.
      *
+     * @return Exception thrown by {@code executable}.
      * @see #assertThrows(Class, Executable)
      */
-    public static void assertThrows(Class<? extends Throwable> expectedType, String expectedMessage,
+    public static <T extends Throwable> T assertThrows(Class<T> expectedType, String expectedMessage,
             Executable executable) {
-        Throwable thrownException = Assertions.assertThrows(expectedType, executable);
+        T thrownException = Assertions.assertThrows(expectedType, executable);
         Assertions.assertEquals(expectedMessage, thrownException.getMessage());
+        return thrownException;
     }
 }

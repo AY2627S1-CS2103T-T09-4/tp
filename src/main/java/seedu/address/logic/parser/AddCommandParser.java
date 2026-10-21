@@ -4,12 +4,14 @@ import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_BLOOD_TYPE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_EMERGENCY_CONTACT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_VISIT_DATE;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -18,6 +20,7 @@ import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.BloodType;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
@@ -53,7 +56,7 @@ public class AddCommandParser implements Parser<AddCommand> {
         ArgumentMultimap argMultimap =
                 ArgumentTokenizer.tokenize(args, PREFIX_NAME, PREFIX_BLOOD_TYPE, PREFIX_PHONE,
                         PREFIX_EMAIL, PREFIX_ADDRESS, PREFIX_VISIT_DATE, PREFIX_NOTE,
-                        PREFIX_TAG);
+                        PREFIX_EMERGENCY_CONTACT, PREFIX_TAG);
 
         if (!arePrefixesPresent(argMultimap, PREFIX_NAME, PREFIX_ADDRESS, PREFIX_PHONE, PREFIX_VISIT_DATE)
                 || !argMultimap.getPreamble().isEmpty()) {
@@ -61,7 +64,7 @@ public class AddCommandParser implements Parser<AddCommand> {
         }
 
         argMultimap.verifyNoDuplicatePrefixesFor(PREFIX_NAME, PREFIX_BLOOD_TYPE, PREFIX_PHONE, PREFIX_EMAIL,
-                PREFIX_ADDRESS, PREFIX_VISIT_DATE, PREFIX_NOTE);
+                PREFIX_ADDRESS, PREFIX_VISIT_DATE, PREFIX_NOTE, PREFIX_EMERGENCY_CONTACT);
         Name name = ParserUtil.parseName(argMultimap.getValue(PREFIX_NAME).get());
         BloodType bloodType = argMultimap.getValue(PREFIX_BLOOD_TYPE).isPresent()
                 ? ParserUtil.parseBloodType(argMultimap.getValue(PREFIX_BLOOD_TYPE).get())
@@ -73,7 +76,11 @@ public class AddCommandParser implements Parser<AddCommand> {
         Note note = new Note(argMultimap.getValue(PREFIX_NOTE).orElse(""));
         Set<Tag> tagList = ParserUtil.parseTags(argMultimap.getAllValues(PREFIX_TAG));
 
-        return new Person(name, bloodType, phone, email, address, visitDate, note, tagList);
+        EmergencyContact emergencyContact = argMultimap.getValue(PREFIX_EMERGENCY_CONTACT).isPresent()
+                ? ParserUtil.parseEmergencyContact(argMultimap.getValue(PREFIX_EMERGENCY_CONTACT).get())
+                : new EmergencyContact("");
+        return new Person(name, bloodType, phone, email, address, visitDate, List.of(), note,
+                emergencyContact, tagList);
     }
 
     /**

@@ -20,6 +20,7 @@
 ## **Setting up, getting started**
 
 Refer to the guide [_Setting up and getting started_](SettingUp.md).
+Before relying on internal assertions, follow the [assertion setup instructions](Testing.md#assertions).
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -85,6 +86,11 @@ The `UI` component,
 
 `CommandBox` owns a session-scoped `CommandHistory`. It records ordinary command submissions and uses it to replace
 the command box text when the user presses the Up or Down arrow key.
+
+`MainApp` passes `HostServices.showDocument` through `UiManager` and `MainWindow` to `HelpWindow` as a browser-opening
+action. `HelpWindow` also accepts a replaceable clipboard action for isolated tests. It logs detectable failures
+and displays feedback without disabling help. Browser feedback confirms only a launch request, not page loading;
+clipboard success requires `Clipboard.setContent` to return `true`. No network preflight is performed.
 
 ### Logic component
 
@@ -159,6 +165,12 @@ The `Storage` component,
 * is implemented by `StorageManager`, which delegates the actual JSON file access to `JsonAddressBookStorage` and `JsonUserPrefsStorage` (one class per data file).
 * depends on some classes in the `Model` component (because the `Storage` component's job is to save/retrieve objects that belong to the `Model`)
 
+When the patient data file does not exist, `MainApp` initializes the model with the seven records returned by
+`SampleDataUtil#getSampleAddressBook`. The sample patients are George Miller, Priya Nair, Aisha Rahman, Marcus Lim,
+Mei Lin Tan, Daniel Wong, and Noor Aziz. If an existing data file can be loaded successfully, including one with no
+records, its contents take precedence over these samples. If an existing data file cannot be loaded—for example,
+because it is malformed or contains conflicting records—`MainApp` starts with an empty address book.
+
 ### Common classes
 
 Classes used by multiple components are in the `seedu.address.commons` package.
@@ -168,6 +180,94 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 ## **Implementation**
 
 This section describes some noteworthy details on how certain features are implemented.
+
+### Optional emergency contacts
+
+`Person` stores an immutable `EmergencyContact` value. Its empty string represents an absent contact, so
+existing constructors and records remain compatible. Nonempty values contain a phone number, optionally preceded
+by a name and comma, validated using the existing `Name` and `Phone` rules. Contact details do not affect identity.
+
+`AddCommandParser` and `EditCommandParser` recognize `ec/[NAME, ]PHONE_NUMBER` and reject incomplete, invalid,
+or repeated contact fields before execution. `add` rejects an empty `ec/`; `edit` uses it to clear the contact.
+`EditPersonDescriptor` distinguishes an omitted contact from a replacement or an explicitly empty contact.
+`EditCommand` and `NextCommand` preserve contacts when updating unrelated fields.
+Patients can retain both an emergency contact and previous visit dates. Contact-only edits preserve the visit
+record, and scheduling the next visit appends the current datetime without clearing the contact.
+
+`JsonAdaptedPerson` saves `PHONE_NUMBER` or the canonical `NAME, PHONE_NUMBER` string. Missing or null contact fields
+from older records map to an absent contact. Invalid nonempty stored contacts cause a data-loading error.
+`PatientDetailsPanel` shows `Emergency Contact: PHONE_NUMBER (NAME)` immediately below the patient's phone
+number, omits the parentheses when the name is absent, and hides the row for absent contacts.
+
+#### Representation and validation
+
+The model uses an empty `EmergencyContact` value rather than a null field. This preserves the non-null invariant
+of `Person` and allows callers of the existing constructor to create patients without contacts.
+`ParserUtil#parseEmergencyContact` rejects blank input for additions and validates nonempty replacement contacts.
+For edits, `EditCommandParser` maps an explicitly empty or whitespace-only `ec/` to `EmergencyContact("")`.
+An omitted prefix leaves the descriptor field null, preserving the existing contact. An empty contact object
+counts as a supplied field and clears the saved value, even when no contact was previously recorded.
+
+Validation accepts a phone number alone or exactly two comma-separated details. A supplied name must satisfy
+`Name#isValidName`, and the required phone must satisfy `Phone#isValidPhone`. Blank names beside a comma are rejected;
+omit both the name and comma for a phone-only contact. The constructor trims whitespace and stores `PHONE_NUMBER`
+or `NAME, PHONE_NUMBER`. `EmergencyContact#toDisplayString` produces `PHONE_NUMBER` or `PHONE_NUMBER (NAME)` for the UI.
+`Person#equals` and `Person#hashCode` include the contact; `Person#isSamePerson` continues to use only the patient's
+normalized name and phone. Sharing an emergency contact does not make two patients duplicates.
+
+#### Automated verification
+
+* `EmergencyContactTest` covers valid, absent, malformed, and null values, formatting, equality, and patient identity.
+* `EmergencyContactIntegrationTest` exercises parsing, execution, viewing, and storage through `LogicManager`.
+  It checks adding, replacing, and clearing contacts, field order, whitespace, duplicate prefixes, invalid indices,
+  filtered-list selection, and preservation during unrelated commands. Rejected inputs must leave both the model
+  and saved file unchanged.
+* `JsonAdaptedPersonTest` checks missing contact fields and invalid stored contact details.
+* `NextCommandTest` includes a patient with a contact to check preservation when scheduling the next visit.
+* `PatientDetailsPanelTest` checks the exact display text, its position immediately after the phone label, wrapping,
+  and hiding the row when switching to a patient without a contact.
+
+#### Testing a newly built JAR
+
+Use JDK 25 and run `./gradlew shadowJar` from the repository root (`.\gradlew.bat shadowJar` on Windows).
+Close any previously running instance before launching `build/libs/doc.jar`. Building or replacing the JAR does
+not reload classes in an existing application process. An `edit` usage message without
+`[ec/[NAME, ]PHONE_NUMBER]` indicates that the running build does not include optional contact-name support.
+Use a separate folder with disposable data for manual testing; the application uses paths relative to its working
+directory for patient data and preferences.
+
+### Visit record model
+
+A visit record contains the patient's current datetime and the previous datetimes retained by `next`.
+The current datetime is always required, even when no further visit is planned. Retained datetimes do not verify
+attendance or completion, and notes remain patient-level. See the [User Guide](UserGuide.md#visit-records) for the
+user-facing distinction between advancing and rescheduling.
+
+Each immutable `Person` has one required current `VisitDate` and a non-null `List<VisitDate>` named
+`previousVisitDates`. The previous dates are strictly increasing, oldest first, and each must be strictly earlier
+than the current date. Comparisons use parsed `LocalDateTime` values, including the time: leading-zero variants
+of the same datetime are equal, while different times on one day are allowed. These invariants do not depend on
+the clock, so the passage of time does not invalidate a record.
+
+The constructor takes an immutable defensive copy and rejects null entries or invalid chronology rather than
+sorting or repairing the input. The constructor without previous dates creates an empty list. Equality and hashing
+include previous dates; patient identity still uses the normalized name and phone number. `edit` and `PersonBuilder`
+copies preserve previous dates; `next` appends the old current date before replacing it. A replacement current date
+that would invalidate the record produces a command error before model or list changes.
+
+`JsonAdaptedPerson` writes `previousVisitDates` as an ordered array of visit-date strings. Missing or JSON-null
+arrays load as empty lists for compatibility with older files. Non-arrays, null or malformed entries, invalid
+chronology, and duplicates within a record are rejected through the existing invalid-data path. The required
+`visitDate` field remains required. No entries are sorted, deduplicated, or dropped to repair an invalid file.
+
+Previous dates are persisted and shown by `view INDEX`, with no arbitrary limit on their number.
+
+`PatientDetailsPanel` retains the current visit datetime and adds `Previous visit dates:` immediately below it,
+followed by the note. It formats the immutable previous dates with `VisitDate#toString`, one full datetime per line
+newest first, or shows `No previous visit dates` for an empty record. The label keeps its preferred height inside
+the existing `ScrollPane`, so long records remain accessible by scrolling. Rendering preserves the patient's dates
+and their oldest-first order in the model and JSON file.
+Run `view` again after a mutation to refresh the details.
 
 ### Duplicate patient identity, visit dates, and name confirmation
 
@@ -192,9 +292,11 @@ phone together to identify a patient record.
 `Model#hasPerson` exposes the true-duplicate check, while `Model#hasPersonWithSameName` exposes the weaker warning
 check. Phone comparison continues to use exact `Phone` value equality.
 
-Visit dates and times form a separate scheduling invariant. `UniquePersonList#containsSameVisitDate` compares
-`VisitDate` values, whose equality is based on their parsed `LocalDateTime`. `add`, `setPerson`, and `setPersons` throw
-`DuplicateVisitDateException` rather than allowing two records to use the same value. This covers command mutations,
+Visit dates and times form a separate invariant across all current and previous dates.
+`Person#hasCommonVisitDate` compares the complete records using parsed `VisitDate` equality.
+`UniquePersonList#containsSameVisitDate` checks the full stored collection, including patients hidden by a filter.
+`add`, `setPerson`, and `setPersons` throw `DuplicateVisitDateException` rather than allowing two records to use
+the same value. This covers command mutations,
 model replacement, sample data, and direct model use. `JsonSerializableAddressBook` performs the same check while
 loading and reports an invalid data file with a visit-date-specific message.
 
@@ -203,12 +305,22 @@ visit-date conflict. For a name duplicate with an available visit time, it captu
 a `CommandInputRequest#createConfirmation` action. Confirmation rechecks both rejection rules before adding, which
 prevents a conflicting record from being introduced if model state changes while the prompt is pending.
 
-`EditCommand` similarly rejects a true duplicate or a changed visit date that another patient uses before requesting
-confirmation. Re-entering the selected patient's existing visit date is allowed because it does not allocate another
-slot. The command asks for confirmation only when the requested edit changes the name to one already in use; editing
-other fields of a patient whose name is already shared does not prompt again. It captures the original and edited
-`Person` objects, then verifies on confirmation that the original record still exists and that the edit still creates
-neither a true duplicate nor a visit-date conflict.
+`EditCommand` captures the selected patient without changing the displayed list. It similarly rejects a true
+duplicate or a datetime shared with another patient's current or previous dates before requesting confirmation,
+previewing the matching identity or visit-date record. Replacement checks compare the complete candidate while
+excluding the original target. This permits unchanged dates and moving a patient's own dates between current and
+previous fields. The command asks for confirmation only when the requested edit changes the name to one already in
+use; editing other fields of a patient whose name is already shared does not prompt again. It reports the number of
+matching names, previews the first match, captures the original and edited `Person` objects, then verifies on
+confirmation that the original record still exists and that the edit still creates neither a true duplicate nor a
+visit-date conflict.
+
+`CommandResult` carries the preview together with a name-duplicate confirmation request. `CommandException` carries
+the preview for banned identity and visit-date conflicts. `MainWindow` sends either preview to `PatientDetailsPanel`,
+using the same presentation as `view`, while feedback remains in `ResultDisplay`. A successful add or edit restores
+the full patient list; a rejected or cancelled operation leaves the displayed list unchanged. While a confirmation is
+pending, the command box treats the next submission as the confirmation response, so displayed indices cannot be used
+by another command until the doctor confirms or cancels.
 
 #### Duplicate-detection limitations
 
@@ -238,9 +350,6 @@ new duplicate rules:
 * For either conflict, Doc reports the loading problem and starts with an empty patient list. The conflicting file is
   not backed up automatically, and a command that triggers saving, such as `list`, can replace it with the empty
   patient list. Users must back up the file and resolve the conflicts manually before migration.
-* Automated tests do not currently construct `SampleDataUtil#getSampleAddressBook`. Consequently, an accidental
-  duplicate among the sample visit times could break first-run sample-data initialization without failing the test
-  suite.
 
 #### Visit-time conflict limitations
 
@@ -249,8 +358,8 @@ The visit-date rule prevents only exact scheduling collisions:
 * Equality is checked to the minute using the parsed `LocalDateTime`. The rule does not model visit duration, travel
   time, preparation time, or partial overlaps.
 * Doc has one schedule and does not model multiple doctors, doctor availability, time zones, or recurring visits.
-* Past visit dates are also unique because every current `Person` has one required `VisitDate`; the model does not
-  distinguish an historical visit from an upcoming appointment.
+* All current and previous datetimes are unique across patients, including past datetimes. These records do not
+  verify attendance or completion. Previous dates do not count toward per-day current-appointment capacity.
 * A data file created by an older version may contain duplicate visit dates. The migration and data-preservation risks
   are described under the current implementation limitations above.
 
@@ -278,11 +387,15 @@ for `d/M/yyyy HHmm`; valid past dates are accepted, while an empty `vd/` is reje
 `EditPersonDescriptor` stores the supplied visit date and time and note along with the optional replacement fields.
 `EditCommand` copies the descriptor, resolves the patient using the displayed list, and replaces the immutable
 `Person`. Omitted fields, including the visit date/time and notes, are preserved. An explicitly empty
-email, note, or tag field clears its existing value and counts as a supplied field.
+email, note, emergency contact, or tag field clears its existing value and counts as a supplied field.
 
-Before replacement, `EditCommand` permits an unchanged visit date but rejects a changed value already assigned to
-another patient. This check is repeated after a name-duplicate confirmation so a slot taken while the prompt was
-pending cannot be introduced into the model.
+Before replacement, `EditCommand` requires the current datetime to remain strictly later than the latest previous
+datetime. A valid past datetime is still allowed, and history is preserved unchanged. It permits an unchanged current
+date but rejects a value already used by another patient's current or previous dates, including hidden patients.
+The conflict check is repeated after confirmation so a slot taken while the prompt was pending cannot be introduced
+into the model. Chronology failures produce a command error explaining that the current datetime must be later
+than the latest previous visit and showing that previous datetime. This check occurs before constructing the
+replacement patient; the `Person` constructor independently enforces the record invariants for all callers.
 
 The descriptor's nullable `Note` distinguishes omission from an explicitly empty `Note("")`.
 When `note/` is present, the parser constructs the existing immutable `Note` from the tokenizer's value;
@@ -302,38 +415,57 @@ it does not append visit-history entries or per-visit notes.
 
 ### Scheduling the next visit
 
-`next INDEX DATETIME` schedules the following appointment for a displayed patient. Success changes only the visit
-date and time and restores the full caseload in stored order. Corrections use `edit ... vd/`; completed-visit recording
-and history remain deferred. See the [User Guide](UserGuide.md#scheduling-the-next-visit-next) for syntax and errors.
+`next INDEX DATETIME` retains the current datetime and schedules the following appointment for a displayed patient.
+Corrections use `edit ... vd/`, which preserves the previous dates unchanged. See the
+[User Guide](UserGuide.md#scheduling-the-next-visit-next) for syntax and errors.
 
-For example, assume the clock reads `31/10/2026 1200`, `find Betsy` displays only Betsy, and her existing
-appointment is `2/11/2026 1000`. The doctor enters `next 1 1/11/2026 0930`, requesting an available future slot.
+For example, assume the clock reads `31/10/2026 1200`, Betsy is displayed at index 1, and the requested slot is unused.
+The two commands below are alternatives applied to the same initial record:
 
-`AddressBookParser` delegates argument parsing to `NextCommandParser` and returns a `NextCommand` to `LogicManager`.
-`LogicManager` executes the command against the model. The command selects Betsy from the displayed list and checks
-that the requested appointment differs from her existing
-one, is in the future, and is unused across all stored patients. Parsed equality detects equivalent spellings; the
-[visit-time conflict limitations](#visit-time-conflict-limitations) apply.
+| Operation | Current datetime | Previous datetimes |
+| --- | --- | --- |
+| Initial record | `30/10/2026 1000` | `[10/10/2026 1000]` |
+| `next 1 1/11/2026 0930` | `1/11/2026 0930` | `[10/10/2026 1000, 30/10/2026 1000]` |
+| `edit 1 vd/1/11/2026 0930` | `1/11/2026 0930` | `[10/10/2026 1000]` |
 
-On success, `NextCommand` replaces Betsy's immutable `Person`, preserving every other field, and restores the full
-list in stored order by clearing the filter and sort. `LogicManager` then saves the updated patient data before
-returning the success result to the UI.
+The command follows the existing parser, model, and storage flow:
 
-Validation failures stop before any mutation or save. Storage failure happens after the in-memory update and follows
-the existing error handling without rollback.
+1. `NextCommandParser` parses the displayed index and datetime, then passes its injected clock to `NextCommand`.
+1. `NextCommand` selects the displayed patient and rejects an unchanged requested datetime. It reads the clock once
+   and requires `current <= now < requested`, retaining seconds and nanoseconds for both comparisons.
+1. It constructs a replacement `Person`, appending the old current datetime and preserving every other field.
+   Before mutation, it compares the candidate's complete visit record against every other stored patient,
+   including hidden patients and excluding the original record. The
+   [visit-time conflict limitations](#visit-time-conflict-limitations) apply.
+1. On success, it replaces the patient and restores the full list in stored order, clearing the filter and sort.
+   `LogicManager` saves through the existing storage flow before returning the result to the UI.
+
+A future current visit is rejected with advice to use `edit`. A requested datetime at or before now is rejected
+with the captured local time formatted as `d/M/yyyy HHmm`, without seconds. An immediate second `next` is rejected
+because the new current visit is still in the future. Details do not refresh automatically; users run `view` again
+using the patient's newly displayed index.
+
+Validation failures stop before any mutation or save. When the requested time belongs to another patient,
+`NextCommand` attaches the conflicting patient to its `CommandException`; `MainWindow` displays that patient in the
+details panel. Every validation failure preserves the displayed list. A storage I/O failure happens after the
+in-memory update; the existing error handling reports it without rolling back the record or list. If no further visit
+is planned, the current datetime remains stored as it becomes past. There is no attendance or completion state to
+update.
 
 The design keeps three decisions explicit:
 
-* **Separate scheduling from correction.** A dedicated command lets future visit-recording behavior evolve
-  independently of `edit`.
-* **Keep future validation in the command.** Comparing with now allows 1 November even though the old appointment
-  is on 2 November. Keeping this rule outside `VisitDate` and storage allows past appointments to remain valid for
-  corrections and loading.
+* **Separate advancing from correction.** `next` retains the old current datetime; `edit` replaces it without
+  changing previous dates. The user chooses when to advance after handling a visit.
+* **Keep clock validation in the command.** Keeping eligibility outside `VisitDate` and storage allows past
+  appointments to remain valid for corrections and loading. Existing record chronology and `current <= now < requested`
+  ensure that appending the current date preserves strict order before the new current date.
 * **Inject the clock.** Production uses the system's local time zone and reads time once at execution without
   truncating seconds. Fixed clocks make boundary and persistence tests deterministic without changing global time.
 
-Tests cover parsing, displayed indices, hidden conflicts, field preservation, list reset, and persistence, including
-saved appointments becoming past as the test clock advances. Manual cases appear in the
+Tests cover parsing, displayed indices, hidden current and previous-date conflicts, appending to empty and populated
+records, field preservation, list reset, exact clock boundaries, and persistence. They also cover repeated advancement
+after an intervening edit, unchanged saved data after rejection, and saved appointments becoming past as the test
+clock advances. Manual cases appear in the
 [testing appendix](#testing-the-next-command).
 
 ### Follow-up command-line input and confirmation
@@ -720,12 +852,6 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case ends.
 
-* 3a. Some of the shown patients have no next visit date.
-
-    * 3a1. Doc lists those patients last.
-
-      Use case resumes at step 4.
-
 **Use case: UC05 - Archive a patient**
 
 **MSS**
@@ -764,13 +890,16 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 **Guarantees**
 
-* Only the selected patient's appointment changes; completed-visit recording is outside this use case.
-* Rejected input leaves patient records and the displayed list unchanged.
+* Only the selected patient's current and previous visit datetimes change; these do not verify completion.
+* Rejected input leaves patient records and the displayed list unchanged. Appointment conflicts display the
+  conflicting patient in the patient details panel.
 
 **MSS**
 
-1.  Doctor requests a future appointment for a patient identified by their displayed index.
-2.  Doc saves the new appointment and shows the full caseload in stored order.
+1.  Doctor requests a future appointment for a patient whose current visit has arrived or passed, identified by
+    their displayed index.
+2.  Doc retains the current datetime in the previous dates, saves the new appointment, and shows the full caseload
+    in stored order.
 
     Use case ends.
 
@@ -782,13 +911,13 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case resumes at step 1.
 
-* 1b. The appointment is invalid, not in the future, or unchanged.
+* 1b. The current visit is still in the future, or the requested appointment is invalid, not in the future, or unchanged.
 
     * 1b1. Doc explains the specific reason for rejection.
 
       Use case resumes at step 1.
 
-* 1c. Another patient already has the requested appointment.
+* 1c. Another patient's current or previous visit already uses the requested datetime.
 
     * 1c1. Doc identifies the conflicting patient and time.
 
@@ -818,18 +947,21 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * **Active patient record**: A patient record included in the doctor's current caseload and visit planning.
 * **Archived patient record**: A patient record retained for future reference but excluded from the active caseload and visit planning.
 * **Caseload**: The collection of active patient records currently managed by a doctor.
+* **Current visit date**: The required date and time stored in `visitDate`. It can be past, present, or future and
+  remains stored until changed using `edit` or `next`. It must differ from every other current or previous datetime.
 * **House call**: A medical consultation carried out at the patient's home rather than at a clinic.
 * **House-call doctor**: A doctor who travels to patients' homes to provide medical consultations and follow-up care.
 * **Medical condition**: An ongoing health issue recorded in a patient's notes to help the doctor prepare for future visits.
 * **MSS**: Main Success Scenario; the sequence of steps in a use case when nothing goes wrong.
-* **Next visit date**: The date and time at which a patient is next scheduled to receive a house call. No two active
-  patient records can use the same value.
-* **Overdue visit**: A scheduled visit whose next visit date has passed without the visit being recorded or rescheduled.
+* **Next visit date**: The current visit datetime used for planning. The field remains required after its time passes.
+* **Overdue visit**: A planning term for a current visit datetime that has passed. Doc does not determine whether the
+  visit took place.
 * **Patient record**: The information Doc stores for one patient, including their contact details, medical notes,
-  tags, and current visit date and time. Completed visit history is not stored in this increment.
+  tags, current visit date and time, and previous visit dates and times retained by `next`.
 * **Priority level**: A label indicating how closely a patient needs to be followed up, used when ordering planned visits.
-* **Visit**: A single house call. Doc currently stores one appointment date and time and one patient-level note.
-* **Visit history**: A collection of completed visits for a patient; recording this history is deferred.
+* **Visit**: A single house call. Doc stores one current datetime, ordered previous datetimes, and one patient-level note.
+* **Visit record**: A patient's current and previous visit datetimes. These record scheduled times retained by the
+  user and do not verify attendance or completion.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -850,7 +982,8 @@ testers are expected to do more *exploratory* testing.
    1. Download the JAR file and copy it into an empty folder.
 
    1. Double-click the JAR file.<br>
-      Expected: The GUI opens with a set of sample patient records. The window size may not be optimal.
+      Expected: The GUI opens with seven sample patient records in this order: George Miller, Priya Nair, Aisha
+      Rahman, Marcus Lim, Mei Lin Tan, Daniel Wong, and Noor Aziz. The window size may not be optimal.
 
 1. Saving window preferences
 
@@ -868,7 +1001,8 @@ Use a disposable data file, starting with no patients, and available visit slots
 1. Run `add n/Blood Test bt/a+ p/81234567 a/10 Test Road vd/1/12/2099 1000`, then `view 1`.
    Expect `Blood type: A+` directly below the name in the patient list and the details panel.
 1. Run `edit 1 bt/ab-`, then `view 1`; expect `Blood type: AB-` in both panels.
-1. Edit a different field and run `next 1 2/12/2099 1000`; blood type should remain unchanged.
+1. Edit a different field, then run `edit 1 vd/1/1/2000 1000` so the current visit has passed.
+   Run `next 1 2/12/2099 1000`; expect the blood type unchanged and `1/1/2000 1000` in the visit history.
 1. Restart the app and view the patient; expect the saved blood type to remain.
 1. Run `edit 1 bt/`, then `view 1`; expect the blood type row to disappear without leaving a gap.
    Restart and view the patient; expect the value to remain cleared. Whitespace-only input also clears it.
@@ -880,28 +1014,95 @@ Use a disposable data file, starting with no patients, and available visit slots
    expect the row to disappear or reappear according to the selected patient's recorded blood type.
 1. Load a valid older record without `bloodType`; expect it to load with no blood type row.
 
+### Emergency contacts
+
+Use a disposable data file. Start with no patients and use available visit slots.
+
+1. Run `add n/John Tan p/91234567 a/123 Clementi Road vd/22/10/2026 1000 ec/Mary Tan, 98765432`.
+   Run `view 1`; expect `Emergency Contact: 98765432 (Mary Tan)` directly below the patient's phone number.
+1. Run `edit 1 ec/David Tan, 87654321`, then `view 1`; expect the replacement contact in the same position.
+1. Run `edit 1 note/Review medication`, then `edit 1 vd/1/1/2000 1000` so the current visit has passed.
+   Run `next 1 1/1/2099 1000`, then `view 1`; expect the contact unchanged and `1/1/2000 1000` retained as a
+   previous visit. Replacing or clearing the emergency contact must preserve that previous datetime.
+1. Run `edit 1 ec/98765432`, then `view 1`; expect `Emergency Contact: 98765432` without a name or parentheses.
+   Expect the visit history and other fields to remain unchanged.
+1. Restart the application and run `view 1`; expect the saved contact to remain.
+1. Run `edit 1 ec/`, then `view 1`; expect the emergency contact row to be hidden and other details unchanged.
+   Restart and view the patient again; expect the contact to remain cleared. Repeating `edit 1 ec/` or using
+   `edit 1 ec/   ` should also succeed. Add a contact again before testing invalid replacements.
+1. Try `edit 1 ec/Mary Tan`, `edit 1 ec/Mary Tan, abc`, `edit 1 ec/ ec/`, and
+   `edit 1 ec/Mary Tan, 98765432 ec/David Tan, 87654321`. Expect errors and unchanged patient details.
+1. Add another patient without `ec/`, then view that patient; expect no emergency contact row or stale details
+   from the previous patient. Add a contact using `edit INDEX ec/Mary Tan, 98765432` and view it again.
+1. Load a valid older data file without `emergencyContact` fields; expect all patients to load with no contacts.
+
+### Help window lifecycle
+
+1. With no follow-up prompt pending, enter `help`, then repeat with `help add` and `help 123`.
+   Expect the same non-modal Help window each time, showing the User Guide URL and working Open User Guide,
+   Copy URL, and Close controls.
+   Move and resize Help, then request it again; expect its position and size to remain unchanged.
+1. Use Help's native minimize control. Expect Help to minimize independently while the main window stays usable.
+   Request Help again using `help`, F1, and **Help → Help**, minimizing it before each attempt.
+   Expect the existing window to restore and receive focus rather than remain minimized or create another window.
+1. Type `find Be` without submitting it. Press F1 with the command box focused, then close Help using Close.
+   Expect focus to return to the command box with `find Be` unchanged and unsubmitted. Repeat using Escape and the
+   native window close control, reopening Help each time. Repeat after selecting part of the draft; expect the caret
+   and selection to return to their earlier positions.
+1. Focus the result display and press F1. Expect Help to open. Dismiss it; expect command entry to receive focus.
+   Also verify that Tab moves between Help's buttons, that focused buttons have a visible outline, and that Space
+   activates Close without submitting text in the main window.
+1. With a disposable patient data copy, enter `delete 1`, then type `y` without submitting it.
+   Open Help using F1 and the Help menu, dismissing it after each attempt. Expect the confirmation prompt and `y`
+   draft to remain unchanged, with no deletion or data-file write. Enter `n` to cancel.
+1. Request `delete 1` again, then enter `help`. Expect deletion to be cancelled without opening Help: the typed
+   input remains a confirmation response rather than bypassing the pending-input flow.
+1. Open Help and exit Doc using `exit`, **File → Exit**, and the main window's native close control, restarting
+   between attempts. Repeat with Help minimized. Expect both windows to close with no orphan Help window.
+1. Repeat the relevant flows at 1920×1080 with 100% and 125% OS scaling, and at 1280×720 with 150% OS scaling.
+   Check that Help's guide text and buttons remain accessible after resizing. Automated scene-layout checks do not
+   replace these OS-level checks.
+
+### User Guide actions
+
+1. Open Help and choose **Open User Guide**. Expect a request to the default browser for the displayed URL and
+   feedback saying that the launch was requested. Separately check whether a browser actually opens and loads the
+   guide; Doc cannot confirm that. Repeat using Tab and Space (or Enter where the platform supports it).
+1. Choose **Copy URL**, then paste into a disposable text field. Expect the displayed URL and copy-success feedback
+   only when the clipboard accepts it. Do not confuse this with confirmation that the guide is reachable.
+1. If the browser does not appear, use **Copy URL** and open the address manually. With networking unavailable,
+   expect the help window and its URL to remain usable; page-loading errors belong to the browser.
+1. Use `HelpWindowActionsTest` to simulate a browser exception, clipboard rejection, and clipboard exception without
+   launching a browser or modifying the system clipboard. Expect specific fallback feedback, a readable URL,
+   working alternative controls, successful retries, and a working Close button after each recoverable failure.
+
 ### Sorting visits by date
 
-`SortCommandParser` accepts the `date` field and rejects missing, unsupported, or additional
-arguments with the command usage message. The model exposes a `SortedList` backed by its
-`FilteredList`. `SortCommand` preserves the current filter and sorts its displayed patients
-into two groups using the local date at execution time: visits today or later first, followed
-by past visits. Each group is ordered by visit date and time, earliest first. Stored patient
-order is unchanged. Updating the filter resets the displayed order, preserving the usual
-behavior of `list` and `find`.
+`SortCommandParser` accepts the `date` field followed by an optional cutoff date in `d/M/yyyy`
+format. It rejects missing fields, invalid dates, and additional arguments with the command
+usage message. The model exposes a `SortedList` backed by its `FilteredList`. `SortCommand`
+preserves the current filter and sorts its displayed patients into two groups around the
+supplied cutoff date, or the local date at execution time when the cutoff is omitted: visits
+on or after the cutoff first, followed by visits before it. Each group is ordered by visit date
+and time, earliest first. Stored patient order is unchanged. Updating the filter resets the
+displayed order, preserving the usual behavior of `list` and `find`.
 
 1. Prepare patients with visits two days ago, yesterday, today at 0000, today at 2300, and tomorrow,
    entered in a different order from their visit dates.
 1. Run `sort date`. Expect today's and tomorrow's patients first, followed by the two past visits;
    expect each group to be in ascending date-time order.
+1. Run `sort date` with a cutoff equal to yesterday's date. Expect yesterday's, today's, and tomorrow's patients
+   first, followed by the visit from two days ago.
+1. Run `sort date` with a cutoff equal to tomorrow's date. Expect tomorrow's patient first, followed by all earlier
+   visits in ascending date-time order.
 1. Run `find` for one patient, then `sort date`. Expect only that matching patient to remain displayed.
 1. Run `sort date` twice. Expect the same order; equal visit times retain stored order.
 1. Run `delete 1`, then `y`. Expect the first displayed patient to be deleted, with the remaining visits still sorted.
 1. Run `list`. Expect every remaining patient, including yesterday's, in stored order.
 1. Try `sort date` on an empty patient list. Expect an empty list. Try it on a patient list containing only past
    visits; expect all visits in ascending date-time order.
-1. Run `sort`, `sort name`, and `sort date name`. Expect each command to show the required format and the
-   `sort date` example without changing the displayed list.
+1. Run `sort`, `sort name`, `sort date name`, `sort date 31/2/2026`, and `sort date 18/9/2026 extra`. Expect each
+   command to show the required format and both examples without changing the displayed list.
 
 ### Distinguishing past visits in the patient list
 
@@ -931,6 +1132,30 @@ Use a disposable copy of the data file. Start with `Alex Tan` scheduled for `8/1
 1. Re-enter `vd/8/10/2026 1000` for Alex. Expect the edit to succeed because Alex retains the existing slot.
 1. Try to add another `Alex Tan` with a different phone number but with `vd/8/10/2026 1000`. Expect the occupied-slot
    error without a duplicate-name confirmation prompt.
+
+### Loading and validating previous visit dates
+
+Use a disposable data file and close Doc before editing it. For the first patient, set `visitDate` to
+`10/10/2026 1000` and add `"previousVisitDates": ["1/10/2026 1000", "2/10/2026 1000"]`.
+Give every other patient's current and previous dates different datetimes.
+
+1. Reopen Doc and run `edit 1 note/Review medication`, then `view 1`. Expect `Previous visit dates:` below the current
+   datetime, with `2/10/2026 1000` above `1/10/2026 1000`, followed by the updated note. Close Doc and inspect the
+   file. Expect the same dates in their original oldest-first order and the updated note.
+1. Reopen Doc and try `edit 1 vd/2/10/2026 1000`, then `edit 1 vd/1/10/2026 1000`. Expect a chronology error with
+   `2/10/2026 1000` identified as the latest previous visit. The record, saved file, and displayed list stay unchanged.
+1. Run `edit 1 vd/3/10/2026 1000`. Expect success even though the date is in the past; the previous dates stay
+   unchanged. Re-enter that datetime and expect success again.
+1. Try to add a different patient at `01/10/2026 1000`. Expect a conflict with the first patient's previous date.
+   Adding that patient at `1/10/2026 1030` succeeds. Use `find` to show only this second patient, then try
+   `edit 1 vd/2/10/2026 1000`. Expect a conflict even though the first patient is hidden.
+1. With Doc closed, try removing `previousVisitDates`, setting it to `null`, then setting it to `[]`, reopening
+   after each separate edit. Expect each form to load with empty previous dates.
+1. With Doc closed, test a non-array value, a null array entry, a malformed datetime, reversed dates, equivalent
+   duplicate datetimes, a previous date equal to the current date, and a datetime shared by two patients.
+   Expect the existing invalid-data handling for each file. Do not run saving commands after a load failure:
+   the existing startup fallback can overwrite the file with an empty list. Restore the disposable fixture
+   between cases. Removing or nulling the required `visitDate` remains invalid even with populated previous dates.
 
 ### Adding patients with duplicate names
 
@@ -994,25 +1219,23 @@ nonempty notes, and record the selected patient's existing details before editin
 
 ### Testing the next command
 
-Use a disposable data copy and fresh test names. Replace `DAY` with a date after today in `d/M/yyyy` format whose
-0900, 0930, 1000, 1030, and 1100 slots are unused. Replace `PAST_DAY` with a date before today with an unused 1000 slot.
-These placeholders must be replaced before submitting commands.
+Use a disposable data copy and fresh test names. Choose globally unused datetimes satisfying
+`P1 < P2 < actual now < F1 < F2 < F3`. Choose another unused past datetime `P3` for Nextbeta.
+Replace each placeholder with a full `d/M/yyyy HHmm` datetime before submitting commands. This permits repeated
+successful advances in one session without waiting or changing the system clock.
 
 1. Add the two patients in this order:
 
    ```text
-   add n/Nextalpha Patient p/81234567 a/10 Test Road vd/DAY 1000 e/alpha@example.com note/Keep this note t/priority
-   add n/Nextbeta Patient p/82345678 a/20 Test Road vd/DAY 0900
+   add n/Nextalpha Patient p/81234567 a/10 Test Road vd/P1 e/alpha@example.com note/Keep this note t/priority
+   add n/Nextbeta Patient p/82345678 a/20 Test Road vd/F3
    ```
 
    Expect success, with nonempty optional fields for Nextalpha and empty email, notes, and tags for Nextbeta.
 
-1. Run `find Nextalpha`, then `next 1 DAY 0930`.<br>
-   Expect Nextalpha to move to 0930, preserving all other fields, followed by the full list in stored order.
-   The success message names Nextalpha and the new appointment. This checks a future time earlier than the old one.
-
-1. Run `find Nextalpha`, then `next 1 DAY 0900`.<br>
-   Expect a conflict naming hidden Nextbeta and the occupied time, with data and the filtered list unchanged.
+1. Run `find Nextalpha`, then `next 1 F3`.<br>
+   Expect a conflict naming hidden Nextbeta and the occupied time, with Nextbeta shown in the patient details panel
+   and both data and the filtered patient list unchanged.
    Repeat with a leading-zero day or month when applicable; expect the same conflict.
 
 1. While only Nextalpha is displayed, try each of these commands:
@@ -1021,32 +1244,48 @@ These placeholders must be replaced before submitting commands.
    | --- | --- |
    | `next` | Next usage. |
    | `next 1` | Missing arguments and usage. |
-   | `next 0 DAY 0930` | Invalid index syntax and usage. |
-   | `next 2147483648 DAY 0930` | Oversized index error and usage. |
-   | `next 2 DAY 0930` | Index outside the displayed list. |
-   | `next 1 DAY 0930` | Unchanged appointment. |
-   | `next 1 PAST_DAY 1000` | Non-future appointment. |
+   | `next 0 F1` | Invalid index syntax and usage. |
+   | `next 2147483648 F1` | Oversized index error and usage. |
+   | `next 2 F1` | Index outside the displayed list. |
+   | `next 1 P1` | Unchanged appointment. |
+   | `next 1 P2` | Non-future appointment. |
    | `next 1 31/2/2027 0930` | Invalid date. |
-   | `next 1 DAY 2400` | Invalid time. |
-   | `next 1 vd/DAY 0930` | Prefix misuse and usage. |
-   | `next 1 DAY 0930 extra` | Extra arguments and usage. |
+   | `next 1 1/11/2026 2400` | Invalid time. |
+   | `next 1 vd/F1` | Prefix misuse and usage. |
+   | `next 1 F1 extra` | Extra arguments and usage. |
 
    Each rejection must preserve records, file contents, and the displayed list. Also test today's current local
    minute; expect rejection. Repeat the unchanged-date test with equivalent leading zeros when applicable.
 
 1. Run `find Nextalpha Nextbeta`, then `sort date`.<br>
-   Expect Nextbeta first. Try `next 1 DAY 0900`; expect rejection with the sorted order preserved.
-   Run `view 1`, then `next 1 DAY 1030`; expect Nextbeta to change, retaining empty optional fields, and the full list
-   to return in stored order. Run `find Nextbeta`, then `view 1`, to refresh its details.
+   Expect Nextalpha first. Try `next 1 F3`; expect rejection with the sorted order preserved.
+   Run `view 1`, then `next 1 F1`; expect Nextalpha's current datetime to become `F1`, retaining all other fields,
+   and the full list to return in stored order. Run `find Nextalpha`, then `view 1`, to refresh its details.
+   Close Doc and inspect the JSON: expect current `F1` and previous dates `[P1]`.
 
-1. Run `find Nextalpha`, then `next   1   DAY   1100`.<br>
-   Expect repeated spaces to be accepted, Nextalpha to move to 1100, and the full list to return.
+1. Reopen Doc, run `find Nextalpha`, then immediately try `next 1 F2`.<br>
+   Expect the future-current-visit error advising `edit`, with record, saved file, and list unchanged.
+   Run `edit 1 vd/P2`, then `next   1   F2`. Expect repeated spaces to be accepted and the full list to return.
+   Inspect the JSON after closing Doc: expect current `F2` and previous dates `[P1, P2]`, in that order.
+   The edit does not append the replaced `F1`.
+
+1. Reopen Doc, run `find Nextbeta`, then `edit 1 vd/P3`. Run `find Nextbeta` again before `next 1 F1`, since the
+   successful edit resets the list.<br>
+   Expect Nextbeta to change, retaining empty email, notes, and tags. Its previous dates contain `[P3]`.
 
 1. Close and reopen the application. Find and view each test patient.<br>
-   Expect Nextalpha at 1100, Nextbeta at 1030, and every other field preserved, with no visit-history entry.
+   Expect Nextalpha at `F2` with saved previous dates `[P1, P2]` and `P2` displayed above `P1`. Expect Nextbeta at
+   `F1` with previous dates `[P3]` and every other field preserved. Check the previous-date section below the current
+   datetime and the persisted JSON.
+   Use the newly displayed indices after each successful mutation.
 
-1. After the persistence checks, run `find Nextalpha`, then `edit 1 vd/PAST_DAY 1000`. Close and reopen the app.<br>
-   Expect the past appointment to load. Integration tests also cover saved appointments becoming past as time advances.
+1. Repeat the conflict case using another patient's previous datetime, loaded through the disposable-file setup in
+   [Loading and validating previous visit dates](#loading-and-validating-previous-visit-dates). Choose a future
+   previous datetime and a later current datetime for that other patient, and an eligible current datetime for the
+   selected patient. Expect rejection without mutation or saving, including when the other patient is hidden.
+
+Fixed-clock automated tests cover exact equality to now, nanosecond boundaries, one clock read, and saved appointments
+becoming past as time advances. These boundaries are not reliably reproducible by typing against the system clock.
 
 ### Viewing one patient
 
@@ -1056,6 +1295,18 @@ These placeholders must be replaced before submitting commands.
    first patient's complete details to appear on the right.
 1. Run `sort date`, followed by `view 1`. Expect the sorted list to remain on the left and the first patient's complete
    details to appear on the right.
+1. View a newly added patient with no previous dates. Expect `Previous visit dates:` immediately below `Visit date`,
+   followed by `No previous visit dates`, with the note below the previous-date section.
+1. View the patient from [Testing the next command](#testing-the-next-command) with previous dates `[P1, P2]`.
+   Expect one full datetime per line, with `P2` above `P1` and the time included for both. View the empty-record
+   patient again; expect the empty-state text to replace the other patient's dates.
+1. With Doc closed, extend a disposable patient's JSON `previousVisitDates` array with hundreds of globally unused
+   datetimes in strictly increasing order, all earlier than that patient's current datetime. Reopen and view the
+   patient. Expect the newest previous date at the top. Scroll the details panel to the bottom; expect every entry
+   to be accessible, including the oldest date and the note and tags below it. Repeat with a long note and a narrower
+   window to check wrapping and scrolling.
+1. Record the data file contents, run `view` repeatedly for patients with empty and populated previous dates, and
+   close Doc. Expect both the saved dates and their order to remain unchanged.
 1. Run `view 999`. Expect an invalid-index error, no change to the displayed list, and no changes to stored patient
    data.
 1. Close and reopen the application. Expect all patient data to remain unchanged.

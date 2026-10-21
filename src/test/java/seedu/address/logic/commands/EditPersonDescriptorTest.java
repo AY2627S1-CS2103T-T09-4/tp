@@ -144,7 +144,8 @@ public class EditPersonDescriptorTest {
     @Test
     public void toString_note_includesOmittedEmptyAndReplacement() {
         assertTrue(new EditPersonDescriptor().toString().contains("note=null"));
-        assertTrue(new EditPersonDescriptorBuilder().withNote("").build().toString().contains("note=, tags="));
+        assertTrue(new EditPersonDescriptorBuilder().withNote("").build().toString()
+                .contains("note=, emergencyContact=null, tags="));
         assertTrue(new EditPersonDescriptorBuilder().withNote(VALID_NOTE_AMY).build().toString()
                 .contains("note=" + VALID_NOTE_AMY));
     }
@@ -160,7 +161,8 @@ public class EditPersonDescriptorTest {
                 + editPersonDescriptor.getEmail().orElse(null) + ", address="
                 + editPersonDescriptor.getAddress().orElse(null) + ", visitDate="
                 + editPersonDescriptor.getVisitDate().orElse(null) + ", note="
-                + editPersonDescriptor.getNote().orElse(null) + ", tags="
+                + editPersonDescriptor.getNote().orElse(null) + ", emergencyContact="
+                + editPersonDescriptor.getEmergencyContact().orElse(null) + ", tags="
                 + editPersonDescriptor.getTags().orElse(null) + "}";
         assertEquals(expected, editPersonDescriptor.toString());
     }
