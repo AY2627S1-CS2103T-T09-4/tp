@@ -115,7 +115,7 @@ public class ParserUtil {
     /**
      * Parses a supplied emergency contact, rejecting blank or incomplete details.
      *
-     * @throws ParseException If the contact does not contain a valid name and phone number.
+     * @throws ParseException If the contact lacks a valid phone number or supplies an invalid name.
      */
     public static EmergencyContact parseEmergencyContact(String emergencyContact) throws ParseException {
         requireNonNull(emergencyContact);

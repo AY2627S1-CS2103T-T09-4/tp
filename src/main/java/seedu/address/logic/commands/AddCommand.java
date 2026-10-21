@@ -33,7 +33,7 @@ public class AddCommand extends Command {
             + PREFIX_VISIT_DATE + "VISIT_DATE "
             + "[" + PREFIX_EMAIL + "EMAIL] "
             + "[" + PREFIX_NOTE + "NOTES] "
-            + "[" + PREFIX_EMERGENCY_CONTACT + "NAME, PHONE_NUMBER] "
+            + "[" + PREFIX_EMERGENCY_CONTACT + "[NAME, ]PHONE_NUMBER] "
             + "[" + PREFIX_TAG + "TAG]...\n"
             + "Example: " + COMMAND_WORD + " "
             + PREFIX_NAME + "John Doe "

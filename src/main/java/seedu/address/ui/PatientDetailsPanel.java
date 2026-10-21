@@ -72,7 +72,7 @@ public class PatientDetailsPanel extends UiPart<Region> {
                         .map(VisitDate::toString)
                         .collect(Collectors.joining("\n")));
         note.setText("Note: " + person.getNote().value);
-        emergencyContact.setText("Emergency Contact : " + person.getEmergencyContact().toDisplayString());
+        emergencyContact.setText("Emergency Contact: " + person.getEmergencyContact().toDisplayString());
         boolean hasEmergencyContact = !person.getEmergencyContact().isEmpty();
         emergencyContact.setVisible(hasEmergencyContact);
         emergencyContact.setManaged(hasEmergencyContact);

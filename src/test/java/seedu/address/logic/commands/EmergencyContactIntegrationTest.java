@@ -76,6 +76,20 @@ public class EmergencyContactIntegrationTest {
     }
 
     @Test
+    public void execute_phoneOnlyContact_addsReplacesAndClearsWithoutLosingOtherDetails() throws Exception {
+        logic.execute(ADD_COMMAND + " ec/  98765432  note/Follow up");
+        Person original = model.getFilteredPersonList().getFirst();
+        assertEquals("98765432", original.getEmergencyContact().toString());
+        assertStoredPerson(original);
+        assertEquals(original, logic.execute("view 1").getPersonToView().orElseThrow());
+
+        for (String contact : List.of(CONTACT, "87654321", "")) {
+            logic.execute("edit 1 ec/" + contact);
+            assertStoredPerson(new PersonBuilder(original).withEmergencyContact(contact).build());
+        }
+    }
+
+    @Test
     public void execute_contactBeforeOtherFields_parsesBoundariesAndWhitespace() throws Exception {
         logic.execute("add ec/ Mary Tan ,98765432 n/John Tan p/91234567"
                 + " a/123 Clementi Road vd/22/10/2026 1000 note/Follow up t/priority");
@@ -176,7 +190,8 @@ public class EmergencyContactIntegrationTest {
     @Test
     public void execute_invalidContact_preservesModelAndFile() throws Exception {
         logic.execute(ADD_COMMAND + " ec/" + CONTACT);
-        for (String invalid : List.of("Mary Tan", "Mary Tan 98765432", "Mary Tan,",
+        for (String invalid : List.of("12", "abc", "+6591234567", "9123 4567",
+                "Mary Tan", "Mary Tan 98765432", "Mary Tan,",
                 ",98765432", "Mary Tan, 12", "Mary Tan, abc", "Mary@Tan, 98765432",
                 "Mary Tan, 98765432, 87654321")) {
             assertRejectedCommand("edit 1 ec/" + invalid, EmergencyContact.MESSAGE_CONSTRAINTS);

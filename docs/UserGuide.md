@@ -138,18 +138,19 @@ Format: `help`
 
 Adds a patient record to Doc.
 
-Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [ec/NAME, PHONE_NUMBER] [t/TAG]... `
+Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]... `
 
 * `VISIT_DATE` must be a date and time in the format `d/M/yyyy HHmm`, e.g. `18/9/2026 1000`. Past dates are allowed.
 * Each current or previous visit date and time must be unique across patients. If another patient's visit record
   already uses the supplied date and time, including a patient hidden by filtering, the addition is rejected,
   the existing patient is shown in the patient details panel, and the app asks you to choose a different slot.
 * `EMAIL`, `NOTES`, and the emergency contact are optional.
-* Use `ec/NAME, PHONE_NUMBER` to record one emergency contact, e.g. `ec/Mary Tan, 98765432`.
-  Include exactly one comma between the name and phone number. Both details are required when `ec/` is supplied.
+* Use `ec/[NAME, ]PHONE_NUMBER` to record one emergency contact, e.g. `ec/Mary Tan, 98765432`.
+  The phone number is required; the name is optional. Use `ec/98765432` when the name is unknown.
+  When supplying a name, include exactly one comma between the name and phone number.
   Names follow the patient-name rules (alphanumeric characters and spaces, not blank); phone numbers contain
   only digits and are at least 3 digits long. Surrounding whitespace is trimmed from both details.
-  An empty `ec/`, missing detail, invalid detail, or repeated `ec/` is rejected.
+  An empty `ec/`, missing phone number, invalid detail, or repeated `ec/` is rejected.
 * On success, the app shows `Added patient NAME` and the new patient appears in the list.
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
 * A patient with the same normalized name and phone number as an existing patient is a duplicate and cannot be added.
@@ -198,15 +199,17 @@ share the same emergency contact. Enter the contact inside the existing `add` or
 
 | Input | Result |
 | --- | --- |
+| `ec/98765432` | Accepts the phone number without a name. |
 | `ec/Mary Tan, 98765432` | Accepts the name and phone number. |
 | `ec/Mary Tan,98765432` | Accepts the details; a space after the comma is optional. |
-| `ec/Mary Tan` | Rejects the contact because the comma and phone number are missing. |
+| `ec/Mary Tan` | Rejects the contact because a phone number is required. |
 | `ec/Mary Tan, abc` | Rejects the contact because the phone number contains letters. |
 | `ec/` | Rejects the field in `add`; clears the emergency contact in `edit`. |
 
 To update an existing patient's contact, run `edit 2 ec/David Tan, 87654321`, replacing `2` with the patient's
-current displayed index. Run `view 2` afterwards to see `Emergency Contact : 87654321 (David Tan)` below the
-patient's phone number. Editing only the emergency contact keeps the patient's other details unchanged.
+current displayed index. Run `view 2` afterwards to see `Emergency Contact: 87654321 (David Tan)` below the
+patient's phone number. Use `edit 2 ec/87654321` to store just the number; the display becomes
+`Emergency Contact: 87654321` without parentheses. Editing only the contact keeps other patient details unchanged.
 Changes to other fields, including scheduling a visit with `next`, keep the emergency contact unchanged.
 To remove the contact, run `edit 2 ec/`. Run `view 2` again; the emergency contact row will be hidden.
 
@@ -260,7 +263,8 @@ Format: `view INDEX`
   all previous dates are included.
 * Viewing a patient does not change their stored details.
 * If an emergency contact is recorded, it appears directly below the patient's phone number as
-  `Emergency Contact : 98765432 (Mary Tan)`. The emergency contact row is hidden when no contact is recorded.
+  `Emergency Contact: 98765432 (Mary Tan)`, or `Emergency Contact: 98765432` when the name is omitted.
+  The emergency contact row is hidden when no contact is recorded.
 
 Example:
 * `view 1` displays the first patient's full record in the details panel.
@@ -269,13 +273,14 @@ Example:
 
 Edits an existing patient record in Doc.
 
-Format: `edit INDEX [n/NAME] [p/PHONE] [ec/NAME, PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`
+Format: `edit INDEX [n/NAME] [p/PHONE] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`
 
 * Edits the patient at the specified `INDEX`. The index refers to the index number shown in the displayed patient
   list. The index **must be a positive integer** 1, 2, 3, ...
 * All editable fields are optional, but at least one must be provided.
-* Use `ec/NAME, PHONE_NUMBER` to add or replace the emergency contact, e.g. `edit 1 ec/Mary Tan, 98765432`.
-  Nonempty values follow the same validation rules as `add`. Omitting `ec/` preserves the existing contact.
+* Use `ec/[NAME, ]PHONE_NUMBER` to add or replace the emergency contact, e.g. `edit 1 ec/Mary Tan, 98765432`.
+  Use `edit 1 ec/98765432` when no contact name is known. Nonempty values follow the same validation rules as `add`.
+  Omitting `ec/` preserves the existing contact.
   Use an empty `ec/` to clear the contact, e.g. `edit 1 ec/`. Whitespace-only values also clear it.
   Clearing an already-empty contact succeeds; repeated `ec/` prefixes are rejected.
 * To update the visit date and time, use `vd/` with the format `d/M/yyyy HHmm`
@@ -321,6 +326,7 @@ Examples:
 * `edit 1 p/91234567 vd/8/10/2026 1000 e/johndoe@example.com` Updates the visit, phone number, and email.
 * `edit 1 p/91234567 e/johndoe@example.com` Updates the phone number and email, keeping the visit unchanged.
 * `edit 1 ec/Mary Tan, 98765432` Adds or replaces the emergency contact, keeping other details unchanged.
+* `edit 1 ec/98765432` Records only the emergency contact's phone number.
 * `edit 1 ec/` Clears the emergency contact, keeping other details unchanged.
 * `edit 1 e/` Clears the email, keeping the visit and other details unchanged.
 * `edit 1 note/Patient requests a morning visit` Replaces the notes, keeping all other details unchanged.
@@ -478,7 +484,7 @@ _Details coming soon ..._
 
 **Q**: Why does `edit 2 ec/David Tan, 87654321` show an invalid-command-format error?<br>
 **A**: Check that the running version supports emergency contacts. Its `edit` usage message should list
-`[ec/NAME, PHONE_NUMBER]`. Close the older application before opening the updated JAR; replacing the JAR on disk
+`[ec/[NAME, ]PHONE_NUMBER]`. Close the older application before opening the updated JAR; replacing the JAR on disk
 does not update an application that is already running. Also check that the index is a positive number and that
 there is a space before `ec/`.
 
@@ -498,10 +504,10 @@ Doc home folder.
 
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-**Add**    | `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [ec/NAME, PHONE_NUMBER] [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
+**Add**    | `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
-**Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [ec/NAME, PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
+**Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (use an available future appointment)

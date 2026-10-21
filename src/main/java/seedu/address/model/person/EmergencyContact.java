@@ -5,12 +5,13 @@ import static seedu.address.commons.util.AppUtil.checkArgument;
 
 /**
  * Represents an immutable emergency contact. An empty value represents no emergency contact.
- * Nonempty values contain a valid name and phone number separated by a comma.
+ * Nonempty values contain a valid phone number, optionally preceded by a name and comma.
  */
 public class EmergencyContact {
 
     public static final String MESSAGE_CONSTRAINTS =
-            "Emergency contacts must use ec/NAME, PHONE_NUMBER with both details present. "
+            "Emergency contacts must use ec/PHONE_NUMBER or ec/NAME, PHONE_NUMBER. "
+                    + "The phone number is required; the name is optional. "
                     + Name.MESSAGE_CONSTRAINTS + ". " + Phone.MESSAGE_CONSTRAINTS + ".";
 
     private final String value;
@@ -27,6 +28,8 @@ public class EmergencyContact {
         checkArgument(isValidEmergencyContact(emergencyContact), MESSAGE_CONSTRAINTS);
         if (emergencyContact.isEmpty()) {
             value = "";
+        } else if (!emergencyContact.contains(",")) {
+            value = emergencyContact.trim();
         } else {
             String[] details = emergencyContact.split(",", -1);
             value = details[0].trim() + ", " + details[1].trim();
@@ -34,7 +37,7 @@ public class EmergencyContact {
     }
 
     /**
-     * Returns whether the value is empty or contains exactly one valid name and phone number.
+     * Returns whether the value is empty or contains one valid phone number with an optional name.
      */
     public static boolean isValidEmergencyContact(String emergencyContact) {
         requireNonNull(emergencyContact);
@@ -42,6 +45,9 @@ public class EmergencyContact {
             return true;
         }
         String[] details = emergencyContact.split(",", -1);
+        if (details.length == 1) {
+            return Phone.isValidPhone(details[0].trim());
+        }
         return details.length == 2
                 && Name.isValidName(details[0].trim())
                 && Phone.isValidPhone(details[1].trim());
@@ -55,18 +61,18 @@ public class EmergencyContact {
     }
 
     /**
-     * Returns the phone number followed by the name in parentheses, or an empty string if absent.
+     * Returns the phone number, followed by the name in parentheses when supplied, or empty if absent.
      */
     public String toDisplayString() {
-        if (isEmpty()) {
-            return "";
+        if (!value.contains(",")) {
+            return value;
         }
         String[] details = value.split(", ", -1);
         return details[1] + " (" + details[0] + ")";
     }
 
     /**
-     * Returns the contact's name and phone number, or an empty string for an absent contact.
+     * Returns the phone number with any supplied name, or an empty string for an absent contact.
      */
     @Override
     public String toString() {

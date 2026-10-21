@@ -32,8 +32,23 @@ public class EmergencyContactTest {
     }
 
     @Test
+    public void constructor_phoneWithoutName_normalizesAndDisplaysPhone() {
+        for (String phone : List.of("123", "91234567")) {
+            EmergencyContact contact = new EmergencyContact("  " + phone + "  ");
+            assertTrue(EmergencyContact.isValidEmergencyContact(phone));
+            assertFalse(contact.isEmpty());
+            assertEquals(phone, contact.toString());
+            assertEquals(phone, contact.toDisplayString());
+            assertEquals(new EmergencyContact(phone), contact);
+            assertEquals(new EmergencyContact(phone).hashCode(), contact.hashCode());
+            assertNotEquals(new EmergencyContact("Mary Tan, " + phone), contact);
+        }
+    }
+
+    @Test
     public void constructor_invalidContact_throwsIllegalArgumentException() {
-        for (String invalidContact : List.of(" ", "Mary Tan", "91234567", "Mary Tan 91234567",
+        for (String invalidContact : List.of(" ", "Mary Tan", "12", "abc", "+6591234567", "9123 4567",
+                "Mary Tan 91234567",
                 "Mary Tan,", ",91234567", "Mary Tan, 12", "Mary Tan, +6591234567",
                 "Mary Tan, 9123abcd", "Mary@Tan, 91234567", "Mary Tan, 91234567, 98765432", ",")) {
             assertFalse(EmergencyContact.isValidEmergencyContact(invalidContact));

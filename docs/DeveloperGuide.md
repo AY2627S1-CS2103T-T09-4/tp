@@ -184,20 +184,20 @@ This section describes some noteworthy details on how certain features are imple
 ### Optional emergency contacts
 
 `Person` stores an immutable `EmergencyContact` value. Its empty string represents an absent contact, so
-existing constructors and records remain compatible. Nonempty values contain a name and phone number separated
-by one comma, validated using the existing `Name` and `Phone` rules. Contact details do not affect patient identity.
+existing constructors and records remain compatible. Nonempty values contain a phone number, optionally preceded
+by a name and comma, validated using the existing `Name` and `Phone` rules. Contact details do not affect identity.
 
-`AddCommandParser` and `EditCommandParser` recognize `ec/NAME, PHONE_NUMBER` and reject incomplete, invalid,
+`AddCommandParser` and `EditCommandParser` recognize `ec/[NAME, ]PHONE_NUMBER` and reject incomplete, invalid,
 or repeated contact fields before execution. `add` rejects an empty `ec/`; `edit` uses it to clear the contact.
 `EditPersonDescriptor` distinguishes an omitted contact from a replacement or an explicitly empty contact.
 `EditCommand` and `NextCommand` preserve contacts when updating unrelated fields.
 Patients can retain both an emergency contact and previous visit dates. Contact-only edits preserve the visit
 record, and scheduling the next visit appends the current datetime without clearing the contact.
 
-`JsonAdaptedPerson` saves the canonical `NAME, PHONE_NUMBER` string and maps missing or null contact fields from
-older records to an absent contact. Invalid nonempty stored contacts cause a data-loading error.
-`PatientDetailsPanel` shows `Emergency Contact : PHONE_NUMBER (NAME)` immediately below the patient's phone
-number and hides the row for absent contacts.
+`JsonAdaptedPerson` saves `PHONE_NUMBER` or the canonical `NAME, PHONE_NUMBER` string. Missing or null contact fields
+from older records map to an absent contact. Invalid nonempty stored contacts cause a data-loading error.
+`PatientDetailsPanel` shows `Emergency Contact: PHONE_NUMBER (NAME)` immediately below the patient's phone
+number, omits the parentheses when the name is absent, and hides the row for absent contacts.
 
 #### Representation and validation
 
@@ -208,9 +208,10 @@ For edits, `EditCommandParser` maps an explicitly empty or whitespace-only `ec/`
 An omitted prefix leaves the descriptor field null, preserving the existing contact. An empty contact object
 counts as a supplied field and clears the saved value, even when no contact was previously recorded.
 
-Validation requires exactly two comma-separated details. The name must satisfy `Name#isValidName`, and the phone
-must satisfy `Phone#isValidPhone`. The constructor trims surrounding whitespace from each detail and stores the
-canonical form `NAME, PHONE_NUMBER`. `EmergencyContact#toDisplayString` produces `PHONE_NUMBER (NAME)` for the UI.
+Validation accepts a phone number alone or exactly two comma-separated details. A supplied name must satisfy
+`Name#isValidName`, and the required phone must satisfy `Phone#isValidPhone`. Blank names beside a comma are rejected;
+omit both the name and comma for a phone-only contact. The constructor trims whitespace and stores `PHONE_NUMBER`
+or `NAME, PHONE_NUMBER`. `EmergencyContact#toDisplayString` produces `PHONE_NUMBER` or `PHONE_NUMBER (NAME)` for the UI.
 `Person#equals` and `Person#hashCode` include the contact; `Person#isSamePerson` continues to use only the patient's
 normalized name and phone. Sharing an emergency contact does not make two patients duplicates.
 
@@ -231,7 +232,7 @@ normalized name and phone. Sharing an emergency contact does not make two patien
 Use JDK 25 and run `./gradlew shadowJar` from the repository root (`.\gradlew.bat shadowJar` on Windows).
 Close any previously running instance before launching `build/libs/doc.jar`. Building or replacing the JAR does
 not reload classes in an existing application process. An `edit` usage message without
-`[ec/NAME, PHONE_NUMBER]` indicates that the running build does not include emergency contact support.
+`[ec/[NAME, ]PHONE_NUMBER]` indicates that the running build does not include optional contact-name support.
 Use a separate folder with disposable data for manual testing; the application uses paths relative to its working
 directory for patient data and preferences.
 
@@ -986,11 +987,13 @@ testers are expected to do more *exploratory* testing.
 Use a disposable data file. Start with no patients and use available visit slots.
 
 1. Run `add n/John Tan p/91234567 a/123 Clementi Road vd/22/10/2026 1000 ec/Mary Tan, 98765432`.
-   Run `view 1`; expect `Emergency Contact : 98765432 (Mary Tan)` directly below the patient's phone number.
+   Run `view 1`; expect `Emergency Contact: 98765432 (Mary Tan)` directly below the patient's phone number.
 1. Run `edit 1 ec/David Tan, 87654321`, then `view 1`; expect the replacement contact in the same position.
 1. Run `edit 1 note/Review medication`, then `edit 1 vd/1/1/2000 1000` so the current visit has passed.
    Run `next 1 1/1/2099 1000`, then `view 1`; expect the contact unchanged and `1/1/2000 1000` retained as a
    previous visit. Replacing or clearing the emergency contact must preserve that previous datetime.
+1. Run `edit 1 ec/98765432`, then `view 1`; expect `Emergency Contact: 98765432` without a name or parentheses.
+   Expect the visit history and other fields to remain unchanged.
 1. Restart the application and run `view 1`; expect the saved contact to remain.
 1. Run `edit 1 ec/`, then `view 1`; expect the emergency contact row to be hidden and other details unchanged.
    Restart and view the patient again; expect the contact to remain cleared. Repeating `edit 1 ec/` or using
