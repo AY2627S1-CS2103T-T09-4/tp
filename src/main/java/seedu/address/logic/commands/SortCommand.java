@@ -9,7 +9,9 @@ import java.time.format.ResolverStyle;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.logging.Logger;
 
+import seedu.address.commons.core.LogsCenter;
 import seedu.address.model.Model;
 import seedu.address.model.person.Person;
 
@@ -17,6 +19,8 @@ import seedu.address.model.person.Person;
  * Sorts displayed persons by visit date around a cutoff date.
  */
 public class SortCommand extends Command {
+
+    private static final Logger logger = LogsCenter.getLogger(SortCommand.class);
 
     public static final String COMMAND_WORD = "sort";
     /** Format used to parse and display cutoff dates. */
@@ -67,6 +71,9 @@ public class SortCommand extends Command {
     public CommandResult execute(Model model) {
         requireNonNull(model);
         LocalDate cutoffDate = specifiedCutoffDate.orElseGet(() -> LocalDate.now(clock));
+        logger.fine(() -> String.format("Sorting %d displayed patients using cutoff date %s",
+                model.getFilteredPersonList().size(), cutoffDate.format(CUTOFF_DATE_FORMATTER)));
+
         Comparator<Person> visitDateComparator = Comparator
                 .comparing((Person person) -> isBeforeCutoff(person, cutoffDate))
                 .thenComparing(person -> person.getVisitDate().value);
