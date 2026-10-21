@@ -57,6 +57,7 @@
         "optional-date-of-birth": "Optional date of birth",
         "optional-blood-type": "Optional blood type",
         "editing-patient-details": "Editing patient details",
+        "sorting-displayed-visits-by-date": "Sorting displayed visits by date",
         "scheduling-the-next-visit": "Scheduling the next visit",
         "follow-up-command-line-input-and-confirmation": "Follow-up command-line input and confirmation",
         "command-history-navigation": "Command history navigation",
