@@ -1,6 +1,7 @@
 package seedu.address.logic.commands;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
@@ -38,6 +39,8 @@ public class NextCommandTest {
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-14T04:00:30Z"),
             ZoneId.of("Asia/Singapore"));
     private static final String NEW_VISIT_DATE = "1/11/2026 0930";
+    private static final String FULL_DAY = "2/11/2026";
+    private static final String FULL_DAY_VISIT_DATE = FULL_DAY + " 1630";
     private static final Person AMY = new PersonBuilder().withVisitDate("13/10/2026 1000")
             .withNote("Review  medication").withTags("friend", "priority").build();
     private static final Person BENSON = new PersonBuilder().withName("Benson Meier").withPhone("91234567")
@@ -312,6 +315,81 @@ public class NextCommandTest {
     }
 
     @Test
+    public void execute_fullDay_requestsConfirmationWithoutChangingData() throws Exception {
+        fillDay(FULL_DAY, Model.MAX_VISITS_PER_DAY);
+        AddressBook before = new AddressBook(model.getAddressBook());
+
+        CommandResult result = new NextCommand(INDEX_FIRST_PERSON, new VisitDate(FULL_DAY_VISIT_DATE), FIXED_CLOCK)
+                .execute(model);
+
+        assertEquals(String.format(NextCommand.MESSAGE_CONFIRM_FULL_DAY, Model.MAX_VISITS_PER_DAY,
+                "Mon, 2 Nov 2026", AMY.getName()), result.getFeedbackToUser());
+        assertTrue(result.getInputRequest().isPresent());
+        assertFalse(result.shouldSaveAddressBook());
+        assertEquals(before, model.getAddressBook());
+    }
+
+    @Test
+    public void confirmation_fullDayConfirmed_schedulesVisit() throws Exception {
+        fillDay(FULL_DAY, Model.MAX_VISITS_PER_DAY);
+        CommandResult requestResult = new NextCommand(INDEX_FIRST_PERSON, new VisitDate(FULL_DAY_VISIT_DATE),
+                FIXED_CLOCK).execute(model);
+
+        CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond(" Y ", model);
+
+        assertEquals(String.format(NextCommand.MESSAGE_SUCCESS, AMY.getName(), FULL_DAY_VISIT_DATE),
+                confirmedResult.getFeedbackToUser());
+        assertTrue(confirmedResult.shouldSaveAddressBook());
+        Person updatedAmy = model.getAddressBook().getPersonList().getFirst();
+        assertEquals(new VisitDate(FULL_DAY_VISIT_DATE), updatedAmy.getVisitDate());
+        assertEquals(List.of(AMY.getVisitDate()), updatedAmy.getPreviousVisitDates());
+        assertEquals(Model.MAX_VISITS_PER_DAY + 1, model.countPersonsWithSameVisitDay(updatedAmy));
+    }
+
+    @Test
+    public void confirmation_fullDayDeclined_preservesData() throws Exception {
+        fillDay(FULL_DAY, Model.MAX_VISITS_PER_DAY);
+        AddressBook before = new AddressBook(model.getAddressBook());
+        CommandResult requestResult = new NextCommand(INDEX_FIRST_PERSON, new VisitDate(FULL_DAY_VISIT_DATE),
+                FIXED_CLOCK).execute(model);
+
+        CommandResult cancelledResult = requestResult.getInputRequest().orElseThrow().respond("n", model);
+
+        assertEquals(NextCommand.MESSAGE_NEXT_CANCELLED, cancelledResult.getFeedbackToUser());
+        assertFalse(cancelledResult.shouldSaveAddressBook());
+        assertEquals(before, model.getAddressBook());
+    }
+
+    @Test
+    public void execute_dayBelowLimit_schedulesWithoutConfirmation() throws Exception {
+        fillDay(FULL_DAY, Model.MAX_VISITS_PER_DAY - 1);
+
+        assertScheduleSuccess(INDEX_FIRST_PERSON, AMY, FULL_DAY_VISIT_DATE);
+    }
+
+    @Test
+    public void execute_laterOnSameFullDay_schedulesWithoutConfirmation() throws Exception {
+        // Amy's current visit is one of the seven, so moving it later that day does not add another visit
+        Person original = new PersonBuilder(AMY).withVisitDate("14/10/2026 0730").build();
+        model.setPerson(AMY, original);
+        fillDay("14/10/2026", Model.MAX_VISITS_PER_DAY - 1);
+
+        assertScheduleSuccess(INDEX_FIRST_PERSON, original, "14/10/2026 1500");
+    }
+
+    @Test
+    public void confirmation_patientDeletedBeforeConfirmation_throwsCommandException() throws Exception {
+        fillDay(FULL_DAY, Model.MAX_VISITS_PER_DAY);
+        CommandResult requestResult = new NextCommand(INDEX_FIRST_PERSON, new VisitDate(FULL_DAY_VISIT_DATE),
+                FIXED_CLOCK).execute(model);
+        model.deletePerson(AMY);
+        CommandInputRequest inputRequest = requestResult.getInputRequest().orElseThrow();
+        String expectedMessage = NextCommand.MESSAGE_PERSON_NO_LONGER_EXISTS;
+
+        assertThrows(CommandException.class, expectedMessage, () -> inputRequest.respond("y", model));
+    }
+
+    @Test
     public void equals() {
         NextCommand command = new NextCommand(INDEX_FIRST_PERSON, new VisitDate(NEW_VISIT_DATE), FIXED_CLOCK);
         NextCommand equivalent = new NextCommand(Index.fromOneBased(1), new VisitDate("01/11/2026 0930"), FIXED_CLOCK);
@@ -385,6 +463,16 @@ public class NextCommandTest {
         assertEquals(before, model.getAddressBook());
         assertEquals(displayedPersons, model.getFilteredPersonList());
         return exception;
+    }
+
+    /**
+     * Adds {@code visitCount} patients with hourly visits from 0800 on {@code day}, given as d/M/yyyy.
+     */
+    private void fillDay(String day, int visitCount) {
+        for (int i = 0; i < visitCount; i++) {
+            model.addPerson(new PersonBuilder().withName("Day Patient " + i).withPhone("8000000" + i)
+                    .withVisitDate(String.format("%s %02d00", day, 8 + i)).build());
+        }
     }
 
     private static Model createModel(Person... persons) {
