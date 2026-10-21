@@ -32,6 +32,7 @@ public class Person {
     private final VisitDate visitDate;
     private final List<VisitDate> previousVisitDates;
     private final Note note;
+    private final EmergencyContact emergencyContact;
     private final Set<Tag> tags = new HashSet<>();
 
     /**
@@ -39,19 +40,36 @@ public class Person {
      */
     public Person(Name name, Phone phone, Email email, Address address, VisitDate visitDate, Note note,
             Set<Tag> tags) {
-        this(name, phone, email, address, visitDate, List.of(), note, tags);
+        this(name, phone, email, address, visitDate, List.of(), note, new EmergencyContact(""), tags);
     }
 
     /**
-     * Creates a patient with an immutable copy of the previous visit dates, ordered oldest first.
+     * Creates a patient with an optional emergency contact and no previous visit dates.
+     */
+    public Person(Name name, Phone phone, Email email, Address address, VisitDate visitDate, Note note,
+            EmergencyContact emergencyContact, Set<Tag> tags) {
+        this(name, phone, email, address, visitDate, List.of(), note, emergencyContact, tags);
+    }
+
+    /**
+     * Creates a patient with previous visit dates and no emergency contact.
+     */
+    public Person(Name name, Phone phone, Email email, Address address, VisitDate visitDate,
+            List<VisitDate> previousVisitDates, Note note, Set<Tag> tags) {
+        this(name, phone, email, address, visitDate, previousVisitDates, note, new EmergencyContact(""), tags);
+    }
+
+    /**
+     * Creates a patient with an immutable copy of previous visit dates and an optional emergency contact.
+     * Previous dates are ordered oldest first.
      *
      * @throws NullPointerException If any field or previous visit date is null.
      * @throws IllegalArgumentException If previous dates are not strictly increasing or any is at or after
      *     the current visit date.
      */
     public Person(Name name, Phone phone, Email email, Address address, VisitDate visitDate,
-            List<VisitDate> previousVisitDates, Note note, Set<Tag> tags) {
-        requireAllNonNull(name, phone, email, address, visitDate, previousVisitDates, note, tags);
+            List<VisitDate> previousVisitDates, Note note, EmergencyContact emergencyContact, Set<Tag> tags) {
+        requireAllNonNull(name, phone, email, address, visitDate, previousVisitDates, note, emergencyContact, tags);
         List<VisitDate> copiedPreviousVisitDates = List.copyOf(previousVisitDates);
         validatePreviousVisitDates(copiedPreviousVisitDates, visitDate);
         this.name = name;
@@ -61,6 +79,7 @@ public class Person {
         this.visitDate = visitDate;
         this.previousVisitDates = copiedPreviousVisitDates;
         this.note = note;
+        this.emergencyContact = emergencyContact;
         this.tags.addAll(tags);
     }
 
@@ -95,6 +114,10 @@ public class Person {
 
     public VisitDate getVisitDate() {
         return visitDate;
+    }
+
+    public EmergencyContact getEmergencyContact() {
+        return emergencyContact;
     }
 
     /**
@@ -173,13 +196,14 @@ public class Person {
                 && visitDate.equals(otherPerson.visitDate)
                 && previousVisitDates.equals(otherPerson.previousVisitDates)
                 && note.equals(otherPerson.note)
+                && emergencyContact.equals(otherPerson.emergencyContact)
                 && tags.equals(otherPerson.tags);
     }
 
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(name, phone, email, address, visitDate, previousVisitDates, note, tags);
+        return Objects.hash(name, phone, email, address, visitDate, previousVisitDates, note, emergencyContact, tags);
     }
 
     @Override
@@ -192,6 +216,7 @@ public class Person {
                 .add("visitDate", visitDate)
                 .add("previousVisitDates", previousVisitDates)
                 .add("note", note)
+                .add("emergencyContact", emergencyContact)
                 .add("tags", tags)
                 .toString();
     }

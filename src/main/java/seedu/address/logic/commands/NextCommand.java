@@ -94,7 +94,8 @@ public class NextCommand extends Command {
         previousVisitDates.add(personToUpdate.getVisitDate());
         return new Person(personToUpdate.getName(), personToUpdate.getPhone(),
                 personToUpdate.getEmail(), personToUpdate.getAddress(), visitDate,
-                previousVisitDates, personToUpdate.getNote(), personToUpdate.getTags());
+                previousVisitDates, personToUpdate.getNote(), personToUpdate.getEmergencyContact(),
+                personToUpdate.getTags());
     }
 
     /**

@@ -15,6 +15,8 @@
       </padding>
       <Label id="name" fx:id="name" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
       <Label id="phone" fx:id="phone" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
+      <Label id="emergencyContact" fx:id="emergencyContact" maxWidth="Infinity"
+             styleClass="label-bright" wrapText="true" />
       <Label id="email" fx:id="email" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
       <Label id="address" fx:id="address" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
       <Label id="visitDate" fx:id="visitDate" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />

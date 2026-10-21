@@ -7,6 +7,7 @@ import java.util.Set;
 
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
@@ -34,6 +35,7 @@ public class PersonBuilder {
     private VisitDate visitDate;
     private List<VisitDate> previousVisitDates;
     private Note note;
+    private EmergencyContact emergencyContact;
     private Set<Tag> tags;
 
     /**
@@ -47,6 +49,7 @@ public class PersonBuilder {
         visitDate = new VisitDate(DEFAULT_VISIT_DATE);
         previousVisitDates = List.of();
         note = new Note(DEFAULT_NOTE);
+        emergencyContact = new EmergencyContact("");
         tags = new HashSet<>();
     }
 
@@ -61,6 +64,7 @@ public class PersonBuilder {
         visitDate = personToCopy.getVisitDate();
         previousVisitDates = List.copyOf(personToCopy.getPreviousVisitDates());
         note = personToCopy.getNote();
+        emergencyContact = personToCopy.getEmergencyContact();
         tags = new HashSet<>(personToCopy.getTags());
     }
 
@@ -129,10 +133,18 @@ public class PersonBuilder {
     }
 
     /**
-     * Returns a patient with the configured details and validated visit record.
+     * Sets the optional emergency contact of the patient being built.
+     */
+    public PersonBuilder withEmergencyContact(String emergencyContact) {
+        this.emergencyContact = new EmergencyContact(emergencyContact);
+        return this;
+    }
+
+    /**
+     * Returns a patient with the configured details.
      */
     public Person build() {
-        return new Person(name, phone, email, address, visitDate, previousVisitDates, note, tags);
+        return new Person(name, phone, email, address, visitDate, previousVisitDates, note, emergencyContact, tags);
     }
 
 }

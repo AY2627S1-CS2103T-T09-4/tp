@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
@@ -33,6 +34,7 @@ class JsonAdaptedPerson {
     private final String visitDate;
     private final List<String> previousVisitDates = new ArrayList<>();
     private final String note;
+    private final String emergencyContact;
     private final List<JsonAdaptedTag> tags = new ArrayList<>();
 
     /**
@@ -40,18 +42,35 @@ class JsonAdaptedPerson {
      */
     public JsonAdaptedPerson(String name, String phone, String email, String address,
             String visitDate, String note, List<JsonAdaptedTag> tags) {
-        this(name, phone, email, address, visitDate, null, note, tags);
+        this(name, phone, email, address, visitDate, null, note, null, tags);
     }
 
     /**
-     * Constructs an adapted patient, treating missing or null previous dates as an empty record.
+     * Constructs a stored patient without previous visit dates.
+     */
+    public JsonAdaptedPerson(String name, String phone, String email, String address,
+            String visitDate, String note, String emergencyContact, List<JsonAdaptedTag> tags) {
+        this(name, phone, email, address, visitDate, null, note, emergencyContact, tags);
+    }
+
+    /**
+     * Constructs a stored patient without an emergency contact.
+     */
+    public JsonAdaptedPerson(String name, String phone, String email, String address,
+            String visitDate, List<String> previousVisitDates, String note, List<JsonAdaptedTag> tags) {
+        this(name, phone, email, address, visitDate, previousVisitDates, note, null, tags);
+    }
+
+    /**
+     * Constructs an adapted patient, accepting missing previous dates or emergency contacts in older files.
      */
     @JsonCreator
     public JsonAdaptedPerson(@JsonProperty("name") String name, @JsonProperty("phone") String phone,
             @JsonProperty("email") String email, @JsonProperty("address") String address,
             @JsonProperty("visitDate") String visitDate,
             @JsonProperty("previousVisitDates") List<String> previousVisitDates,
-            @JsonProperty("note") String note, @JsonProperty("tags") List<JsonAdaptedTag> tags) {
+            @JsonProperty("note") String note, @JsonProperty("emergencyContact") String emergencyContact,
+            @JsonProperty("tags") List<JsonAdaptedTag> tags) {
         this.name = name;
         this.phone = phone;
         this.email = email;
@@ -61,6 +80,7 @@ class JsonAdaptedPerson {
             this.previousVisitDates.addAll(previousVisitDates);
         }
         this.note = note;
+        this.emergencyContact = emergencyContact;
         if (tags != null) {
             this.tags.addAll(tags);
         }
@@ -78,6 +98,7 @@ class JsonAdaptedPerson {
         previousVisitDates.addAll(source.getPreviousVisitDates().stream()
                 .map(VisitDate::toString).toList());
         note = source.getNote().value;
+        emergencyContact = source.getEmergencyContact().toString();
         tags.addAll(source.getTags().stream()
                 .map(JsonAdaptedTag::new)
                 .collect(Collectors.toList()));
@@ -138,11 +159,17 @@ class JsonAdaptedPerson {
         // notes are optional, so a missing note is treated as no notes
         final Note modelNote = new Note(note == null ? "" : note);
 
+        String storedContact = emergencyContact == null ? "" : emergencyContact;
+        if (!EmergencyContact.isValidEmergencyContact(storedContact)) {
+            throw new IllegalValueException(EmergencyContact.MESSAGE_CONSTRAINTS);
+        }
+        final EmergencyContact modelEmergencyContact = new EmergencyContact(storedContact);
+
         final Set<Tag> modelTags = new HashSet<>(personTags);
         final List<VisitDate> modelPreviousVisitDates = parsePreviousVisitDates();
         try {
             return new Person(modelName, modelPhone, modelEmail, modelAddress, modelVisitDate,
-                    modelPreviousVisitDates, modelNote, modelTags);
+                    modelPreviousVisitDates, modelNote, modelEmergencyContact, modelTags);
         } catch (IllegalArgumentException e) {
             throw new IllegalValueException(Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS, e);
         }

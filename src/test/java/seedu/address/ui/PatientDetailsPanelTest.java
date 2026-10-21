@@ -80,6 +80,33 @@ public class PatientDetailsPanelTest {
     }
 
     @Test
+    public void setPerson_emergencyContact_displaysBelowPhoneAndHidesWhenAbsent() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            Person patient = new PersonBuilder().withEmergencyContact("Mary Tan, 91234567").build();
+            panel.setPerson(patient);
+            Label contact = getLabel(panel, "emergencyContact");
+            assertEquals("Emergency Contact: 91234567 (Mary Tan)", contact.getText());
+            assertTrue(contact.isVisible());
+            assertTrue(contact.isManaged());
+            assertTrue(contact.isWrapText());
+            VBox container = getDetailsContainer(panel);
+            assertEquals(container.getChildren().indexOf(getLabel(panel, "phone")) + 1,
+                    container.getChildren().indexOf(contact));
+
+            panel.setPerson(new PersonBuilder(patient).withEmergencyContact("98765432").build());
+            assertEquals("Emergency Contact: 98765432", contact.getText());
+            assertTrue(contact.isVisible());
+            assertTrue(contact.isManaged());
+
+            panel.setPerson(new PersonBuilder().build());
+            assertFalse(contact.isVisible());
+            assertFalse(contact.isManaged());
+            assertFalse(contact.getText().contains("Mary Tan"));
+        });
+    }
+
+    @Test
     public void setPerson_populatedPreviousDates_displaysNewestFirstWithoutChangingPerson() {
         runOnFxThread(() -> {
             Person person = new PersonBuilder()
