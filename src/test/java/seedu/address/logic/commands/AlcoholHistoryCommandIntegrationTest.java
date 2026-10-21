@@ -172,9 +172,9 @@ public class AlcoholHistoryCommandIntegrationTest {
     }
 
     @Test
-    public void help_alcoholHistory_followsBloodTypeInAddAndEdit() {
+    public void help_alcoholHistory_followsAllergiesInAddAndEdit() {
         for (String usage : List.of(AddCommand.MESSAGE_USAGE, EditCommand.MESSAGE_USAGE)) {
-            assertTrue(usage.contains("[bt/BLOOD_TYPE] [alc/ALCOHOL_HISTORY]"));
+            assertTrue(usage.contains("[all/ALLERGIES] [alc/ALCOHOL_HISTORY]"));
         }
     }
 

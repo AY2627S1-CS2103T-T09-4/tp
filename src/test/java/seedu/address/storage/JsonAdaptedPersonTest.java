@@ -73,7 +73,8 @@ public class JsonAdaptedPersonTest {
         Person original = new PersonBuilder(BENSON).withVisitDate("10/10/2026 1000")
                 .withPreviousVisitDates("1/10/2026 1000", "1/10/2026 1100")
                 .withDateOfBirth("15/6/1990").withEmergencyContact("Mary Tan, 91234567").withBloodType("AB-")
-                .withAlcoholHistory("Occasional drinking").withSmokingStatus("unknown").build();
+                .withAllergies("Penicillin; latex").withAlcoholHistory("Occasional drinking")
+                .withSmokingStatus("unknown").build();
 
         assertEquals(original, new JsonAdaptedPerson(original).toModelType());
     }

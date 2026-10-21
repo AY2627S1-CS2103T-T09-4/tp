@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.AlcoholHistory;
+import seedu.address.model.person.Allergies;
 import seedu.address.model.person.BloodType;
 import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.Email;
@@ -34,6 +35,7 @@ class JsonAdaptedPerson {
     private final String name;
     private final String dateOfBirth;
     private final String bloodType;
+    private final String allergies;
     private final String alcoholHistory;
     private final String smokingStatus;
     private final String phone;
@@ -109,10 +111,21 @@ class JsonAdaptedPerson {
     /**
      * Constructs an adapted patient, accepting missing optional fields in older files.
      */
+    public JsonAdaptedPerson(String name, String dateOfBirth, String bloodType, String alcoholHistory,
+            String smokingStatus, String phone, String email, String address, String visitDate,
+            List<String> previousVisitDates, String note, String emergencyContact, List<JsonAdaptedTag> tags) {
+        this(name, dateOfBirth, bloodType, null, alcoholHistory, smokingStatus, phone, email, address,
+                visitDate, previousVisitDates, note, emergencyContact, tags);
+    }
+
+    /**
+     * Constructs an adapted patient, accepting missing optional fields in older files.
+     */
     @JsonCreator
     public JsonAdaptedPerson(@JsonProperty("name") String name,
             @JsonProperty("dateOfBirth") String dateOfBirth, @JsonProperty("bloodType") String bloodType,
-            @JsonProperty("alcoholHistory") String alcoholHistory, @JsonProperty("smokingStatus") String smokingStatus,
+            @JsonProperty("allergies") String allergies, @JsonProperty("alcoholHistory") String alcoholHistory,
+            @JsonProperty("smokingStatus") String smokingStatus,
             @JsonProperty("phone") String phone,
             @JsonProperty("email") String email, @JsonProperty("address") String address,
             @JsonProperty("visitDate") String visitDate,
@@ -122,6 +135,7 @@ class JsonAdaptedPerson {
         this.name = name;
         this.dateOfBirth = dateOfBirth;
         this.bloodType = bloodType;
+        this.allergies = allergies;
         this.alcoholHistory = alcoholHistory;
         this.smokingStatus = smokingStatus;
         this.phone = phone;
@@ -145,6 +159,7 @@ class JsonAdaptedPerson {
         name = source.getName().fullName;
         dateOfBirth = source.getDateOfBirth().toString();
         bloodType = source.getBloodType().toString();
+        allergies = source.getAllergies().toString();
         alcoholHistory = source.getAlcoholHistory().toString();
         smokingStatus = source.getSmokingStatus().toString();
         phone = source.getPhone().value;
@@ -234,6 +249,7 @@ class JsonAdaptedPerson {
         }
         final EmergencyContact modelEmergencyContact = new EmergencyContact(storedContact);
 
+        final Allergies modelAllergies = new Allergies(allergies == null ? "" : allergies);
         final AlcoholHistory modelAlcoholHistory = new AlcoholHistory(alcoholHistory == null ? "" : alcoholHistory);
         final SmokingStatus modelSmokingStatus;
         try {
@@ -244,9 +260,9 @@ class JsonAdaptedPerson {
         final Set<Tag> modelTags = new HashSet<>(personTags);
         final List<VisitDate> modelPreviousVisitDates = parsePreviousVisitDates();
         try {
-            return new Person(modelName, modelDateOfBirth, modelBloodType, modelAlcoholHistory, modelSmokingStatus,
-                    modelPhone, modelEmail, modelAddress, modelVisitDate, modelPreviousVisitDates, modelNote,
-                    modelEmergencyContact, modelTags);
+            return new Person(modelName, modelDateOfBirth, modelBloodType, modelAllergies, modelAlcoholHistory,
+                    modelSmokingStatus, modelPhone, modelEmail, modelAddress, modelVisitDate, modelPreviousVisitDates,
+                    modelNote, modelEmergencyContact, modelTags);
         } catch (IllegalArgumentException e) {
             throw new IllegalValueException(Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS, e);
         }

@@ -2,6 +2,7 @@ package seedu.address.testutil;
 
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ALCOHOL_HISTORY;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_ALLERGIES;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_BLOOD_TYPE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_DATE_OF_BIRTH;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
@@ -43,6 +44,9 @@ public class PersonUtil {
         if (!person.getBloodType().isEmpty()) {
             sb.append(PREFIX_BLOOD_TYPE).append(person.getBloodType()).append(" ");
         }
+        if (!person.getAllergies().isEmpty()) {
+            sb.append(PREFIX_ALLERGIES).append(person.getAllergies()).append(" ");
+        }
         if (!person.getAlcoholHistory().isEmpty()) {
             sb.append(PREFIX_ALCOHOL_HISTORY).append(person.getAlcoholHistory()).append(" ");
         }
@@ -69,6 +73,8 @@ public class PersonUtil {
                 sb.append(PREFIX_DATE_OF_BIRTH).append(dateOfBirth).append(" "));
         descriptor.getBloodType().ifPresent(bloodType ->
                 sb.append(PREFIX_BLOOD_TYPE).append(bloodType).append(" "));
+        descriptor.getAllergies().ifPresent(allergies ->
+                sb.append(PREFIX_ALLERGIES).append(allergies).append(" "));
         descriptor.getAlcoholHistory().ifPresent(alcoholHistory ->
                 sb.append(PREFIX_ALCOHOL_HISTORY).append(alcoholHistory).append(" "));
         descriptor.getSmokingStatus().ifPresent(smokingStatus ->

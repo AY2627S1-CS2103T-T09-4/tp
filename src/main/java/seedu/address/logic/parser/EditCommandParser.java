@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ALCOHOL_HISTORY;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_ALLERGIES;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_BLOOD_TYPE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_DATE_OF_BIRTH;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
@@ -25,6 +26,7 @@ import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.EditCommand.EditPersonDescriptor;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.AlcoholHistory;
+import seedu.address.model.person.Allergies;
 import seedu.address.model.person.BloodType;
 import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.EmergencyContact;
@@ -46,13 +48,13 @@ public class EditCommandParser implements Parser<EditCommand> {
     public EditCommand parse(String args) throws ParseException {
         requireNonNull(args);
         ArgumentMultimap argMultimap = ArgumentTokenizer.tokenize(args, PREFIX_NAME, PREFIX_DATE_OF_BIRTH,
-                PREFIX_BLOOD_TYPE, PREFIX_ALCOHOL_HISTORY, PREFIX_SMOKING_STATUS, PREFIX_PHONE, PREFIX_EMAIL,
-                PREFIX_ADDRESS, PREFIX_VISIT_DATE, PREFIX_NOTE, PREFIX_EMERGENCY_CONTACT, PREFIX_TAG);
+                PREFIX_BLOOD_TYPE, PREFIX_ALLERGIES, PREFIX_ALCOHOL_HISTORY, PREFIX_SMOKING_STATUS, PREFIX_PHONE,
+                PREFIX_EMAIL, PREFIX_ADDRESS, PREFIX_VISIT_DATE, PREFIX_NOTE, PREFIX_EMERGENCY_CONTACT, PREFIX_TAG);
         Index index = parseIndex(argMultimap.getPreamble());
 
         argMultimap.verifyNoDuplicatePrefixesFor(PREFIX_NAME, PREFIX_DATE_OF_BIRTH, PREFIX_BLOOD_TYPE,
-                PREFIX_ALCOHOL_HISTORY, PREFIX_SMOKING_STATUS, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_ADDRESS,
-                PREFIX_VISIT_DATE, PREFIX_NOTE, PREFIX_EMERGENCY_CONTACT);
+                PREFIX_ALLERGIES, PREFIX_ALCOHOL_HISTORY, PREFIX_SMOKING_STATUS, PREFIX_PHONE, PREFIX_EMAIL,
+                PREFIX_ADDRESS, PREFIX_VISIT_DATE, PREFIX_NOTE, PREFIX_EMERGENCY_CONTACT);
         EditPersonDescriptor editPersonDescriptor = parsePersonDescriptor(argMultimap);
         if (!editPersonDescriptor.isAnyFieldEdited()) {
             throw new ParseException(EditCommand.MESSAGE_NOT_EDITED);
@@ -90,6 +92,9 @@ public class EditCommandParser implements Parser<EditCommand> {
             String bloodType = argMultimap.getValue(PREFIX_BLOOD_TYPE).get().trim();
             editPersonDescriptor.setBloodType(bloodType.isEmpty()
                     ? BloodType.UNKNOWN : ParserUtil.parseBloodType(bloodType));
+        }
+        if (argMultimap.getValue(PREFIX_ALLERGIES).isPresent()) {
+            editPersonDescriptor.setAllergies(new Allergies(argMultimap.getValue(PREFIX_ALLERGIES).get()));
         }
         if (argMultimap.getValue(PREFIX_ALCOHOL_HISTORY).isPresent()) {
             editPersonDescriptor.setAlcoholHistory(

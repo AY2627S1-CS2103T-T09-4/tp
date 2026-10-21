@@ -11,6 +11,7 @@ import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.AlcoholHistory;
+import seedu.address.model.person.Allergies;
 import seedu.address.model.person.BloodType;
 import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.Email;
@@ -68,6 +69,20 @@ public class ParserUtil {
             throw new ParseException(DateOfBirth.MESSAGE_CONSTRAINTS);
         }
         return new DateOfBirth(trimmedDate);
+    }
+
+    /**
+     * Parses recorded allergy information, trimming surrounding whitespace and rejecting blank input.
+     *
+     * @throws ParseException If the supplied allergy information is blank.
+     * @throws NullPointerException If the supplied allergy information is null.
+     */
+    public static Allergies parseAllergies(String allergies) throws ParseException {
+        Allergies parsedAllergies = new Allergies(allergies);
+        if (parsedAllergies.isEmpty()) {
+            throw new ParseException(Allergies.MESSAGE_CONSTRAINTS);
+        }
+        return parsedAllergies;
     }
 
     /**

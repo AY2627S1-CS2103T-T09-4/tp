@@ -7,6 +7,7 @@ import java.util.Set;
 
 import seedu.address.model.person.Address;
 import seedu.address.model.person.AlcoholHistory;
+import seedu.address.model.person.Allergies;
 import seedu.address.model.person.BloodType;
 import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.Email;
@@ -35,6 +36,7 @@ public class PersonBuilder {
     private Name name;
     private DateOfBirth dateOfBirth;
     private BloodType bloodType;
+    private Allergies allergies;
     private AlcoholHistory alcoholHistory;
     private SmokingStatus smokingStatus;
     private Phone phone;
@@ -53,6 +55,7 @@ public class PersonBuilder {
         name = new Name(DEFAULT_NAME);
         dateOfBirth = new DateOfBirth("");
         bloodType = BloodType.UNKNOWN;
+        allergies = new Allergies("");
         alcoholHistory = new AlcoholHistory("");
         smokingStatus = SmokingStatus.UNRECORDED;
         phone = new Phone(DEFAULT_PHONE);
@@ -72,6 +75,7 @@ public class PersonBuilder {
         name = personToCopy.getName();
         dateOfBirth = personToCopy.getDateOfBirth();
         bloodType = personToCopy.getBloodType();
+        allergies = personToCopy.getAllergies();
         alcoholHistory = personToCopy.getAlcoholHistory();
         smokingStatus = personToCopy.getSmokingStatus();
         phone = personToCopy.getPhone();
@@ -105,6 +109,14 @@ public class PersonBuilder {
      */
     public PersonBuilder withBloodType(String bloodType) {
         this.bloodType = BloodType.fromString(bloodType);
+        return this;
+    }
+
+    /**
+     * Sets the optional allergy information of the patient being built.
+     */
+    public PersonBuilder withAllergies(String allergies) {
+        this.allergies = new Allergies(allergies);
         return this;
     }
 
@@ -192,8 +204,8 @@ public class PersonBuilder {
      * Returns a patient with the configured details.
      */
     public Person build() {
-        return new Person(name, dateOfBirth, bloodType, alcoholHistory, smokingStatus, phone, email, address,
-                visitDate, previousVisitDates, note, emergencyContact, tags);
+        return new Person(name, dateOfBirth, bloodType, allergies, alcoholHistory, smokingStatus, phone, email,
+                address, visitDate, previousVisitDates, note, emergencyContact, tags);
     }
 
 }

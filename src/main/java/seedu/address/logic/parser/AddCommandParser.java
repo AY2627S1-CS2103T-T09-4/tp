@@ -3,6 +3,7 @@ package seedu.address.logic.parser;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ALCOHOL_HISTORY;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_ALLERGIES;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_BLOOD_TYPE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_DATE_OF_BIRTH;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
@@ -22,6 +23,7 @@ import seedu.address.logic.commands.AddCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.AlcoholHistory;
+import seedu.address.model.person.Allergies;
 import seedu.address.model.person.BloodType;
 import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.Email;
@@ -61,8 +63,8 @@ public class AddCommandParser implements Parser<AddCommand> {
     private Person parsePerson(String args) throws ParseException {
         ArgumentMultimap argMultimap =
                 ArgumentTokenizer.tokenize(args, PREFIX_NAME, PREFIX_DATE_OF_BIRTH, PREFIX_BLOOD_TYPE,
-                        PREFIX_ALCOHOL_HISTORY, PREFIX_SMOKING_STATUS, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_ADDRESS,
-                        PREFIX_VISIT_DATE, PREFIX_NOTE, PREFIX_EMERGENCY_CONTACT, PREFIX_TAG);
+                        PREFIX_ALLERGIES, PREFIX_ALCOHOL_HISTORY, PREFIX_SMOKING_STATUS, PREFIX_PHONE, PREFIX_EMAIL,
+                        PREFIX_ADDRESS, PREFIX_VISIT_DATE, PREFIX_NOTE, PREFIX_EMERGENCY_CONTACT, PREFIX_TAG);
 
         if (!arePrefixesPresent(argMultimap, PREFIX_NAME, PREFIX_ADDRESS, PREFIX_PHONE, PREFIX_VISIT_DATE)
                 || !argMultimap.getPreamble().isEmpty()) {
@@ -70,8 +72,8 @@ public class AddCommandParser implements Parser<AddCommand> {
         }
 
         argMultimap.verifyNoDuplicatePrefixesFor(PREFIX_NAME, PREFIX_DATE_OF_BIRTH, PREFIX_BLOOD_TYPE,
-                PREFIX_ALCOHOL_HISTORY, PREFIX_SMOKING_STATUS, PREFIX_PHONE, PREFIX_EMAIL, PREFIX_ADDRESS,
-                PREFIX_VISIT_DATE, PREFIX_NOTE, PREFIX_EMERGENCY_CONTACT);
+                PREFIX_ALLERGIES, PREFIX_ALCOHOL_HISTORY, PREFIX_SMOKING_STATUS, PREFIX_PHONE, PREFIX_EMAIL,
+                PREFIX_ADDRESS, PREFIX_VISIT_DATE, PREFIX_NOTE, PREFIX_EMERGENCY_CONTACT);
         Name name = ParserUtil.parseName(argMultimap.getValue(PREFIX_NAME).get());
         DateOfBirth dateOfBirth = argMultimap.getValue(PREFIX_DATE_OF_BIRTH).isPresent()
                 ? ParserUtil.parseDateOfBirth(argMultimap.getValue(PREFIX_DATE_OF_BIRTH).get())
@@ -79,6 +81,9 @@ public class AddCommandParser implements Parser<AddCommand> {
         BloodType bloodType = argMultimap.getValue(PREFIX_BLOOD_TYPE).isPresent()
                 ? ParserUtil.parseBloodType(argMultimap.getValue(PREFIX_BLOOD_TYPE).get())
                 : BloodType.UNKNOWN;
+        Allergies allergies = argMultimap.getValue(PREFIX_ALLERGIES).isPresent()
+                ? ParserUtil.parseAllergies(argMultimap.getValue(PREFIX_ALLERGIES).get())
+                : new Allergies("");
         AlcoholHistory alcoholHistory = argMultimap.getValue(PREFIX_ALCOHOL_HISTORY).isPresent()
                 ? ParserUtil.parseAlcoholHistory(argMultimap.getValue(PREFIX_ALCOHOL_HISTORY).get())
                 : new AlcoholHistory("");
@@ -95,8 +100,8 @@ public class AddCommandParser implements Parser<AddCommand> {
         EmergencyContact emergencyContact = argMultimap.getValue(PREFIX_EMERGENCY_CONTACT).isPresent()
                 ? ParserUtil.parseEmergencyContact(argMultimap.getValue(PREFIX_EMERGENCY_CONTACT).get())
                 : new EmergencyContact("");
-        return new Person(name, dateOfBirth, bloodType, alcoholHistory, smokingStatus, phone, email, address,
-                visitDate, List.of(), note, emergencyContact, tagList);
+        return new Person(name, dateOfBirth, bloodType, allergies, alcoholHistory, smokingStatus, phone, email,
+                address, visitDate, List.of(), note, emergencyContact, tagList);
     }
 
     /**

@@ -9,6 +9,7 @@ public class CliSyntax {
     public static final Prefix PREFIX_NAME = new Prefix("n/");
     public static final Prefix PREFIX_DATE_OF_BIRTH = new Prefix("dob/");
     public static final Prefix PREFIX_BLOOD_TYPE = new Prefix("bt/");
+    public static final Prefix PREFIX_ALLERGIES = new Prefix("all/");
     public static final Prefix PREFIX_ALCOHOL_HISTORY = new Prefix("alc/");
     public static final Prefix PREFIX_SMOKING_STATUS = new Prefix("smk/");
     public static final Prefix PREFIX_PHONE = new Prefix("p/");

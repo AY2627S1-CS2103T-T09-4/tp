@@ -383,6 +383,19 @@ Both patient cards and the details panel show recorded blood type below the date
 DOB is absent), hiding and unmanaging the row
 when it is unrecorded. Patient identity continues to use name and phone number.
 
+### Optional allergies
+
+`Person` stores immutable free-text `Allergies`. Surrounding whitespace is removed; empty text represents
+unrecorded information and is distinct from an explicit `No known allergies` entry. Multiple allergies can be
+written in one value, such as `Penicillin; latex`; the field does not interpret, split, or infer clinical information.
+`ParserUtil#parseAllergies` rejects blank add values, while edit maps blank `all/` to an empty value. Both parsers
+reject repeated prefixes. Unrelated edits and `next` preserve the field along with the other patient details.
+
+`JsonAdaptedPerson` stores the `allergies` string and treats missing or null fields in older files as unrecorded.
+The right-hand details panel displays recorded allergies after blood type, before alcohol history and smoking
+status. Long values wrap within the scrollable panel. Unrecorded values hide the row without implying no allergies.
+Add/edit help follows the same field order; patient list cards and patient identity remain unchanged.
+
 ### Optional alcohol history
 
 `Person` stores an immutable `AlcoholHistory` alongside blood type. It holds free text with surrounding whitespace
@@ -391,7 +404,7 @@ removed; empty text represents unrecorded history and remains distinct from the 
 history. Both parsers reject repeated `alc/` prefixes. Unrelated edits and `next` preserve the recorded history.
 
 `JsonAdaptedPerson` saves the `alcoholHistory` string and treats missing or null fields in older files as unrecorded.
-The right-hand details panel displays recorded alcohol history immediately after blood type, wraps long text, and
+The right-hand details panel displays recorded alcohol history immediately after allergies, wraps long text, and
 hides the row when unrecorded. Patient list cards and duplicate-patient identity remain unchanged.
 
 ### Optional smoking status
@@ -410,7 +423,7 @@ patient identity remain unchanged. Add/edit help places `[smk/STATUS]` after `[a
 ### Editing patient details
 
 `EditCommandParser` accepts optional replacement fields, including `vd/` and `note/`. The displayed format is
-`edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [alc/ALCOHOL_HISTORY] [smk/STATUS] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`.
+`edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`.
 It checks index syntax and duplicate single-valued prefixes before parsing field values, then rejects a
 descriptor with no supplied fields. When `vd/` is supplied, `ParserUtil#parseVisitDate` reuses the existing strict
 `VisitDate` validation
@@ -1049,6 +1062,21 @@ Use a disposable data file and available visit slots.
    patient again; expect the row to reappear. Set the second patient's DOB using `edit INDEX dob/1/1/2000`.
 1. Load an older valid data file without `dateOfBirth`; expect the patients to load with the DOB row hidden.
 
+### Allergies
+
+Use a disposable data file, starting with no patients and available visit slots.
+
+1. Run `add n/Allergy Test bt/A+ all/Penicillin; latex alc/Does not drink smk/former p/81234567 a/10 Test Road vd/1/1/2000 1000`.
+   Run `view 1`; expect allergies below blood type and above alcohol history and smoking status on the right.
+1. Run `edit 1 all/No known allergies`, then `view 1`; expect the explicit entry to remain visible.
+1. Edit alcohol history or smoking status, then run `next 1 1/1/2099 1000`; expect allergies unchanged and the previous
+   visit retained. Restart and view the patient; expect all recorded details to remain.
+1. Run `edit 1 all/`, then `view 1`; expect the allergy row hidden without leaving a gap and other fields unchanged.
+   Restart; expect the field to remain cleared. Whitespace-only edits and clearing an unrecorded field succeed.
+1. Try a blank `all/` on add and repeated prefixes on add/edit, including `all/ all/`. Expect errors and unchanged data.
+   Try a long description with punctuation; expect wrapping and scrolling. Switch patients to check for stale text.
+1. Load an older valid file without `allergies`; expect an unrecorded value rather than an inferred absence of allergies.
+
 ### Smoking status
 
 Use a disposable data file, starting with no patients and available visit slots.
@@ -1071,7 +1099,7 @@ Use a disposable data file, starting with no patients and available visit slots.
 Use a disposable data file, starting with no patients and available visit slots.
 
 1. Run `add n/Alcohol Test bt/A+ alc/Occasional drinking p/81234567 a/10 Test Road vd/1/1/2000 1000`.
-   Run `view 1`; expect alcohol history immediately below blood type in the right-hand panel.
+   Run `view 1`; expect alcohol history below blood type, with no gap for unrecorded allergies.
 1. Run `edit 1 bt/O- alc/Does not drink`, then `view 1`; expect both replacement values in that order.
 1. Edit another field, then run `next 1 1/1/2099 1000`; expect alcohol history unchanged and the previous visit retained.
    Restart the application and view the patient; expect the alcohol history and visit record to remain.
@@ -1269,7 +1297,7 @@ removed; empty text represents unrecorded history and remains distinct from the 
 history. Both parsers reject repeated `alc/` prefixes. Unrelated edits and `next` preserve the recorded history.
 
 `JsonAdaptedPerson` saves the `alcoholHistory` string and treats missing or null fields in older files as unrecorded.
-The right-hand details panel displays recorded alcohol history immediately after blood type, wraps long text, and
+The right-hand details panel displays recorded alcohol history immediately after allergies, wraps long text, and
 hides the row when unrecorded. Patient list cards and duplicate-patient identity remain unchanged.
 
 ### Optional smoking status
