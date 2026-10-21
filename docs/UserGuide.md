@@ -142,8 +142,8 @@ Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES
 
 * `VISIT_DATE` must be a date and time in the format `d/M/yyyy HHmm`, e.g. `18/9/2026 1000`. Past dates are allowed.
 * Each current or previous visit date and time must be unique across patients. If another patient's visit record
-  already uses the supplied date and time, including a patient hidden by filtering,
-  the addition is rejected and the app asks you to choose a different slot.
+  already uses the supplied date and time, including a patient hidden by filtering, the addition is rejected,
+  the existing patient is shown in the patient details panel, and the app asks you to choose a different slot.
 * `EMAIL` and `NOTES` are optional.
 * On success, the app shows `Added patient NAME` and the new patient appears in the list.
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
@@ -253,7 +253,8 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [not
 * Editing preserves any previous visit dates. The current datetime must remain strictly later than the latest
   previous datetime, when one exists.
 * Re-entering the selected patient's existing visit date and time is allowed. Changing it to a slot used by another
-  patient's current or previous visits is rejected, including hidden patients and edits to other fields.
+  patient's current or previous visits is rejected, including hidden patients and edits to other fields. The patient
+  using that slot is shown in the patient details panel, while the patient list remains unchanged.
 * Omitted fields, including email and existing notes, keep their values. Use an empty `e/` to clear email.
 * Use `note/NOTES` to replace the entire stored note. Use an empty `note/` to clear it; notes can be edited
   without `vd/`. An explicitly empty note counts as a supplied field, even when the note is already empty.
@@ -330,7 +331,7 @@ Common errors:
 | Current visit still in the future | `Patient NAME has a current visit at DATETIME that is still in the future. Use edit to reschedule it.` |
 | Time at or before now | `The next visit must be later than the current time (DATETIME). Choose a later date and time.` |
 | Unchanged appointment | `Patient NAME already has an appointment at DATETIME.` |
-| Another patient's current or previous visit | `Patient NAME already has a current or previous visit at DATETIME. Choose a different date and time.` |
+| Another patient's current or previous visit | `Patient NAME already has a current or previous visit at DATETIME and is shown in the patient details panel. Choose a different date and time.` |
 
 Bare `next` shows usage. Missing or extra arguments, `vd/` syntax, and incorrect index syntax show a reason and usage.
 Invalid dates show the required format; an index outside the displayed list shows the existing invalid-index error.

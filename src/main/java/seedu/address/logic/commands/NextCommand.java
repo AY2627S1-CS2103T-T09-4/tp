@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.ToStringBuilder;
@@ -37,7 +38,8 @@ public class NextCommand extends Command {
     public static final String MESSAGE_CURRENT_VISIT_IN_FUTURE =
             "Patient %1$s has a current visit at %2$s that is still in the future. Use edit to reschedule it.";
     public static final String MESSAGE_DUPLICATE_VISIT_DATE =
-            "Patient %1$s already has a current or previous visit at %2$s. Choose a different date and time.";
+            "Patient %1$s already has a current or previous visit at %2$s and is shown in the patient details panel. "
+                    + "Choose a different date and time.";
 
     private final Index index;
     private final VisitDate visitDate;
@@ -119,11 +121,13 @@ public class NextCommand extends Command {
      * Checks the full replacement record against every other stored patient's visit record.
      */
     private void validateNoConflicts(Model model, Person personToUpdate, Person updatedPerson) throws CommandException {
-        // The shared boolean conflict check cannot identify the patient for the error message.
-        for (Person person : model.getAddressBook().getPersonList()) {
-            if (!person.equals(personToUpdate) && updatedPerson.hasCommonVisitDate(person)) {
-                throw new CommandException(String.format(MESSAGE_DUPLICATE_VISIT_DATE, person.getName(), visitDate));
-            }
+        Optional<Person> visitDateDuplicate = DuplicatePersonFinder.findVisitDateDuplicate(
+                model.getAddressBook(), updatedPerson, personToUpdate);
+        if (visitDateDuplicate.isPresent()) {
+            Person conflictingPerson = visitDateDuplicate.get();
+            throw new CommandException(
+                    String.format(MESSAGE_DUPLICATE_VISIT_DATE, conflictingPerson.getName(), visitDate),
+                    conflictingPerson);
         }
     }
 

@@ -250,13 +250,22 @@ visit-date conflict. For a name duplicate with an available visit time, it captu
 a `CommandInputRequest#createConfirmation` action. Confirmation rechecks both rejection rules before adding, which
 prevents a conflicting record from being introduced if model state changes while the prompt is pending.
 
-`EditCommand` similarly rejects a true duplicate or a datetime shared with another patient's current or previous dates
-before requesting confirmation. Replacement checks compare the complete candidate while excluding the original
-target. This permits unchanged dates and moving a patient's own dates between current and previous fields.
-The command asks for confirmation only when the requested edit changes the name to one already in use; editing
-other fields of a patient whose name is already shared does not prompt again. It captures the original and edited
-`Person` objects, then verifies on confirmation that the original record still exists and that the edit still creates
-neither a true duplicate nor a visit-date conflict.
+`EditCommand` captures the selected patient without changing the displayed list. It similarly rejects a true
+duplicate or a datetime shared with another patient's current or previous dates before requesting confirmation,
+previewing the matching identity or visit-date record. Replacement checks compare the complete candidate while
+excluding the original target. This permits unchanged dates and moving a patient's own dates between current and
+previous fields. The command asks for confirmation only when the requested edit changes the name to one already in
+use; editing other fields of a patient whose name is already shared does not prompt again. It reports the number of
+matching names, previews the first match, captures the original and edited `Person` objects, then verifies on
+confirmation that the original record still exists and that the edit still creates neither a true duplicate nor a
+visit-date conflict.
+
+`CommandResult` carries the preview together with a name-duplicate confirmation request. `CommandException` carries
+the preview for banned identity and visit-date conflicts. `MainWindow` sends either preview to `PatientDetailsPanel`,
+using the same presentation as `view`, while feedback remains in `ResultDisplay`. A successful add or edit restores
+the full patient list; a rejected or cancelled operation leaves the displayed list unchanged. While a confirmation is
+pending, the command box treats the next submission as the confirmation response, so displayed indices cannot be used
+by another command until the doctor confirms or cancels.
 
 #### Duplicate-detection limitations
 
@@ -369,9 +378,12 @@ with the captured local time formatted as `d/M/yyyy HHmm`, without seconds. An i
 because the new current visit is still in the future. Details do not refresh automatically; users run `view` again
 using the patient's newly displayed index.
 
-Validation failures stop before any mutation or save. A storage I/O failure happens after the in-memory update;
-the existing error handling reports it without rolling back the record or list. If no further visit is planned,
-the current datetime remains stored as it becomes past. There is no attendance or completion state to update.
+Validation failures stop before any mutation or save. When the requested time belongs to another patient,
+`NextCommand` attaches the conflicting patient to its `CommandException`; `MainWindow` displays that patient in the
+details panel. Every validation failure preserves the displayed list. A storage I/O failure happens after the
+in-memory update; the existing error handling reports it without rolling back the record or list. If no further visit
+is planned, the current datetime remains stored as it becomes past. There is no attendance or completion state to
+update.
 
 The design keeps three decisions explicit:
 
@@ -812,7 +824,8 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 **Guarantees**
 
 * Only the selected patient's current and previous visit datetimes change; these do not verify completion.
-* Rejected input leaves patient records and the displayed list unchanged.
+* Rejected input leaves patient records and the displayed list unchanged. Appointment conflicts display the
+  conflicting patient in the patient details panel.
 
 **MSS**
 
@@ -1112,7 +1125,8 @@ successful advances in one session without waiting or changing the system clock.
    Expect success, with nonempty optional fields for Nextalpha and empty email, notes, and tags for Nextbeta.
 
 1. Run `find Nextalpha`, then `next 1 F3`.<br>
-   Expect a conflict naming hidden Nextbeta and the occupied time, with data and the filtered list unchanged.
+   Expect a conflict naming hidden Nextbeta and the occupied time, with Nextbeta shown in the patient details panel
+   and both data and the filtered patient list unchanged.
    Repeat with a leading-zero day or month when applicable; expect the same conflict.
 
 1. While only Nextalpha is displayed, try each of these commands:
