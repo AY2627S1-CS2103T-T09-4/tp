@@ -54,6 +54,7 @@
         "optional-emergency-contacts": "Optional emergency contacts",
         "visit-record-model": "Visit record model",
         "duplicate-patient-identity-visit-dates-and-name-confirmation": "Duplicate patient identity, visit dates, and name confirmation",
+        "optional-date-of-birth": "Optional date of birth",
         "optional-blood-type": "Optional blood type",
         "editing-patient-details": "Editing patient details",
         "scheduling-the-next-visit": "Scheduling the next visit",
@@ -70,6 +71,7 @@
         "glossary": "Glossary",
         "appendix-instructions-for-manual-testing": "Appendix: Instructions for manual testing",
         "launch-and-shutdown": "Launch and shutdown",
+        "dates-of-birth": "Dates of birth",
         "blood-types": "Blood types",
         "emergency-contacts": "Emergency contacts",
         "help-window-lifecycle": "Help window lifecycle",
@@ -101,7 +103,8 @@
       "src": "Logging.md",
       "title": "Logging guide",
       "headings": {
-        "logging-guide": "Logging guide"
+        "logging-guide": "Logging guide",
+        "patient-updates-and-save-failures": "Patient updates and save failures"
       },
       "headingKeywords": {}
     },
