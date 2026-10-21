@@ -1321,10 +1321,10 @@ successful advances in one session without waiting or changing the system clock.
 
 1. Choose a future day `D` with no visits and a globally unused past datetime `P4`. Add
    `add n/Nextgamma Patient p/83456789 a/30 Test Road vd/P4`, then add seven more patients with unused times on `D`.
-   Run `find Nextgamma`, then `next 1 D 1700`.<br>
+   Run `find n/Nextgamma`, then `next 1 D 1700`.<br>
    Expect `Heads up: you already have 7 visits on DAY. Schedule Nextgamma Patient's next visit on that day anyway?
    ...`, with `DAY` shown as e.g. `Mon, 2 Nov 2026`. Enter `n`; expect `Scheduling cancelled.` with data unchanged.
-   Run `find Nextgamma` and `next 1 D 1700` again, then enter `y`; expect the visit to be scheduled on `D`.
+   Run `find n/Nextgamma` and `next 1 D 1700` again, then enter `y`; expect the visit to be scheduled on `D`.
    With only six visits on `D`, expect `next` to schedule without asking.
 
 Fixed-clock automated tests cover exact equality to now, nanosecond boundaries, one clock read, and saved appointments
