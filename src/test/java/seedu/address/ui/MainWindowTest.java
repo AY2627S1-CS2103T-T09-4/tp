@@ -1,7 +1,7 @@
 package seedu.address.ui;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
@@ -9,6 +9,7 @@ import static seedu.address.ui.JavaFxTestUtil.runOnFxThread;
 import static seedu.address.ui.JavaFxTestUtil.startJavaFx;
 
 import java.nio.file.Path;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -97,23 +98,26 @@ public class MainWindowTest {
     }
 
     @Test
-    public void executeCommand_commandErrorWithoutPreview_keepsDetailsPanelEmpty() {
+    public void executeCommand_commandErrorWithoutPreview_keepsExistingDetails() {
         runOnFxThread(() -> {
-            Person person = new PersonBuilder().build();
-            TestLogic logic = new TestLogic(person, ExecutionOutcome.COMMAND_ERROR);
+            Person person = new PersonBuilder().withName("Existing Patient").build();
+            TestLogic logic = new TestLogic(person);
             Stage stage = new Stage();
 
             try {
                 MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH);
                 mainWindow.fillInnerParts();
+                assertDoesNotThrow(() -> mainWindow.executeCommand("view 1"));
+                VBox detailsContainer = getDetailsContainer(mainWindow);
+                List<String> existingDetails = getDisplayedDetails(detailsContainer);
 
+                logic.setExecutionOutcome(ExecutionOutcome.COMMAND_ERROR);
                 CommandException exception = assertThrows(
                         CommandException.class, () -> mainWindow.executeCommand("invalid command"));
 
                 assertEquals("Command error", exception.getMessage());
-                ScrollPane detailsPanel = (ScrollPane) mainWindow.getPatientDetailsPanel().getRoot();
-                VBox detailsContainer = (VBox) detailsPanel.getContent();
-                assertFalse(detailsContainer.isVisible());
+                assertTrue(detailsContainer.isVisible());
+                assertEquals(existingDetails, getDisplayedDetails(detailsContainer));
             } finally {
                 stage.close();
             }
@@ -121,27 +125,51 @@ public class MainWindowTest {
     }
 
     @Test
-    public void executeCommand_parseError_keepsDetailsPanelEmpty() {
+    public void executeCommand_parseError_keepsExistingDetails() {
         runOnFxThread(() -> {
-            Person person = new PersonBuilder().build();
-            TestLogic logic = new TestLogic(person, ExecutionOutcome.PARSE_ERROR);
+            Person person = new PersonBuilder().withName("Existing Patient").build();
+            TestLogic logic = new TestLogic(person);
             Stage stage = new Stage();
 
             try {
                 MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH);
                 mainWindow.fillInnerParts();
+                assertDoesNotThrow(() -> mainWindow.executeCommand("view 1"));
+                VBox detailsContainer = getDetailsContainer(mainWindow);
+                List<String> existingDetails = getDisplayedDetails(detailsContainer);
 
+                logic.setExecutionOutcome(ExecutionOutcome.PARSE_ERROR);
                 ParseException exception = assertThrows(
                         ParseException.class, () -> mainWindow.executeCommand("invalid syntax"));
 
                 assertEquals("Parse error", exception.getMessage());
-                ScrollPane detailsPanel = (ScrollPane) mainWindow.getPatientDetailsPanel().getRoot();
-                VBox detailsContainer = (VBox) detailsPanel.getContent();
-                assertFalse(detailsContainer.isVisible());
+                assertTrue(detailsContainer.isVisible());
+                assertEquals(existingDetails, getDisplayedDetails(detailsContainer));
             } finally {
                 stage.close();
             }
         });
+    }
+
+    private static VBox getDetailsContainer(MainWindow mainWindow) {
+        ScrollPane detailsPanel = (ScrollPane) mainWindow.getPatientDetailsPanel().getRoot();
+        return (VBox) detailsPanel.getContent();
+    }
+
+    private static List<String> getDisplayedDetails(VBox detailsContainer) {
+        return List.of(
+                getLabelText(detailsContainer, "#name"),
+                getLabelText(detailsContainer, "#phone"),
+                getLabelText(detailsContainer, "#email"),
+                getLabelText(detailsContainer, "#address"),
+                getLabelText(detailsContainer, "#visitDate"),
+                getLabelText(detailsContainer, "#note"),
+                getLabelText(detailsContainer, "#tags"));
+    }
+
+    private static String getLabelText(VBox detailsContainer, String labelId) {
+        Label label = (Label) detailsContainer.lookup(labelId);
+        return label.getText();
     }
 
     /** Outcomes that the test logic can return or throw. */
@@ -157,7 +185,7 @@ public class MainWindowTest {
 
         private final Person personToView;
         private final ObservableList<Person> persons;
-        private final ExecutionOutcome executionOutcome;
+        private ExecutionOutcome executionOutcome;
         private String lastCommandText;
 
         TestLogic(Person personToView) {
@@ -206,6 +234,10 @@ public class MainWindowTest {
 
         String getLastCommandText() {
             return lastCommandText;
+        }
+
+        void setExecutionOutcome(ExecutionOutcome executionOutcome) {
+            this.executionOutcome = executionOutcome;
         }
     }
 }

@@ -200,18 +200,22 @@ public class EditCommand extends Command {
      */
     private static void validateNoConflicts(Model model, Person personToEdit, Person editedPerson)
             throws CommandException {
-        Optional<Person> identityDuplicate =
-                DuplicatePersonFinder.findIdentityDuplicate(model.getAddressBook(), editedPerson);
-        if (!personToEdit.isSamePerson(editedPerson) && identityDuplicate.isPresent()) {
-            throw new CommandException(MESSAGE_DUPLICATE_PERSON, identityDuplicate.get());
+        if (!personToEdit.isSamePerson(editedPerson)) {
+            Optional<Person> identityDuplicate =
+                    DuplicatePersonFinder.findIdentityDuplicate(model.getAddressBook(), editedPerson);
+            if (identityDuplicate.isPresent()) {
+                throw new CommandException(MESSAGE_DUPLICATE_PERSON, identityDuplicate.get());
+            }
         }
 
         boolean isVisitDateChanged = !personToEdit.getVisitDate().equals(editedPerson.getVisitDate());
-        Optional<Person> visitDateDuplicate = DuplicatePersonFinder.findVisitDateDuplicate(
-                model.getAddressBook(), editedPerson.getVisitDate());
-        if (isVisitDateChanged && visitDateDuplicate.isPresent()) {
-            throw new CommandException(String.format(MESSAGE_DUPLICATE_VISIT_DATE, editedPerson.getVisitDate()),
-                    visitDateDuplicate.get());
+        if (isVisitDateChanged) {
+            Optional<Person> visitDateDuplicate = DuplicatePersonFinder.findVisitDateDuplicate(
+                    model.getAddressBook(), editedPerson.getVisitDate());
+            if (visitDateDuplicate.isPresent()) {
+                throw new CommandException(String.format(MESSAGE_DUPLICATE_VISIT_DATE, editedPerson.getVisitDate()),
+                        visitDateDuplicate.get());
+            }
         }
     }
 
