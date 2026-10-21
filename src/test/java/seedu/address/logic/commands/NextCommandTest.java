@@ -42,7 +42,9 @@ public class NextCommandTest {
     private static final String FULL_DAY = "2/11/2026";
     private static final String FULL_DAY_VISIT_DATE = FULL_DAY + " 1630";
     private static final Person AMY = new PersonBuilder().withVisitDate("13/10/2026 1000")
-            .withNote("Review  medication").withTags("friend", "priority").build();
+            .withDateOfBirth("15/6/1990").withBloodType("A+").withEmergencyContact("Mary Tan, 91234567")
+            .withNote("Review  medication")
+            .withTags("friend", "priority").build();
     private static final Person BENSON = new PersonBuilder().withName("Benson Meier").withPhone("91234567")
             .withVisitDate("12/10/2026 1000").withEmail("").withNote("").withTags().build();
     private static final Person CARL = new PersonBuilder().withName("Carl Kurz").withPhone("92345678")
