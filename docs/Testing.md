@@ -64,13 +64,14 @@ for the IDE setup steps. Keep machine-specific run configurations local.
 ### Visit record verification
 
 The [Developer Guide's manual-testing appendix](DeveloperGuide.md#appendix-instructions-for-manual-testing) contains
-repeatable cases for loading previous dates, advancing and rolling back visits, editing, conflicts, and viewing
-empty or long records.
+repeatable cases for loading previous dates, advancing and rolling back visits, editing, conflicts, viewing
+empty or long records, and checking calendar-day labels.
 Use disposable data and choose past and future datetimes relative to the actual execution time. Recheck displayed
 indices after successful mutations, which restore the full list in stored order.
 
-Automated visit-record tests use injected fixed clocks for exact equality, sub-minute boundaries, time zones, and
-repeated advances. Do not change the OS clock or wait for an appointment to pass to test those boundaries manually.
+Automated visit-record tests use injected fixed clocks for exact equality, sub-minute boundaries, time zones,
+repeated advances, and calendar-label changes when details are rendered across midnight.
+Do not change the OS clock or wait for an appointment to pass to test those boundaries manually.
 Run the repository wrapper from the project root:
 
 | Purpose | Windows PowerShell | macOS/Linux |

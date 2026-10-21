@@ -233,6 +233,11 @@ Format: `view INDEX`
 * The currently displayed patient list remains visible on the left.
 * The current visit date and time remain visible as `Visit date`. The `Previous visit dates:` section immediately
   below it lists retained datetimes in `d/M/yyyy HHmm` format, newest first and oldest last. The note follows.
+* A label beside the current datetime compares its calendar date with your computer's local date:
+  `Past` means before today, `Today` means today (including earlier or later times today), and `Upcoming` means
+  after today. For example, `Visit date: 21/10/2026 0900 (Today)` when viewed on 21 October 2026.
+* These labels do not indicate attendance or completion and do not change the time-based rules for `next`.
+  They update when you run `view`; run it again after midnight or a date change to refresh the details.
 * A patient with no previous dates shows `No previous visit dates`. Scroll the details panel to read long records;
   all previous dates are included.
 * Viewing a patient does not change their stored details.

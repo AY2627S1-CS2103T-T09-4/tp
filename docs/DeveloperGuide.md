@@ -217,6 +217,14 @@ the existing `ScrollPane`, so long records remain accessible by scrolling. Rende
 and their oldest-first order in the model and JSON file.
 Run `view` again after a mutation to refresh the details.
 
+The current datetime includes a calendar-day label in parentheses: `Past`, `Today`, or `Upcoming`.
+`PatientDetailsPanel` uses an injected `Clock` (the system's local clock in production) and reads its current
+`LocalDate` once per `setPerson` call. It compares that date with the current visit's calendar date, so both earlier
+and later times today receive `Today`. The label is display text only; it is not saved, does not verify attendance
+or completion, and does not affect `next` eligibility or the sort cutoff. Re-rendering details recomputes the label;
+there is no automatic midnight refresh. Fixed-clock JavaFX tests cover adjacent days, times throughout today,
+different time zones, and re-rendering across midnight at a year boundary without modifying the patient.
+
 ### Duplicate patient identity, visit dates, and name confirmation
 
 Doc normalizes names only for duplicate detection. Normalization trims surrounding whitespace, replaces each sequence
@@ -1250,6 +1258,41 @@ Find the patient again after each successful mutation, since success restores th
 1. Run `view 999`. Expect an invalid-index error, no change to the displayed list, and no changes to stored patient
    data.
 1. Close and reopen the application. Expect all patient data to remain unchanged.
+
+### Calendar labels for current visits
+
+Use disposable data and a fresh patient with no previous dates. Choose globally unused datetimes named
+`YESTERDAY`, `TODAY_EARLY`, `TODAY_LATE`, and `TOMORROW`, using your computer's current local calendar date.
+For today's values, use times near the start and end of the day, such as `0000` and `2359`.
+Replace the placeholders with full `d/M/yyyy HHmm` datetimes before submitting commands.
+
+1. Run these commands:
+
+   ```text
+   add n/Calendarcheck Patient p/83456789 a/30 Test Road vd/YESTERDAY
+   find Calendarcheck
+   view 1
+   ```
+
+   Expect the full current datetime followed by `(Past)`, with `No previous visit dates` below it.
+1. For each value below, run `edit 1 vd/VALUE`, then `find Calendarcheck` and `view 1`.
+
+   | Value | Expected label beside the current datetime |
+   | --- | --- |
+   | `TODAY_EARLY` | `Today`, even if the time has already passed. |
+   | `TODAY_LATE` | `Today`, including when the time is still in the future. |
+   | `TOMORROW` | `Upcoming`. |
+
+   The successful edit restores the full list; finding the test patient again ensures the correct displayed index.
+   Details refresh only when `view` runs. Verify that the label does not appear beside previous dates or in JSON.
+1. While only Calendarcheck is displayed, run `sort date 1/1/2000`, then `view 1`.<br>
+   Expect the label to remain based on today's local date, independently of the chosen sort cutoff.
+1. Close and reopen Doc, find Calendarcheck, and view it again.<br>
+   Expect the saved datetime to remain unchanged and the label to reflect the local date when viewed.
+
+Fixed-clock tests cover the exact midnight and year boundary and time-zone differences. Do not change the OS clock
+or wait for midnight to exercise those cases manually. An already displayed label does not refresh automatically
+when midnight passes; another `view` recalculates it.
 
 ### Navigating command history
 
