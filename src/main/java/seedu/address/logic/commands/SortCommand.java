@@ -71,7 +71,7 @@ public class SortCommand extends Command {
     public CommandResult execute(Model model) {
         requireNonNull(model);
         LocalDate cutoffDate = specifiedCutoffDate.orElseGet(() -> LocalDate.now(clock));
-        logger.fine(() -> String.format("Sorting %d displayed patients using cutoff date %s",
+        logger.fine(String.format("Sorting %d displayed patients using cutoff date %s",
                 model.getFilteredPersonList().size(), cutoffDate.format(CUTOFF_DATE_FORMATTER)));
 
         Comparator<Person> visitDateComparator = Comparator
