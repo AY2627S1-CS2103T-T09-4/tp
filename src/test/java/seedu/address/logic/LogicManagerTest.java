@@ -204,7 +204,8 @@ public class LogicManagerTest {
 
         CommandResult requestResult = logic.execute(PersonUtil.getAddCommand(personToAdd));
 
-        assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, personToAdd.getName()),
+        assertEquals(String.format(AddCommand.MESSAGE_WARNING_DUPLICATE_NAME, personToAdd.getName()) + " "
+                + String.format(AddCommand.MESSAGE_CONFIRM_ADD, personToAdd.getName()),
                 requestResult.getFeedbackToUser());
         assertEquals(existingPerson, requestResult.getPersonToView().orElseThrow());
         assertTrue(logic.isInputRequestPending());

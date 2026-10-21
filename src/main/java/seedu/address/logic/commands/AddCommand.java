@@ -9,9 +9,12 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_VISIT_DATE;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 
+import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
@@ -48,17 +51,16 @@ public class AddCommand extends Command {
     public static final String MESSAGE_DUPLICATE_VISIT_DATE =
             "Another patient already has a current or previous visit at %1$s. "
                     + "The patient is shown in the patient details panel. Choose a different date and time.";
-    public static final String MESSAGE_CONFIRM_DUPLICATE_NAME =
-            "A patient named %1$s already exists. The matching patient is shown in the patient details panel. "
-                    + "Add this patient anyway? Type y to confirm. Any other input cancels.";
-    public static final String MESSAGE_CONFIRM_DUPLICATE_NAMES =
-            "%2$d patients named %1$s already exist. Only one matching patient is shown in the patient details "
-                    + "panel. Add this patient anyway? Type y to confirm. Any other input cancels.";
-    public static final String MESSAGE_CONFIRM_FULL_DAY =
-            "Heads up: you already have %1$d visits on %2$s. Add %3$s anyway? "
-                    + "Type y to confirm. Any other input cancels.";
+    public static final String MESSAGE_WARNING_DUPLICATE_NAME =
+            "A patient named %1$s already exists. The matching patient is shown in the patient details panel.";
+    public static final String MESSAGE_WARNING_DUPLICATE_NAMES =
+            "%2$d patients named %1$s already exist. Only one matching patient is shown in the patient details panel.";
+    public static final String MESSAGE_WARNING_FULL_DAY = "Heads up: you already have %1$d visits on %2$s.";
+    public static final String MESSAGE_CONFIRM_ADD = "Add %1$s anyway? Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_ADD_CANCELLED = "Addition cancelled.";
     public static final String MESSAGE_NOT_ADDED = "The patient is not added due to: %1$s";
+
+    private static final Logger logger = LogsCenter.getLogger(AddCommand.class);
 
     private final Person toAdd;
 
@@ -70,6 +72,11 @@ public class AddCommand extends Command {
         toAdd = person;
     }
 
+    /**
+     * {@inheritDoc}
+     * Asks for a single confirmation listing every warning when the name matches another patient or the visit day
+     * already has {@value Model#MAX_VISITS_PER_DAY} or more visits, so the user never confirms twice in a row.
+     */
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
@@ -77,55 +84,40 @@ public class AddCommand extends Command {
         validateNoConflicts(model);
 
         List<Person> nameDuplicates = DuplicatePersonFinder.findNameDuplicates(model.getAddressBook(), toAdd);
-        if (!nameDuplicates.isEmpty()) {
-            String prompt = formatDuplicateNamePrompt(nameDuplicates.size());
-            return requestConfirmation(prompt, this::addPersonAfterVisitDayCheck, nameDuplicates.getFirst());
+        List<String> warnings = collectWarnings(model, nameDuplicates);
+        if (warnings.isEmpty()) {
+            return addPerson(model);
         }
 
-        return addPersonAfterVisitDayCheck(model);
+        String prompt = String.join(" ", warnings) + " " + String.format(MESSAGE_CONFIRM_ADD, toAdd.getName());
+        CommandInputRequest inputRequest =
+                CommandInputRequest.createConfirmation(prompt, MESSAGE_ADD_CANCELLED, this::addPerson);
+        // Previews one matching patient so the user can tell whether the new patient is really someone else
+        return nameDuplicates.isEmpty()
+                ? CommandResult.requestInput(inputRequest)
+                : CommandResult.requestInput(inputRequest, nameDuplicates.getFirst());
     }
 
     /**
-     * Adds the person, first asking for confirmation if the visit day already has
-     * {@value Model#MAX_VISITS_PER_DAY} or more visits.
-     *
-     * @throws CommandException If a true duplicate or visit-date conflict now exists in the address book.
+     * Returns the warnings the user must accept before the person is added, in the order they are shown.
+     * An empty list means the person can be added without confirmation.
      */
-    private CommandResult addPersonAfterVisitDayCheck(Model model) throws CommandException {
+    private List<String> collectWarnings(Model model, List<Person> nameDuplicates) {
+        List<String> warnings = new ArrayList<>();
+        if (!nameDuplicates.isEmpty()) {
+            warnings.add(formatDuplicateNameWarning(nameDuplicates.size()));
+        }
+
         int visitsOnSameDay = model.countPersonsWithSameVisitDay(toAdd);
         if (visitsOnSameDay >= Model.MAX_VISITS_PER_DAY) {
-            String prompt = String.format(MESSAGE_CONFIRM_FULL_DAY, visitsOnSameDay,
-                    toAdd.getVisitDate().toDayString(), toAdd.getName());
-            return requestConfirmation(prompt, this::addPerson);
+            warnings.add(String.format(MESSAGE_WARNING_FULL_DAY, visitsOnSameDay,
+                    toAdd.getVisitDate().toDayString()));
         }
 
-        return addPerson(model);
-    }
-
-    /**
-     * Returns a result asking the user to confirm with {@code y} before running {@code confirmedAction}.
-     */
-    private static CommandResult requestConfirmation(String prompt,
-            CommandInputRequest.ConfirmedAction confirmedAction) {
-        CommandInputRequest inputRequest = createConfirmationRequest(prompt, confirmedAction);
-        return CommandResult.requestInput(inputRequest);
-    }
-
-    /**
-     * Returns a result that also displays one matching patient while requesting confirmation.
-     */
-    private static CommandResult requestConfirmation(String prompt,
-            CommandInputRequest.ConfirmedAction confirmedAction, Person personToView) {
-        CommandInputRequest inputRequest = createConfirmationRequest(prompt, confirmedAction);
-        return CommandResult.requestInput(inputRequest, personToView);
-    }
-
-    /**
-     * Returns a confirmation request that adds the person only after a {@code y} response.
-     */
-    private static CommandInputRequest createConfirmationRequest(String prompt,
-            CommandInputRequest.ConfirmedAction confirmedAction) {
-        return CommandInputRequest.createConfirmation(prompt, MESSAGE_ADD_CANCELLED, confirmedAction);
+        if (warnings.size() > 1) {
+            logger.info("Combining " + warnings.size() + " add warnings into one confirmation for " + toAdd.getName());
+        }
+        return warnings;
     }
 
     /**
@@ -160,14 +152,14 @@ public class AddCommand extends Command {
     }
 
     /**
-     * Returns a grammatically correct confirmation prompt for the duplicate-name matches.
+     * Returns a grammatically correct warning for the duplicate-name matches.
      */
-    private String formatDuplicateNamePrompt(int duplicateCount) {
+    private String formatDuplicateNameWarning(int duplicateCount) {
         assert duplicateCount > 0;
 
         return (duplicateCount == 1)
-                ? String.format(MESSAGE_CONFIRM_DUPLICATE_NAME, toAdd.getName())
-                : String.format(MESSAGE_CONFIRM_DUPLICATE_NAMES, toAdd.getName(), duplicateCount);
+                ? String.format(MESSAGE_WARNING_DUPLICATE_NAME, toAdd.getName())
+                : String.format(MESSAGE_WARNING_DUPLICATE_NAMES, toAdd.getName(), duplicateCount);
     }
 
     @Override
