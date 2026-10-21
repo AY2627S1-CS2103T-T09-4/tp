@@ -19,7 +19,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.logging.Logger;
 
+import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.CollectionUtil;
 import seedu.address.commons.util.ToStringBuilder;
@@ -90,6 +92,8 @@ public class EditCommand extends Command {
     public static final String MESSAGE_EDIT_CANCELLED = "Edit cancelled.";
     public static final String MESSAGE_PERSON_NO_LONGER_EXISTS =
             "The person selected for editing no longer exists.";
+
+    private static final Logger logger = LogsCenter.getLogger(EditCommand.class);
 
     private final Index index;
     private final EditPersonDescriptor editPersonDescriptor;
@@ -205,8 +209,21 @@ public class EditCommand extends Command {
         validateNoConflicts(model, personToEdit, editedPerson);
 
         model.setPerson(personToEdit, editedPerson);
+        logOptionalFieldUpdates();
         model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
         return new CommandResult(String.format(MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)));
+    }
+
+    /**
+     * Logs supplied optional-field updates after the model accepts the edit, without including patient values.
+     */
+    private void logOptionalFieldUpdates() {
+        editPersonDescriptor.getDateOfBirth().ifPresent(dateOfBirth -> logger.fine(dateOfBirth.isEmpty()
+                ? "Cleared patient date of birth in model" : "Set patient date of birth in model"));
+        editPersonDescriptor.getBloodType().ifPresent(bloodType -> logger.fine(bloodType.isEmpty()
+                ? "Cleared patient blood type in model" : "Set patient blood type in model"));
+        editPersonDescriptor.getEmergencyContact().ifPresent(emergencyContact -> logger.fine(emergencyContact.isEmpty()
+                ? "Cleared patient emergency contact in model" : "Set patient emergency contact in model"));
     }
 
     /**

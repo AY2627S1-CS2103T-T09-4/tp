@@ -14,7 +14,9 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_VISIT_DATE;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 
+import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
@@ -67,6 +69,8 @@ public class AddCommand extends Command {
                     + "Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_ADD_CANCELLED = "Addition cancelled.";
     public static final String MESSAGE_NOT_ADDED = "The patient is not added due to: %1$s";
+
+    private static final Logger logger = LogsCenter.getLogger(AddCommand.class);
 
     private final Person toAdd;
 
@@ -145,6 +149,9 @@ public class AddCommand extends Command {
         validateNoConflicts(model);
 
         model.addPerson(toAdd);
+        logger.fine(() -> "Added patient to model; optional fields recorded: dateOfBirth="
+                + !toAdd.getDateOfBirth().isEmpty() + ", bloodType=" + !toAdd.getBloodType().isEmpty()
+                + ", emergencyContact=" + !toAdd.getEmergencyContact().isEmpty());
         return new CommandResult(String.format(MESSAGE_SUCCESS, toAdd.getName()));
     }
 

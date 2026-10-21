@@ -37,16 +37,16 @@ public class DateOfBirth {
     /**
      * Returns whether the value is empty or a real date in years 0001 to 9999 no later than today.
      */
-    public static boolean isValidDateOfBirth(String test) {
-        requireNonNull(test);
-        if (test.isEmpty()) {
+    public static boolean isValidDateOfBirth(String dateOfBirth) {
+        requireNonNull(dateOfBirth);
+        if (dateOfBirth.isEmpty()) {
             return true;
         }
-        if (!test.matches("[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}")) {
+        if (!dateOfBirth.matches("[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}")) {
             return false;
         }
         try {
-            LocalDate date = LocalDate.parse(test, FORMATTER);
+            LocalDate date = LocalDate.parse(dateOfBirth, FORMATTER);
             return date.getYear() >= 1 && !date.isAfter(LocalDate.now());
         } catch (DateTimeParseException exception) {
             return false;
