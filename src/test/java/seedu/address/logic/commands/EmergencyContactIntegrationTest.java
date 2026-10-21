@@ -137,14 +137,29 @@ public class EmergencyContactIntegrationTest {
 
     @Test
     public void execute_unrelatedEditAndNext_preservesContact() throws Exception {
-        logic.execute(ADD_COMMAND + " ec/" + CONTACT);
+        logic.execute(ADD_COMMAND.replace("22/10/2026 1000", "1/1/2000 1000") + " ec/" + CONTACT);
         Person original = model.getFilteredPersonList().getFirst();
         logic.execute("edit 1 note/Review medication");
         Person edited = new PersonBuilder(original).withNote("Review medication").build();
         assertStoredPerson(edited);
 
         logic.execute("next 1 1/1/2099 1000");
-        assertStoredPerson(new PersonBuilder(edited).withVisitDate("1/1/2099 1000").build());
+        assertStoredPerson(new PersonBuilder(edited).withVisitDate("1/1/2099 1000")
+                .withPreviousVisitDates(original.getVisitDate().toString()).build());
+    }
+
+    @Test
+    public void execute_editContactWithVisitHistory_preservesHistoryAndOtherDetails() throws Exception {
+        Person original = new PersonBuilder().withVisitDate("3/1/2000 1000")
+                .withPreviousVisitDates("1/1/2000 1000", "2/1/2000 1000")
+                .withEmergencyContact(CONTACT).build();
+        model.addPerson(original);
+
+        logic.execute("edit 1 ec/" + REPLACEMENT_CONTACT);
+        assertStoredPerson(new PersonBuilder(original).withEmergencyContact(REPLACEMENT_CONTACT).build());
+
+        logic.execute("edit 1 ec/");
+        assertStoredPerson(new PersonBuilder(original).withEmergencyContact("").build());
     }
 
     @Test

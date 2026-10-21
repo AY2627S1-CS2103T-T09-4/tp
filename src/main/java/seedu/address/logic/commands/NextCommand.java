@@ -6,8 +6,10 @@ import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.ToStringBuilder;
@@ -18,21 +20,26 @@ import seedu.address.model.person.Person;
 import seedu.address.model.person.VisitDate;
 
 /**
- * Replaces a patient's visit date and time with an available future appointment.
- * Does not record a completed visit or visit history.
+ * Retains a patient's current visit date and time before scheduling an available future appointment.
+ * The current visit must have arrived or passed; retained dates do not verify attendance or completion.
  */
 public class NextCommand extends Command {
 
     public static final String COMMAND_WORD = "next";
     public static final String MESSAGE_USAGE = COMMAND_WORD
             + ": Schedules the next visit for the patient identified by the displayed index.\n"
+            + "The current visit must have arrived or passed. Use edit to reschedule a future current visit.\n"
             + "Parameters: INDEX (must be a positive integer) DATETIME (d/M/yyyy HHmm, must be in the future)\n"
             + "Example: " + COMMAND_WORD + " 1 1/11/2026 0930";
     public static final String MESSAGE_SUCCESS = "Next visit scheduled for patient %1$s: %2$s";
     public static final String MESSAGE_UNCHANGED_VISIT_DATE = "Patient %1$s already has an appointment at %2$s.";
-    public static final String MESSAGE_NON_FUTURE_VISIT_DATE = "The next visit must be in the future.";
+    public static final String MESSAGE_NON_FUTURE_VISIT_DATE =
+            "The next visit must be later than the current time (%1$s). Choose a later date and time.";
+    public static final String MESSAGE_CURRENT_VISIT_IN_FUTURE =
+            "Patient %1$s has a current visit at %2$s that is still in the future. Use edit to reschedule it.";
     public static final String MESSAGE_DUPLICATE_VISIT_DATE =
-            "Patient %1$s already has an appointment at %2$s. Choose a different date and time.";
+            "Patient %1$s already has a current or previous visit at %2$s and is shown in the patient details panel. "
+                    + "Choose a different date and time.";
 
     private final Index index;
     private final VisitDate visitDate;
@@ -57,7 +64,8 @@ public class NextCommand extends Command {
 
     /**
      * {@inheritDoc}
-     * Updates only the visit date and restores the full displayed list in stored order after validation.
+     * Appends the current visit to the previous dates, replaces it with the requested future visit,
+     * and restores the full displayed list in stored order after validation.
      */
     @Override
     public CommandResult execute(Model model) throws CommandException {
@@ -68,35 +76,59 @@ public class NextCommand extends Command {
         }
 
         Person personToUpdate = displayedPersons.get(index.getZeroBased());
-        validateVisitDate(model, personToUpdate);
+        validateVisitDate(personToUpdate);
 
-        Person updatedPerson = new Person(personToUpdate.getName(), personToUpdate.getPhone(),
-                personToUpdate.getEmail(), personToUpdate.getAddress(), visitDate,
-                personToUpdate.getNote(), personToUpdate.getEmergencyContact(), personToUpdate.getTags());
+        Person updatedPerson = createUpdatedPerson(personToUpdate);
+        validateNoConflicts(model, personToUpdate, updatedPerson);
         model.setPerson(personToUpdate, updatedPerson);
         model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
         return new CommandResult(String.format(MESSAGE_SUCCESS, updatedPerson.getName(), visitDate));
     }
 
     /**
-     * Rejects unchanged or non-future appointments and identifies conflicts across the full stored list.
+     * Returns a replacement patient with the current date appended to the previous dates.
+     * All fields other than the current and previous visit dates are preserved.
      */
-    private void validateVisitDate(Model model, Person personToUpdate) throws CommandException {
+    private Person createUpdatedPerson(Person personToUpdate) {
+        List<VisitDate> previousVisitDates = new ArrayList<>(personToUpdate.getPreviousVisitDates());
+        previousVisitDates.add(personToUpdate.getVisitDate());
+        return new Person(personToUpdate.getName(), personToUpdate.getPhone(),
+                personToUpdate.getEmail(), personToUpdate.getAddress(), visitDate,
+                previousVisitDates, personToUpdate.getNote(), personToUpdate.getEmergencyContact(),
+                personToUpdate.getTags());
+    }
+
+    /**
+     * Requires the current visit to be at or before now and the requested visit to be strictly after now.
+     * Reads the execution-time clock once for both comparisons, retaining its full precision.
+     */
+    private void validateVisitDate(Person personToUpdate) throws CommandException {
         if (visitDate.equals(personToUpdate.getVisitDate())) {
             throw new CommandException(String.format(MESSAGE_UNCHANGED_VISIT_DATE,
                     personToUpdate.getName(), visitDate));
         }
 
         LocalDateTime now = LocalDateTime.now(clock);
-        if (!visitDate.value.isAfter(now)) {
-            throw new CommandException(MESSAGE_NON_FUTURE_VISIT_DATE);
+        if (personToUpdate.getVisitDate().value.isAfter(now)) {
+            throw new CommandException(String.format(MESSAGE_CURRENT_VISIT_IN_FUTURE,
+                    personToUpdate.getName(), personToUpdate.getVisitDate()));
         }
+        if (!visitDate.value.isAfter(now)) {
+            throw new CommandException(String.format(MESSAGE_NON_FUTURE_VISIT_DATE, now.format(VisitDate.FORMATTER)));
+        }
+    }
 
-        // The shared boolean conflict check cannot identify the patient for the error message.
-        for (Person person : model.getAddressBook().getPersonList()) {
-            if (!person.equals(personToUpdate) && visitDate.equals(person.getVisitDate())) {
-                throw new CommandException(String.format(MESSAGE_DUPLICATE_VISIT_DATE, person.getName(), visitDate));
-            }
+    /**
+     * Checks the full replacement record against every other stored patient's visit record.
+     */
+    private void validateNoConflicts(Model model, Person personToUpdate, Person updatedPerson) throws CommandException {
+        Optional<Person> visitDateDuplicate = DuplicatePersonFinder.findVisitDateDuplicate(
+                model.getAddressBook(), updatedPerson, personToUpdate);
+        if (visitDateDuplicate.isPresent()) {
+            Person conflictingPerson = visitDateDuplicate.get();
+            throw new CommandException(
+                    String.format(MESSAGE_DUPLICATE_VISIT_DATE, conflictingPerson.getName(), visitDate),
+                    conflictingPerson);
         }
     }
 

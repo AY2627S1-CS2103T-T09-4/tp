@@ -20,6 +20,10 @@
       <Label id="email" fx:id="email" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
       <Label id="address" fx:id="address" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
       <Label id="visitDate" fx:id="visitDate" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
+      <Label id="previousVisitDatesHeader" text="Previous visit dates:" maxWidth="Infinity"
+             styleClass="label-bright" wrapText="true" />
+      <Label id="previousVisitDates" fx:id="previousVisitDates" maxWidth="Infinity" minHeight="-Infinity"
+             styleClass="label-bright" wrapText="true" />
       <Label id="note" fx:id="note" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
       <Label id="tags" fx:id="tags" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
     </VBox>

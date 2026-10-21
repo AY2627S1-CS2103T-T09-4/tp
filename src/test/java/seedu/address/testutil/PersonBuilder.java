@@ -1,6 +1,8 @@
 package seedu.address.testutil;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import seedu.address.model.person.Address;
@@ -31,6 +33,7 @@ public class PersonBuilder {
     private Email email;
     private Address address;
     private VisitDate visitDate;
+    private List<VisitDate> previousVisitDates;
     private Note note;
     private EmergencyContact emergencyContact;
     private Set<Tag> tags;
@@ -44,6 +47,7 @@ public class PersonBuilder {
         email = new Email(DEFAULT_EMAIL);
         address = new Address(DEFAULT_ADDRESS);
         visitDate = new VisitDate(DEFAULT_VISIT_DATE);
+        previousVisitDates = List.of();
         note = new Note(DEFAULT_NOTE);
         emergencyContact = new EmergencyContact("");
         tags = new HashSet<>();
@@ -58,6 +62,7 @@ public class PersonBuilder {
         email = personToCopy.getEmail();
         address = personToCopy.getAddress();
         visitDate = personToCopy.getVisitDate();
+        previousVisitDates = List.copyOf(personToCopy.getPreviousVisitDates());
         note = personToCopy.getNote();
         emergencyContact = personToCopy.getEmergencyContact();
         tags = new HashSet<>(personToCopy.getTags());
@@ -112,6 +117,14 @@ public class PersonBuilder {
     }
 
     /**
+     * Sets the previous visit dates in the supplied order for the {@code Person} being built.
+     */
+    public PersonBuilder withPreviousVisitDates(String... previousVisitDates) {
+        this.previousVisitDates = Arrays.stream(previousVisitDates).map(VisitDate::new).toList();
+        return this;
+    }
+
+    /**
      * Sets the {@code Note} of the {@code Person} that we are building.
      */
     public PersonBuilder withNote(String note) {
@@ -131,7 +144,7 @@ public class PersonBuilder {
      * Returns a patient with the configured details.
      */
     public Person build() {
-        return new Person(name, phone, email, address, visitDate, note, emergencyContact, tags);
+        return new Person(name, phone, email, address, visitDate, previousVisitDates, note, emergencyContact, tags);
     }
 
 }

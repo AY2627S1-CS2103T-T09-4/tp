@@ -6,9 +6,11 @@ import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalPersons.BENSON;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.exceptions.IllegalValueException;
@@ -16,8 +18,10 @@ import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
+import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
 import seedu.address.model.person.VisitDate;
+import seedu.address.testutil.PersonBuilder;
 
 public class JsonAdaptedPersonTest {
     private static final String INVALID_NAME = "R@chel";
@@ -36,6 +40,55 @@ public class JsonAdaptedPersonTest {
     private static final List<JsonAdaptedTag> VALID_TAGS = BENSON.getTags().stream()
             .map(JsonAdaptedTag::new)
             .collect(Collectors.toList());
+
+    @Test
+    public void toModelType_previousVisitDates_preservesOrderAndOtherFields() throws Exception {
+        Person original = new PersonBuilder(BENSON).withVisitDate("10/10/2026 1000")
+                .withPreviousVisitDates("1/10/2026 1000", "1/10/2026 1100")
+                .withEmergencyContact("Mary Tan, 91234567").build();
+
+        assertEquals(original, new JsonAdaptedPerson(original).toModelType());
+    }
+
+    @Test
+    public void toModelType_nullPreviousVisitDates_defaultsToEmpty() throws Exception {
+        assertEquals(BENSON, withPreviousVisitDates(null).toModelType());
+        assertEquals(BENSON, withPreviousVisitDates(List.of()).toModelType());
+    }
+
+    @Test
+    public void toModelType_malformedOrNullPreviousDate_throwsIllegalValueException() {
+        for (List<String> previousDates : List.of(List.of(INVALID_VISIT_DATE), List.of(""),
+                Arrays.asList("1/1/2024 1000", null))) {
+            assertThrows(IllegalValueException.class, () -> withPreviousVisitDates(previousDates).toModelType());
+        }
+    }
+
+    @Test
+    public void toModelType_invalidPreviousDateChronology_preservesCause() {
+        for (List<String> previousDates : List.of(List.of("2/1/2024 1000", "1/1/2024 1000"),
+                List.of("1/1/2024 1000", "01/01/2024 1000"), List.of(VALID_VISIT_DATE),
+                List.of("1/1/2027 1000"))) {
+            IllegalValueException exception = Assertions.assertThrows(
+                    IllegalValueException.class, () -> withPreviousVisitDates(previousDates).toModelType());
+            assertEquals(Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS, exception.getMessage());
+            assertEquals(IllegalArgumentException.class, exception.getCause().getClass());
+        }
+    }
+
+    @Test
+    public void constructor_mutablePreviousVisitDates_defensivelyCopiesList() throws Exception {
+        List<String> previousDates = new ArrayList<>(List.of("1/1/2024 1000"));
+        JsonAdaptedPerson adapted = withPreviousVisitDates(previousDates);
+        previousDates.clear();
+
+        assertEquals(List.of(new VisitDate("1/1/2024 1000")), adapted.toModelType().getPreviousVisitDates());
+    }
+
+    private JsonAdaptedPerson withPreviousVisitDates(List<String> previousDates) {
+        return new JsonAdaptedPerson(VALID_NAME, VALID_PHONE, VALID_EMAIL, VALID_ADDRESS, VALID_VISIT_DATE,
+                previousDates, VALID_NOTE, VALID_TAGS);
+    }
 
     @Test
     public void toModelType_validPersonDetails_returnsPerson() throws Exception {

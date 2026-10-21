@@ -32,6 +32,7 @@ class JsonAdaptedPerson {
     private final String email;
     private final String address;
     private final String visitDate;
+    private final List<String> previousVisitDates = new ArrayList<>();
     private final String note;
     private final String emergencyContact;
     private final List<JsonAdaptedTag> tags = new ArrayList<>();
@@ -41,23 +42,43 @@ class JsonAdaptedPerson {
      */
     public JsonAdaptedPerson(String name, String phone, String email, String address,
             String visitDate, String note, List<JsonAdaptedTag> tags) {
-        this(name, phone, email, address, visitDate, note, null, tags);
+        this(name, phone, email, address, visitDate, null, note, null, tags);
     }
 
     /**
-     * Constructs a stored patient, accepting a missing emergency contact from older files.
+     * Constructs a stored patient without previous visit dates.
+     */
+    public JsonAdaptedPerson(String name, String phone, String email, String address,
+            String visitDate, String note, String emergencyContact, List<JsonAdaptedTag> tags) {
+        this(name, phone, email, address, visitDate, null, note, emergencyContact, tags);
+    }
+
+    /**
+     * Constructs a stored patient without an emergency contact.
+     */
+    public JsonAdaptedPerson(String name, String phone, String email, String address,
+            String visitDate, List<String> previousVisitDates, String note, List<JsonAdaptedTag> tags) {
+        this(name, phone, email, address, visitDate, previousVisitDates, note, null, tags);
+    }
+
+    /**
+     * Constructs an adapted patient, accepting missing previous dates or emergency contacts in older files.
      */
     @JsonCreator
     public JsonAdaptedPerson(@JsonProperty("name") String name, @JsonProperty("phone") String phone,
             @JsonProperty("email") String email, @JsonProperty("address") String address,
-            @JsonProperty("visitDate") String visitDate, @JsonProperty("note") String note,
-            @JsonProperty("emergencyContact") String emergencyContact,
+            @JsonProperty("visitDate") String visitDate,
+            @JsonProperty("previousVisitDates") List<String> previousVisitDates,
+            @JsonProperty("note") String note, @JsonProperty("emergencyContact") String emergencyContact,
             @JsonProperty("tags") List<JsonAdaptedTag> tags) {
         this.name = name;
         this.phone = phone;
         this.email = email;
         this.address = address;
         this.visitDate = visitDate;
+        if (previousVisitDates != null) {
+            this.previousVisitDates.addAll(previousVisitDates);
+        }
         this.note = note;
         this.emergencyContact = emergencyContact;
         if (tags != null) {
@@ -74,6 +95,8 @@ class JsonAdaptedPerson {
         email = source.getEmail().value;
         address = source.getAddress().value;
         visitDate = source.getVisitDate().toString();
+        previousVisitDates.addAll(source.getPreviousVisitDates().stream()
+                .map(VisitDate::toString).toList());
         note = source.getNote().value;
         emergencyContact = source.getEmergencyContact().toString();
         tags.addAll(source.getTags().stream()
@@ -143,8 +166,28 @@ class JsonAdaptedPerson {
         final EmergencyContact modelEmergencyContact = new EmergencyContact(storedContact);
 
         final Set<Tag> modelTags = new HashSet<>(personTags);
-        return new Person(modelName, modelPhone, modelEmail, modelAddress, modelVisitDate, modelNote,
-                modelEmergencyContact, modelTags);
+        final List<VisitDate> modelPreviousVisitDates = parsePreviousVisitDates();
+        try {
+            return new Person(modelName, modelPhone, modelEmail, modelAddress, modelVisitDate,
+                    modelPreviousVisitDates, modelNote, modelEmergencyContact, modelTags);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalValueException(Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS, e);
+        }
     }
 
+    /**
+     * Converts the stored previous-date strings into {@code VisitDate} objects.
+     *
+     * @throws IllegalValueException If any previous date is null or malformed.
+     */
+    private List<VisitDate> parsePreviousVisitDates() throws IllegalValueException {
+        List<VisitDate> modelPreviousVisitDates = new ArrayList<>();
+        for (String previousVisitDate : previousVisitDates) {
+            if (previousVisitDate == null || !VisitDate.isValidVisitDate(previousVisitDate)) {
+                throw new IllegalValueException("Invalid previous visit date. " + VisitDate.MESSAGE_CONSTRAINTS);
+            }
+            modelPreviousVisitDates.add(new VisitDate(previousVisitDate));
+        }
+        return modelPreviousVisitDates;
+    }
 }

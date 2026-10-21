@@ -8,6 +8,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import seedu.address.model.person.Person;
+import seedu.address.model.person.VisitDate;
 
 /**
  * Panel containing all details of a person selected by the view command.
@@ -35,6 +36,9 @@ public class PatientDetailsPanel extends UiPart<Region> {
     private Label visitDate;
 
     @FXML
+    private Label previousVisitDates;
+
+    @FXML
     private Label note;
 
     @FXML
@@ -52,6 +56,7 @@ public class PatientDetailsPanel extends UiPart<Region> {
 
     /**
      * Displays all details of the specified person.
+     * Shows previous visit dates newest first without changing their stored order.
      *
      * @param person Person whose details should be displayed.
      */
@@ -61,6 +66,11 @@ public class PatientDetailsPanel extends UiPart<Region> {
         email.setText("Email: " + person.getEmail().value);
         address.setText("Address: " + person.getAddress().value);
         visitDate.setText("Visit date: " + person.getVisitDate());
+        previousVisitDates.setText(person.getPreviousVisitDates().isEmpty()
+                ? "No previous visit dates"
+                : person.getPreviousVisitDates().reversed().stream()
+                        .map(VisitDate::toString)
+                        .collect(Collectors.joining("\n")));
         note.setText("Note: " + person.getNote().value);
         emergencyContact.setText("Emergency Contact : " + person.getEmergencyContact().toDisplayString());
         boolean hasEmergencyContact = !person.getEmergencyContact().isEmpty();
