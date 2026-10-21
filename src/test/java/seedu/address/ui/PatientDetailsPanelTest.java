@@ -34,6 +34,31 @@ public class PatientDetailsPanelTest {
     }
 
     @Test
+    public void setPerson_smokingStatus_displaysAfterAlcoholHistoryAndHidesWhenCleared() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            Person recorded = new PersonBuilder().withAlcoholHistory("Does not drink")
+                    .withSmokingStatus("former").build();
+            panel.setPerson(recorded);
+            Label status = getLabel(panel, "smokingStatus");
+            assertEquals("Smoking status: former", status.getText());
+            assertFieldVisible(panel, "smokingStatus", true);
+            assertTrue(status.isWrapText());
+            VBox container = getDetailsContainer(panel);
+            assertEquals(container.getChildren().indexOf(getLabel(panel, "alcoholHistory")) + 1,
+                    container.getChildren().indexOf(status));
+
+            panel.setPerson(new PersonBuilder(recorded).withSmokingStatus("").build());
+            assertFieldVisible(panel, "smokingStatus", false);
+            panel.setPerson(new PersonBuilder().withSmokingStatus("unknown").build());
+            assertFieldVisible(panel, "smokingStatus", true);
+            assertEquals("Smoking status: unknown", status.getText());
+            panel.setPerson(new PersonBuilder().build());
+            assertFieldVisible(panel, "smokingStatus", false);
+        });
+    }
+
+    @Test
     public void setPerson_alcoholHistory_displaysAfterBloodTypeAndClearsStaleText() {
         runOnFxThread(() -> {
             PatientDetailsPanel panel = new PatientDetailsPanel();

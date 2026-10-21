@@ -17,6 +17,7 @@
       <Label id="dateOfBirth" fx:id="dateOfBirth" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
       <Label id="bloodType" fx:id="bloodType" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
       <Label id="alcoholHistory" fx:id="alcoholHistory" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
+      <Label id="smokingStatus" fx:id="smokingStatus" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
       <Label id="phone" fx:id="phone" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
       <Label id="emergencyContact" fx:id="emergencyContact" maxWidth="Infinity"
              styleClass="label-bright" wrapText="true" />

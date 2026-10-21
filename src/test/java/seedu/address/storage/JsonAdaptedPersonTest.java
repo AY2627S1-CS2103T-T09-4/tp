@@ -22,6 +22,7 @@ import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
+import seedu.address.model.person.SmokingStatus;
 import seedu.address.model.person.VisitDate;
 import seedu.address.testutil.PersonBuilder;
 
@@ -44,6 +45,15 @@ public class JsonAdaptedPersonTest {
             .collect(Collectors.toList());
 
     @Test
+    public void toModelType_unsupportedSmokingStatus_throwsIllegalValueException() {
+        for (String status : List.of("daily", "yes", "unrecorded")) {
+            JsonAdaptedPerson person = new JsonAdaptedPerson(VALID_NAME, null, null, null, status,
+                    VALID_PHONE, VALID_EMAIL, VALID_ADDRESS, VALID_VISIT_DATE, null, VALID_NOTE, null, VALID_TAGS);
+            assertThrows(IllegalValueException.class, SmokingStatus.MESSAGE_CONSTRAINTS, person::toModelType);
+        }
+    }
+
+    @Test
     public void toModelType_invalidDateOfBirth_throwsIllegalValueException() {
         for (String date : List.of("31/2/2000", "1/1/9999", " ")) {
             JsonAdaptedPerson person = new JsonAdaptedPerson(VALID_NAME, date, null, VALID_PHONE, VALID_EMAIL,
@@ -63,7 +73,7 @@ public class JsonAdaptedPersonTest {
         Person original = new PersonBuilder(BENSON).withVisitDate("10/10/2026 1000")
                 .withPreviousVisitDates("1/10/2026 1000", "1/10/2026 1100")
                 .withDateOfBirth("15/6/1990").withEmergencyContact("Mary Tan, 91234567").withBloodType("AB-")
-                .withAlcoholHistory("Occasional drinking").build();
+                .withAlcoholHistory("Occasional drinking").withSmokingStatus("unknown").build();
 
         assertEquals(original, new JsonAdaptedPerson(original).toModelType());
     }

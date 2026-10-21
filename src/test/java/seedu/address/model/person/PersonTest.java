@@ -29,6 +29,24 @@ public class PersonTest {
     private static final VisitDate LATER_VISIT_DATE = new VisitDate("1/10/2026 1100");
 
     @Test
+    public void equals_differentSmokingStatus_preservesPatientIdentity() {
+        Person recorded = new PersonBuilder(ALICE).withSmokingStatus("unknown").build();
+        assertNotEquals(ALICE, recorded);
+        assertTrue(ALICE.isSamePerson(recorded));
+        Person copy = new PersonBuilder(recorded).build();
+        assertEquals(recorded, copy);
+        assertEquals(recorded.hashCode(), copy.hashCode());
+    }
+
+    @Test
+    public void constructor_nullSmokingStatus_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> new Person(ALICE.getName(), ALICE.getDateOfBirth(),
+                ALICE.getBloodType(), ALICE.getAlcoholHistory(), null, ALICE.getPhone(), ALICE.getEmail(),
+                ALICE.getAddress(), ALICE.getVisitDate(), ALICE.getPreviousVisitDates(), ALICE.getNote(),
+                ALICE.getEmergencyContact(), ALICE.getTags()));
+    }
+
+    @Test
     public void equals_differentAlcoholHistory_preservesPatientIdentity() {
         Person recorded = new PersonBuilder(ALICE).withAlcoholHistory("Does not drink").build();
         assertNotEquals(ALICE, recorded);
@@ -300,6 +318,7 @@ public class PersonTest {
                 + ", dateOfBirth=" + ALICE.getDateOfBirth()
                 + ", bloodType=" + ALICE.getBloodType()
                 + ", alcoholHistory=" + ALICE.getAlcoholHistory()
+                + ", smokingStatus=" + ALICE.getSmokingStatus()
                 + ", phone=" + ALICE.getPhone()
                 + ", email=" + ALICE.getEmail() + ", address=" + ALICE.getAddress()
                 + ", visitDate=" + ALICE.getVisitDate() + ", previousVisitDates=" + ALICE.getPreviousVisitDates()

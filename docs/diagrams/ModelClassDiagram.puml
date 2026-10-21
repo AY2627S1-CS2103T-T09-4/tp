@@ -16,6 +16,7 @@ Class UniquePersonList
 Class Person
 Class Address
 Class AlcoholHistory
+Enum SmokingStatus
 Class Email
 Class EmergencyContact
 Class Name
@@ -45,6 +46,7 @@ Person *--> "1" EmergencyContact
 Person *--> Email
 Person *--> Address
 Person *--> "1" AlcoholHistory
+Person *--> "1" SmokingStatus
 Person *--> "*" Tag
 
 Person -[hidden]up--> I

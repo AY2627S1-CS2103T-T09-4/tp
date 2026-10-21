@@ -40,7 +40,7 @@ public class NextCommandTest {
     private static final String NEW_VISIT_DATE = "1/11/2026 0930";
     private static final Person AMY = new PersonBuilder().withVisitDate("13/10/2026 1000")
             .withDateOfBirth("15/6/1990").withBloodType("A+").withEmergencyContact("Mary Tan, 91234567")
-            .withAlcoholHistory("Does not drink").withNote("Review  medication")
+            .withAlcoholHistory("Does not drink").withSmokingStatus("former").withNote("Review  medication")
             .withTags("friend", "priority").build();
     private static final Person BENSON = new PersonBuilder().withName("Benson Meier").withPhone("91234567")
             .withVisitDate("12/10/2026 1000").withEmail("").withNote("").withTags().build();

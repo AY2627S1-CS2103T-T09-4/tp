@@ -10,6 +10,7 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_EMERGENCY_CONTACT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_SMOKING_STATUS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_VISIT_DATE;
 import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
@@ -39,6 +40,7 @@ import seedu.address.model.person.Name;
 import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
+import seedu.address.model.person.SmokingStatus;
 import seedu.address.model.person.VisitDate;
 import seedu.address.model.tag.Tag;
 
@@ -57,6 +59,7 @@ public class EditCommand extends Command {
             + "[" + PREFIX_DATE_OF_BIRTH + "DATE] "
             + "[" + PREFIX_BLOOD_TYPE + "BLOOD_TYPE] "
             + "[" + PREFIX_ALCOHOL_HISTORY + "ALCOHOL_HISTORY] "
+            + "[" + PREFIX_SMOKING_STATUS + "STATUS] "
             + "[" + PREFIX_PHONE + "PHONE] "
             + "[" + PREFIX_EMERGENCY_CONTACT + "[NAME, ]PHONE_NUMBER] "
             + "[" + PREFIX_ADDRESS + "ADDRESS] "
@@ -69,6 +72,7 @@ public class EditCommand extends Command {
             + PREFIX_DATE_OF_BIRTH + "15/6/1990 "
             + PREFIX_BLOOD_TYPE + "A+ "
             + PREFIX_ALCOHOL_HISTORY + "Occasional drinking "
+            + PREFIX_SMOKING_STATUS + "former "
             + PREFIX_PHONE + "91234567 "
             + PREFIX_VISIT_DATE + "8/10/2026 1000 "
             + PREFIX_EMAIL + "johndoe@example.com "
@@ -228,6 +232,8 @@ public class EditCommand extends Command {
                 ? "Cleared patient blood type in model" : "Set patient blood type in model"));
         editPersonDescriptor.getAlcoholHistory().ifPresent(alcoholHistory -> logger.fine(alcoholHistory.isEmpty()
                 ? "Cleared patient alcohol history in model" : "Set patient alcohol history in model"));
+        editPersonDescriptor.getSmokingStatus().ifPresent(smokingStatus -> logger.fine(smokingStatus.isEmpty()
+                ? "Cleared patient smoking status in model" : "Set patient smoking status in model"));
         editPersonDescriptor.getEmergencyContact().ifPresent(emergencyContact -> logger.fine(emergencyContact.isEmpty()
                 ? "Cleared patient emergency contact in model" : "Set patient emergency contact in model"));
     }
@@ -282,6 +288,8 @@ public class EditCommand extends Command {
         BloodType updatedBloodType = editPersonDescriptor.getBloodType().orElse(personToEdit.getBloodType());
         AlcoholHistory updatedAlcoholHistory = editPersonDescriptor.getAlcoholHistory()
                 .orElse(personToEdit.getAlcoholHistory());
+        SmokingStatus updatedSmokingStatus = editPersonDescriptor.getSmokingStatus()
+                .orElse(personToEdit.getSmokingStatus());
         Phone updatedPhone = editPersonDescriptor.getPhone().orElse(personToEdit.getPhone());
         Email updatedEmail = editPersonDescriptor.getEmail().orElse(personToEdit.getEmail());
         Address updatedAddress = editPersonDescriptor.getAddress().orElse(personToEdit.getAddress());
@@ -299,8 +307,8 @@ public class EditCommand extends Command {
         }
 
         return new Person(updatedName, updatedDateOfBirth, updatedBloodType, updatedAlcoholHistory,
-                updatedPhone, updatedEmail, updatedAddress, updatedVisitDate, previousVisitDates, updatedNote,
-                updatedEmergencyContact, updatedTags);
+                updatedSmokingStatus, updatedPhone, updatedEmail, updatedAddress, updatedVisitDate, previousVisitDates,
+                updatedNote, updatedEmergencyContact, updatedTags);
     }
 
     @Override
@@ -336,6 +344,7 @@ public class EditCommand extends Command {
         private DateOfBirth dateOfBirth;
         private BloodType bloodType;
         private AlcoholHistory alcoholHistory;
+        private SmokingStatus smokingStatus;
         private Phone phone;
         private Email email;
         private Address address;
@@ -358,6 +367,7 @@ public class EditCommand extends Command {
             setDateOfBirth(toCopy.dateOfBirth);
             setBloodType(toCopy.bloodType);
             setAlcoholHistory(toCopy.alcoholHistory);
+            setSmokingStatus(toCopy.smokingStatus);
             setPhone(toCopy.phone);
             setEmail(toCopy.email);
             setAddress(toCopy.address);
@@ -371,8 +381,8 @@ public class EditCommand extends Command {
          * Returns true if at least one field is edited.
          */
         public boolean isAnyFieldEdited() {
-            return CollectionUtil.isAnyNonNull(name, dateOfBirth, bloodType, alcoholHistory, phone, email, address,
-                    visitDate, note, emergencyContact, tags);
+            return CollectionUtil.isAnyNonNull(name, dateOfBirth, bloodType, alcoholHistory, smokingStatus, phone,
+                    email, address, visitDate, note, emergencyContact, tags);
         }
 
         public void setName(Name name) {
@@ -405,6 +415,14 @@ public class EditCommand extends Command {
 
         public Optional<AlcoholHistory> getAlcoholHistory() {
             return Optional.ofNullable(alcoholHistory);
+        }
+
+        public void setSmokingStatus(SmokingStatus smokingStatus) {
+            this.smokingStatus = smokingStatus;
+        }
+
+        public Optional<SmokingStatus> getSmokingStatus() {
+            return Optional.ofNullable(smokingStatus);
         }
 
         public void setPhone(Phone phone) {
@@ -487,6 +505,7 @@ public class EditCommand extends Command {
                     && Objects.equals(dateOfBirth, otherEditPersonDescriptor.dateOfBirth)
                     && Objects.equals(bloodType, otherEditPersonDescriptor.bloodType)
                     && Objects.equals(alcoholHistory, otherEditPersonDescriptor.alcoholHistory)
+                    && Objects.equals(smokingStatus, otherEditPersonDescriptor.smokingStatus)
                     && Objects.equals(phone, otherEditPersonDescriptor.phone)
                     && Objects.equals(email, otherEditPersonDescriptor.email)
                     && Objects.equals(address, otherEditPersonDescriptor.address)
@@ -503,6 +522,7 @@ public class EditCommand extends Command {
                     .add("dateOfBirth", dateOfBirth)
                     .add("bloodType", bloodType)
                     .add("alcoholHistory", alcoholHistory)
+                    .add("smokingStatus", smokingStatus)
                     .add("phone", phone)
                     .add("email", email)
                     .add("address", address)

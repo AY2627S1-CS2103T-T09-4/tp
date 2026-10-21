@@ -15,6 +15,7 @@ import seedu.address.model.person.Name;
 import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
+import seedu.address.model.person.SmokingStatus;
 import seedu.address.model.person.VisitDate;
 import seedu.address.model.tag.Tag;
 import seedu.address.model.util.SampleDataUtil;
@@ -35,6 +36,7 @@ public class PersonBuilder {
     private DateOfBirth dateOfBirth;
     private BloodType bloodType;
     private AlcoholHistory alcoholHistory;
+    private SmokingStatus smokingStatus;
     private Phone phone;
     private Email email;
     private Address address;
@@ -52,6 +54,7 @@ public class PersonBuilder {
         dateOfBirth = new DateOfBirth("");
         bloodType = BloodType.UNKNOWN;
         alcoholHistory = new AlcoholHistory("");
+        smokingStatus = SmokingStatus.UNRECORDED;
         phone = new Phone(DEFAULT_PHONE);
         email = new Email(DEFAULT_EMAIL);
         address = new Address(DEFAULT_ADDRESS);
@@ -70,6 +73,7 @@ public class PersonBuilder {
         dateOfBirth = personToCopy.getDateOfBirth();
         bloodType = personToCopy.getBloodType();
         alcoholHistory = personToCopy.getAlcoholHistory();
+        smokingStatus = personToCopy.getSmokingStatus();
         phone = personToCopy.getPhone();
         email = personToCopy.getEmail();
         address = personToCopy.getAddress();
@@ -109,6 +113,14 @@ public class PersonBuilder {
      */
     public PersonBuilder withAlcoholHistory(String alcoholHistory) {
         this.alcoholHistory = new AlcoholHistory(alcoholHistory);
+        return this;
+    }
+
+    /**
+     * Sets the optional smoking status of the patient being built.
+     */
+    public PersonBuilder withSmokingStatus(String smokingStatus) {
+        this.smokingStatus = SmokingStatus.fromString(smokingStatus);
         return this;
     }
 
@@ -180,8 +192,8 @@ public class PersonBuilder {
      * Returns a patient with the configured details.
      */
     public Person build() {
-        return new Person(name, dateOfBirth, bloodType, alcoholHistory, phone, email, address, visitDate,
-                previousVisitDates, note, emergencyContact, tags);
+        return new Person(name, dateOfBirth, bloodType, alcoholHistory, smokingStatus, phone, email, address,
+                visitDate, previousVisitDates, note, emergencyContact, tags);
     }
 
 }

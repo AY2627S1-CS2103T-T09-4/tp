@@ -394,10 +394,23 @@ history. Both parsers reject repeated `alc/` prefixes. Unrelated edits and `next
 The right-hand details panel displays recorded alcohol history immediately after blood type, wraps long text, and
 hides the row when unrecorded. Patient list cards and duplicate-patient identity remain unchanged.
 
+### Optional smoking status
+
+`Person` stores a `SmokingStatus` enum with `NEVER`, `FORMER`, `CURRENT`, `UNKNOWN`, and `UNRECORDED`.
+`UNKNOWN` represents explicitly recorded uncertainty; only `UNRECORDED` hides the row in the details panel.
+`SmokingStatus#fromString` trims surrounding whitespace and normalizes letter case using `Locale.ROOT`.
+`ParserUtil#parseSmokingStatus` rejects blank or unsupported recorded values, while edit maps blank `smk/` to
+`UNRECORDED`. Both parsers reject repeated `smk/` prefixes. Other edits and `next` preserve smoking status.
+
+`JsonAdaptedPerson` stores the normalized lowercase status, or an empty string for unrecorded values.
+Missing or null `smokingStatus` fields in older files load as `UNRECORDED`; unsupported saved values are rejected.
+The right-hand details panel displays smoking status immediately after alcohol history. Patient list cards and
+patient identity remain unchanged. Add/edit help places `[smk/STATUS]` after `[alc/ALCOHOL_HISTORY]`.
+
 ### Editing patient details
 
 `EditCommandParser` accepts optional replacement fields, including `vd/` and `note/`. The displayed format is
-`edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [alc/ALCOHOL_HISTORY] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`.
+`edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [alc/ALCOHOL_HISTORY] [smk/STATUS] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`.
 It checks index syntax and duplicate single-valued prefixes before parsing field values, then rejects a
 descriptor with no supplied fields. When `vd/` is supplied, `ParserUtil#parseVisitDate` reuses the existing strict
 `VisitDate` validation
@@ -1036,6 +1049,23 @@ Use a disposable data file and available visit slots.
    patient again; expect the row to reappear. Set the second patient's DOB using `edit INDEX dob/1/1/2000`.
 1. Load an older valid data file without `dateOfBirth`; expect the patients to load with the DOB row hidden.
 
+### Smoking status
+
+Use a disposable data file, starting with no patients and available visit slots.
+
+1. Run `add n/Smoking Test alc/Does not drink smk/FORMER p/81234567 a/10 Test Road vd/1/1/2000 1000`.
+   Run `view 1`; expect `Smoking status: former` immediately below alcohol history on the right.
+1. Run `edit 1 alc/Occasional drinking smk/current`, then `view 1`; expect both replacements in that order.
+   Repeat with `never`, `former`, and `unknown`, including mixed case and surrounding whitespace.
+1. Edit another field, then run `next 1 1/1/2099 1000`; expect smoking status unchanged and the previous visit retained.
+   Restart the application and view the patient; expect the status and visit history to remain.
+1. Run `edit 1 smk/`, then `view 1`; expect the row hidden without leaving a gap and other details unchanged.
+   Restart; expect the field to remain cleared. Whitespace-only edits and clearing an unrecorded status succeed.
+1. Run `edit 1 smk/unknown`, then `view 1`; expect the explicit unknown status to remain visible.
+1. Try `smk/daily`, blank `smk/` on add, and repeated prefixes on add/edit (including `smk/ smk/`).
+   Expect errors and unchanged data. Switch between patients with and without a status; expect no stale text.
+1. Load an older valid file without `smokingStatus`; expect an unrecorded value rather than explicit `unknown`.
+
 ### Alcohol history
 
 Use a disposable data file, starting with no patients and available visit slots.
@@ -1241,6 +1271,19 @@ history. Both parsers reject repeated `alc/` prefixes. Unrelated edits and `next
 `JsonAdaptedPerson` saves the `alcoholHistory` string and treats missing or null fields in older files as unrecorded.
 The right-hand details panel displays recorded alcohol history immediately after blood type, wraps long text, and
 hides the row when unrecorded. Patient list cards and duplicate-patient identity remain unchanged.
+
+### Optional smoking status
+
+`Person` stores a `SmokingStatus` enum with `NEVER`, `FORMER`, `CURRENT`, `UNKNOWN`, and `UNRECORDED`.
+`UNKNOWN` represents explicitly recorded uncertainty; only `UNRECORDED` hides the row in the details panel.
+`SmokingStatus#fromString` trims surrounding whitespace and normalizes letter case using `Locale.ROOT`.
+`ParserUtil#parseSmokingStatus` rejects blank or unsupported recorded values, while edit maps blank `smk/` to
+`UNRECORDED`. Both parsers reject repeated `smk/` prefixes. Other edits and `next` preserve smoking status.
+
+`JsonAdaptedPerson` stores the normalized lowercase status, or an empty string for unrecorded values.
+Missing or null `smokingStatus` fields in older files load as `UNRECORDED`; unsupported saved values are rejected.
+The right-hand details panel displays smoking status immediately after alcohol history. Patient list cards and
+patient identity remain unchanged. Add/edit help places `[smk/STATUS]` after `[alc/ALCOHOL_HISTORY]`.
 
 ### Editing patient details
 

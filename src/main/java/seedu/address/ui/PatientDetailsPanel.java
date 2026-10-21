@@ -33,6 +33,9 @@ public class PatientDetailsPanel extends UiPart<Region> {
     private Label alcoholHistory;
 
     @FXML
+    private Label smokingStatus;
+
+    @FXML
     private Label phone;
 
     @FXML
@@ -83,6 +86,10 @@ public class PatientDetailsPanel extends UiPart<Region> {
         alcoholHistory.setText(hasAlcoholHistory ? "Alcohol history: " + person.getAlcoholHistory() : "");
         alcoholHistory.setVisible(hasAlcoholHistory);
         alcoholHistory.setManaged(hasAlcoholHistory);
+        boolean hasSmokingStatus = !person.getSmokingStatus().isEmpty();
+        smokingStatus.setText(hasSmokingStatus ? "Smoking status: " + person.getSmokingStatus() : "");
+        smokingStatus.setVisible(hasSmokingStatus);
+        smokingStatus.setManaged(hasSmokingStatus);
         phone.setText("Phone: " + person.getPhone().value);
         email.setText("Email: " + person.getEmail().value);
         address.setText("Address: " + person.getAddress().value);

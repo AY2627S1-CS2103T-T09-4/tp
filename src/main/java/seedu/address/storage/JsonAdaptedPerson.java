@@ -20,6 +20,7 @@ import seedu.address.model.person.Name;
 import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
+import seedu.address.model.person.SmokingStatus;
 import seedu.address.model.person.VisitDate;
 import seedu.address.model.tag.Tag;
 
@@ -34,6 +35,7 @@ class JsonAdaptedPerson {
     private final String dateOfBirth;
     private final String bloodType;
     private final String alcoholHistory;
+    private final String smokingStatus;
     private final String phone;
     private final String email;
     private final String address;
@@ -97,10 +99,21 @@ class JsonAdaptedPerson {
     /**
      * Constructs an adapted patient, accepting missing optional fields in older files.
      */
+    public JsonAdaptedPerson(String name, String dateOfBirth, String bloodType, String alcoholHistory,
+            String phone, String email, String address, String visitDate, List<String> previousVisitDates,
+            String note, String emergencyContact, List<JsonAdaptedTag> tags) {
+        this(name, dateOfBirth, bloodType, alcoholHistory, null, phone, email, address, visitDate,
+                previousVisitDates, note, emergencyContact, tags);
+    }
+
+    /**
+     * Constructs an adapted patient, accepting missing optional fields in older files.
+     */
     @JsonCreator
     public JsonAdaptedPerson(@JsonProperty("name") String name,
             @JsonProperty("dateOfBirth") String dateOfBirth, @JsonProperty("bloodType") String bloodType,
-            @JsonProperty("alcoholHistory") String alcoholHistory, @JsonProperty("phone") String phone,
+            @JsonProperty("alcoholHistory") String alcoholHistory, @JsonProperty("smokingStatus") String smokingStatus,
+            @JsonProperty("phone") String phone,
             @JsonProperty("email") String email, @JsonProperty("address") String address,
             @JsonProperty("visitDate") String visitDate,
             @JsonProperty("previousVisitDates") List<String> previousVisitDates,
@@ -110,6 +123,7 @@ class JsonAdaptedPerson {
         this.dateOfBirth = dateOfBirth;
         this.bloodType = bloodType;
         this.alcoholHistory = alcoholHistory;
+        this.smokingStatus = smokingStatus;
         this.phone = phone;
         this.email = email;
         this.address = address;
@@ -132,6 +146,7 @@ class JsonAdaptedPerson {
         dateOfBirth = source.getDateOfBirth().toString();
         bloodType = source.getBloodType().toString();
         alcoholHistory = source.getAlcoholHistory().toString();
+        smokingStatus = source.getSmokingStatus().toString();
         phone = source.getPhone().value;
         email = source.getEmail().value;
         address = source.getAddress().value;
@@ -220,11 +235,18 @@ class JsonAdaptedPerson {
         final EmergencyContact modelEmergencyContact = new EmergencyContact(storedContact);
 
         final AlcoholHistory modelAlcoholHistory = new AlcoholHistory(alcoholHistory == null ? "" : alcoholHistory);
+        final SmokingStatus modelSmokingStatus;
+        try {
+            modelSmokingStatus = SmokingStatus.fromString(smokingStatus == null ? "" : smokingStatus);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalValueException(SmokingStatus.MESSAGE_CONSTRAINTS, exception);
+        }
         final Set<Tag> modelTags = new HashSet<>(personTags);
         final List<VisitDate> modelPreviousVisitDates = parsePreviousVisitDates();
         try {
-            return new Person(modelName, modelDateOfBirth, modelBloodType, modelAlcoholHistory, modelPhone, modelEmail,
-                    modelAddress, modelVisitDate, modelPreviousVisitDates, modelNote, modelEmergencyContact, modelTags);
+            return new Person(modelName, modelDateOfBirth, modelBloodType, modelAlcoholHistory, modelSmokingStatus,
+                    modelPhone, modelEmail, modelAddress, modelVisitDate, modelPreviousVisitDates, modelNote,
+                    modelEmergencyContact, modelTags);
         } catch (IllegalArgumentException e) {
             throw new IllegalValueException(Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS, e);
         }

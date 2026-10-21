@@ -17,6 +17,7 @@ import seedu.address.model.person.Email;
 import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Phone;
+import seedu.address.model.person.SmokingStatus;
 import seedu.address.model.person.VisitDate;
 import seedu.address.model.tag.Tag;
 
@@ -81,6 +82,24 @@ public class ParserUtil {
             throw new ParseException(AlcoholHistory.MESSAGE_CONSTRAINTS);
         }
         return parsedHistory;
+    }
+
+    /**
+     * Parses a recorded smoking status, rejecting blank or unsupported values.
+     *
+     * @throws ParseException If the supplied status is blank or unsupported.
+     * @throws NullPointerException If the supplied status is null.
+     */
+    public static SmokingStatus parseSmokingStatus(String smokingStatus) throws ParseException {
+        try {
+            SmokingStatus parsedStatus = SmokingStatus.fromString(smokingStatus);
+            if (parsedStatus.isEmpty()) {
+                throw new ParseException(SmokingStatus.MESSAGE_CONSTRAINTS);
+            }
+            return parsedStatus;
+        } catch (IllegalArgumentException exception) {
+            throw new ParseException(SmokingStatus.MESSAGE_CONSTRAINTS, exception);
+        }
     }
 
     /**
