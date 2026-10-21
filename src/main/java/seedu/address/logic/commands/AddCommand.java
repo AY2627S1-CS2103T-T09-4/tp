@@ -2,7 +2,10 @@ package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_BLOOD_TYPE;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_DATE_OF_BIRTH;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_EMERGENCY_CONTACT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
@@ -30,14 +33,19 @@ public class AddCommand extends Command {
     public static final String MESSAGE_USAGE = COMMAND_WORD + ": Adds a person to the address book. "
             + "Parameters: "
             + PREFIX_NAME + "NAME "
+            + "[" + PREFIX_DATE_OF_BIRTH + "DATE] "
+            + "[" + PREFIX_BLOOD_TYPE + "BLOOD_TYPE] "
             + PREFIX_PHONE + "PHONE "
             + PREFIX_ADDRESS + "ADDRESS "
             + PREFIX_VISIT_DATE + "VISIT_DATE "
             + "[" + PREFIX_EMAIL + "EMAIL] "
             + "[" + PREFIX_NOTE + "NOTES] "
+            + "[" + PREFIX_EMERGENCY_CONTACT + "[NAME, ]PHONE_NUMBER] "
             + "[" + PREFIX_TAG + "TAG]...\n"
             + "Example: " + COMMAND_WORD + " "
             + PREFIX_NAME + "John Doe "
+            + PREFIX_DATE_OF_BIRTH + "15/6/1990 "
+            + PREFIX_BLOOD_TYPE + "A+ "
             + PREFIX_PHONE + "98765432 "
             + PREFIX_EMAIL + "johnd@example.com "
             + PREFIX_ADDRESS + "311, Clementi Ave 2, #02-25 "
@@ -129,6 +137,9 @@ public class AddCommand extends Command {
         validateNoConflicts(model);
 
         model.addPerson(toAdd);
+        logger.fine(() -> "Added patient to model; optional fields recorded: dateOfBirth="
+                + !toAdd.getDateOfBirth().isEmpty() + ", bloodType=" + !toAdd.getBloodType().isEmpty()
+                + ", emergencyContact=" + !toAdd.getEmergencyContact().isEmpty());
         return new CommandResult(String.format(MESSAGE_SUCCESS, toAdd.getName()));
     }
 

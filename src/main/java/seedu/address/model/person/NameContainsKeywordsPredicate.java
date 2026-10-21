@@ -1,43 +1,23 @@
 package seedu.address.model.person;
 
 import java.util.List;
-import java.util.function.Predicate;
 
 import seedu.address.commons.util.StringUtil;
-import seedu.address.commons.util.ToStringBuilder;
 
 /**
  * Tests that any word in a {@code Person}'s {@code Name} starts with any of the keywords given, ignoring case.
  */
-public class NameContainsKeywordsPredicate implements Predicate<Person> {
-    private final List<String> keywords;
+public class NameContainsKeywordsPredicate extends FieldContainsKeywordsPredicate {
 
+    /**
+     * Creates a predicate that matches a person whose name matches any of {@code keywords}.
+     */
     public NameContainsKeywordsPredicate(List<String> keywords) {
-        this.keywords = keywords;
+        super(keywords);
     }
 
     @Override
-    public boolean test(Person person) {
-        return keywords.stream()
-                .anyMatch(keyword -> StringUtil.containsWordStartingWithIgnoreCase(person.getName().fullName, keyword));
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (other == this) {
-            return true;
-        }
-
-        // instanceof handles nulls
-        if (!(other instanceof NameContainsKeywordsPredicate otherNameContainsKeywordsPredicate)) {
-            return false;
-        }
-
-        return keywords.equals(otherNameContainsKeywordsPredicate.keywords);
-    }
-
-    @Override
-    public String toString() {
-        return new ToStringBuilder(this).add("keywords", keywords).toString();
+    protected boolean matches(Person person, String keyword) {
+        return StringUtil.containsWordStartingWithIgnoreCase(person.getName().fullName, keyword);
     }
 }

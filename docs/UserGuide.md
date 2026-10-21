@@ -35,7 +35,7 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 
    * `list` : Lists all patients.
 
-   * `add n/John Doe p/98765432 e/johnd@example.com a/John street, block 123, #01-01 vd/18/9/2026 1000` : Adds a patient named `John Doe` to Doc.
+   * `add n/John Doe dob/15/6/1990 bt/A+ p/98765432 e/johnd@example.com a/John street, block 123, #01-01 vd/18/9/2026 1000` : Adds a patient named `John Doe` to Doc.
 
    * `delete 3` : Asks for confirmation before deleting the 3rd patient shown in the current list.
 
@@ -138,13 +138,30 @@ Format: `help`
 
 Adds a patient record to Doc.
 
-Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [t/TAG]... `
+Format: `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]... `
 
 * `VISIT_DATE` must be a date and time in the format `d/M/yyyy HHmm`, e.g. `18/9/2026 1000`. Past dates are allowed.
 * Each current or previous visit date and time must be unique across patients. If another patient's visit record
   already uses the supplied date and time, including a patient hidden by filtering, the addition is rejected,
   the existing patient is shown in the patient details panel, and the app asks you to choose a different slot.
-* `EMAIL` and `NOTES` are optional.
+* Date of birth, blood type, `EMAIL`, `NOTES`, and the emergency contact are optional.
+* Use `ec/[NAME, ]PHONE_NUMBER` to record one emergency contact, e.g. `ec/Mary Tan, 98765432`.
+  The phone number is required; the name is optional. Use `ec/98765432` when the name is unknown.
+  When supplying a name, include exactly one comma between the name and phone number.
+  Names follow the patient-name rules (alphanumeric characters and spaces, not blank); phone numbers contain
+  only digits and are at least 3 digits long. Surrounding whitespace is trimmed from both details.
+  An empty `ec/`, missing phone number, invalid detail, or repeated `ec/` is rejected.
+* Use `dob/DATE` to record the date of birth in `d/M/yyyy` format, e.g. `dob/15/6/1990`.
+  The year must have four digits, from `0001` onwards. The date must exist and must not be in the future;
+  today's date is allowed. An empty or repeated `dob/` is rejected. Surrounding whitespace is trimmed.
+  Leading zeroes in the day and month are accepted and removed when displaying or saving.
+  Omitting `dob/` leaves the date of birth unrecorded. Existing saved records without this field still load.
+  It does not change how duplicate patients are identified.
+* Use `bt/BLOOD_TYPE` after the name, e.g. `bt/A+`. Prefixes can appear in any order.
+  Accepted blood types are `A+`, `A-`, `B+`, `B-`, `AB+`, `AB-`, `O+`, and `O-`.
+  Letter case is ignored and surrounding whitespace is trimmed; `bt/ab-` is stored as `AB-`.
+  Omitting `bt/` leaves blood type unrecorded. An empty or repeated `bt/` is rejected when adding a patient.
+  Blood type does not affect duplicate-patient detection. Older saved records without blood type still load.
 * On success, the app shows `Added patient NAME` and the new patient appears in the list.
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
 * A patient with the same normalized name and phone number as an existing patient is a duplicate and cannot be added.
@@ -185,8 +202,30 @@ Visit-time conflict detection has these limitations:
 </box>
 
 Examples:
-* `add n/John Doe p/98765432 a/John street, block 123, #01-01 vd/18/9/2026 1000 e/JohnDoe@gmail.com note/This man is sick`
+* `add n/John Doe dob/15/6/1990 bt/A+ p/98765432 a/John street, block 123, #01-01 vd/18/9/2026 1000 e/JohnDoe@gmail.com note/This man is sick`
+* `add n/John Tan p/91234567 a/123 Clementi Road vd/22/10/2026 1000 ec/Mary Tan, 98765432`
 * `add n/Betsy Crowe t/friend a/Newgate Prison p/1234567 vd/1/10/2026 1430 t/criminal`
+
+#### Emergency contact examples
+
+The emergency contact belongs to the patient record; it does not create another patient. Different patients may
+share the same emergency contact. Enter the contact inside the existing `add` or `edit` command.
+
+| Input | Result |
+| --- | --- |
+| `ec/98765432` | Accepts the phone number without a name. |
+| `ec/Mary Tan, 98765432` | Accepts the name and phone number. |
+| `ec/Mary Tan,98765432` | Accepts the details; a space after the comma is optional. |
+| `ec/Mary Tan` | Rejects the contact because a phone number is required. |
+| `ec/Mary Tan, abc` | Rejects the contact because the phone number contains letters. |
+| `ec/` | Rejects the field in `add`; clears the emergency contact in `edit`. |
+
+To update an existing patient's contact, run `edit 2 ec/David Tan, 87654321`, replacing `2` with the patient's
+current displayed index. Run `view 2` afterwards to see `Emergency Contact: 87654321 (David Tan)` below the
+patient's phone number. Use `edit 2 ec/87654321` to store just the number; the display becomes
+`Emergency Contact: 87654321` without parentheses. Editing only the contact keeps other patient details unchanged.
+Changes to other fields, including scheduling a visit with `next`, keep the emergency contact unchanged.
+To remove the contact, run `edit 2 ec/`. Run `view 2` again; the emergency contact row will be hidden.
 
 ### Listing all patients: `list`
 
@@ -210,7 +249,7 @@ Format: `sort date [START_DATE]`
 * Visits earlier on the cutoff date remain in the first group because the cutoff applies to the whole calendar day.
 * Visual muting is always based on today's date, not `START_DATE`. A custom cutoff changes the order only.
 * Within the on-or-after and before-cutoff groups, visits are ordered by date and time, earliest first.
-* The command preserves the current displayed set. For example, `find Tan` followed by `sort date` sorts only the
+* The command preserves the current displayed set. For example, `find n/Tan` followed by `sort date` sorts only the
   matching patients.
 * Use the displayed indices for subsequent commands such as `edit` or `delete`.
 * `list` shows all patients again in stored order; a new `find` also returns its matches in stored order.
@@ -227,6 +266,11 @@ Displays the selected patient's full record in the details panel on the right.
 
 Format: `view INDEX`
 
+* If recorded, the date of birth appears immediately below the name in both the left-hand patient list
+  and the right-hand details panel as
+  `Date of birth: 15/6/1990 (N years old)`. Age is calculated in completed years using the computer's local
+  date when the record is viewed. For a February 29 birthday, age increases on March 1 in non-leap years.
+  The row is hidden when no date of birth is recorded.
 * Displays the patient at the specified `INDEX`.
 * The index refers to the index number shown in the currently displayed patient list.
 * The index **must be a positive integer** 1, 2, 3, ...
@@ -237,6 +281,13 @@ Format: `view INDEX`
 * A patient with no previous dates shows `No previous visit dates`. Scroll the details panel to read long records;
   all previous dates are included.
 * Viewing a patient does not change their stored details.
+* Recorded blood type appears below the date of birth (or directly below the name when DOB is absent) as
+  `Blood type: A+` in both the left-hand patient list and the right-hand details panel. The row is hidden without reserving space when blood type is unrecorded.
+* After editing a patient, run `view INDEX` again to refresh the selected patient's details.
+
+* If an emergency contact is recorded, it appears directly below the patient's phone number as
+  `Emergency Contact: 98765432 (Mary Tan)`, or `Emergency Contact: 98765432` when the name is omitted.
+  The emergency contact row is hidden when no contact is recorded.
 
 Example:
 * `view 1` displays the first patient's full record in the details panel.
@@ -245,11 +296,26 @@ Example:
 
 Edits an existing patient record in Doc.
 
-Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`
+Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [p/PHONE] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`
 
 * Edits the patient at the specified `INDEX`. The index refers to the index number shown in the displayed patient
   list. The index **must be a positive integer** 1, 2, 3, ...
 * All editable fields are optional, but at least one must be provided.
+* Use `dob/DATE` to add or replace the date of birth, e.g. `edit 1 n/John Doe dob/15/6/1990`.
+  The same date rules as `add` apply to nonempty values. Omitting `dob/` preserves the current value.
+  Use an empty `dob/`, e.g. `edit 1 dob/`, to clear the date of birth. Whitespace-only values also clear it.
+  Clearing an already empty date of birth is allowed. Run `view INDEX` again to hide the date of birth row.
+  Repeated `dob/` prefixes are rejected, including when one or both values are empty.
+* Use `bt/BLOOD_TYPE` to add or replace blood type, e.g. `edit 1 bt/O-`. The same valid values and normalization
+  rules as `add` apply. Omitted `bt/` preserves the current blood type.
+  Use an empty `bt/`, e.g. `edit 1 bt/`, to clear it; whitespace-only values also clear it.
+  Repeated `bt/` prefixes are rejected, including identical or empty values.
+
+* Use `ec/[NAME, ]PHONE_NUMBER` to add or replace the emergency contact, e.g. `edit 1 ec/Mary Tan, 98765432`.
+  Use `edit 1 ec/98765432` when no contact name is known. Nonempty values follow the same validation rules as `add`.
+  Omitting `ec/` preserves the existing contact.
+  Use an empty `ec/` to clear the contact, e.g. `edit 1 ec/`. Whitespace-only values also clear it.
+  Clearing an already-empty contact succeeds; repeated `ec/` prefixes are rejected.
 * To update the visit date and time, use `vd/` with the format `d/M/yyyy HHmm`
   (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted.
 * The visit date and time can be edited by itself. Omitting `vd/` preserves the existing visit date and time.
@@ -292,6 +358,9 @@ Examples:
 * `edit 1 vd/8/10/2026 1000` Changes the 1st patient's visit to 8 October 2026 at 10:00.
 * `edit 1 p/91234567 vd/8/10/2026 1000 e/johndoe@example.com` Updates the visit, phone number, and email.
 * `edit 1 p/91234567 e/johndoe@example.com` Updates the phone number and email, keeping the visit unchanged.
+* `edit 1 ec/Mary Tan, 98765432` Adds or replaces the emergency contact, keeping other details unchanged.
+* `edit 1 ec/98765432` Records only the emergency contact's phone number.
+* `edit 1 ec/` Clears the emergency contact, keeping other details unchanged.
 * `edit 1 e/` Clears the email, keeping the visit and other details unchanged.
 * `edit 1 note/Patient requests a morning visit` Replaces the notes, keeping all other details unchanged.
 * `edit 1 note/` Clears the notes, keeping all other details unchanged.
@@ -343,28 +412,40 @@ The current time in the error uses `d/M/yyyy HHmm`, without seconds; validation 
 Examples (the selected patient's current visit must have arrived or passed; choose an unused future datetime):
 
 * `next 1 1/11/2026 0930` schedules the first displayed patient's next appointment for 1 November 2026 at 09:30.
-* `find Betsy`, then `next 1 2/11/2026 1430`, schedules the first matching patient and restores the full list.
+* `find n/Betsy`, then `next 1 2/11/2026 1430`, schedules the first matching patient and restores the full list.
 
-### Locating patients by name: `find`
+### Locating patients: `find`
 
-Finds patients with a word in their name that starts with any of the given keywords.
+Finds patients by name, phone number, address or tag.
 
-Format: `find KEYWORD [MORE_KEYWORDS]`
+Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...]`
 
-* The search is case-insensitive; for example, `hans` matches `Hans`.
-* A keyword matches the start of any word in the name, whether first name or surname. For example, `m` matches
-  `George Miller`, `Marcus Lim`, and `Mei Lin Tan`, and `Han` matches `Hans`.
-* A keyword in the middle of a word does not match; for example, `ans` does not match `Hans`.
-* Keyword order does not matter; for example, `Hans Bo` matches `Bo Hans`.
-* The search considers only names.
-* Patients matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
-* The app shows how many patients were found, e.g. `3 patients found.` If none match, it shows `No patients found.`
-  with a reminder of how keywords are matched.
+* Give at least one field. Every keyword must follow a prefix; for example, use `find n/george`, not `find george`.
+* How each field matches (all case-insensitive):
+  * `n/`: the start of any word in the name, first name or surname. For example, `n/m` matches `George Miller`,
+    `Marcus Lim`, and `Mei Lin Tan`, but `n/ans` does not match `Hans`.
+  * `p/`: any part of the phone number, so the last few digits are enough. For example, `p/8901` matches `85678901`.
+    Phone keywords may contain only digits.
+  * `a/`: the start of any word in the address. For example, `a/tamp` matches `46 Tampines Street 21, #08-03`.
+  * `t/`: the start of any tag. For example, `t/morn` matches a patient tagged `morning`.
+* Several keywords for one field find patients matching **any** of them (an `OR` search); for example,
+  `n/george priya` returns `George Miller` and `Priya Nair`.
+* Different fields must **all** match (an `AND` search); for example, `n/m t/morning` returns only patients with a
+  name word starting with `m` who are tagged `morning`.
+* Fields can be given in any order, but each prefix can appear only once. Put several keywords after one prefix
+  instead, e.g. `n/george priya` rather than `n/george n/priya`.
+* Spaces, tabs or line breaks can separate fields; for example, `n/alex` and `p/9123` separated by a tab are still
+  two separate fields.
+* The app shows how many patients were found, e.g. `3 patients found.` If none match, it shows
+  `No patients found. Search with n/ for names, p/ for phone numbers, a/ for addresses, or t/ for tags.`
 
 Examples:
-* `find m` returns `George Miller`, `Marcus Lim`, and `Mei Lin Tan`
-* `find John` returns `john` and `John Doe`
-* `find george priya` returns `George Miller` and `Priya Nair`
+* `find n/m` returns `George Miller`, `Marcus Lim`, and `Mei Lin Tan`
+* `find n/george priya` returns `George Miller` and `Priya Nair`
+* `find p/8901` returns `Noor Aziz`, whose number ends in `8901`
+* `find a/tampines` returns `Marcus Lim`
+* `find n/m t/morning` returns `Mei Lin Tan`; `George Miller` and `Marcus Lim` also match `n/m` but are not tagged
+  `morning`
 
 ### Deleting a patient: `delete`
 
@@ -383,7 +464,7 @@ Format: `delete INDEX`
 
 Examples:
 * `list` followed by `delete 2`, then `y`, deletes the 2nd patient in Doc.
-* `find Betsy` followed by `delete 1`, then `y`, deletes the 1st patient in the results of the `find` command.
+* `find n/Betsy` followed by `delete 1`, then `y`, deletes the 1st patient in the results of the `find` command.
 
 ### Clearing all entries: `clear`
 
@@ -412,6 +493,9 @@ Format: `exit`
 Doc automatically saves data after completed commands. Confirmation prompts, cancelled operations, and
 `clear` when there are no patient records do not write a file because they do not change stored data. You do not need
 to save manually.
+
+Emergency contacts are saved with the patient records and remain available after restarting Doc. Older valid
+data files without emergency contacts still load; their patients initially have no emergency contact.
 
 ### Editing the data file
 
@@ -443,6 +527,12 @@ _Details coming soon ..._
 
 ## FAQ
 
+**Q**: Why does `edit 2 ec/David Tan, 87654321` show an invalid-command-format error?<br>
+**A**: Check that the running version supports emergency contacts. Its `edit` usage message should list
+`[ec/[NAME, ]PHONE_NUMBER]`. Close the older application before opening the updated JAR; replacing the JAR on disk
+does not update an application that is already running. Also check that the index is a positive number and that
+there is a space before `ec/`.
+
 **Q**: How do I transfer my data to another computer?<br>
 **A**: Install Doc on the other computer and overwrite the data file it creates with the data file from your previous
 Doc home folder.
@@ -459,11 +549,11 @@ Doc home folder.
 
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-**Add**    | `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
+**Add**    | `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
-**Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
-**Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
+**Edit**   | `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [p/PHONE_NUMBER] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
+**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...]`<br> e.g., `find n/James Jake a/clementi`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (use an available future appointment)
 **Sort**   | `sort date [START_DATE]`<br> e.g., `sort date 18/9/2026`
