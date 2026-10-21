@@ -68,7 +68,7 @@ public class HelpWindowIntegrationTest {
     }
 
     @BeforeEach
-    public void setUp() {
+    public void setUp() throws InterruptedException {
         runOnFxThread(() -> {
             patientDataPath = temporaryFolder.resolve("patients.json");
             model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
@@ -85,6 +85,12 @@ public class HelpWindowIntegrationTest {
             commandTextField = (TextField) primaryStage.getScene().lookup("#commandTextField");
             resultDisplay = (TextArea) primaryStage.getScene().lookup("#resultDisplay");
         });
+        JavaFxTestUtil.requestForeground();
+        runOnFxThread(() -> {
+            primaryStage.toFront();
+            primaryStage.requestFocus();
+        });
+        waitForFxCondition(primaryStage::isFocused, "the main test window to receive native focus");
     }
 
     @AfterEach

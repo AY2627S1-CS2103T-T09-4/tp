@@ -2,6 +2,7 @@ package seedu.address.ui;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.awt.Desktop;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
@@ -35,6 +36,19 @@ final class JavaFxTestUtil {
         assertTrue(startupLatch.await(FX_TIMEOUT_SECONDS, TimeUnit.SECONDS));
         Platform.setImplicitExit(false);
         isJavaFxStarted = true;
+    }
+
+    /**
+     * Requests native foreground access for focus-dependent tests when supported by the desktop.
+     */
+    static void requestForeground() {
+        if (!Desktop.isDesktopSupported()) {
+            return;
+        }
+        Desktop desktop = Desktop.getDesktop();
+        if (desktop.isSupported(Desktop.Action.APP_REQUEST_FOREGROUND)) {
+            desktop.requestForeground(true);
+        }
     }
 
     /**
