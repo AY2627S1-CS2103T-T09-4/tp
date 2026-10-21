@@ -45,7 +45,7 @@ public class MainWindowTest {
             Stage stage = new Stage();
 
             try {
-                MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH);
+                MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH, url -> { });
                 mainWindow.fillInnerParts();
 
                 try {
@@ -77,7 +77,7 @@ public class MainWindowTest {
             Stage stage = new Stage();
 
             try {
-                MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH);
+                MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH, url -> { });
                 mainWindow.fillInnerParts();
 
                 CommandException exception = assertThrows(
@@ -100,12 +100,13 @@ public class MainWindowTest {
     @Test
     public void executeCommand_commandErrorWithoutPreview_keepsExistingDetails() {
         runOnFxThread(() -> {
-            Person person = new PersonBuilder().withName("Existing Patient").build();
+            Person person = new PersonBuilder().withName("Existing Patient")
+                    .withVisitDate("2/1/2026 1000").withPreviousVisitDates("1/1/2026 1000").build();
             TestLogic logic = new TestLogic(person);
             Stage stage = new Stage();
 
             try {
-                MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH);
+                MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH, url -> { });
                 mainWindow.fillInnerParts();
                 assertDoesNotThrow(() -> mainWindow.executeCommand("view 1"));
                 VBox detailsContainer = getDetailsContainer(mainWindow);
@@ -127,12 +128,13 @@ public class MainWindowTest {
     @Test
     public void executeCommand_parseError_keepsExistingDetails() {
         runOnFxThread(() -> {
-            Person person = new PersonBuilder().withName("Existing Patient").build();
+            Person person = new PersonBuilder().withName("Existing Patient")
+                    .withVisitDate("2/1/2026 1000").withPreviousVisitDates("1/1/2026 1000").build();
             TestLogic logic = new TestLogic(person);
             Stage stage = new Stage();
 
             try {
-                MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH);
+                MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH, url -> { });
                 mainWindow.fillInnerParts();
                 assertDoesNotThrow(() -> mainWindow.executeCommand("view 1"));
                 VBox detailsContainer = getDetailsContainer(mainWindow);
@@ -163,6 +165,8 @@ public class MainWindowTest {
                 getLabelText(detailsContainer, "#email"),
                 getLabelText(detailsContainer, "#address"),
                 getLabelText(detailsContainer, "#visitDate"),
+                getLabelText(detailsContainer, "#previousVisitDatesHeader"),
+                getLabelText(detailsContainer, "#previousVisitDates"),
                 getLabelText(detailsContainer, "#note"),
                 getLabelText(detailsContainer, "#tags"));
     }

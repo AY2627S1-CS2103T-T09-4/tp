@@ -7,7 +7,6 @@ import java.util.Optional;
 
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.person.Person;
-import seedu.address.model.person.VisitDate;
 
 /**
  * Finds existing patients that conflict with a proposed patient record or visit date.
@@ -37,12 +36,25 @@ final class DuplicatePersonFinder {
     }
 
     /**
-     * Returns the first patient scheduled at {@code visitDate}, if one exists.
+     * Returns the first patient whose visit record conflicts with {@code candidate}, if one exists.
      */
-    static Optional<Person> findVisitDateDuplicate(ReadOnlyAddressBook addressBook, VisitDate visitDate) {
-        requireAllNonNull(addressBook, visitDate);
+    static Optional<Person> findVisitDateDuplicate(ReadOnlyAddressBook addressBook, Person candidate) {
+        requireAllNonNull(addressBook, candidate);
         return addressBook.getPersonList().stream()
-                .filter(person -> visitDate.equals(person.getVisitDate()))
+                .filter(candidate::hasCommonVisitDate)
+                .findFirst();
+    }
+
+    /**
+     * Returns the first patient other than {@code excludedPerson} whose visit record conflicts with
+     * {@code candidate}, if one exists.
+     */
+    static Optional<Person> findVisitDateDuplicate(ReadOnlyAddressBook addressBook, Person candidate,
+            Person excludedPerson) {
+        requireAllNonNull(addressBook, candidate, excludedPerson);
+        return addressBook.getPersonList().stream()
+                .filter(person -> !person.equals(excludedPerson))
+                .filter(candidate::hasCommonVisitDate)
                 .findFirst();
     }
 }

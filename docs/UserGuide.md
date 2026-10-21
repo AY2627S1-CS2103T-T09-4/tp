@@ -25,7 +25,9 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 1. Copy the file to the folder you want to use as the _home folder_ for Doc.
 
 1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar addressbook.jar`.<br>
-   A GUI similar to the one below should appear in a few seconds. Note how the app contains some sample data.<br>
+   A GUI similar to the one below should appear in a few seconds. When no saved data file exists, Doc starts with
+   seven sample patient records: George Miller, Priya Nair, Aisha Rahman, Marcus Lim, Mei Lin Tan, Daniel Wong, and
+   Noor Aziz.<br>
    ![Ui](images/Ui.png)
 
 1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
@@ -73,6 +75,19 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </box>
 
+### Visit records
+
+Each patient has one required **current visit date and time** and zero or more **previous visit dates**.
+Together, these form the patient's **visit record**.
+
+* The current datetime may be in the past, present, or future. It stays stored until you change it using `edit` or `next`.
+* Previous datetimes are retained by `next` and stored oldest first. `view` displays them newest first.
+  `edit` preserves them, including when changing other details.
+* Notes belong to the patient record; separate notes are not stored for each previous datetime.
+
+Use [view](#viewing-a-patient-s-details-view) to see the visit record. Retained datetimes do not verify attendance,
+cancellation, or completion.
+
 ### Navigating command history
 
 The command box keeps commands submitted during the current application session so that you can reuse or edit them.
@@ -92,7 +107,27 @@ The command box keeps commands submitted during the current application session 
 
 ### Viewing help: `help`
 
-Shows a message explaining how to access the help page.
+Opens a non-modal help window with the online User Guide's URL. Choose
+**Open User Guide** to request opening it in your default browser, or **Copy URL**
+to copy the address. Use Tab to reach the buttons and Space to activate them.
+The window can be resized and scrolled vertically. Choose **Close** or press
+**Escape** to dismiss it. You can continue using the main window while help is open.
+
+Opening the guide requires a browser and an Internet connection. A browser-launch
+request does not confirm that the page loaded. If no browser appears, try **Copy URL**
+and open the address manually. Detectable browser and clipboard failures are shown
+in the help window; you can retry or enter the displayed URL in your browser.
+Copy success is reported only when the clipboard accepts the URL.
+
+Press **F1** or choose **Help → Help** to open the same window. Repeating a help
+request brings that window to the front and restores it if it was minimized.
+After closing help, focus returns to the command box without submitting or
+discarding unfinished input. You can reopen help after using **Close**,
+**Escape**, or the window's native close control.
+
+If a confirmation or follow-up prompt is pending, use **F1** or **Help → Help**
+to consult the guide without answering the prompt. Typing `help` and pressing
+Enter still counts as the response to the pending prompt.
 
 ![help message](images/helpMessage.png)
 
@@ -106,21 +141,17 @@ Adds a patient record to Doc.
 Format: `add n/NAME p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [t/TAG]... `
 
 * `VISIT_DATE` must be a date and time in the format `d/M/yyyy HHmm`, e.g. `18/9/2026 1000`. Past dates are allowed.
-* Each patient must have a unique visit date and time. If another patient already uses the supplied date and time,
-  the addition is rejected, the existing patient is shown in the patient details panel, and the app asks you to
-  choose a different slot. The patient list remains unchanged.
+* Each current or previous visit date and time must be unique across patients. If another patient's visit record
+  already uses the supplied date and time, including a patient hidden by filtering, the addition is rejected,
+  the existing patient is shown in the patient details panel, and the app asks you to choose a different slot.
 * `EMAIL` and `NOTES` are optional.
 * On success, the app shows `Added patient NAME` and the new patient appears in the list.
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
 * A patient with the same normalized name and phone number as an existing patient is a duplicate and cannot be added.
-  The matching existing patient is shown in the patient details panel without changing the patient list.
 * If only the name matches an existing patient, the app asks
-  `A patient named NAME already exists. The matching patient is shown in the patient details panel. Add this patient
-  anyway? Type y to confirm. Any other input cancels.` If several patients have that normalized name, the app reports
-  their count and explains that only one matching patient is shown. The patient list remains unchanged.
+  `A patient named NAME already exists. Add this patient anyway? Type y to confirm. Any other input cancels.`
 * Type `y` and press Enter to add the patient. Surrounding spaces and letter case are ignored. Any other input cancels
   the addition and is not run as a command. Confirmation rechecks that the visit date and time are still available.
-  A successful addition restores the full patient list. A rejection or cancellation preserves the displayed list.
 * If 7 or more patients already have a visit on the same day (at any time), the app warns you before adding another,
   e.g. `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Add Jane Tan anyway? Type y to confirm. Any other
   input cancels.` Type `y` to add the patient anyway. If the name also matches an existing patient, you are asked to
@@ -143,7 +174,7 @@ Visit-time conflict detection has these limitations:
 * It compares the parsed date and time exactly to the minute. It does not account for appointment duration, travel
   time, preparation time, or partially overlapping visits.
 * It does not manage doctor availability, time zones, recurring visits, or separate schedules for multiple doctors.
-* Past visit dates are subject to the same uniqueness rule because every patient record has one visit date and time.
+* Past datetimes are subject to the same uniqueness rule, including dates retained as previous visits.
 
 <box type="tip" seamless>
 
@@ -164,26 +195,28 @@ Patients with a visit date before today are shown using darker backgrounds and m
 also appears in patient lists produced by commands such as `find` and `sort date`. Past patients remain selectable,
 and their complete details remain readable in the details panel.
 
-### Sorting visits by date: `sort date`
+### Sorting visits by date: `sort date [START_DATE]`
 
-Sorts the currently displayed patients by visit date and time. Visits today or later are shown first, followed by
-past visits.
+Sorts the currently displayed patients by visit date and time around an optional cutoff date. Visits on or after the
+cutoff date are shown first, followed by visits before it.
 
-Format: `sort FIELD`
+Format: `sort date [START_DATE]`
 
-* `FIELD` must be `date`.
-* Today is determined using your computer's local date when you run the command. Earlier times today are included.
-* Past visits are visually muted in the patient list, whether or not the list has been sorted.
-* Within the upcoming and past groups, visits are ordered by date and time, earliest first.
+* `START_DATE` must use the format `d/M/yyyy`, e.g. `18/9/2026`.
+* If `START_DATE` is omitted, the cutoff is your computer's local date when you run the command.
+* Visits earlier on the cutoff date remain in the first group because the cutoff applies to the whole calendar day.
+* Visual muting is always based on today's date, not `START_DATE`. A custom cutoff changes the order only.
+* Within the on-or-after and before-cutoff groups, visits are ordered by date and time, earliest first.
 * The command preserves the current displayed set. For example, `find Tan` followed by `sort date` sorts only the
   matching patients.
 * Use the displayed indices for subsequent commands such as `edit` or `delete`.
 * `list` shows all patients again in stored order; a new `find` also returns its matches in stored order.
-* Running `sort` without a field, or with a field other than `date`, shows the required format and an example command.
-* Run `sort date` again to refresh which visits belong to the upcoming and past groups after midnight.
+* Missing, invalid, or additional arguments show the required format and example commands.
+* When omitting `START_DATE`, run `sort date` again after midnight to refresh which visits belong to each group.
 
-Example:
-* `sort date` sorts the currently displayed patients by their visit date and time.
+Examples:
+* `sort date` uses today as the cutoff date.
+* `sort date 18/9/2026` places visits on or after 18 September 2026 before earlier visits.
 
 ### Viewing a patient's details: `view`
 
@@ -196,6 +229,10 @@ Format: `view INDEX`
 * The index **must be a positive integer** 1, 2, 3, ...
 * The command works on lists produced by commands such as `find` and `sort date`.
 * The currently displayed patient list remains visible on the left.
+* The current visit date and time remain visible as `Visit date`. The `Previous visit dates:` section immediately
+  below it lists retained datetimes in `d/M/yyyy HHmm` format, newest first and oldest last. The note follows.
+* A patient with no previous dates shows `No previous visit dates`. Scroll the details panel to read long records;
+  all previous dates are included.
 * Viewing a patient does not change their stored details.
 
 Example:
@@ -213,9 +250,11 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [not
 * To update the visit date and time, use `vd/` with the format `d/M/yyyy HHmm`
   (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted.
 * The visit date and time can be edited by itself. Omitting `vd/` preserves the existing visit date and time.
+* Editing preserves any previous visit dates. The current datetime must remain strictly later than the latest
+  previous datetime, when one exists.
 * Re-entering the selected patient's existing visit date and time is allowed. Changing it to a slot used by another
-  patient is rejected and shows that patient in the patient details panel, including when the edit also changes other
-  fields. The patient list remains unchanged.
+  patient's current or previous visits is rejected, including hidden patients and edits to other fields. The patient
+  using that slot is shown in the patient details panel, while the patient list remains unchanged.
 * Omitted fields, including email and existing notes, keep their values. Use an empty `e/` to clear email.
 * Use `note/NOTES` to replace the entire stored note. Use an empty `note/` to clear it; notes can be edited
   without `vd/`. An explicitly empty note counts as a supplied field, even when the note is already empty.
@@ -226,20 +265,19 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [not
 * Prefixes can appear in any order. Repeated single-valued prefixes, including `note/`, are rejected,
   even when their values are identical or empty. Multiple `t/TAG` prefixes are allowed.
 * Editing replaces the stored visit date and time; it does not append a visit-history entry.
-  Use `edit ... vd/` to correct an appointment, or [next](#scheduling-the-next-visit-next) to schedule the following visit.
+  Use `edit ... vd/` to correct a missed or rescheduled appointment, or
+  [next](#scheduling-the-next-visit-next) to schedule the following visit.
+* A successful edit restores the full patient list in stored order, clearing the filter and sort. Check the displayed
+  indices and run `view INDEX` again to refresh the details panel.
 * Existing values will be updated to the input values.
 * When editing tags, all of the patient's existing tags are removed; adding tags is not cumulative.
 * To remove all of a patient's tags, enter `t/` without a tag after it.
-* An edit that would give a patient the same normalized name and phone number as another patient is rejected, and the
-  matching existing patient is shown in the patient details panel without changing the patient list.
+* An edit that would give a patient the same normalized name and phone number as another patient is rejected.
 * When an edit changes the patient's name to one already used by another patient with a different phone number, the
-  app asks `A patient named NAME already exists. The matching patient is shown in the patient details panel. Apply
-  this edit anyway? Type y to confirm. Any other input cancels.` If several patients have that normalized name, the
-  app reports their count and explains that only one matching patient is shown. The patient list remains unchanged.
+  app asks `A patient named NAME already exists. Apply this edit anyway? Type y to confirm. Any other input cancels.`
 * Type `y` and press Enter to apply the edit. Surrounding spaces and letter case are ignored. Any other input cancels
   the edit and is not run as a command. Editing other details of a patient whose name is already shared does not ask
   for confirmation again. A confirmed name-duplicate edit rechecks that its requested visit slot is still available.
-  A successful edit restores the full patient list. A rejection or cancellation preserves the displayed list.
 * When an edit moves a patient's visit to a different day that already has 7 or more visits, the app asks, e.g.
   `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Schedule Jane Tan on that day anyway? Type y to confirm.
   Any other input cancels.` Changing only the time within the same day, or editing other fields, does not ask. If the
@@ -260,8 +298,9 @@ Examples:
 
 ### Scheduling the next visit: `next`
 
-Schedules a patient's following appointment. It replaces the stored visit date and time without recording a
-completed visit or visit history. Use `edit ... vd/` to correct an existing appointment.
+Schedules a patient's following appointment and retains the current visit date and time in their visit record.
+Use `next` after handling the current visit and planning another. Retained dates do not verify attendance or
+completion. Use `edit ... vd/` to correct or reschedule an existing appointment without adding a previous date.
 
 Format: `next INDEX DATETIME`
 
@@ -269,31 +308,36 @@ Format: `next INDEX DATETIME`
   `view` keeps that list and its indices unchanged.
 * Enter `DATETIME` as `d/M/yyyy HHmm`, with a four-digit 24-hour time. Spaces or tabs separate the arguments;
   repeated and outer whitespace are accepted. Do not use `vd/`, quotation marks, or extra arguments.
-* The appointment must be strictly after your computer's current local time at execution; the current minute's
-  start is rejected. It may be earlier than the existing appointment, which need not be past.
-* The appointment must differ from the patient's existing one and every other patient's appointment, including
-  hidden patients. Leading-zero dates compare equally: `1/11/2026 0930` and `01/11/2026 0930` are the same time.
+* The current visit must be at or before your computer's current local time at execution. If it is still in the
+  future, use `edit ... vd/` to reschedule it.
+* The requested appointment must be strictly after that execution time; the current minute's start is rejected.
+* The requested appointment must differ from every other patient's current and previous visit dates and times,
+  including hidden patients. Leading-zero dates compare equally: `1/11/2026 0930` and `01/11/2026 0930` are the same time.
 * Conflict detection covers identical start times, not visit duration, travel time, or partial overlaps.
   The [visit-time conflict limitations under add](#adding-a-patient-add) also apply.
-* Only the visit date and time change; all other details, including empty optional fields, are preserved.
+* Success appends the old current date and time to the previous dates, then sets the new current date and time.
+  All other details, including empty optional fields, are preserved. Previous dates are saved in order in the
+  JSON data file and appear below the current visit date when you run `view INDEX`.
+* If no further visit is planned, leave the current date and time unchanged, even after it passes.
 * Success shows `Next visit scheduled for patient NAME: DATETIME`, saves the record, and restores the full list in
   stored order, clearing the filter and sort. Check the new indices; run `view` again to refresh the details panel.
-* Validation errors preserve data and the displayed list. An appointment conflict shows the patient using that slot
-  in the patient details panel. A save failure reports a storage error; the in-memory appointment may already have
-  changed.
+* Validation errors preserve data and the displayed list. A save failure reports a storage error; the in-memory
+  appointment may already have changed.
 
 Common errors:
 
 | Input problem | Feedback |
 | --- | --- |
-| Time at or before now | `The next visit must be in the future.` |
+| Current visit still in the future | `Patient NAME has a current visit at DATETIME that is still in the future. Use edit to reschedule it.` |
+| Time at or before now | `The next visit must be later than the current time (DATETIME). Choose a later date and time.` |
 | Unchanged appointment | `Patient NAME already has an appointment at DATETIME.` |
-| Another patient's appointment | `Patient NAME already has an appointment at DATETIME and is shown in the patient details panel. Choose a different date and time.` |
+| Another patient's current or previous visit | `Patient NAME already has a current or previous visit at DATETIME and is shown in the patient details panel. Choose a different date and time.` |
 
 Bare `next` shows usage. Missing or extra arguments, `vd/` syntax, and incorrect index syntax show a reason and usage.
 Invalid dates show the required format; an index outside the displayed list shows the existing invalid-index error.
+The current time in the error uses `d/M/yyyy HHmm`, without seconds; validation still uses the full execution time.
 
-Examples (choose a future date and time that no patient already uses):
+Examples (the selected patient's current visit must have arrived or passed; choose an unused future datetime):
 
 * `next 1 1/11/2026 0930` schedules the first displayed patient's next appointment for 1 November 2026 at 09:30.
 * `find Betsy`, then `next 1 2/11/2026 1430`, schedules the first matching patient and restores the full list.
@@ -305,8 +349,8 @@ Finds patients with a word in their name that starts with any of the given keywo
 Format: `find KEYWORD [MORE_KEYWORDS]`
 
 * The search is case-insensitive; for example, `hans` matches `Hans`.
-* A keyword matches the start of any word in the name, whether first name or surname. For example, `b` matches
-  `Bernice Yu` and `Roy Balakrishnan`, and `Han` matches `Hans`.
+* A keyword matches the start of any word in the name, whether first name or surname. For example, `m` matches
+  `George Miller`, `Marcus Lim`, and `Mei Lin Tan`, and `Han` matches `Hans`.
 * A keyword in the middle of a word does not match; for example, `ans` does not match `Hans`.
 * Keyword order does not matter; for example, `Hans Bo` matches `Bo Hans`.
 * The search considers only names.
@@ -315,10 +359,9 @@ Format: `find KEYWORD [MORE_KEYWORDS]`
   with a reminder of how keywords are matched.
 
 Examples:
-* `find b` returns `Bernice Yu` and `Roy Balakrishnan`
+* `find m` returns `George Miller`, `Marcus Lim`, and `Mei Lin Tan`
 * `find John` returns `john` and `John Doe`
-* `find alex david` returns `Alex Yeoh`, `David Li`<br>
-  ![result for 'find alex david'](images/findAlexDavidResult.png)
+* `find george priya` returns `George Miller` and `Priya Nair`
 
 ### Deleting a patient: `delete`
 
@@ -372,6 +415,11 @@ to save manually.
 Doc's patient data is saved automatically as a JSON file at `[JAR file location]/data/addressbook.json`. Advanced
 users may update the data directly by editing that file.
 
+Each patient has a required `visitDate` and a `previousVisitDates` array of datetime strings in `d/M/yyyy HHmm`
+format. Previous dates must be strictly increasing, oldest first, and earlier than the current date. All current
+and previous datetimes must be unique across patients. Missing or `null` previous-date arrays in older files load
+as empty arrays. Invalid records are rejected without sorting, deduplicating, or dropping entries.
+
 <box type="warning" seamless>
 
 **Caution:**
@@ -401,7 +449,6 @@ Doc home folder.
 ## Known issues
 
 1. **When using multiple screens**, if you move the application to a secondary screen, and later switch to using only the primary screen, the GUI will open off-screen. The remedy is to delete the `preferences.json` file created by the application before running the application again.
-2. **If you minimize the Help Window** and then run the `help` command (or use the `Help` menu, or the keyboard shortcut `F1`) again, the original Help Window will remain minimized, and no new Help Window will appear. The remedy is to manually restore the minimized Help Window.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -416,6 +463,6 @@ Action     | Format, Examples
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (use an available future appointment)
-**Sort**   | `sort date`
+**Sort**   | `sort date [START_DATE]`<br> e.g., `sort date 18/9/2026`
 **View**   | `view INDEX`<br> e.g., `view 1`
 **Help**   | `help`

@@ -62,8 +62,10 @@ public class EditCommand extends Command {
             "A patient with the same name and phone number already exists in the address book. "
                     + "The existing patient is shown in the patient details panel.";
     public static final String MESSAGE_DUPLICATE_VISIT_DATE =
-            "Another patient already has a visit scheduled for %1$s. "
+            "Another patient already has a current or previous visit at %1$s. "
                     + "The patient is shown in the patient details panel. Choose a different date and time.";
+    public static final String MESSAGE_VISIT_DATE_NOT_AFTER_PREVIOUS =
+            "The current visit date and time must be later than the latest previous visit (%1$s).";
     public static final String MESSAGE_CONFIRM_DUPLICATE_NAME =
             "A patient named %1$s already exists. The matching patient is shown in the patient details panel. "
                     + "Apply this edit anyway? Type y to confirm. Any other input cancels.";
@@ -211,7 +213,7 @@ public class EditCommand extends Command {
         boolean isVisitDateChanged = !personToEdit.getVisitDate().equals(editedPerson.getVisitDate());
         if (isVisitDateChanged) {
             Optional<Person> visitDateDuplicate = DuplicatePersonFinder.findVisitDateDuplicate(
-                    model.getAddressBook(), editedPerson.getVisitDate());
+                    model.getAddressBook(), editedPerson, personToEdit);
             if (visitDateDuplicate.isPresent()) {
                 throw new CommandException(String.format(MESSAGE_DUPLICATE_VISIT_DATE, editedPerson.getVisitDate()),
                         visitDateDuplicate.get());
@@ -233,8 +235,11 @@ public class EditCommand extends Command {
     /**
      * Creates and returns a {@code Person} with the details of {@code personToEdit}
      * edited with {@code editPersonDescriptor}.
+     *
+     * @throws CommandException If the proposed current date would invalidate the retained previous dates.
      */
-    private static Person createEditedPerson(Person personToEdit, EditPersonDescriptor editPersonDescriptor) {
+    private static Person createEditedPerson(Person personToEdit, EditPersonDescriptor editPersonDescriptor)
+            throws CommandException {
         assert personToEdit != null;
 
         Name updatedName = editPersonDescriptor.getName().orElse(personToEdit.getName());
@@ -245,8 +250,15 @@ public class EditCommand extends Command {
         Note updatedNote = editPersonDescriptor.getNote().orElse(personToEdit.getNote());
         Set<Tag> updatedTags = editPersonDescriptor.getTags().orElse(personToEdit.getTags());
 
+        List<VisitDate> previousVisitDates = personToEdit.getPreviousVisitDates();
+        if (!previousVisitDates.isEmpty()
+                && !updatedVisitDate.value.isAfter(previousVisitDates.getLast().value)) {
+            throw new CommandException(String.format(MESSAGE_VISIT_DATE_NOT_AFTER_PREVIOUS,
+                    previousVisitDates.getLast()));
+        }
+
         return new Person(updatedName, updatedPhone, updatedEmail, updatedAddress,
-                updatedVisitDate, updatedNote, updatedTags);
+                updatedVisitDate, previousVisitDates, updatedNote, updatedTags);
     }
 
     @Override

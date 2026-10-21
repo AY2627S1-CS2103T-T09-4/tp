@@ -92,6 +92,12 @@ public class ModelManager implements Model {
     }
 
     @Override
+    public boolean hasPersonWithSameVisitDate(Person person, Person excludedPerson) {
+        requireAllNonNull(person, excludedPerson);
+        return addressBook.hasPersonWithSameVisitDate(person, excludedPerson);
+    }
+
+    @Override
     public int countPersonsWithSameVisitDay(Person person) {
         requireNonNull(person);
         return addressBook.countPersonsWithSameVisitDay(person);

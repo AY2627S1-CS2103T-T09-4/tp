@@ -46,7 +46,7 @@ public class AddCommand extends Command {
             "A patient with the same name and phone number already exists in the address book. "
                     + "The existing patient is shown in the patient details panel.";
     public static final String MESSAGE_DUPLICATE_VISIT_DATE =
-            "Another patient already has a visit scheduled for %1$s. "
+            "Another patient already has a current or previous visit at %1$s. "
                     + "The patient is shown in the patient details panel. Choose a different date and time.";
     public static final String MESSAGE_CONFIRM_DUPLICATE_NAME =
             "A patient named %1$s already exists. The matching patient is shown in the patient details panel. "
@@ -152,7 +152,7 @@ public class AddCommand extends Command {
         }
 
         Optional<Person> visitDateDuplicate =
-                DuplicatePersonFinder.findVisitDateDuplicate(model.getAddressBook(), toAdd.getVisitDate());
+                DuplicatePersonFinder.findVisitDateDuplicate(model.getAddressBook(), toAdd);
         if (visitDateDuplicate.isPresent()) {
             String conflictMessage = String.format(MESSAGE_DUPLICATE_VISIT_DATE, toAdd.getVisitDate());
             throw new CommandException(String.format(MESSAGE_NOT_ADDED, conflictMessage), visitDateDuplicate.get());
