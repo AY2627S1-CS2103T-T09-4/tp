@@ -180,7 +180,7 @@ public class EmergencyContactIntegrationTest {
     public void execute_findListAndSort_preservesContact() throws Exception {
         logic.execute(ADD_COMMAND + " ec/" + CONTACT);
         Person original = model.getFilteredPersonList().getFirst();
-        for (String command : List.of("find John", "sort date", "list")) {
+        for (String command : List.of("find n/John", "sort date", "list")) {
             logic.execute(command);
             assertEquals(List.of(original), model.getFilteredPersonList());
             assertStoredPerson(original);
@@ -234,14 +234,14 @@ public class EmergencyContactIntegrationTest {
     public void execute_filteredEdit_updatesDisplayedPatient() throws Exception {
         logic.execute(ADD_COMMAND + " ec/" + CONTACT);
         logic.execute("add n/Jane Tan p/82345678 a/Other Road vd/23/10/2026 1000");
-        logic.execute("find Jane");
+        logic.execute("find n/Jane");
         logic.execute("edit 1 ec/" + REPLACEMENT_CONTACT);
 
         List<Person> patients = storage.readAddressBook().orElseThrow().getPersonList();
         assertEquals(CONTACT, patients.get(0).getEmergencyContact().toString());
         assertEquals(REPLACEMENT_CONTACT, patients.get(1).getEmergencyContact().toString());
 
-        logic.execute("find Jane");
+        logic.execute("find n/Jane");
         logic.execute("edit 1 ec/");
         patients = storage.readAddressBook().orElseThrow().getPersonList();
         assertEquals(CONTACT, patients.get(0).getEmergencyContact().toString());

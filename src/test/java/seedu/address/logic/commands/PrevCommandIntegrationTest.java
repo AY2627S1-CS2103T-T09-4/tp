@@ -158,7 +158,7 @@ public class PrevCommandIntegrationTest {
 
     @Test
     public void execute_invalidCommands_preservesDataDiskFilterAndSort() throws Exception {
-        logic.execute("find Amy");
+        logic.execute("find n/Amy");
         model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
         logic.execute("view 1");
         String formatError = String.format(Messages.MESSAGE_INVALID_COMMAND_FORMAT, PrevCommand.MESSAGE_USAGE);

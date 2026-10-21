@@ -254,7 +254,7 @@ Format: `sort date [START_DATE]`
 * Visits earlier on the cutoff date remain in the first group because the cutoff applies to the whole calendar day.
 * Visual muting is always based on today's date, not `START_DATE`. A custom cutoff changes the order only.
 * Within the on-or-after and before-cutoff groups, visits are ordered by date and time, earliest first.
-* The command preserves the current displayed set. For example, `find Tan` followed by `sort date` sorts only the
+* The command preserves the current displayed set. For example, `find n/Tan` followed by `sort date` sorts only the
   matching patients.
 * Use the displayed indices for subsequent commands such as `edit` or `delete`.
 * `list` shows all patients again in stored order; a new `find` also returns its matches in stored order.
@@ -421,7 +421,7 @@ The current time in the error uses `d/M/yyyy HHmm`, without seconds; validation 
 Examples (the selected patient's current visit must have arrived or passed; choose an unused future datetime):
 
 * `next 1 1/11/2026 0930` schedules the first displayed patient's next appointment for 1 November 2026 at 09:30.
-* `find Betsy`, then `next 1 2/11/2026 1430`, schedules the first matching patient and restores the full list.
+* `find n/Betsy`, then `next 1 2/11/2026 1430`, schedules the first matching patient and restores the full list.
 
 ### Restoring the previous visit: `prev`
 
@@ -467,26 +467,38 @@ After the edit, the note remains `Review medication` through all later steps. Th
 `30/10/2026 1000` replaced by the edit. The later `next` schedules a new appointment under its normal rules and
 does not act as redo. Repeated rollback eventually empties the previous-date list.
 
-### Locating patients by name: `find`
+### Locating patients: `find`
 
-Finds patients with a word in their name that starts with any of the given keywords.
+Finds patients by name, phone number, address or tag.
 
-Format: `find KEYWORD [MORE_KEYWORDS]`
+Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...]`
 
-* The search is case-insensitive; for example, `hans` matches `Hans`.
-* A keyword matches the start of any word in the name, whether first name or surname. For example, `m` matches
-  `George Miller`, `Marcus Lim`, and `Mei Lin Tan`, and `Han` matches `Hans`.
-* A keyword in the middle of a word does not match; for example, `ans` does not match `Hans`.
-* Keyword order does not matter; for example, `Hans Bo` matches `Bo Hans`.
-* The search considers only names.
-* Patients matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
-* The app shows how many patients were found, e.g. `3 patients found.` If none match, it shows `No patients found.`
-  with a reminder of how keywords are matched.
+* Give at least one field. Every keyword must follow a prefix; for example, use `find n/george`, not `find george`.
+* How each field matches (all case-insensitive):
+  * `n/`: the start of any word in the name, first name or surname. For example, `n/m` matches `George Miller`,
+    `Marcus Lim`, and `Mei Lin Tan`, but `n/ans` does not match `Hans`.
+  * `p/`: any part of the phone number, so the last few digits are enough. For example, `p/8901` matches `85678901`.
+    Phone keywords may contain only digits.
+  * `a/`: the start of any word in the address. For example, `a/tamp` matches `46 Tampines Street 21, #08-03`.
+  * `t/`: the start of any tag. For example, `t/morn` matches a patient tagged `morning`.
+* Several keywords for one field find patients matching **any** of them (an `OR` search); for example,
+  `n/george priya` returns `George Miller` and `Priya Nair`.
+* Different fields must **all** match (an `AND` search); for example, `n/m t/morning` returns only patients with a
+  name word starting with `m` who are tagged `morning`.
+* Fields can be given in any order, but each prefix can appear only once. Put several keywords after one prefix
+  instead, e.g. `n/george priya` rather than `n/george n/priya`.
+* Spaces, tabs or line breaks can separate fields; for example, `n/alex` and `p/9123` separated by a tab are still
+  two separate fields.
+* The app shows how many patients were found, e.g. `3 patients found.` If none match, it shows
+  `No patients found. Search with n/ for names, p/ for phone numbers, a/ for addresses, or t/ for tags.`
 
 Examples:
-* `find m` returns `George Miller`, `Marcus Lim`, and `Mei Lin Tan`
-* `find John` returns `john` and `John Doe`
-* `find george priya` returns `George Miller` and `Priya Nair`
+* `find n/m` returns `George Miller`, `Marcus Lim`, and `Mei Lin Tan`
+* `find n/george priya` returns `George Miller` and `Priya Nair`
+* `find p/8901` returns `Noor Aziz`, whose number ends in `8901`
+* `find a/tampines` returns `Marcus Lim`
+* `find n/m t/morning` returns `Mei Lin Tan`; `George Miller` and `Marcus Lim` also match `n/m` but are not tagged
+  `morning`
 
 ### Deleting a patient: `delete`
 
@@ -505,7 +517,7 @@ Format: `delete INDEX`
 
 Examples:
 * `list` followed by `delete 2`, then `y`, deletes the 2nd patient in Doc.
-* `find Betsy` followed by `delete 1`, then `y`, deletes the 1st patient in the results of the `find` command.
+* `find n/Betsy` followed by `delete 1`, then `y`, deletes the 1st patient in the results of the `find` command.
 
 ### Clearing all entries: `clear`
 
@@ -595,7 +607,7 @@ Action     | Format, Examples
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
 **Edit**   | `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [p/PHONE_NUMBER] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
-**Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
+**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...]`<br> e.g., `find n/James Jake a/clementi`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (current visit must have arrived; choose an available future appointment)
 **Prev**   | `prev INDEX`<br> e.g., `prev 1` (requires a previous datetime; replaces and discards the current datetime; no redo)

@@ -1311,7 +1311,7 @@ successful advances in one session without waiting or changing the system clock.
 
    Expect success, with nonempty optional fields for Nextalpha and empty email, notes, and tags for Nextbeta.
 
-1. Run `find Nextalpha`, then `next 1 F3`.<br>
+1. Run `find n/Nextalpha`, then `next 1 F3`.<br>
    Expect a conflict naming hidden Nextbeta and the occupied time, with Nextbeta shown in the patient details panel
    and both data and the filtered patient list unchanged.
    Repeat with a leading-zero day or month when applicable; expect the same conflict.
@@ -1335,19 +1335,19 @@ successful advances in one session without waiting or changing the system clock.
    Each rejection must preserve records, file contents, and the displayed list. Also test today's current local
    minute; expect rejection. Repeat the unchanged-date test with equivalent leading zeros when applicable.
 
-1. Run `find Nextalpha Nextbeta`, then `sort date`.<br>
+1. Run `find n/Nextalpha Nextbeta`, then `sort date`.<br>
    Expect Nextalpha first. Try `next 1 F3`; expect rejection with the sorted order preserved.
    Run `view 1`, then `next 1 F1`; expect Nextalpha's current datetime to become `F1`, retaining all other fields,
-   and the full list to return in stored order. Run `find Nextalpha`, then `view 1`, to refresh its details.
+   and the full list to return in stored order. Run `find n/Nextalpha`, then `view 1`, to refresh its details.
    Close Doc and inspect the JSON: expect current `F1` and previous dates `[P1]`.
 
-1. Reopen Doc, run `find Nextalpha`, then immediately try `next 1 F2`.<br>
+1. Reopen Doc, run `find n/Nextalpha`, then immediately try `next 1 F2`.<br>
    Expect the future-current-visit error advising `edit`, with record, saved file, and list unchanged.
    Run `edit 1 vd/P2`, then `next   1   F2`. Expect repeated spaces to be accepted and the full list to return.
    Inspect the JSON after closing Doc: expect current `F2` and previous dates `[P1, P2]`, in that order.
    The edit does not append the replaced `F1`.
 
-1. Reopen Doc, run `find Nextbeta`, then `edit 1 vd/P3`. Run `find Nextbeta` again before `next 1 F1`, since the
+1. Reopen Doc, run `find n/Nextbeta`, then `edit 1 vd/P3`. Run `find n/Nextbeta` again before `next 1 F1`, since the
    successful edit resets the list.<br>
    Expect Nextbeta to change, retaining empty email, notes, and tags. Its previous dates contain `[P3]`.
 
@@ -1373,28 +1373,28 @@ When preparing that setup, choose `P1` and `P2` on calendar dates before today a
 Choose another globally unused future datetime `F4` for an intervening edit.
 Find the patient again after each successful mutation, since success restores the full list in stored order.
 
-1. Run `find Nextalpha`, then `view 1`. Try `prev`, `prev 0`, `prev 2147483648`, `prev 1 extra`, and `prev 2`.<br>
+1. Run `find n/Nextalpha`, then `view 1`. Try `prev`, `prev 0`, `prev 2147483648`, `prev 1 extra`, and `prev 2`.<br>
    Expect usage for malformed arguments and the invalid-index error for `prev 2`. Verify that patient data, the
    saved JSON, filtered list, and displayed details remain unchanged.
 1. Run `edit 1 vd/F4 p/84567890 e/updated@example.com a/30 Updated Road note/Updated before rollback t/followup dob/15/6/1990 bt/A+ ec/Mary Tan, 91234567`,
-   then `find Nextalpha` and `prev 1`.<br>
+   then `find n/Nextalpha` and `prev 1`.<br>
    Expect success even though `F4` is in the future. Verify that feedback identifies `P2` as restored and `F4`
    as discarded, including the time for both. Find and view the patient again: current is `P2`, previous
    dates are `[P1]`, and the updated phone, email, address, note, tags, date of birth, blood type, and emergency
    contact remain. The replaced current datetime `F4` is discarded rather than restored or appended to previous dates.
    Close and reopen Doc; verify that this state was saved.
-1. Run `find Nextalpha`, then `next 1 F2`.<br>
+1. Run `find n/Nextalpha`, then `next 1 F2`.<br>
    Expect current `F2` and previous dates `[P1, P2]`. Rollback did not retain either discarded future datetime.
-1. Run `find Nextalpha Nextbeta`, then `sort date 1/1/2000`.<br>
+1. Run `find n/Nextalpha Nextbeta`, then `sort date 1/1/2000`.<br>
    Expect Nextbeta at `F1` to be index 1 and Nextalpha at `F2` to be index 2. Run `view 2`, then `prev 2`.
    Expect Nextalpha to change and the full list to return in stored order. The right-hand details remain as last
    viewed until another `view`. Find and view Nextalpha again: current is `P2`, previous dates are `[P1]`.
    Find and view Nextbeta separately: its record remains unchanged at `F1` with previous dates `[P3]`.
-   Run `find Nextalpha` and `view 1` before continuing.
+   Run `find n/Nextalpha` and `view 1` before continuing.
 1. Run `prev 1` while only Nextalpha is displayed.<br>
    Find and view it again: current is `P1`, previous dates are empty, and the note remains updated. Close and reopen
    Doc and verify that this state persists.
-1. Run `find Nextalpha Nextbeta`, then `sort date`, then `view 2` and `prev 2`.<br>
+1. Run `find n/Nextalpha Nextbeta`, then `sort date`, then `view 2` and `prev 2`.<br>
    Expect future Nextbeta first and past Nextalpha second before the rejected rollback.
    Expect `Patient Nextalpha Patient has no previous visit dates to restore.` Verify that the record, saved file,
    filtered list, sorted order, and details are unchanged. There is no redo command.
@@ -1403,7 +1403,7 @@ Find the patient again after each successful mutation, since success restores th
 
 1. Run `list`, followed by `view 1`. Expect the full list to remain on the left and the first patient's complete
    details to appear on the right.
-1. Run `list`, followed by `find Alex`, and then `view 1`. Expect the search results to remain on the left and the
+1. Run `list`, followed by `find n/Alex`, and then `view 1`. Expect the search results to remain on the left and the
    first patient's complete details to appear on the right.
 1. Run `sort date`, followed by `view 1`. Expect the sorted list to remain on the left and the first patient's complete
    details to appear on the right.
@@ -1434,12 +1434,12 @@ Replace the placeholders with full `d/M/yyyy HHmm` datetimes before submitting c
 
    ```text
    add n/Calendarcheck Patient p/83456789 a/30 Test Road vd/YESTERDAY
-   find Calendarcheck
+   find n/Calendarcheck
    view 1
    ```
 
    Expect the full current datetime followed by `(Past)`, with `No previous visit dates` below it.
-1. For each value below, run `edit 1 vd/VALUE`, then `find Calendarcheck` and `view 1`.
+1. For each value below, run `edit 1 vd/VALUE`, then `find n/Calendarcheck` and `view 1`.
 
    | Value | Expected label beside the current datetime |
    | --- | --- |
@@ -1451,7 +1451,7 @@ Replace the placeholders with full `d/M/yyyy HHmm` datetimes before submitting c
    Details refresh only when `view` runs. Verify that the label does not appear beside previous dates or in JSON.
 1. While only Calendarcheck is displayed, run `sort date 1/1/2000`, then `view 1`.<br>
    Expect the label to remain based on today's local date, independently of the chosen sort cutoff.
-1. Close and reopen Doc, find Calendarcheck, and view it again.<br>
+1. Close and reopen Doc, run `find n/Calendarcheck`, and view it again.<br>
    Expect the saved datetime to remain unchanged and the label to reflect the local date when viewed.
 
 Fixed-clock tests cover the exact midnight and year boundary and time-zone differences. Do not change the OS clock
@@ -1462,32 +1462,32 @@ when midnight passes; another `view` recalculates it.
 
 1. Recalling submitted commands
 
-   1. Restart the application. Enter `list`, then enter `find Alex`.<br>
+   1. Restart the application. Enter `list`, then enter `find n/Alex`.<br>
       Expected: Both commands run normally.
 
    1. Press the Up arrow key once, then again.<br>
-      Expected: The command box shows `find Alex`, then `list`. The caret is after the recalled text. Further Up arrow
+      Expected: The command box shows `find n/Alex`, then `list`. The caret is after the recalled text. Further Up arrow
       presses leave `list` displayed.
 
    1. Press the Down arrow key twice.<br>
-      Expected: The command box shows `find Alex`, then becomes empty. Further Down arrow presses leave it empty.
+      Expected: The command box shows `find n/Alex`, then becomes empty. Further Down arrow presses leave it empty.
 
 1. Restoring unfinished text
 
-   1. Type `find Be` without pressing Enter, press the Up arrow key, then press the Down arrow key.<br>
-      Expected: A previous command is recalled, then the unfinished text `find Be` is restored exactly.
+   1. Type `find n/Be` without pressing Enter, press the Up arrow key, then press the Down arrow key.<br>
+      Expected: A previous command is recalled, then the unfinished text `find n/Be` is restored exactly.
 
 1. Recording command text
 
    1. Submit an invalid command containing leading or trailing spaces, then press the Up arrow key.<br>
       Expected: The invalid command is recalled with its original spaces.
 
-   1. Restart the application. Submit `list`, then submit `find Alex` twice. Press the Up arrow key twice.<br>
-      Expected: The command box shows `find Alex`, then `list`. The consecutive duplicate occupies one history
+   1. Restart the application. Submit `list`, then submit `find n/Alex` twice. Press the Up arrow key twice.<br>
+      Expected: The command box shows `find n/Alex`, then `list`. The consecutive duplicate occupies one history
       position.
 
-   1. Restart the application. Submit `list`, `find Alex`, then `list`. Press the Up arrow key three times.<br>
-      Expected: The command box shows `list`, `find Alex`, then `list`. Identical commands separated by another
+   1. Restart the application. Submit `list`, `find n/Alex`, then `list`. Press the Up arrow key three times.<br>
+      Expected: The command box shows `list`, `find n/Alex`, then `list`. Identical commands separated by another
       command occupy separate history positions.
 
 1. Excluding follow-up responses

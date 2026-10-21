@@ -102,7 +102,7 @@ public class NextCommandIntegrationTest {
 
     @Test
     public void execute_filteredIndex_persistsDisplayedPatientAndRestoresStoredOrder() throws Exception {
-        logic.execute("find Meier");
+        logic.execute("find n/Meier");
         assertEquals(List.of(benson), model.getFilteredPersonList());
 
         logic.execute("next\t1 \t01/11/2026  0930");
@@ -128,7 +128,7 @@ public class NextCommandIntegrationTest {
         Person hiddenPatient = new PersonBuilder(benson).withVisitDate("1/11/2026 1000").build();
         model.setPerson(benson, hiddenPatient);
         addressBookStorage.saveAddressBook(model.getAddressBook());
-        logic.execute("find Amy");
+        logic.execute("find n/Amy");
         model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
 
         CommandException exception = assertRejectedNext("next 1 01/11/2026 1000", CommandException.class,
@@ -143,7 +143,7 @@ public class NextCommandIntegrationTest {
                 .withPreviousVisitDates("1/11/2026 0930").build();
         model.setPerson(benson, hiddenPatient);
         addressBookStorage.saveAddressBook(model.getAddressBook());
-        logic.execute("find Amy");
+        logic.execute("find n/Amy");
         model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
         logic.execute("view 1");
 
@@ -155,7 +155,7 @@ public class NextCommandIntegrationTest {
     @Test
     public void execute_nextThenEditThenNext_retainsBothPreviousCurrentDates() throws Exception {
         logic.execute("next 1 " + NEW_VISIT_DATE);
-        logic.execute("find Amy");
+        logic.execute("find n/Amy");
         model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
         logic.execute("view 1");
         assertRejectedNext("next 1 2/11/2026 1000", CommandException.class,
@@ -173,7 +173,7 @@ public class NextCommandIntegrationTest {
 
     @Test
     public void execute_validationFailures_preservesDataDiskAndDisplay() throws Exception {
-        logic.execute("find Amy");
+        logic.execute("find n/Amy");
         model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
         assertRejectedNext("next 1 13/10/2026 1000", CommandException.class,
                 String.format(NextCommand.MESSAGE_UNCHANGED_VISIT_DATE, amy.getName(), amy.getVisitDate()));
