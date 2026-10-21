@@ -11,7 +11,9 @@ import static seedu.address.ui.JavaFxTestUtil.startJavaFx;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -37,6 +39,28 @@ public class PatientDetailsPanelTest {
     @BeforeAll
     public static void setUpJavaFx() throws InterruptedException {
         startJavaFx();
+    }
+
+    @Test
+    public void setPerson_dateOfBirth_displaysAgeBelowNameAndHidesWhenAbsent() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            panel.setPerson(new PersonBuilder().withDateOfBirth("15/6/1990").build());
+            Label birthDate = getLabel(panel, "dateOfBirth");
+            int age = Period.between(LocalDate.of(1990, 6, 15), LocalDate.now()).getYears();
+            assertEquals("Date of birth: 15/6/1990 (" + age + " years old)", birthDate.getText());
+            assertFieldVisible(panel, "dateOfBirth", true);
+            assertTrue(birthDate.isWrapText());
+            VBox container = getDetailsContainer(panel);
+            assertEquals(container.getChildren().indexOf(getLabel(panel, "name")) + 1,
+                    container.getChildren().indexOf(birthDate));
+
+            panel.setPerson(new PersonBuilder().build());
+            assertFieldVisible(panel, "dateOfBirth", false);
+            panel.setPerson(new PersonBuilder().withDateOfBirth("1/1/2000").build());
+            assertFieldVisible(panel, "dateOfBirth", true);
+            assertTrue(birthDate.getText().startsWith("Date of birth: 1/1/2000 ("));
+        });
     }
 
     @Test
@@ -84,6 +108,63 @@ public class PatientDetailsPanelTest {
             VBox detailsContainer = getDetailsContainer(patientDetailsPanel);
             assertTrue(detailsContainer.isManaged());
             assertTrue(detailsContainer.isVisible());
+        });
+    }
+
+    @Test
+    public void setPerson_bloodType_displaysBelowDateOfBirthAndHidesWhenAbsent() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            panel.setPerson(new PersonBuilder().withDateOfBirth("15/6/1990").withBloodType("A+").build());
+            Label bloodTypeLabel = getLabel(panel, "bloodType");
+            assertEquals("Blood type: A+", bloodTypeLabel.getText());
+            assertFieldVisible(panel, "bloodType", true);
+            assertTrue(bloodTypeLabel.isWrapText());
+            VBox container = getDetailsContainer(panel);
+            assertEquals(container.getChildren().indexOf(getLabel(panel, "dateOfBirth")) + 1,
+                    container.getChildren().indexOf(bloodTypeLabel));
+
+            panel.setPerson(new PersonBuilder().build());
+            assertFieldVisible(panel, "bloodType", false);
+            panel.setPerson(new PersonBuilder().withBloodType("O-").build());
+            assertFieldVisible(panel, "bloodType", true);
+            assertEquals("Blood type: O-", bloodTypeLabel.getText());
+        });
+    }
+
+    private static void assertFieldVisible(PatientDetailsPanel panel, String labelId, boolean isVisible) {
+        Label label = getLabel(panel, labelId);
+        assertEquals(isVisible, label.isVisible(), labelId);
+        assertEquals(isVisible, label.isManaged(), labelId);
+        if (!isVisible) {
+            assertEquals("", label.getText(), labelId);
+        }
+    }
+
+    @Test
+    public void setPerson_emergencyContact_displaysBelowPhoneAndHidesWhenAbsent() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            Person patient = new PersonBuilder().withEmergencyContact("Mary Tan, 91234567").build();
+            panel.setPerson(patient);
+            Label contact = getLabel(panel, "emergencyContact");
+            assertEquals("Emergency Contact: 91234567 (Mary Tan)", contact.getText());
+            assertTrue(contact.isVisible());
+            assertTrue(contact.isManaged());
+            assertTrue(contact.isWrapText());
+            VBox container = getDetailsContainer(panel);
+            assertEquals(container.getChildren().indexOf(getLabel(panel, "phone")) + 1,
+                    container.getChildren().indexOf(contact));
+
+            panel.setPerson(new PersonBuilder(patient).withEmergencyContact("98765432").build());
+            assertEquals("Emergency Contact: 98765432", contact.getText());
+            assertTrue(contact.isVisible());
+            assertTrue(contact.isManaged());
+
+            panel.setPerson(new PersonBuilder().build());
+            assertFalse(contact.isVisible());
+            assertFalse(contact.isManaged());
+            assertFalse(contact.getText().contains("Mary Tan"));
         });
     }
 

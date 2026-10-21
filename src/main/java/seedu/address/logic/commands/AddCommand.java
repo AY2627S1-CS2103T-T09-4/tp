@@ -2,13 +2,21 @@ package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_BLOOD_TYPE;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_DATE_OF_BIRTH;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_EMERGENCY_CONTACT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_VISIT_DATE;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.logging.Logger;
+
+import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
@@ -24,14 +32,19 @@ public class AddCommand extends Command {
     public static final String MESSAGE_USAGE = COMMAND_WORD + ": Adds a person to the address book. "
             + "Parameters: "
             + PREFIX_NAME + "NAME "
+            + "[" + PREFIX_DATE_OF_BIRTH + "DATE] "
+            + "[" + PREFIX_BLOOD_TYPE + "BLOOD_TYPE] "
             + PREFIX_PHONE + "PHONE "
             + PREFIX_ADDRESS + "ADDRESS "
             + PREFIX_VISIT_DATE + "VISIT_DATE "
             + "[" + PREFIX_EMAIL + "EMAIL] "
             + "[" + PREFIX_NOTE + "NOTES] "
+            + "[" + PREFIX_EMERGENCY_CONTACT + "[NAME, ]PHONE_NUMBER] "
             + "[" + PREFIX_TAG + "TAG]...\n"
             + "Example: " + COMMAND_WORD + " "
             + PREFIX_NAME + "John Doe "
+            + PREFIX_DATE_OF_BIRTH + "15/6/1990 "
+            + PREFIX_BLOOD_TYPE + "A+ "
             + PREFIX_PHONE + "98765432 "
             + PREFIX_EMAIL + "johnd@example.com "
             + PREFIX_ADDRESS + "311, Clementi Ave 2, #02-25 "
@@ -40,17 +53,24 @@ public class AddCommand extends Command {
 
     public static final String MESSAGE_SUCCESS = "Added patient %1$s";
     public static final String MESSAGE_DUPLICATE_PERSON =
-            "A patient with the same name and phone number already exists in the address book.";
+            "A patient with the same name and phone number already exists in the address book. "
+                    + "The existing patient is shown in the patient details panel.";
     public static final String MESSAGE_DUPLICATE_VISIT_DATE =
-            "Another patient already has a current or previous visit at %1$s. Choose a different date and time.";
+            "Another patient already has a current or previous visit at %1$s. "
+                    + "The patient is shown in the patient details panel. Choose a different date and time.";
     public static final String MESSAGE_CONFIRM_DUPLICATE_NAME =
-            "A patient named %1$s already exists. Add this patient anyway? "
-                    + "Type y to confirm. Any other input cancels.";
+            "A patient named %1$s already exists. The matching patient is shown in the patient details panel. "
+                    + "Add this patient anyway? Type y to confirm. Any other input cancels.";
+    public static final String MESSAGE_CONFIRM_DUPLICATE_NAMES =
+            "%2$d patients named %1$s already exist. Only one matching patient is shown in the patient details "
+                    + "panel. Add this patient anyway? Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_CONFIRM_FULL_DAY =
             "Heads up: you already have %1$d visits on %2$s. Add %3$s anyway? "
                     + "Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_ADD_CANCELLED = "Addition cancelled.";
     public static final String MESSAGE_NOT_ADDED = "The patient is not added due to: %1$s";
+
+    private static final Logger logger = LogsCenter.getLogger(AddCommand.class);
 
     private final Person toAdd;
 
@@ -68,9 +88,10 @@ public class AddCommand extends Command {
 
         validateNoConflicts(model);
 
-        if (model.hasPersonWithSameName(toAdd)) {
-            String prompt = String.format(MESSAGE_CONFIRM_DUPLICATE_NAME, toAdd.getName());
-            return requestConfirmation(prompt, this::addPersonAfterVisitDayCheck);
+        List<Person> nameDuplicates = DuplicatePersonFinder.findNameDuplicates(model.getAddressBook(), toAdd);
+        if (!nameDuplicates.isEmpty()) {
+            String prompt = formatDuplicateNamePrompt(nameDuplicates.size());
+            return requestConfirmation(prompt, this::addPersonAfterVisitDayCheck, nameDuplicates.getFirst());
         }
 
         return addPersonAfterVisitDayCheck(model);
@@ -98,9 +119,25 @@ public class AddCommand extends Command {
      */
     private static CommandResult requestConfirmation(String prompt,
             CommandInputRequest.ConfirmedAction confirmedAction) {
-        CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(
-                prompt, MESSAGE_ADD_CANCELLED, confirmedAction);
+        CommandInputRequest inputRequest = createConfirmationRequest(prompt, confirmedAction);
         return CommandResult.requestInput(inputRequest);
+    }
+
+    /**
+     * Returns a result that also displays one matching patient while requesting confirmation.
+     */
+    private static CommandResult requestConfirmation(String prompt,
+            CommandInputRequest.ConfirmedAction confirmedAction, Person personToView) {
+        CommandInputRequest inputRequest = createConfirmationRequest(prompt, confirmedAction);
+        return CommandResult.requestInput(inputRequest, personToView);
+    }
+
+    /**
+     * Returns a confirmation request that adds the person only after a {@code y} response.
+     */
+    private static CommandInputRequest createConfirmationRequest(String prompt,
+            CommandInputRequest.ConfirmedAction confirmedAction) {
+        return CommandInputRequest.createConfirmation(prompt, MESSAGE_ADD_CANCELLED, confirmedAction);
     }
 
     /**
@@ -112,6 +149,9 @@ public class AddCommand extends Command {
         validateNoConflicts(model);
 
         model.addPerson(toAdd);
+        logger.fine(() -> "Added patient to model; optional fields recorded: dateOfBirth="
+                + !toAdd.getDateOfBirth().isEmpty() + ", bloodType=" + !toAdd.getBloodType().isEmpty()
+                + ", emergencyContact=" + !toAdd.getEmergencyContact().isEmpty());
         return new CommandResult(String.format(MESSAGE_SUCCESS, toAdd.getName()));
     }
 
@@ -119,13 +159,30 @@ public class AddCommand extends Command {
      * Checks that the captured person has neither an identity nor a visit-date conflict.
      */
     private void validateNoConflicts(Model model) throws CommandException {
-        if (model.hasPerson(toAdd)) {
-            throw new CommandException(String.format(MESSAGE_NOT_ADDED, MESSAGE_DUPLICATE_PERSON));
+        Optional<Person> identityDuplicate =
+                DuplicatePersonFinder.findIdentityDuplicate(model.getAddressBook(), toAdd);
+        if (identityDuplicate.isPresent()) {
+            throw new CommandException(String.format(MESSAGE_NOT_ADDED, MESSAGE_DUPLICATE_PERSON),
+                    identityDuplicate.get());
         }
-        if (model.hasPersonWithSameVisitDate(toAdd)) {
+
+        Optional<Person> visitDateDuplicate =
+                DuplicatePersonFinder.findVisitDateDuplicate(model.getAddressBook(), toAdd);
+        if (visitDateDuplicate.isPresent()) {
             String conflictMessage = String.format(MESSAGE_DUPLICATE_VISIT_DATE, toAdd.getVisitDate());
-            throw new CommandException(String.format(MESSAGE_NOT_ADDED, conflictMessage));
+            throw new CommandException(String.format(MESSAGE_NOT_ADDED, conflictMessage), visitDateDuplicate.get());
         }
+    }
+
+    /**
+     * Returns a grammatically correct confirmation prompt for the duplicate-name matches.
+     */
+    private String formatDuplicateNamePrompt(int duplicateCount) {
+        assert duplicateCount > 0;
+
+        return (duplicateCount == 1)
+                ? String.format(MESSAGE_CONFIRM_DUPLICATE_NAME, toAdd.getName())
+                : String.format(MESSAGE_CONFIRM_DUPLICATE_NAMES, toAdd.getName(), duplicateCount);
     }
 
     @Override

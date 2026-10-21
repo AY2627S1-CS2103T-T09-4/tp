@@ -14,6 +14,7 @@ import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
 
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -65,7 +66,10 @@ public class AddCommandTest {
         ModelStub modelStub = new ModelStubWithPerson(validPerson);
 
         String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, AddCommand.MESSAGE_DUPLICATE_PERSON);
-        assertThrows(CommandException.class, expectedMessage, () -> addCommand.execute(modelStub));
+        CommandException exception =
+                assertThrows(CommandException.class, expectedMessage, () -> addCommand.execute(modelStub));
+
+        assertEquals(validPerson, exception.getPersonToView().orElseThrow());
     }
 
     @Test
@@ -78,7 +82,11 @@ public class AddCommandTest {
         String conflictMessage = String.format(AddCommand.MESSAGE_DUPLICATE_VISIT_DATE,
                 personWithConflictingVisit.getVisitDate());
         String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, conflictMessage);
-        assertThrows(CommandException.class, expectedMessage, () -> addCommand.execute(modelStub));
+        CommandException exception =
+                assertThrows(CommandException.class, expectedMessage, () -> addCommand.execute(modelStub));
+
+        assertEquals(existingPerson, exception.getPersonToView().orElseThrow());
+        assertEquals(List.of(existingPerson), modelStub.getFilteredPersonList());
     }
 
     @Test
@@ -207,16 +215,25 @@ public class AddCommandTest {
      */
     private class ModelStubWithPerson extends ModelStub {
         private final Person person;
+        private final ObservableList<Person> filteredPersons = FXCollections.observableArrayList();
 
         ModelStubWithPerson(Person person) {
             requireNonNull(person);
             this.person = person;
+            filteredPersons.add(person);
         }
 
         @Override
         public boolean hasPerson(Person person) {
             requireNonNull(person);
             return this.person.isSamePerson(person);
+        }
+
+        @Override
+        public ReadOnlyAddressBook getAddressBook() {
+            AddressBook addressBook = new AddressBook();
+            addressBook.addPerson(person);
+            return addressBook;
         }
 
         @Override
@@ -235,6 +252,17 @@ public class AddCommandTest {
         public int countPersonsWithSameVisitDay(Person person) {
             requireNonNull(person);
             return this.person.getVisitDate().isSameDay(person.getVisitDate()) ? 1 : 0;
+        }
+
+        @Override
+        public ObservableList<Person> getFilteredPersonList() {
+            return filteredPersons;
+        }
+
+        @Override
+        public void updateFilteredPersonList(Predicate<Person> predicate) {
+            requireNonNull(predicate);
+            filteredPersons.setAll(predicate.test(person) ? List.of(person) : List.of());
         }
     }
 

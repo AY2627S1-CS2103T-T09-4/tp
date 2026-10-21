@@ -131,9 +131,10 @@ public class NextCommandIntegrationTest {
         logic.execute("find Amy");
         model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
 
-        assertRejectedNext("next 1 01/11/2026 1000", CommandException.class,
+        CommandException exception = assertRejectedNext("next 1 01/11/2026 1000", CommandException.class,
                 String.format(NextCommand.MESSAGE_DUPLICATE_VISIT_DATE,
                         hiddenPatient.getName(), hiddenPatient.getVisitDate()));
+        assertEquals(hiddenPatient, exception.getPersonToView().orElseThrow());
     }
 
     @Test
@@ -146,8 +147,9 @@ public class NextCommandIntegrationTest {
         model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
         logic.execute("view 1");
 
-        assertRejectedNext("next 1 01/11/2026 0930", CommandException.class,
+        CommandException exception = assertRejectedNext("next 1 01/11/2026 0930", CommandException.class,
                 String.format(NextCommand.MESSAGE_DUPLICATE_VISIT_DATE, hiddenPatient.getName(), NEW_VISIT_DATE));
+        assertEquals(hiddenPatient, exception.getPersonToView().orElseThrow());
     }
 
     @Test
@@ -236,20 +238,21 @@ public class NextCommandIntegrationTest {
         assertEquals(expectedPatients, addressBookStorage.readAddressBook().orElseThrow().getPersonList());
     }
 
-    private void assertRejectedNext(String commandText, Class<? extends Exception> exceptionClass,
+    private <T extends Exception> T assertRejectedNext(String commandText, Class<T> exceptionClass,
             String expectedMessage) throws IOException {
         AddressBook before = new AddressBook(model.getAddressBook());
         List<Person> displayedPersons = new ArrayList<>(model.getFilteredPersonList());
         String savedData = Files.readString(addressBookStorage.getAddressBookFilePath());
         int savesBefore = saveCount;
 
-        assertThrows(exceptionClass, expectedMessage, () -> logic.execute(commandText));
+        T exception = assertThrows(exceptionClass, expectedMessage, () -> logic.execute(commandText));
 
         assertEquals(before, model.getAddressBook());
         assertEquals(displayedPersons, model.getFilteredPersonList());
         assertEquals(savedData, Files.readString(addressBookStorage.getAddressBookFilePath()));
         assertEquals(savesBefore, saveCount);
         assertFalse(logic.isInputRequestPending());
+        return exception;
     }
 
     private void assertSaveFailure(IOException failure, String expectedMessage) throws Exception {

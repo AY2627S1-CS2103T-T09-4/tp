@@ -30,6 +30,12 @@ public class PatientDetailsPanel extends UiPart<Region> {
     private Label name;
 
     @FXML
+    private Label dateOfBirth;
+
+    @FXML
+    private Label bloodType;
+
+    @FXML
     private Label phone;
 
     @FXML
@@ -46,6 +52,9 @@ public class PatientDetailsPanel extends UiPart<Region> {
 
     @FXML
     private Label note;
+
+    @FXML
+    private Label emergencyContact;
 
     @FXML
     private Label tags;
@@ -78,6 +87,14 @@ public class PatientDetailsPanel extends UiPart<Region> {
     public void setPerson(Person person) {
         requireNonNull(person);
         name.setText(person.getName().fullName);
+        boolean hasDateOfBirth = !person.getDateOfBirth().isEmpty();
+        dateOfBirth.setText(hasDateOfBirth ? "Date of birth: " + person.getDateOfBirth().toDisplayString() : "");
+        dateOfBirth.setVisible(hasDateOfBirth);
+        dateOfBirth.setManaged(hasDateOfBirth);
+        boolean hasBloodType = !person.getBloodType().isEmpty();
+        bloodType.setText(hasBloodType ? "Blood type: " + person.getBloodType().toString() : "");
+        bloodType.setVisible(hasBloodType);
+        bloodType.setManaged(hasBloodType);
         phone.setText("Phone: " + person.getPhone().value);
         email.setText("Email: " + person.getEmail().value);
         address.setText("Address: " + person.getAddress().value);
@@ -89,6 +106,10 @@ public class PatientDetailsPanel extends UiPart<Region> {
                         .map(VisitDate::toString)
                         .collect(Collectors.joining("\n")));
         note.setText("Note: " + person.getNote().value);
+        emergencyContact.setText("Emergency Contact: " + person.getEmergencyContact().toDisplayString());
+        boolean hasEmergencyContact = !person.getEmergencyContact().isEmpty();
+        emergencyContact.setVisible(hasEmergencyContact);
+        emergencyContact.setManaged(hasEmergencyContact);
 
         String tagNames = person.getTags().stream()
                 .sorted(Comparator.comparing(tag -> tag.tagName))

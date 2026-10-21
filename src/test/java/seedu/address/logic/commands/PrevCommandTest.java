@@ -30,6 +30,7 @@ public class PrevCommandTest {
 
     private static final Person AMY = new PersonBuilder().withVisitDate("30/10/2026 1000")
             .withPreviousVisitDates("10/10/2026 1000", "20/10/2026 1000")
+            .withDateOfBirth("15/6/1990").withBloodType("A+").withEmergencyContact("Mary Tan, 91234567")
             .withNote("Review  medication").withTags("priority", "friend").build();
     private static final Person BENSON = new PersonBuilder().withName("Benson Meier").withPhone("91234567")
             .withVisitDate("1/10/2026 1000").withEmail("").withNote("").withTags().build();

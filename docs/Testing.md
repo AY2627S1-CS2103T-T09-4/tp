@@ -40,6 +40,11 @@ xvfb-run --auto-servernum sh -eu -c '
 The Linux CI job uses this setup with `./gradlew check coverage`. Openbox is a test-environment dependency;
 users running Doc on a normal desktop do not need to install it.
 
+Help-window integration tests wait for the main window to receive native keyboard focus before starting.
+On desktops that support Java's foreground request (including macOS), the test process requests it explicitly.
+Allow the test windows to stay in front while these focus-dependent checks run; switching to another application
+can interrupt the native focus transitions being tested. Selection and focus assertions are still checked.
+
 <box type="info" seamless>
 
 **Link**: Read [this Gradle Tutorial from the se-edu/guides](https://se-education.org/guides/tutorials/gradle.html) to learn more about using Gradle.

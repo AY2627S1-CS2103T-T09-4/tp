@@ -190,22 +190,32 @@ public class EditCommandTest {
     @Test
     public void execute_duplicatePersonUnfilteredList_failure() {
         Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        List<Person> displayedPersons = List.copyOf(model.getFilteredPersonList());
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder(firstPerson).build();
         EditCommand editCommand = new EditCommand(INDEX_SECOND_PERSON, descriptor);
 
-        assertCommandFailure(editCommand, model, EditCommand.MESSAGE_DUPLICATE_PERSON);
+        CommandException exception = assertThrows(
+                CommandException.class, EditCommand.MESSAGE_DUPLICATE_PERSON, () -> editCommand.execute(model));
+
+        assertEquals(firstPerson, exception.getPersonToView().orElseThrow());
+        assertEquals(displayedPersons, model.getFilteredPersonList());
     }
 
     @Test
     public void execute_duplicatePersonFilteredList_failure() {
         showPersonAtIndex(model, INDEX_FIRST_PERSON);
+        List<Person> displayedPersons = List.copyOf(model.getFilteredPersonList());
 
         // edit person in filtered list into a duplicate in address book
         Person personInList = model.getAddressBook().getPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
         EditCommand editCommand = new EditCommand(INDEX_FIRST_PERSON,
                 new EditPersonDescriptorBuilder(personInList).build());
 
-        assertCommandFailure(editCommand, model, EditCommand.MESSAGE_DUPLICATE_PERSON);
+        CommandException exception = assertThrows(
+                CommandException.class, EditCommand.MESSAGE_DUPLICATE_PERSON, () -> editCommand.execute(model));
+
+        assertEquals(personInList, exception.getPersonToView().orElseThrow());
+        assertEquals(displayedPersons, model.getFilteredPersonList());
     }
 
     @Test
@@ -329,7 +339,13 @@ public class EditCommandTest {
         String expectedMessage = String.format(EditCommand.MESSAGE_DUPLICATE_VISIT_DATE,
                 firstPerson.getVisitDate());
 
-        assertCommandFailure(new EditCommand(INDEX_SECOND_PERSON, descriptor), model, expectedMessage);
+        AddressBook originalAddressBook = new AddressBook(model.getAddressBook());
+        List<Person> displayedPersons = List.copyOf(model.getFilteredPersonList());
+        CommandException exception = assertThrows(CommandException.class, expectedMessage, () ->
+                new EditCommand(INDEX_SECOND_PERSON, descriptor).execute(model));
+        assertEquals(originalAddressBook, model.getAddressBook());
+        assertEquals(firstPerson, exception.getPersonToView().orElseThrow());
+        assertEquals(displayedPersons, model.getFilteredPersonList());
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
     }
 
@@ -485,8 +501,10 @@ public class EditCommandTest {
         assertEquals(String.format(EditCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, firstPerson.getName()),
                 result.getFeedbackToUser());
         assertTrue(result.getInputRequest().isPresent());
+        assertEquals(firstPerson, result.getPersonToView().orElseThrow());
         assertFalse(result.shouldSaveAddressBook());
-        assertEquals(expectedModel, model);
+        assertEquals(expectedModel.getAddressBook(), model.getAddressBook());
+        assertEquals(expectedModel.getFilteredPersonList(), model.getFilteredPersonList());
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
     }
 
@@ -503,7 +521,45 @@ public class EditCommandTest {
         assertEquals(String.format(EditCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, normalizedNameVariant),
                 result.getFeedbackToUser());
         assertTrue(result.getInputRequest().isPresent());
+        assertEquals(firstPerson, result.getPersonToView().orElseThrow());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
+    }
+
+    @Test
+    public void execute_duplicateNameHiddenByFilter_previewsMatchWithoutChangingList() throws Exception {
+        Person hiddenMatch = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person personToEdit = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        showPersonAtIndex(model, INDEX_SECOND_PERSON);
+        List<Person> displayedPersons = List.copyOf(model.getFilteredPersonList());
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withName(hiddenMatch.getName().fullName).build();
+
+        CommandResult result = new EditCommand(INDEX_FIRST_PERSON, descriptor).execute(model);
+
+        assertEquals(hiddenMatch, result.getPersonToView().orElseThrow());
+        assertEquals(displayedPersons, model.getFilteredPersonList());
+        assertTrue(model.getAddressBook().getPersonList().contains(personToEdit));
+    }
+
+    @Test
+    public void execute_multipleDuplicateNames_displaysFirstMatchWithoutChangingList() throws Exception {
+        Person firstMatch = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person personToEdit = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        Person secondMatch = new PersonBuilder(firstMatch).withPhone("91234567")
+                .withVisitDate(VALID_VISIT_DATE_BOB).build();
+        model.addPerson(secondMatch);
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withName(firstMatch.getName().fullName).build();
+
+        CommandResult result = new EditCommand(INDEX_SECOND_PERSON, descriptor).execute(model);
+
+        assertEquals(String.format(EditCommand.MESSAGE_CONFIRM_DUPLICATE_NAMES,
+                firstMatch.getName(), 2), result.getFeedbackToUser());
+        assertTrue(result.getFeedbackToUser().contains("Only one matching patient is shown"));
+        assertEquals(firstMatch, result.getPersonToView().orElseThrow());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
+        assertTrue(model.getAddressBook().getPersonList().contains(personToEdit));
     }
 
     @Test
@@ -522,6 +578,7 @@ public class EditCommandTest {
         assertTrue(confirmedResult.shouldSaveAddressBook());
         assertTrue(model.getAddressBook().getPersonList().contains(editedPerson));
         assertFalse(model.getAddressBook().getPersonList().contains(secondPerson));
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
     }
 
     @Test
@@ -536,6 +593,7 @@ public class EditCommandTest {
 
         assertEquals(EditCommand.MESSAGE_EDIT_CANCELLED, cancelledResult.getFeedbackToUser());
         assertFalse(cancelledResult.shouldSaveAddressBook());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
     }
 
@@ -586,13 +644,15 @@ public class EditCommandTest {
                 .withVisitDate(VALID_VISIT_DATE_BOB).build();
         model.addPerson(trueDuplicate);
 
-        assertThrows(CommandException.class, EditCommand.MESSAGE_DUPLICATE_PERSON, () ->
+        CommandException exception = assertThrows(CommandException.class, EditCommand.MESSAGE_DUPLICATE_PERSON, () ->
                 requestResult.getInputRequest()
                         .orElseThrow()
                         .respond("y", model));
 
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
         assertTrue(model.getAddressBook().getPersonList().contains(trueDuplicate));
+        assertEquals(trueDuplicate, exception.getPersonToView().orElseThrow());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
     }
 
     @Test
@@ -608,13 +668,15 @@ public class EditCommandTest {
 
         String expectedMessage = String.format(EditCommand.MESSAGE_DUPLICATE_VISIT_DATE,
                 VALID_VISIT_DATE_AMY);
-        assertThrows(CommandException.class, expectedMessage, () ->
+        CommandException exception = assertThrows(CommandException.class, expectedMessage, () ->
                 requestResult.getInputRequest()
                         .orElseThrow()
                         .respond("y", model));
 
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
         assertTrue(model.getAddressBook().getPersonList().contains(conflictingVisit));
+        assertEquals(conflictingVisit, exception.getPersonToView().orElseThrow());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
     }
 
     @Test

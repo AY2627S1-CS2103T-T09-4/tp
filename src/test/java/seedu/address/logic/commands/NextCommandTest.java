@@ -39,7 +39,9 @@ public class NextCommandTest {
             ZoneId.of("Asia/Singapore"));
     private static final String NEW_VISIT_DATE = "1/11/2026 0930";
     private static final Person AMY = new PersonBuilder().withVisitDate("13/10/2026 1000")
-            .withNote("Review  medication").withTags("friend", "priority").build();
+            .withDateOfBirth("15/6/1990").withBloodType("A+").withEmergencyContact("Mary Tan, 91234567")
+            .withNote("Review  medication")
+            .withTags("friend", "priority").build();
     private static final Person BENSON = new PersonBuilder().withName("Benson Meier").withPhone("91234567")
             .withVisitDate("12/10/2026 1000").withEmail("").withNote("").withTags().build();
     private static final Person CARL = new PersonBuilder().withName("Carl Kurz").withPhone("92345678")
@@ -151,9 +153,11 @@ public class NextCommandTest {
         model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
         assertEquals(List.of(AMY, CARL), model.getFilteredPersonList());
 
-        assertScheduleFailure(INDEX_FIRST_PERSON, new VisitDate("01/11/2026 1000"), FIXED_CLOCK,
+        CommandException exception = assertScheduleFailure(
+                INDEX_FIRST_PERSON, new VisitDate("01/11/2026 1000"), FIXED_CLOCK,
                 String.format(NextCommand.MESSAGE_DUPLICATE_VISIT_DATE,
                         hiddenPatient.getName(), hiddenPatient.getVisitDate()));
+        assertEquals(hiddenPatient, exception.getPersonToView().orElseThrow());
         model.setPerson(CARL, new PersonBuilder(CARL).withVisitDate("3/11/2026 1000").build());
         assertEquals("Carl Kurz", model.getFilteredPersonList().getFirst().getName().fullName);
         assertEquals(2, model.getFilteredPersonList().size());
@@ -167,8 +171,10 @@ public class NextCommandTest {
         model.updateFilteredPersonList(person -> !person.equals(hiddenPatient));
         model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
 
-        assertScheduleFailure(INDEX_FIRST_PERSON, new VisitDate("31/10/2026 1000"), FIXED_CLOCK,
+        CommandException exception = assertScheduleFailure(
+                INDEX_FIRST_PERSON, new VisitDate("31/10/2026 1000"), FIXED_CLOCK,
                 String.format(NextCommand.MESSAGE_DUPLICATE_VISIT_DATE, hiddenPatient.getName(), "31/10/2026 1000"));
+        assertEquals(hiddenPatient, exception.getPersonToView().orElseThrow());
     }
 
     @Test
@@ -369,15 +375,18 @@ public class NextCommandTest {
         assertTrue(result.getPersonToView().isEmpty());
     }
 
-    private void assertScheduleFailure(Index index, VisitDate visitDate, Clock clock, String expectedMessage) {
+    private CommandException assertScheduleFailure(Index index, VisitDate visitDate, Clock clock,
+            String expectedMessage) {
         AddressBook before = new AddressBook(model.getAddressBook());
         List<Person> displayedPersons = new ArrayList<>(model.getFilteredPersonList());
 
         NextCommand command = new NextCommand(index, visitDate, clock);
-        assertThrows(CommandException.class, expectedMessage, () -> command.execute(model));
+        CommandException exception =
+                assertThrows(CommandException.class, expectedMessage, () -> command.execute(model));
 
         assertEquals(before, model.getAddressBook());
         assertEquals(displayedPersons, model.getFilteredPersonList());
+        return exception;
     }
 
     private static Model createModel(Person... persons) {
