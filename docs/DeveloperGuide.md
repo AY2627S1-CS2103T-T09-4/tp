@@ -445,6 +445,11 @@ The command follows the existing parser, model, and storage flow:
    Before mutation, it compares the candidate's complete visit record against every other stored patient,
    including hidden patients and excluding the original record. The
    [visit-time conflict limitations](#visit-time-conflict-limitations) apply.
+1. If the requested day differs from the current visit's day and already has `Model.MAX_VISITS_PER_DAY` (7) or more
+   current visits, it returns a `CommandInputRequest` confirmation instead of mutating, as `add` and `edit` do.
+   A later visit on the same day does not ask, because it replaces that day's visit rather than adding one.
+   On `y`, the confirmed action reads the clock again and rechecks that the requested visit is still in the future,
+   that the original record exists, and that no conflict appeared while the prompt was open.
 1. On success, it replaces the patient and restores the full list in stored order, clearing the filter and sort.
    `LogicManager` saves through the existing storage flow before returning the result to the UI.
 
@@ -1314,6 +1319,14 @@ successful advances in one session without waiting or changing the system clock.
    [Loading and validating previous visit dates](#loading-and-validating-previous-visit-dates). Choose a future
    previous datetime and a later current datetime for that other patient, and an eligible current datetime for the
    selected patient. Expect rejection without mutation or saving, including when the other patient is hidden.
+
+1. Choose a future day `D` with no visits and a globally unused past datetime `P4`. Add
+   `add n/Nextgamma Patient p/83456789 a/30 Test Road vd/P4`, then add seven more patients with unused times on `D`.
+   Run `find n/Nextgamma`, then `next 1 D 1700`.<br>
+   Expect `Heads up: you already have 7 visits on DAY. Schedule Nextgamma Patient's next visit on that day anyway?
+   ...`, with `DAY` shown as e.g. `Mon, 2 Nov 2026`. Enter `n`; expect `Scheduling cancelled.` with data unchanged.
+   Run `find n/Nextgamma` and `next 1 D 1700` again, then enter `y`; expect the visit to be scheduled on `D`.
+   With only six visits on `D`, expect `next` to schedule without asking.
 
 Fixed-clock automated tests cover exact equality to now, nanosecond boundaries, one clock read, and saved appointments
 becoming past as time advances. These boundaries are not reliably reproducible by typing against the system clock.
