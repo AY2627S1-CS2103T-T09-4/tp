@@ -34,6 +34,40 @@ public class PatientDetailsPanelTest {
     }
 
     @Test
+    public void setPerson_alcoholHistory_displaysAfterBloodTypeAndClearsStaleText() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            Person recorded = new PersonBuilder().withBloodType("A+")
+                    .withAlcoholHistory("Occasional drinking").build();
+            panel.setPerson(recorded);
+            Label history = getLabel(panel, "alcoholHistory");
+            assertEquals("Alcohol history: Occasional drinking", history.getText());
+            assertFieldVisible(panel, "alcoholHistory", true);
+            assertTrue(history.isWrapText());
+            VBox container = getDetailsContainer(panel);
+            assertEquals(container.getChildren().indexOf(getLabel(panel, "bloodType")) + 1,
+                    container.getChildren().indexOf(history));
+
+            panel.setPerson(new PersonBuilder(recorded).withAlcoholHistory("").build());
+            assertFieldVisible(panel, "alcoholHistory", false);
+            panel.setPerson(new PersonBuilder().withAlcoholHistory("Does not drink").build());
+            assertFieldVisible(panel, "alcoholHistory", true);
+            assertEquals("Alcohol history: Does not drink", history.getText());
+        });
+    }
+
+    @Test
+    public void setPerson_longAlcoholHistory_wrapsWithinScrollableDetails() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            String history = "Occasional drinking with meals. ".repeat(30).strip();
+            panel.setPerson(new PersonBuilder().withAlcoholHistory(history).build());
+            assertEquals("Alcohol history: " + history, getLabel(panel, "alcoholHistory").getText());
+            assertRecordCanScrollToBottom(panel);
+        });
+    }
+
+    @Test
     public void setPerson_dateOfBirth_displaysAgeBelowNameAndHidesWhenAbsent() {
         runOnFxThread(() -> {
             PatientDetailsPanel panel = new PatientDetailsPanel();

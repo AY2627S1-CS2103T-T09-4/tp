@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import seedu.address.model.person.Address;
+import seedu.address.model.person.AlcoholHistory;
 import seedu.address.model.person.BloodType;
 import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.Email;
@@ -33,6 +34,7 @@ public class PersonBuilder {
     private Name name;
     private DateOfBirth dateOfBirth;
     private BloodType bloodType;
+    private AlcoholHistory alcoholHistory;
     private Phone phone;
     private Email email;
     private Address address;
@@ -49,6 +51,7 @@ public class PersonBuilder {
         name = new Name(DEFAULT_NAME);
         dateOfBirth = new DateOfBirth("");
         bloodType = BloodType.UNKNOWN;
+        alcoholHistory = new AlcoholHistory("");
         phone = new Phone(DEFAULT_PHONE);
         email = new Email(DEFAULT_EMAIL);
         address = new Address(DEFAULT_ADDRESS);
@@ -66,6 +69,7 @@ public class PersonBuilder {
         name = personToCopy.getName();
         dateOfBirth = personToCopy.getDateOfBirth();
         bloodType = personToCopy.getBloodType();
+        alcoholHistory = personToCopy.getAlcoholHistory();
         phone = personToCopy.getPhone();
         email = personToCopy.getEmail();
         address = personToCopy.getAddress();
@@ -97,6 +101,14 @@ public class PersonBuilder {
      */
     public PersonBuilder withBloodType(String bloodType) {
         this.bloodType = BloodType.fromString(bloodType);
+        return this;
+    }
+
+    /**
+     * Sets the optional alcohol history of the patient being built.
+     */
+    public PersonBuilder withAlcoholHistory(String alcoholHistory) {
+        this.alcoholHistory = new AlcoholHistory(alcoholHistory);
         return this;
     }
 
@@ -168,8 +180,8 @@ public class PersonBuilder {
      * Returns a patient with the configured details.
      */
     public Person build() {
-        return new Person(name, dateOfBirth, bloodType, phone, email, address, visitDate, previousVisitDates,
-                note, emergencyContact, tags);
+        return new Person(name, dateOfBirth, bloodType, alcoholHistory, phone, email, address, visitDate,
+                previousVisitDates, note, emergencyContact, tags);
     }
 
 }

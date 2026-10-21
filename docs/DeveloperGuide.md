@@ -383,10 +383,21 @@ Both patient cards and the details panel show recorded blood type below the date
 DOB is absent), hiding and unmanaging the row
 when it is unrecorded. Patient identity continues to use name and phone number.
 
+### Optional alcohol history
+
+`Person` stores an immutable `AlcoholHistory` alongside blood type. It holds free text with surrounding whitespace
+removed; empty text represents unrecorded history and remains distinct from the explicit text `Does not drink`.
+`ParserUtil#parseAlcoholHistory` rejects blank add values, while edit maps an explicitly blank `alc/` to an empty
+history. Both parsers reject repeated `alc/` prefixes. Unrelated edits and `next` preserve the recorded history.
+
+`JsonAdaptedPerson` saves the `alcoholHistory` string and treats missing or null fields in older files as unrecorded.
+The right-hand details panel displays recorded alcohol history immediately after blood type, wraps long text, and
+hides the row when unrecorded. Patient list cards and duplicate-patient identity remain unchanged.
+
 ### Editing patient details
 
 `EditCommandParser` accepts optional replacement fields, including `vd/` and `note/`. The displayed format is
-`edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`.
+`edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [alc/ALCOHOL_HISTORY] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`.
 It checks index syntax and duplicate single-valued prefixes before parsing field values, then rejects a
 descriptor with no supplied fields. When `vd/` is supplied, `ParserUtil#parseVisitDate` reuses the existing strict
 `VisitDate` validation
@@ -1025,6 +1036,22 @@ Use a disposable data file and available visit slots.
    patient again; expect the row to reappear. Set the second patient's DOB using `edit INDEX dob/1/1/2000`.
 1. Load an older valid data file without `dateOfBirth`; expect the patients to load with the DOB row hidden.
 
+### Alcohol history
+
+Use a disposable data file, starting with no patients and available visit slots.
+
+1. Run `add n/Alcohol Test bt/A+ alc/Occasional drinking p/81234567 a/10 Test Road vd/1/1/2000 1000`.
+   Run `view 1`; expect alcohol history immediately below blood type in the right-hand panel.
+1. Run `edit 1 bt/O- alc/Does not drink`, then `view 1`; expect both replacement values in that order.
+1. Edit another field, then run `next 1 1/1/2099 1000`; expect alcohol history unchanged and the previous visit retained.
+   Restart the application and view the patient; expect the alcohol history and visit record to remain.
+1. Run `edit 1 alc/`, then `view 1`; expect the row hidden without leaving a gap and other details unchanged.
+   Restart; expect the field to remain cleared. Whitespace-only edits and clearing an empty history also succeed.
+1. Try an empty `alc/` on add and repeated prefixes on add or edit, including `alc/ alc/`.
+   Expect errors and unchanged data. Supply a long description with punctuation; expect wrapping and scrolling.
+1. Add another patient without `alc/` in a different slot. Switch between records; expect no stale alcohol history.
+   Load an older valid file without `alcoholHistory`; expect it to load with the field unrecorded.
+
 ### Blood types
 
 Use a disposable data file, starting with no patients, and available visit slots.
@@ -1203,6 +1230,17 @@ Use a disposable copy of the data file for these tests. Start with a patient nam
 1. Try to add another patient named `ALEX  TAN` with phone number `91234567`. Expect the true-duplicate error without
    a confirmation prompt, even if the remaining fields differ.
 1. Close and reopen the application after confirming a name duplicate. Expect both same-name patients to load.
+
+### Optional alcohol history
+
+`Person` stores an immutable `AlcoholHistory` alongside blood type. It holds free text with surrounding whitespace
+removed; empty text represents unrecorded history and remains distinct from the explicit text `Does not drink`.
+`ParserUtil#parseAlcoholHistory` rejects blank add values, while edit maps an explicitly blank `alc/` to an empty
+history. Both parsers reject repeated `alc/` prefixes. Unrelated edits and `next` preserve the recorded history.
+
+`JsonAdaptedPerson` saves the `alcoholHistory` string and treats missing or null fields in older files as unrecorded.
+The right-hand details panel displays recorded alcohol history immediately after blood type, wraps long text, and
+hides the row when unrecorded. Patient list cards and duplicate-patient identity remain unchanged.
 
 ### Editing patient details
 

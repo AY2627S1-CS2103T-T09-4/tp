@@ -30,6 +30,9 @@ public class PatientDetailsPanel extends UiPart<Region> {
     private Label bloodType;
 
     @FXML
+    private Label alcoholHistory;
+
+    @FXML
     private Label phone;
 
     @FXML
@@ -76,6 +79,10 @@ public class PatientDetailsPanel extends UiPart<Region> {
         bloodType.setText(hasBloodType ? "Blood type: " + person.getBloodType().toString() : "");
         bloodType.setVisible(hasBloodType);
         bloodType.setManaged(hasBloodType);
+        boolean hasAlcoholHistory = !person.getAlcoholHistory().isEmpty();
+        alcoholHistory.setText(hasAlcoholHistory ? "Alcohol history: " + person.getAlcoholHistory() : "");
+        alcoholHistory.setVisible(hasAlcoholHistory);
+        alcoholHistory.setManaged(hasAlcoholHistory);
         phone.setText("Phone: " + person.getPhone().value);
         email.setText("Email: " + person.getEmail().value);
         address.setText("Address: " + person.getAddress().value);

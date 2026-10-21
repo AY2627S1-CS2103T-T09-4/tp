@@ -62,7 +62,8 @@ public class JsonAdaptedPersonTest {
     public void toModelType_previousVisitDates_preservesOrderAndOtherFields() throws Exception {
         Person original = new PersonBuilder(BENSON).withVisitDate("10/10/2026 1000")
                 .withPreviousVisitDates("1/10/2026 1000", "1/10/2026 1100")
-                .withDateOfBirth("15/6/1990").withEmergencyContact("Mary Tan, 91234567").withBloodType("AB-").build();
+                .withDateOfBirth("15/6/1990").withEmergencyContact("Mary Tan, 91234567").withBloodType("AB-")
+                .withAlcoholHistory("Occasional drinking").build();
 
         assertEquals(original, new JsonAdaptedPerson(original).toModelType());
     }

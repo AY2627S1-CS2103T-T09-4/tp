@@ -15,7 +15,7 @@
 ## Patient updates and save failures
 
 * `AddCommand` logs which optional fields are recorded at `FINE` after adding the patient to the model.
-* `EditCommand` logs supplied date-of-birth, blood-type, and emergency-contact fields as set or cleared at `FINE`
+* `EditCommand` logs supplied date-of-birth, blood-type, alcohol-history, and emergency-contact fields as set or cleared at `FINE`
   after the model accepts the edit. Cancelled or rejected edits do not produce these update messages.
 * These diagnostic messages contain field names and presence flags rather than patient field values.
   They describe model changes; saving the data file happens afterward.

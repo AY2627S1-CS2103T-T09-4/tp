@@ -10,6 +10,7 @@ import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.Address;
+import seedu.address.model.person.AlcoholHistory;
 import seedu.address.model.person.BloodType;
 import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.Email;
@@ -66,6 +67,20 @@ public class ParserUtil {
             throw new ParseException(DateOfBirth.MESSAGE_CONSTRAINTS);
         }
         return new DateOfBirth(trimmedDate);
+    }
+
+    /**
+     * Parses recorded alcohol history, trimming surrounding whitespace and rejecting blank input.
+     *
+     * @throws ParseException If the supplied history is blank.
+     * @throws NullPointerException If the supplied history is null.
+     */
+    public static AlcoholHistory parseAlcoholHistory(String alcoholHistory) throws ParseException {
+        AlcoholHistory parsedHistory = new AlcoholHistory(alcoholHistory);
+        if (parsedHistory.isEmpty()) {
+            throw new ParseException(AlcoholHistory.MESSAGE_CONSTRAINTS);
+        }
+        return parsedHistory;
     }
 
     /**
