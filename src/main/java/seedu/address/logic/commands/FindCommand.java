@@ -35,8 +35,9 @@ public class FindCommand extends Command {
 
     public static final String MESSAGE_PATIENTS_FOUND = "%1$d patients found.";
     public static final String MESSAGE_ONE_PATIENT_FOUND = "1 patient found.";
-    public static final String MESSAGE_NO_PATIENTS_FOUND = "No patients found. "
-            + "Name keywords match the start of any word in a name, e.g. \"find n/g\" matches \"George Miller\".";
+    public static final String MESSAGE_NO_PATIENTS_FOUND = "No patients found. Search with "
+            + PREFIX_NAME + " for names, " + PREFIX_PHONE + " for phone numbers, "
+            + PREFIX_ADDRESS + " for addresses, or " + PREFIX_TAG + " for tags.";
 
     private final Predicate<Person> predicate;
 

@@ -18,6 +18,7 @@ import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
 
+import seedu.address.logic.parser.FindCommandParser;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
@@ -65,7 +66,7 @@ public class FindCommandTest {
     @Test
     public void execute_zeroKeywords_noPersonFound() {
         String expectedMessage = "No patients found. "
-                + "Name keywords match the start of any word in a name, e.g. \"find n/g\" matches \"George Miller\".";
+                + "Search with n/ for names, p/ for phone numbers, a/ for addresses, or t/ for tags.";
         NameContainsKeywordsPredicate predicate = preparePredicate(" ");
         FindCommand command = new FindCommand(predicate);
         expectedModel.updateFilteredPersonList(predicate);
@@ -130,12 +131,32 @@ public class FindCommandTest {
     }
 
     @Test
+    public void execute_noMatchInOtherFields_showsGenericNoMatchMessage() {
+        // the hint must suit every field, not just names
+        assertFindSuccess(new PhoneContainsKeywordsPredicate(List.of("0000")), FindCommand.MESSAGE_NO_PATIENTS_FOUND,
+                List.of());
+        assertFindSuccess(new AddressContainsKeywordsPredicate(List.of("tampines")),
+                FindCommand.MESSAGE_NO_PATIENTS_FOUND, List.of());
+        assertFindSuccess(new TagContainsKeywordsPredicate(List.of("diabetic")), FindCommand.MESSAGE_NO_PATIENTS_FOUND,
+                List.of());
+    }
+
+    @Test
     public void execute_multipleFields_onlyPersonsMatchingAllFieldsFound() {
         // "Meier" alone matches BENSON and DANIEL; the address narrows it to BENSON
         MatchesAllCriteriaPredicate predicate = new MatchesAllCriteriaPredicate(List.of(
                 new NameContainsKeywordsPredicate(List.of("Meier")),
                 new AddressContainsKeywordsPredicate(List.of("clementi"))));
         assertFindSuccess(predicate, "1 patient found.", List.of(BENSON));
+    }
+
+    @Test
+    public void execute_tabBetweenFields_phoneCriterionStillApplied() throws Exception {
+        // BENSON's name matches but his phone does not, so the parsed search must find nobody
+        FindCommand command = new FindCommandParser().parse(" n/Benson\tp/0000");
+        expectedModel.updateFilteredPersonList(person -> false);
+
+        assertCommandSuccess(command, model, FindCommand.MESSAGE_NO_PATIENTS_FOUND, expectedModel);
     }
 
     @Test

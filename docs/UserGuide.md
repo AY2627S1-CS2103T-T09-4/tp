@@ -362,8 +362,10 @@ Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t
   name word starting with `m` who are tagged `morning`.
 * Fields can be given in any order, but each prefix can appear only once. Put several keywords after one prefix
   instead, e.g. `n/george priya` rather than `n/george n/priya`.
-* The app shows how many patients were found, e.g. `3 patients found.` If none match, it shows `No patients found.`
-  with a reminder of how name keywords are matched.
+* Spaces, tabs or line breaks can separate fields; for example, `n/alex` and `p/9123` separated by a tab are still
+  two separate fields.
+* The app shows how many patients were found, e.g. `3 patients found.` If none match, it shows
+  `No patients found. Search with n/ for names, p/ for phone numbers, a/ for addresses, or t/ for tags.`
 
 Examples:
 * `find n/m` returns `George Miller`, `Marcus Lim`, and `Mei Lin Tan`
