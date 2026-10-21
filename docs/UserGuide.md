@@ -396,6 +396,13 @@ Format: `next INDEX DATETIME`
   including hidden patients. Leading-zero dates compare equally: `1/11/2026 0930` and `01/11/2026 0930` are the same time.
 * Conflict detection covers identical start times, not visit duration, travel time, or partial overlaps.
   The [visit-time conflict limitations under add](#adding-a-patient-add) also apply.
+* When the requested appointment is on a different day that already has 7 or more visits, the app asks, e.g.
+  `Heads up: you already have 7 visits on Mon, 2 Nov 2026. Schedule Jane Tan's next visit on that day anyway? Type y
+  to confirm. Any other input cancels.` Type `y` and press Enter to schedule it; surrounding spaces and letter case
+  are ignored. Any other input shows `Scheduling cancelled.`, keeps the data unchanged, and is not run as a command.
+  If the requested time has passed, or another patient has taken it, by the time you enter `y`, the visit is not
+  scheduled and the usual error is shown.
+  A next visit later on the same day as the current visit does not ask, since that day's visit count does not grow.
 * Success appends the old current date and time to the previous dates, then sets the new current date and time.
   All other details, including empty optional fields, are preserved. Previous dates are saved in order in the
   JSON data file and appear below the current visit date when you run `view INDEX`.

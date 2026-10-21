@@ -453,13 +453,19 @@ Eligibility requires `current <= now < requested`. Keeping this clock-dependent 
 appointments to remain valid in the model and storage. Together with the existing record chronology, it ensures
 that appending the old current datetime preserves strict ordering.
 
-The parser passes an injected clock to the command, which reads it once at execution in the local time zone.
+The parser passes an injected clock to the command. Each eligibility check reads it once in the local time zone.
 Comparisons retain seconds and nanoseconds; error feedback formats the captured time as `d/M/yyyy HHmm` for
 readability. Fixed clocks make boundary tests deterministic.
 
 Before replacement, the command rejects an unchanged datetime and checks the complete candidate record against
 all other stored patients, including hidden patients and excluding the original record. The shared
 [visit-date uniqueness rule](#duplicate-patient-identity-visit-dates-and-name-confirmation) applies.
+
+If the requested day differs from the current visit's day and already has `Model.MAX_VISITS_PER_DAY` (7) or more
+current visits, the command returns a `CommandInputRequest` confirmation before mutating, as `add` and `edit` do.
+A later visit on the same day does not ask, because it replaces that day's visit rather than adding one.
+On confirmation, the command rechecks eligibility using a fresh clock reading, verifies that the original record
+still exists, and repeats the conflict check before replacing the patient.
 
 A visit-time conflict supplies the conflicting patient through `CommandException` so `MainWindow` displays that
 record without changing the displayed list. If no further visit is planned, the current datetime remains stored
@@ -1362,8 +1368,17 @@ successful advances in one session without waiting or changing the system clock.
    previous datetime and a later current datetime for that other patient, and an eligible current datetime for the
    selected patient. Expect rejection without mutation or saving, including when the other patient is hidden.
 
-Fixed-clock automated tests cover exact equality to now, nanosecond boundaries, one clock read, and saved appointments
-becoming past as time advances. These boundaries are not reliably reproducible by typing against the system clock.
+1. Choose a future day `D` with no visits and a globally unused past datetime `P4`. Add
+   `add n/Nextgamma Patient p/83456789 a/30 Test Road vd/P4`, then add seven more patients with unused times on `D`.
+   Run `find n/Nextgamma`, then `next 1 D 1700`.<br>
+   Expect `Heads up: you already have 7 visits on DAY. Schedule Nextgamma Patient's next visit on that day anyway?
+   ...`, with `DAY` shown as e.g. `Mon, 2 Nov 2026`. Enter `n`; expect `Scheduling cancelled.` with data unchanged.
+   Run `find n/Nextgamma` and `next 1 D 1700` again, then enter `y`; expect the visit to be scheduled on `D`.
+   With only six visits on `D`, expect `next` to schedule without asking.
+
+Fixed-clock automated tests cover exact equality to now, nanosecond boundaries, one initial clock read, and
+appointments becoming past as time advances, including while confirmation is pending. These boundaries are not
+reliably reproducible by typing against the system clock.
 
 ### Testing the prev command
 
