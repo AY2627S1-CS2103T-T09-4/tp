@@ -27,6 +27,7 @@ public class Person {
     private final Phone phone;
 
     // Data fields
+    private final BloodType bloodType;
     private final Email email;
     private final Address address;
     private final VisitDate visitDate;
@@ -69,7 +70,30 @@ public class Person {
      */
     public Person(Name name, Phone phone, Email email, Address address, VisitDate visitDate,
             List<VisitDate> previousVisitDates, Note note, EmergencyContact emergencyContact, Set<Tag> tags) {
-        requireAllNonNull(name, phone, email, address, visitDate, previousVisitDates, note, emergencyContact, tags);
+        this(name, BloodType.UNKNOWN, phone, email, address, visitDate, previousVisitDates, note,
+                emergencyContact, tags);
+    }
+
+    /**
+     * Creates a patient with an optional blood type, no previous visits, and no emergency contact.
+     */
+    public Person(Name name, BloodType bloodType, Phone phone, Email email, Address address,
+            VisitDate visitDate, Note note, Set<Tag> tags) {
+        this(name, bloodType, phone, email, address, visitDate, List.of(), note, new EmergencyContact(""), tags);
+    }
+
+    /**
+     * Creates a patient with all optional details and an immutable oldest-first visit history.
+     *
+     * @throws NullPointerException If any field or previous visit date is null.
+     * @throws IllegalArgumentException If previous dates are not strictly increasing or any is at or after
+     *     the current visit date.
+     */
+    public Person(Name name, BloodType bloodType, Phone phone, Email email, Address address, VisitDate visitDate,
+            List<VisitDate> previousVisitDates, Note note, EmergencyContact emergencyContact, Set<Tag> tags) {
+        requireAllNonNull(name, bloodType, phone, email, address, visitDate, previousVisitDates, note,
+                emergencyContact, tags);
+        this.bloodType = bloodType;
         List<VisitDate> copiedPreviousVisitDates = List.copyOf(previousVisitDates);
         validatePreviousVisitDates(copiedPreviousVisitDates, visitDate);
         this.name = name;
@@ -98,6 +122,10 @@ public class Person {
 
     public Name getName() {
         return name;
+    }
+
+    public BloodType getBloodType() {
+        return bloodType;
     }
 
     public Phone getPhone() {
@@ -190,6 +218,7 @@ public class Person {
         }
 
         return name.equals(otherPerson.name)
+                && bloodType.equals(otherPerson.bloodType)
                 && phone.equals(otherPerson.phone)
                 && email.equals(otherPerson.email)
                 && address.equals(otherPerson.address)
@@ -203,13 +232,15 @@ public class Person {
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(name, phone, email, address, visitDate, previousVisitDates, note, emergencyContact, tags);
+        return Objects.hash(name, bloodType, phone, email, address, visitDate, previousVisitDates,
+                note, emergencyContact, tags);
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
                 .add("name", name)
+                .add("bloodType", bloodType)
                 .add("phone", phone)
                 .add("email", email)
                 .add("address", address)

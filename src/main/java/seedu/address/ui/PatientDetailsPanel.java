@@ -24,6 +24,9 @@ public class PatientDetailsPanel extends UiPart<Region> {
     private Label name;
 
     @FXML
+    private Label bloodType;
+
+    @FXML
     private Label phone;
 
     @FXML
@@ -62,6 +65,10 @@ public class PatientDetailsPanel extends UiPart<Region> {
      */
     public void setPerson(Person person) {
         name.setText(person.getName().fullName);
+        boolean hasBloodType = !person.getBloodType().isEmpty();
+        bloodType.setText(hasBloodType ? "Blood type: " + person.getBloodType().toString() : "");
+        bloodType.setVisible(hasBloodType);
+        bloodType.setManaged(hasBloodType);
         phone.setText("Phone: " + person.getPhone().value);
         email.setText("Email: " + person.getEmail().value);
         address.setText("Address: " + person.getAddress().value);

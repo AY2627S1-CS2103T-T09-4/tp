@@ -92,7 +92,7 @@ public class NextCommand extends Command {
     private Person createUpdatedPerson(Person personToUpdate) {
         List<VisitDate> previousVisitDates = new ArrayList<>(personToUpdate.getPreviousVisitDates());
         previousVisitDates.add(personToUpdate.getVisitDate());
-        return new Person(personToUpdate.getName(), personToUpdate.getPhone(),
+        return new Person(personToUpdate.getName(), personToUpdate.getBloodType(), personToUpdate.getPhone(),
                 personToUpdate.getEmail(), personToUpdate.getAddress(), visitDate,
                 previousVisitDates, personToUpdate.getNote(), personToUpdate.getEmergencyContact(),
                 personToUpdate.getTags());

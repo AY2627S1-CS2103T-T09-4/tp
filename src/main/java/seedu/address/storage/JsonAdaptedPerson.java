@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.person.Address;
+import seedu.address.model.person.BloodType;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
@@ -28,6 +29,7 @@ class JsonAdaptedPerson {
     public static final String MISSING_FIELD_MESSAGE_FORMAT = "Person's %s field is missing!";
 
     private final String name;
+    private final String bloodType;
     private final String phone;
     private final String email;
     private final String address;
@@ -62,16 +64,26 @@ class JsonAdaptedPerson {
     }
 
     /**
-     * Constructs an adapted patient, accepting missing previous dates or emergency contacts in older files.
+     * Constructs a stored patient without blood type.
+     */
+    public JsonAdaptedPerson(String name, String phone, String email, String address, String visitDate,
+            List<String> previousVisitDates, String note, String emergencyContact, List<JsonAdaptedTag> tags) {
+        this(name, null, phone, email, address, visitDate, previousVisitDates, note, emergencyContact, tags);
+    }
+
+    /**
+     * Constructs an adapted patient, accepting missing optional fields in older files.
      */
     @JsonCreator
-    public JsonAdaptedPerson(@JsonProperty("name") String name, @JsonProperty("phone") String phone,
+    public JsonAdaptedPerson(@JsonProperty("name") String name, @JsonProperty("bloodType") String bloodType,
+            @JsonProperty("phone") String phone,
             @JsonProperty("email") String email, @JsonProperty("address") String address,
             @JsonProperty("visitDate") String visitDate,
             @JsonProperty("previousVisitDates") List<String> previousVisitDates,
             @JsonProperty("note") String note, @JsonProperty("emergencyContact") String emergencyContact,
             @JsonProperty("tags") List<JsonAdaptedTag> tags) {
         this.name = name;
+        this.bloodType = bloodType;
         this.phone = phone;
         this.email = email;
         this.address = address;
@@ -91,6 +103,7 @@ class JsonAdaptedPerson {
      */
     public JsonAdaptedPerson(Person source) {
         name = source.getName().fullName;
+        bloodType = source.getBloodType().toString();
         phone = source.getPhone().value;
         email = source.getEmail().value;
         address = source.getAddress().value;
@@ -131,6 +144,13 @@ class JsonAdaptedPerson {
         }
         final Phone modelPhone = new Phone(phone);
 
+        final BloodType modelBloodType;
+        try {
+            modelBloodType = BloodType.fromString(bloodType == null ? "" : bloodType);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalValueException(BloodType.MESSAGE_CONSTRAINTS);
+        }
+
         if (email == null) {
             throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, Email.class.getSimpleName()));
         }
@@ -168,7 +188,7 @@ class JsonAdaptedPerson {
         final Set<Tag> modelTags = new HashSet<>(personTags);
         final List<VisitDate> modelPreviousVisitDates = parsePreviousVisitDates();
         try {
-            return new Person(modelName, modelPhone, modelEmail, modelAddress, modelVisitDate,
+            return new Person(modelName, modelBloodType, modelPhone, modelEmail, modelAddress, modelVisitDate,
                     modelPreviousVisitDates, modelNote, modelEmergencyContact, modelTags);
         } catch (IllegalArgumentException e) {
             throw new IllegalValueException(Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS, e);
