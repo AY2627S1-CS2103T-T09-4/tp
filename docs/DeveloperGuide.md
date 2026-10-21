@@ -346,6 +346,26 @@ to save the updated record, including empty notes, in the existing JSON format. 
 the replacement visit date/time and notes. Editing replaces one stored visit date/time and one stored note;
 it does not append visit-history entries or per-visit notes.
 
+### Sorting displayed visits by date
+
+`sort date [START_DATE]` orders the patients in the currently displayed list without changing the active filter.
+`SortCommandParser` accepts an optional cutoff date in `d/M/yyyy` format. When it is present, the parser supplies the
+date to `SortCommand`; otherwise, the command obtains today's date from its clock when it executes. The command then
+creates a comparator that separates visits before the cutoff date from those on or after it.
+
+The activity diagram shows how the cutoff date is selected and the comparison decisions made while the displayed
+list is being sorted. The underlying `SortedList` decides how many comparisons are required.
+
+<puml src="diagrams/SortCommandActivityDiagram.puml" alt="How sort date orders displayed visits" width="500" />
+
+When exactly one visit is before the cutoff date, the comparator places the other visit first. Otherwise, it places
+the earlier visit date and time first. For example, with 21 October as the cutoff, visits on 22 October, 24 October,
+and 20 October are displayed in that order.
+
+`SortCommand` passes the comparator to `Model#sortFilteredPersonList`. `ModelManager` applies it to the `SortedList`
+layered over the current `FilteredList`, so the displayed patients are reordered without replacing the stored
+patient list. A later operation that resets the filter also clears this display-only ordering.
+
 ### Scheduling the next visit
 
 `next INDEX DATETIME` retains the current datetime and schedules the following appointment for a displayed patient.
