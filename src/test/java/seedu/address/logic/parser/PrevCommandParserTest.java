@@ -22,14 +22,25 @@ public class PrevCommandParserTest {
         assertParseSuccess(parser, "1", new PrevCommand(INDEX_FIRST_PERSON));
         assertParseSuccess(parser, " \t1\t ", new PrevCommand(INDEX_FIRST_PERSON));
         assertParseSuccess(parser, "2147483647", new PrevCommand(Index.fromOneBased(Integer.MAX_VALUE)));
+        assertParseSuccess(parser, "0002147483647", new PrevCommand(Index.fromOneBased(Integer.MAX_VALUE)));
+        assertParseSuccess(parser, "0".repeat(1000) + "1", new PrevCommand(INDEX_FIRST_PERSON));
     }
 
     @Test
     public void parse_invalidArgs_throwsParseException() {
         String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, PrevCommand.MESSAGE_USAGE);
-        for (String args : List.of("", " ", "0", "-1", "+1", "a", "1.5", "2147483648",
-                "999999999999999999999999", "1 2", "1 vd/1/11/2026 1000")) {
+        for (String args : List.of("", " ", "0", "-1", "+1", "a", "1.5", "-2147483649", "+2147483648",
+                "2147483648abc", "2147483648.0", "0".repeat(1000), "1 2", "1 vd/1/11/2026 1000")) {
             assertParseFailure(parser, args, expectedMessage);
+        }
+    }
+
+    @Test
+    public void parse_oversizedIndex_showsSpecificReasonAndPrevUsage() {
+        String expectedMessage = ParserUtil.MESSAGE_INDEX_TOO_LARGE + "\n" + PrevCommand.MESSAGE_USAGE;
+        for (String index : List.of("2147483648", "0002147483648", "999999999999999999999999",
+                "9".repeat(1000), "٢١٤٧٤٨٣٦٤٨", " \t2147483648\t ")) {
+            assertParseFailure(parser, index, expectedMessage);
         }
     }
 

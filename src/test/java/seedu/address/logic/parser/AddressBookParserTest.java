@@ -134,6 +134,12 @@ public class AddressBookParserTest {
     }
 
     @Test
+    public void parseCommand_oversizedPrevIndex_usesSpecificErrorAndPrevUsage() {
+        String expectedMessage = ParserUtil.MESSAGE_INDEX_TOO_LARGE + "\n" + PrevCommand.MESSAGE_USAGE;
+        assertThrows(ParseException.class, expectedMessage, () -> parser.parseCommand("prev 2147483648"));
+    }
+
+    @Test
     public void parseCommand_sort() throws Exception {
         assertTrue(parser.parseCommand("sort date") instanceof SortCommand);
         assertTrue(parser.parseCommand("  sort   date  ") instanceof SortCommand);

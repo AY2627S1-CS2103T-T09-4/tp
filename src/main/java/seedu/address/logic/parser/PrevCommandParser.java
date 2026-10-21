@@ -23,6 +23,9 @@ public class PrevCommandParser implements Parser<PrevCommand> {
         try {
             return new PrevCommand(ParserUtil.parseIndex(args));
         } catch (ParseException pe) {
+            if (ParserUtil.isPositiveInteger(args.trim())) {
+                throw new ParseException(ParserUtil.MESSAGE_INDEX_TOO_LARGE + "\n" + PrevCommand.MESSAGE_USAGE, pe);
+            }
             throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT, PrevCommand.MESSAGE_USAGE), pe);
         }
     }

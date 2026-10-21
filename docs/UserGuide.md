@@ -443,7 +443,8 @@ Format: `prev INDEX`
   It saves the record. Follow the [visit-record interaction rules](#visit-records) to find the patient and refresh details.
 * Repeating `prev` restores one earlier datetime each time. When none remain, it reports
   `Patient NAME has no previous visit dates to restore.` without changing data or the displayed list.
-* Missing, invalid, oversized, or additional arguments show usage. An index outside the displayed list shows
+* Missing, invalid, or additional arguments show usage. Oversized positive indices show `Index is too large.`
+  followed by guidance and usage. An index within the supported range but outside the displayed list shows
   the invalid-index error. Rejected commands do not save changes.
 * A later `next` uses the restored state and still requires the current visit to have arrived or passed and the
   requested datetime to be in the future. A save failure reports a storage error; the in-memory record may

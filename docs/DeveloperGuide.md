@@ -1374,8 +1374,9 @@ Choose another globally unused future datetime `F4` for an intervening edit.
 Find the patient again after each successful mutation, since success restores the full list in stored order.
 
 1. Run `find n/Nextalpha`, then `view 1`. Try `prev`, `prev 0`, `prev 2147483648`, `prev 1 extra`, and `prev 2`.<br>
-   Expect usage for malformed arguments and the invalid-index error for `prev 2`. Verify that patient data, the
-   saved JSON, filtered list, and displayed details remain unchanged.
+   Expect usage for malformed arguments, `Index is too large.` with guidance and usage for `prev 2147483648`,
+   and the invalid-index error for `prev 2`. Verify that patient data, the saved JSON, filtered list, and
+   displayed details remain unchanged.
 1. Run `edit 1 vd/F4 p/84567890 e/updated@example.com a/30 Updated Road note/Updated before rollback t/followup dob/15/6/1990 bt/A+ ec/Mary Tan, 91234567`,
    then `find n/Nextalpha` and `prev 1`.<br>
    Expect success even though `F4` is in the future. Verify that feedback identifies `P2` as restored and `F4`

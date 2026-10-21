@@ -24,6 +24,7 @@ import seedu.address.logic.LogicManager;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.AddressBookParser;
+import seedu.address.logic.parser.ParserUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
@@ -163,9 +164,11 @@ public class PrevCommandIntegrationTest {
         logic.execute("view 1");
         String formatError = String.format(Messages.MESSAGE_INVALID_COMMAND_FORMAT, PrevCommand.MESSAGE_USAGE);
 
-        for (String commandText : List.of("prev", "prev 0", "prev -1", "prev 2147483648", "prev 1 extra")) {
+        for (String commandText : List.of("prev", "prev 0", "prev -1", "prev 1 extra")) {
             assertRejectedCommand(commandText, ParseException.class, formatError);
         }
+        assertRejectedCommand("prev 2147483648", ParseException.class,
+                ParserUtil.MESSAGE_INDEX_TOO_LARGE + "\n" + PrevCommand.MESSAGE_USAGE);
         assertRejectedCommand("prev 2", CommandException.class, Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
         assertEquals(AMY, logic.execute("view 1").getPersonToView().orElseThrow());
     }
