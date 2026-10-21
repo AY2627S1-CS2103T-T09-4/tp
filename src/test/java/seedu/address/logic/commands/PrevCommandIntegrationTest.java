@@ -124,6 +124,22 @@ public class PrevCommandIntegrationTest {
     }
 
     @Test
+    public void execute_afterClearingOptionalFields_preservesEmptyFieldsAndPersistsRollback() throws Exception {
+        logic.execute("edit 1 e/ note/ t/");
+        Person clearedPerson = new PersonBuilder(AMY).withEmail("").withNote("").withTags().build();
+        assertPersistedPatient(clearedPerson);
+
+        logic.execute("prev 1");
+
+        Person expectedPerson = new PersonBuilder(clearedPerson).withVisitDate("20/10/2026 1000")
+                .withPreviousVisitDates("10/10/2026 1000").build();
+        assertPersistedPatient(expectedPerson);
+        assertEquals(2, saveCount);
+        Model reloadedModel = new ModelManager(addressBookStorage.readAddressBook().orElseThrow(), new UserPrefs());
+        assertEquals(List.of(expectedPerson), reloadedModel.getAddressBook().getPersonList());
+    }
+
+    @Test
     public void execute_rollbackThenNext_usesRestoredStateAndFreesDiscardedDate() throws Exception {
         logic.execute("prev 1");
         logic.execute("next 1 1/11/2026 1000");
