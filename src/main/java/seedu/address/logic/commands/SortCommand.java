@@ -20,8 +20,6 @@ import seedu.address.model.person.Person;
  */
 public class SortCommand extends Command {
 
-    private static final Logger logger = LogsCenter.getLogger(SortCommand.class);
-
     public static final String COMMAND_WORD = "sort";
     /** Format used to parse and display cutoff dates. */
     public static final DateTimeFormatter CUTOFF_DATE_FORMATTER = DateTimeFormatter.ofPattern("d/M/uuuu")
@@ -34,6 +32,8 @@ public class SortCommand extends Command {
             + COMMAND_WORD + " date 18/9/2026";
     public static final String MESSAGE_SUCCESS =
             "Sorted displayed visits by date, with visits on or after %1$s first.";
+
+    private static final Logger logger = LogsCenter.getLogger(SortCommand.class);
 
     private final Optional<LocalDate> specifiedCutoffDate;
     private final Clock clock;
