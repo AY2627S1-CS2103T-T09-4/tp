@@ -7,6 +7,7 @@ import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -120,6 +121,8 @@ public class AddressBookParserTest {
     public void parseCommand_sort() throws Exception {
         assertTrue(parser.parseCommand("sort date") instanceof SortCommand);
         assertTrue(parser.parseCommand("  sort   date  ") instanceof SortCommand);
+        assertEquals(new SortCommand(LocalDate.of(2026, 9, 18)),
+                parser.parseCommand("sort date 18/9/2026"));
     }
 
     @Test

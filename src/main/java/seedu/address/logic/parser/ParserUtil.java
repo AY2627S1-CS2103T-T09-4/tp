@@ -10,8 +10,10 @@ import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.Address;
+import seedu.address.model.person.BloodType;
 import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Phone;
 import seedu.address.model.person.VisitDate;
@@ -64,6 +66,24 @@ public class ParserUtil {
             throw new ParseException(DateOfBirth.MESSAGE_CONSTRAINTS);
         }
         return new DateOfBirth(trimmedDate);
+    }
+
+    /**
+     * Parses a recorded blood type, rejecting empty input.
+     *
+     * @throws ParseException If the supplied blood type is empty or invalid.
+     */
+    public static BloodType parseBloodType(String bloodType) throws ParseException {
+        requireNonNull(bloodType);
+        try {
+            BloodType parsedBloodType = BloodType.fromString(bloodType);
+            if (parsedBloodType.isEmpty()) {
+                throw new ParseException(BloodType.MESSAGE_CONSTRAINTS);
+            }
+            return parsedBloodType;
+        } catch (IllegalArgumentException exception) {
+            throw new ParseException(BloodType.MESSAGE_CONSTRAINTS, exception);
+        }
     }
 
     /**
@@ -124,6 +144,20 @@ public class ParserUtil {
             throw new ParseException(VisitDate.MESSAGE_CONSTRAINTS);
         }
         return new VisitDate(trimmedVisitDate);
+    }
+
+    /**
+     * Parses a supplied emergency contact, rejecting blank or incomplete details.
+     *
+     * @throws ParseException If the contact lacks a valid phone number or supplies an invalid name.
+     */
+    public static EmergencyContact parseEmergencyContact(String emergencyContact) throws ParseException {
+        requireNonNull(emergencyContact);
+        String trimmedContact = emergencyContact.trim();
+        if (trimmedContact.isEmpty() || !EmergencyContact.isValidEmergencyContact(trimmedContact)) {
+            throw new ParseException(EmergencyContact.MESSAGE_CONSTRAINTS);
+        }
+        return new EmergencyContact(trimmedContact);
     }
 
     /**

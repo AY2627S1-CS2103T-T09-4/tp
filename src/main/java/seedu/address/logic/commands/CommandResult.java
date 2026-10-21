@@ -68,6 +68,20 @@ public class CommandResult {
     }
 
     /**
+     * Creates a result that displays a request prompt and a person's details while waiting for the next input.
+     * The current address book state is not saved for this result.
+     *
+     * @param inputRequest Request that will handle the next input.
+     * @param personToView Person whose details should be displayed.
+     * @return Result containing the input request and person to display.
+     */
+    public static CommandResult requestInput(CommandInputRequest inputRequest, Person personToView) {
+        requireNonNull(inputRequest);
+        requireNonNull(personToView);
+        return new CommandResult(inputRequest.getPrompt(), false, false, false, inputRequest, personToView);
+    }
+
+    /**
      * Creates a result that displays feedback without saving the current address book state.
      *
      * @param feedbackToUser Feedback to display.

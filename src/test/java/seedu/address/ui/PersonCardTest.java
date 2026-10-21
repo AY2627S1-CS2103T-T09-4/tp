@@ -27,6 +27,20 @@ public class PersonCardTest {
     }
 
     @Test
+    public void constructor_clearedDateOfBirth_hidesRowWithoutLeavingSpace() {
+        runOnFxThread(() -> {
+            Person recorded = new PersonBuilder().withDateOfBirth("15/6/1990").build();
+            Person cleared = new PersonBuilder(recorded).withDateOfBirth("").build();
+            PersonCard card = new PersonCard(cleared, 1);
+            Label dateOfBirth = (Label) card.getRoot().lookup("#dateOfBirth");
+
+            assertEquals("", dateOfBirth.getText());
+            assertFalse(dateOfBirth.isVisible());
+            assertFalse(dateOfBirth.isManaged());
+        });
+    }
+
+    @Test
     public void constructor_recordedDateOfBirth_displaysDateAndAgeBelowName() {
         runOnFxThread(() -> {
             Person patient = new PersonBuilder().withDateOfBirth("15/6/1990").build();
@@ -45,16 +59,33 @@ public class PersonCardTest {
     }
 
     @Test
-    public void constructor_clearedDateOfBirth_hidesRowWithoutLeavingSpace() {
+    public void constructor_recordedBloodType_displaysBloodTypeBelowDateOfBirth() {
         runOnFxThread(() -> {
-            Person recorded = new PersonBuilder().withDateOfBirth("15/6/1990").build();
-            Person cleared = new PersonBuilder(recorded).withDateOfBirth("").build();
-            PersonCard card = new PersonCard(cleared, 1);
-            Label dateOfBirth = (Label) card.getRoot().lookup("#dateOfBirth");
+            Person patient = new PersonBuilder().withDateOfBirth("15/6/1990").withBloodType("A+").build();
+            PersonCard card = new PersonCard(patient, 1);
+            Label bloodType = (Label) card.getRoot().lookup("#bloodType");
 
-            assertEquals("", dateOfBirth.getText());
-            assertFalse(dateOfBirth.isVisible());
-            assertFalse(dateOfBirth.isManaged());
+            assertEquals("Blood type: A+", bloodType.getText());
+            assertTrue(bloodType.isVisible());
+            assertTrue(bloodType.isManaged());
+            assertTrue(bloodType.isWrapText());
+            VBox fields = (VBox) bloodType.getParent();
+            assertEquals(fields.getChildren().indexOf(card.getRoot().lookup("#dateOfBirth")) + 1,
+                    fields.getChildren().indexOf(bloodType));
+        });
+    }
+
+    @Test
+    public void constructor_clearedBloodType_hidesRowWithoutLeavingSpace() {
+        runOnFxThread(() -> {
+            Person recorded = new PersonBuilder().withDateOfBirth("15/6/1990").withBloodType("A+").build();
+            Person cleared = new PersonBuilder(recorded).withBloodType("").build();
+            PersonCard card = new PersonCard(cleared, 1);
+            Label bloodType = (Label) card.getRoot().lookup("#bloodType");
+
+            assertEquals("", bloodType.getText());
+            assertFalse(bloodType.isVisible());
+            assertFalse(bloodType.isManaged());
         });
     }
 

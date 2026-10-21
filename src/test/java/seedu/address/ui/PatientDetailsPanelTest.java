@@ -8,15 +8,22 @@ import static seedu.address.ui.JavaFxTestUtil.runOnFxThread;
 import static seedu.address.ui.JavaFxTestUtil.startJavaFx;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Period;
+import java.util.List;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import javafx.geometry.Bounds;
+import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
 import seedu.address.model.person.Person;
+import seedu.address.model.person.VisitDate;
 import seedu.address.testutil.PersonBuilder;
 
 public class PatientDetailsPanelTest {
@@ -24,6 +31,28 @@ public class PatientDetailsPanelTest {
     @BeforeAll
     public static void setUpJavaFx() throws InterruptedException {
         startJavaFx();
+    }
+
+    @Test
+    public void setPerson_dateOfBirth_displaysAgeBelowNameAndHidesWhenAbsent() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            panel.setPerson(new PersonBuilder().withDateOfBirth("15/6/1990").build());
+            Label birthDate = getLabel(panel, "dateOfBirth");
+            int age = Period.between(LocalDate.of(1990, 6, 15), LocalDate.now()).getYears();
+            assertEquals("Date of birth: 15/6/1990 (" + age + " years old)", birthDate.getText());
+            assertFieldVisible(panel, "dateOfBirth", true);
+            assertTrue(birthDate.isWrapText());
+            VBox container = getDetailsContainer(panel);
+            assertEquals(container.getChildren().indexOf(getLabel(panel, "name")) + 1,
+                    container.getChildren().indexOf(birthDate));
+
+            panel.setPerson(new PersonBuilder().build());
+            assertFieldVisible(panel, "dateOfBirth", false);
+            panel.setPerson(new PersonBuilder().withDateOfBirth("1/1/2000").build());
+            assertFieldVisible(panel, "dateOfBirth", true);
+            assertTrue(birthDate.getText().startsWith("Date of birth: 1/1/2000 ("));
+        });
     }
 
     @Test
@@ -62,6 +91,8 @@ public class PatientDetailsPanelTest {
                     getLabel(patientDetailsPanel, "visitDate").getText());
             assertEquals("Note: Monitor blood pressure before the next visit",
                     getLabel(patientDetailsPanel, "note").getText());
+            assertEquals("Previous visit dates:", getLabel(patientDetailsPanel, "previousVisitDatesHeader").getText());
+            assertEquals("No previous visit dates", getLabel(patientDetailsPanel, "previousVisitDates").getText());
             assertEquals("Tags: family, friend", getLabel(patientDetailsPanel, "tags").getText());
             assertTrue(getLabel(patientDetailsPanel, "address").isWrapText());
             assertTrue(getLabel(patientDetailsPanel, "note").isWrapText());
@@ -73,24 +104,23 @@ public class PatientDetailsPanelTest {
     }
 
     @Test
-    public void setPerson_dateOfBirth_displaysAgeBelowNameAndHidesWhenAbsent() {
+    public void setPerson_bloodType_displaysBelowDateOfBirthAndHidesWhenAbsent() {
         runOnFxThread(() -> {
             PatientDetailsPanel panel = new PatientDetailsPanel();
-            panel.setPerson(new PersonBuilder().withDateOfBirth("15/6/1990").build());
-            Label birthDate = getLabel(panel, "dateOfBirth");
-            int age = Period.between(LocalDate.of(1990, 6, 15), LocalDate.now()).getYears();
-            assertEquals("Date of birth: 15/6/1990 (" + age + " years old)", birthDate.getText());
-            assertFieldVisible(panel, "dateOfBirth", true);
-            assertTrue(birthDate.isWrapText());
+            panel.setPerson(new PersonBuilder().withDateOfBirth("15/6/1990").withBloodType("A+").build());
+            Label bloodTypeLabel = getLabel(panel, "bloodType");
+            assertEquals("Blood type: A+", bloodTypeLabel.getText());
+            assertFieldVisible(panel, "bloodType", true);
+            assertTrue(bloodTypeLabel.isWrapText());
             VBox container = getDetailsContainer(panel);
-            assertEquals(container.getChildren().indexOf(getLabel(panel, "name")) + 1,
-                    container.getChildren().indexOf(birthDate));
+            assertEquals(container.getChildren().indexOf(getLabel(panel, "dateOfBirth")) + 1,
+                    container.getChildren().indexOf(bloodTypeLabel));
 
             panel.setPerson(new PersonBuilder().build());
-            assertFieldVisible(panel, "dateOfBirth", false);
-            panel.setPerson(new PersonBuilder().withDateOfBirth("1/1/2000").build());
-            assertFieldVisible(panel, "dateOfBirth", true);
-            assertTrue(birthDate.getText().startsWith("Date of birth: 1/1/2000 ("));
+            assertFieldVisible(panel, "bloodType", false);
+            panel.setPerson(new PersonBuilder().withBloodType("O-").build());
+            assertFieldVisible(panel, "bloodType", true);
+            assertEquals("Blood type: O-", bloodTypeLabel.getText());
         });
     }
 
@@ -101,6 +131,124 @@ public class PatientDetailsPanelTest {
         if (!isVisible) {
             assertEquals("", label.getText(), labelId);
         }
+    }
+
+    @Test
+    public void setPerson_emergencyContact_displaysBelowPhoneAndHidesWhenAbsent() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            Person patient = new PersonBuilder().withEmergencyContact("Mary Tan, 91234567").build();
+            panel.setPerson(patient);
+            Label contact = getLabel(panel, "emergencyContact");
+            assertEquals("Emergency Contact: 91234567 (Mary Tan)", contact.getText());
+            assertTrue(contact.isVisible());
+            assertTrue(contact.isManaged());
+            assertTrue(contact.isWrapText());
+            VBox container = getDetailsContainer(panel);
+            assertEquals(container.getChildren().indexOf(getLabel(panel, "phone")) + 1,
+                    container.getChildren().indexOf(contact));
+
+            panel.setPerson(new PersonBuilder(patient).withEmergencyContact("98765432").build());
+            assertEquals("Emergency Contact: 98765432", contact.getText());
+            assertTrue(contact.isVisible());
+            assertTrue(contact.isManaged());
+
+            panel.setPerson(new PersonBuilder().build());
+            assertFalse(contact.isVisible());
+            assertFalse(contact.isManaged());
+            assertFalse(contact.getText().contains("Mary Tan"));
+        });
+    }
+
+    @Test
+    public void setPerson_populatedPreviousDates_displaysNewestFirstWithoutChangingPerson() {
+        runOnFxThread(() -> {
+            Person person = new PersonBuilder()
+                    .withPreviousVisitDates("01/08/2026 0930", "2/8/2026 0900", "2/8/2026 1030")
+                    .build();
+            Person originalPerson = new PersonBuilder(person).build();
+            PatientDetailsPanel patientDetailsPanel = new PatientDetailsPanel();
+
+            patientDetailsPanel.setPerson(person);
+            patientDetailsPanel.setPerson(person);
+
+            assertEquals("2/8/2026 1030\n2/8/2026 0900\n1/8/2026 0930",
+                    getLabel(patientDetailsPanel, "previousVisitDates").getText());
+            assertEquals("Visit date: 18/9/2026 1000", getLabel(patientDetailsPanel, "visitDate").getText());
+            assertEquals(originalPerson, person);
+
+            List<Node> details = getDetailsContainer(patientDetailsPanel).getChildren();
+            int visitDateIndex = details.indexOf(getLabel(patientDetailsPanel, "visitDate"));
+            assertEquals(getLabel(patientDetailsPanel, "previousVisitDatesHeader"), details.get(visitDateIndex + 1));
+            assertEquals(getLabel(patientDetailsPanel, "previousVisitDates"), details.get(visitDateIndex + 2));
+            assertEquals(getLabel(patientDetailsPanel, "note"), details.get(visitDateIndex + 3));
+        });
+    }
+
+    @Test
+    public void setPerson_differentPatients_replacesPreviousDatesAndEmptyState() {
+        runOnFxThread(() -> {
+            Person personWithPreviousDates = new PersonBuilder().withPreviousVisitDates("1/8/2026 0930").build();
+            Person personWithoutPreviousDates = new PersonBuilder().withName("Another Patient").build();
+            PatientDetailsPanel patientDetailsPanel = new PatientDetailsPanel();
+
+            patientDetailsPanel.setPerson(personWithPreviousDates);
+            patientDetailsPanel.setPerson(personWithoutPreviousDates);
+
+            assertEquals("Another Patient", getLabel(patientDetailsPanel, "name").getText());
+            assertEquals("No previous visit dates", getLabel(patientDetailsPanel, "previousVisitDates").getText());
+
+            patientDetailsPanel.setPerson(personWithPreviousDates);
+
+            assertEquals("1/8/2026 0930", getLabel(patientDetailsPanel, "previousVisitDates").getText());
+            assertTrue(personWithoutPreviousDates.getPreviousVisitDates().isEmpty());
+        });
+    }
+
+    @Test
+    public void setPerson_longRecord_displaysEveryDateWithScrolling() {
+        runOnFxThread(() -> {
+            LocalDateTime firstVisit = LocalDateTime.of(2025, 1, 1, 9, 30);
+            String[] previousDates = IntStream.range(0, 400)
+                    .mapToObj(day -> firstVisit.plusDays(day).format(VisitDate.FORMATTER))
+                    .toArray(String[]::new);
+            Person person = new PersonBuilder().withPreviousVisitDates(previousDates)
+                    .withNote("A long note that wraps within the patient details panel. ".repeat(20)).build();
+            Person originalPerson = new PersonBuilder(person).build();
+            PatientDetailsPanel patientDetailsPanel = new PatientDetailsPanel();
+
+            patientDetailsPanel.setPerson(person);
+
+            Label previousVisitDates = getLabel(patientDetailsPanel, "previousVisitDates");
+            assertEquals(List.of(previousDates).reversed(), previousVisitDates.getText().lines().toList());
+            assertTrue(previousVisitDates.isWrapText());
+            assertRecordCanScrollToBottom(patientDetailsPanel);
+            assertEquals(originalPerson, person);
+        });
+    }
+
+    private static void assertRecordCanScrollToBottom(PatientDetailsPanel patientDetailsPanel) {
+        ScrollPane scrollPane = (ScrollPane) patientDetailsPanel.getRoot();
+        Scene scene = new Scene(scrollPane, 320, 240);
+        scene.getStylesheets().add(PatientDetailsPanel.class.getResource("/view/DarkTheme.css").toExternalForm());
+        scrollPane.applyCss();
+        scrollPane.layout();
+
+        Label previousVisitDates = getLabel(patientDetailsPanel, "previousVisitDates");
+        assertTrue(scrollPane.isFitToWidth());
+        assertTrue(getDetailsContainer(patientDetailsPanel).getHeight() > scrollPane.getViewportBounds().getHeight());
+        assertTrue(previousVisitDates.getHeight() >= previousVisitDates.prefHeight(previousVisitDates.getWidth()));
+
+        scrollPane.setVvalue(scrollPane.getVmax());
+        scrollPane.layout();
+
+        Node viewport = scrollPane.lookup(".viewport");
+        assertNotNull(viewport);
+        Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+        Label tags = getLabel(patientDetailsPanel, "tags");
+        Bounds tagsBounds = tags.localToScene(tags.getBoundsInLocal());
+        assertTrue(tagsBounds.getMaxY() <= viewportBounds.getMaxY());
+        assertTrue(tagsBounds.getMinY() >= viewportBounds.getMinY());
     }
 
     private static VBox getDetailsContainer(PatientDetailsPanel patientDetailsPanel) {

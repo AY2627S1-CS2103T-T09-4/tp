@@ -35,6 +35,8 @@ public class PersonCard extends UiPart<Region> {
     @FXML
     private Label dateOfBirth;
     @FXML
+    private Label bloodType;
+    @FXML
     private Label id;
     @FXML
     private Label phone;
@@ -68,6 +70,10 @@ public class PersonCard extends UiPart<Region> {
         dateOfBirth.setText(hasDateOfBirth ? "Date of birth: " + person.getDateOfBirth().toDisplayString() : "");
         dateOfBirth.setVisible(hasDateOfBirth);
         dateOfBirth.setManaged(hasDateOfBirth);
+        boolean hasBloodType = !person.getBloodType().isEmpty();
+        bloodType.setText(hasBloodType ? "Blood type: " + person.getBloodType().toString() : "");
+        bloodType.setVisible(hasBloodType);
+        bloodType.setManaged(hasBloodType);
         phone.setText(person.getPhone().value);
         address.setText(person.getAddress().value);
         email.setText(person.getEmail().value);
