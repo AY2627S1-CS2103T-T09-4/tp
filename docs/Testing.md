@@ -64,7 +64,8 @@ for the IDE setup steps. Keep machine-specific run configurations local.
 ### Visit record verification
 
 The [Developer Guide's manual-testing appendix](DeveloperGuide.md#appendix-instructions-for-manual-testing) contains
-repeatable cases for loading previous dates, advancing visits, editing, conflicts, and viewing empty or long records.
+repeatable cases for loading previous dates, advancing and rolling back visits, editing, conflicts, and viewing
+empty or long records.
 Use disposable data and choose past and future datetimes relative to the actual execution time. Recheck displayed
 indices after successful mutations, which restore the full list in stored order.
 

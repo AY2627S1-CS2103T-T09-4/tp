@@ -23,6 +23,7 @@ import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.NextCommand;
+import seedu.address.logic.commands.PrevCommand;
 import seedu.address.logic.commands.SortCommand;
 import seedu.address.logic.commands.ViewCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -115,6 +116,19 @@ public class AddressBookParserTest {
     @Test
     public void parseCommand_nextCapitalized_preservesCommandCasePolicy() {
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("Next 1 1/11/2026 0930"));
+    }
+
+    @Test
+    public void parseCommand_prev() throws Exception {
+        PrevCommand expectedCommand = new PrevCommand(INDEX_FIRST_PERSON);
+        assertEquals(expectedCommand, parser.parseCommand("prev 1"));
+        assertEquals(expectedCommand, parser.parseCommand(" \tprev\t1  "));
+    }
+
+    @Test
+    public void parseCommand_barePrev_usesPrevUsage() {
+        String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, PrevCommand.MESSAGE_USAGE);
+        assertThrows(ParseException.class, expectedMessage, () -> parser.parseCommand("prev"));
     }
 
     @Test

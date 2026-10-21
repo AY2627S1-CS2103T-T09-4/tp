@@ -196,9 +196,12 @@ the clock, so the passage of time does not invalidate a record.
 
 The constructor takes an immutable defensive copy and rejects null entries or invalid chronology rather than
 sorting or repairing the input. The constructor without previous dates creates an empty list. Equality and hashing
-include previous dates; patient identity still uses the normalized name and phone number. `edit` and `PersonBuilder`
-copies preserve previous dates; `next` appends the old current date before replacing it. A replacement current date
-that would invalidate the record produces a command error before model or list changes.
+include previous dates; patient identity still uses the normalized name and phone number.
+
+Editing a patient or copying it with `PersonBuilder` preserves previous dates. `next` appends the current datetime
+to the previous-date list before setting a new current datetime. `prev` removes the latest datetime from that list
+and uses it as the current datetime, discarding the former current datetime. A replacement current date that would
+invalidate the record produces a command error before model or list changes.
 
 `JsonAdaptedPerson` writes `previousVisitDates` as an ordered array of visit-date strings. Missing or JSON-null
 arrays load as empty lists for compatibility with older files. Non-arrays, null or malformed entries, invalid
@@ -388,6 +391,39 @@ records, field preservation, list reset, exact clock boundaries, and persistence
 after an intervening edit, unchanged saved data after rejection, and saved appointments becoming past as the test
 clock advances. Manual cases appear in the
 [testing appendix](#testing-the-next-command).
+
+### Restoring the previous visit
+
+`prev INDEX` restores the latest previous datetime and discards the former current datetime, without a redo.
+It preserves every other patient field, including edits made since advancing. See the
+[User Guide](UserGuide.md#restoring-the-previous-visit-prev) for syntax and an example.
+
+1. `PrevCommandParser` uses `ParserUtil#parseIndex` to require a single positive displayed index and wraps parsing
+   errors with Prev usage, preserving their exception cause.
+1. `PrevCommand` selects the displayed patient and rejects an invalid index or empty previous-date list before
+   changing model or list state.
+1. The private rollback helper asserts that previous dates are nonempty after command validation. It copies the
+   immutable previous dates, removes the last entry, and constructs a replacement `Person` using that
+   datetime as current. All other fields come from the selected patient's latest record. The constructor still
+   enforces chronology. The replacement uses only dates from the original record, so it cannot introduce a new
+   cross-patient datetime conflict; the model also retains its replacement checks.
+1. On success, it replaces the patient and restores the full list in stored order, clearing filtering and sorting.
+   The normal `CommandResult` reports the restored and discarded datetimes on separate lines and requests saving
+   through `LogicManager`. Details refresh when the user runs `view` using the patient's newly displayed index.
+
+Rollback has no clock eligibility check, including when the restored datetime is still in the future. It does not
+request confirmation. Repeated rollback consumes the list until it is empty. A later `next` applies its usual
+eligibility checks to the restored current datetime and appends that datetime on success.
+The helper assertion documents an internal precondition; empty-history user input is rejected with a command
+exception regardless of whether Java assertions are enabled.
+
+Validation failures do not save or mutate data or list context. Storage I/O failures retain the existing error
+handling: a failed save can leave the in-memory rollback applied, without automatic restoration.
+
+Tests cover one, several, and no previous dates, future dates, displayed indices, preservation of other fields after
+edits, repeated rollback, subsequent advancement, released datetime slots, persistence across reloads, and rejected
+commands leaving saved data unchanged. Manual cases appear under
+[Testing the prev command](#testing-the-prev-command).
 
 ### Follow-up command-line input and confirmation
 
@@ -868,7 +904,8 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * **Archived patient record**: A patient record retained for future reference but excluded from the active caseload and visit planning.
 * **Caseload**: The collection of active patient records currently managed by a doctor.
 * **Current visit date**: The required date and time stored in `visitDate`. It can be past, present, or future and
-  remains stored until changed using `edit` or `next`. It must differ from every other current or previous datetime.
+  remains stored until changed using `edit`, `next`, or `prev`. It must differ from every other current or previous
+  datetime.
 * **House call**: A medical consultation carried out at the patient's home rather than at a clinic.
 * **House-call doctor**: A doctor who travels to patients' homes to provide medical consultations and follow-up care.
 * **Medical condition**: An ongoing health issue recorded in a patient's notes to help the doctor prepare for future visits.
@@ -1163,6 +1200,32 @@ successful advances in one session without waiting or changing the system clock.
 
 Fixed-clock automated tests cover exact equality to now, nanosecond boundaries, one clock read, and saved appointments
 becoming past as time advances. These boundaries are not reliably reproducible by typing against the system clock.
+
+### Testing the prev command
+
+Use disposable data. Start with Nextalpha from [Testing the next command](#testing-the-next-command), whose current
+datetime is `F2` and whose previous dates are `[P1, P2]`, with `P1 < P2 < actual now < F1 < F2`.
+Choose another globally unused future datetime `F4` for an intervening edit.
+Find the patient again after each successful mutation, since success restores the full list in stored order.
+
+1. Run `find Nextalpha`, then `view 1`. Try `prev`, `prev 0`, `prev 2147483648`, `prev 1 extra`, and `prev 2`.<br>
+   Expect usage for malformed arguments and the invalid-index error for `prev 2`. Verify that patient data, the
+   saved JSON, filtered list, and displayed details remain unchanged.
+1. Run `edit 1 vd/F4 note/Updated before rollback`, then `find Nextalpha` and `prev 1`.<br>
+   Expect success even though `F4` is in the future. Verify that feedback identifies `P2` as restored and `F4`
+   as discarded, including the time for both. Find and view the patient again: current is `P2`, previous
+   dates are `[P1]`, and the updated note and all other fields remain. The replaced current datetime `F4` is discarded.
+   Close and reopen Doc; verify that this state was saved.
+1. Run `find Nextalpha`, then `next 1 F2`.<br>
+   Expect current `F2` and previous dates `[P1, P2]`. Rollback did not retain either discarded future datetime.
+1. Run `find Nextalpha`, then `sort date`, then `prev 1`.<br>
+   Expect the full list in stored order. Find and view Nextalpha again: current is `P2`, previous dates are `[P1]`.
+1. Run `prev 1` while only Nextalpha is displayed.<br>
+   Find and view it again: current is `P1`, previous dates are empty, and the note remains updated. Close and reopen
+   Doc and verify that this state persists.
+1. Run `find Nextalpha`, then `prev 1` again.<br>
+   Expect `Patient Nextalpha Patient has no previous visit dates to restore.` Verify that the record, saved file,
+   filtered list, and details are unchanged. There is no redo command.
 
 ### Viewing one patient
 

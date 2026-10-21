@@ -80,9 +80,11 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 Each patient has one required **current visit date and time** and zero or more **previous visit dates**.
 Together, these form the patient's **visit record**.
 
-* The current datetime may be in the past, present, or future. It stays stored until you change it using `edit` or `next`.
+* The current datetime may be in the past, present, or future. It stays stored until you change it using `edit`,
+  `next`, or `prev`.
 * Previous datetimes are retained by `next` and stored oldest first. `view` displays them newest first.
   `edit` preserves them, including when changing other details.
+* `prev` restores the latest previous datetime and discards the former current datetime. There is no redo.
 * Notes belong to the patient record; separate notes are not stored for each previous datetime.
 
 Use [view](#viewing-a-patient-s-details-view) to see the visit record. Retained datetimes do not verify attendance,
@@ -341,6 +343,42 @@ Examples (the selected patient's current visit must have arrived or passed; choo
 * `next 1 1/11/2026 0930` schedules the first displayed patient's next appointment for 1 November 2026 at 09:30.
 * `find Betsy`, then `next 1 2/11/2026 1430`, schedules the first matching patient and restores the full list.
 
+### Restoring the previous visit: `prev`
+
+Restores the patient's latest previous visit date and time. Use this to roll back visit-date advancement;
+it does not undo changes to the patient's other details.
+
+Format: `prev INDEX`
+
+* Use a positive `INDEX` from the currently displayed list, including results of `find` or `sort date`.
+  Supply only the index, without a datetime or `vd/` prefix.
+* The latest previous datetime becomes the current datetime and is removed from the previous-date list.
+  The former current datetime is discarded. There is no redo.
+* Rollback is allowed even when the current or restored datetime is in the future. It does not apply `next`'s
+  clock restrictions and does not ask for confirmation.
+* Rollback also works after an intervening `edit`. It preserves the patient's latest name, contact details,
+  address, note, and tags; it restores only visit-date state.
+* Success shows `Visit date restored for NAME: RESTORED_DATETIME` followed by
+  `Discarded former current visit date: DISCARDED_DATETIME` on the next line. Both values include the time.
+  It saves the record and restores the full list in stored order, clearing the filter and sort.
+  Check the displayed indices and run `view INDEX` again to refresh the details panel.
+* Repeating `prev` restores one earlier datetime each time. When none remain, it reports
+  `Patient NAME has no previous visit dates to restore.` without changing data or the displayed list.
+* Missing, invalid, oversized, or additional arguments show usage. An index outside the displayed list shows
+  the invalid-index error. Rejected commands do not save changes.
+* A later `next` uses the restored state and still requires the current visit to have arrived or passed and the
+  requested datetime to be in the future. A save failure reports a storage error; the in-memory record may
+  already have changed.
+
+Example, assuming the patient is displayed at index 1 before each command:
+
+| Operation | Current datetime | Previous datetimes (stored oldest first) |
+| --- | --- | --- |
+| Initial record | `30/10/2026 1000` | `[10/10/2026 1000, 20/10/2026 1000]` |
+| `prev 1` | `20/10/2026 1000` | `[10/10/2026 1000]` |
+| `prev 1` again | `10/10/2026 1000` | `[]` |
+| `prev 1` again | Unchanged; no previous dates to restore. | `[]` |
+
 ### Locating patients by name: `find`
 
 Finds patients with a word in their name that starts with any of the given keywords.
@@ -462,6 +500,7 @@ Action     | Format, Examples
 **Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (use an available future appointment)
+**Prev**   | `prev INDEX`<br> e.g., `prev 1` (discards the former current datetime; no redo)
 **Sort**   | `sort date [START_DATE]`<br> e.g., `sort date 18/9/2026`
 **View**   | `view INDEX`<br> e.g., `view 1`
 **Help**   | `help`
