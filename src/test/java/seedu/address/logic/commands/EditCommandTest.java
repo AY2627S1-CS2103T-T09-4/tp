@@ -21,6 +21,7 @@ import static seedu.address.testutil.TypicalIndexes.INDEX_SECOND_PERSON;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,47 @@ public class EditCommandTest {
     private static final String FULL_DAY_VISIT_DATE = "1/1/2026 1500";
 
     private Model model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
+
+    @Test
+    public void execute_hiddenPreviousDateConflict_preservesDataFilterAndSort() {
+        Person hiddenPatient = setExistingNoteAndPreviousDates(INDEX_SECOND_PERSON);
+        Person original = model.getFilteredPersonList().getFirst();
+        model.updateFilteredPersonList(person -> !person.equals(hiddenPatient));
+        model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
+        Index displayedIndex = Index.fromZeroBased(model.getFilteredPersonList().indexOf(original));
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withVisitDate("01/01/2024 0900")
+                .withNote(REPLACEMENT_NOTE).build();
+        String expectedMessage = String.format(EditCommand.MESSAGE_DUPLICATE_VISIT_DATE, "1/1/2024 0900");
+
+        assertCommandFailure(new EditCommand(displayedIndex, descriptor), model, expectedMessage);
+        Person changedOriginal = new PersonBuilder(original).withVisitDate("1/1/2027 1000").build();
+        model.setPerson(original, changedOriginal);
+        assertEquals(changedOriginal, model.getFilteredPersonList().getFirst());
+        assertFalse(model.getFilteredPersonList().contains(hiddenPatient));
+    }
+
+    @Test
+    public void confirmation_previousDateConflictAppeared_preservesDataFilterAndSort() throws Exception {
+        Person firstPerson = model.getFilteredPersonList().getFirst();
+        Person original = setExistingNoteAndPreviousDates(INDEX_SECOND_PERSON);
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withName(firstPerson.getName().fullName)
+                .withVisitDate("1/10/2026 1000").build();
+        CommandResult requestResult = new EditCommand(INDEX_SECOND_PERSON, descriptor).execute(model);
+        Person conflicting = new PersonBuilder().withName("Conflicting Patient").withVisitDate("2/10/2026 1000")
+                .withPreviousVisitDates("01/10/2026 1000").build();
+        model.addPerson(conflicting);
+        model.updateFilteredPersonList(person -> person.equals(original) || person.equals(firstPerson));
+        model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
+        AddressBook before = new AddressBook(model.getAddressBook());
+        List<Person> displayedBefore = List.copyOf(model.getFilteredPersonList());
+
+        assertThrows(CommandException.class,
+                String.format(EditCommand.MESSAGE_DUPLICATE_VISIT_DATE, "1/10/2026 1000"), () ->
+                requestResult.getInputRequest().orElseThrow().respond("y", model));
+
+        assertEquals(before, model.getAddressBook());
+        assertEquals(displayedBefore, model.getFilteredPersonList());
+    }
 
     @Test
     public void execute_allFieldsSpecifiedUnfilteredList_success() {
@@ -148,22 +190,32 @@ public class EditCommandTest {
     @Test
     public void execute_duplicatePersonUnfilteredList_failure() {
         Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        List<Person> displayedPersons = List.copyOf(model.getFilteredPersonList());
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder(firstPerson).build();
         EditCommand editCommand = new EditCommand(INDEX_SECOND_PERSON, descriptor);
 
-        assertCommandFailure(editCommand, model, EditCommand.MESSAGE_DUPLICATE_PERSON);
+        CommandException exception = assertThrows(
+                CommandException.class, EditCommand.MESSAGE_DUPLICATE_PERSON, () -> editCommand.execute(model));
+
+        assertEquals(firstPerson, exception.getPersonToView().orElseThrow());
+        assertEquals(displayedPersons, model.getFilteredPersonList());
     }
 
     @Test
     public void execute_duplicatePersonFilteredList_failure() {
         showPersonAtIndex(model, INDEX_FIRST_PERSON);
+        List<Person> displayedPersons = List.copyOf(model.getFilteredPersonList());
 
         // edit person in filtered list into a duplicate in address book
         Person personInList = model.getAddressBook().getPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
         EditCommand editCommand = new EditCommand(INDEX_FIRST_PERSON,
                 new EditPersonDescriptorBuilder(personInList).build());
 
-        assertCommandFailure(editCommand, model, EditCommand.MESSAGE_DUPLICATE_PERSON);
+        CommandException exception = assertThrows(
+                CommandException.class, EditCommand.MESSAGE_DUPLICATE_PERSON, () -> editCommand.execute(model));
+
+        assertEquals(personInList, exception.getPersonToView().orElseThrow());
+        assertEquals(displayedPersons, model.getFilteredPersonList());
     }
 
     @Test
@@ -207,8 +259,69 @@ public class EditCommandTest {
     }
 
     @Test
+    public void execute_otherFieldsWithPreviousDates_preservesVisitRecord() {
+        Person original = setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
+        Person editedPerson = new PersonBuilder(original).withName("Updated Patient").withPhone("92345678")
+                .withEmail(VALID_EMAIL_BOB).withAddress("Updated address").withNote(REPLACEMENT_NOTE)
+                .withTags(VALID_TAG_HUSBAND).build();
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder(editedPerson).build();
+        descriptor.setVisitDate(null);
+
+        assertEditSuccess(INDEX_FIRST_PERSON, original, editedPerson, descriptor);
+        assertEquals(original.getVisitDate(), model.getFilteredPersonList().getFirst().getVisitDate());
+        assertEquals(original.getPreviousVisitDates(),
+                model.getFilteredPersonList().getFirst().getPreviousVisitDates());
+    }
+
+    @Test
+    public void execute_pastDateAfterPreviousDates_preservesPreviousDates() {
+        Person original = setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
+        Person editedPerson = new PersonBuilder(original).withVisitDate(VALID_VISIT_DATE_BOB).build();
+
+        assertEditSuccess(INDEX_FIRST_PERSON, original, editedPerson,
+                new EditPersonDescriptorBuilder().withVisitDate(VALID_VISIT_DATE_BOB).build());
+        assertEquals(original.getPreviousVisitDates(),
+                model.getFilteredPersonList().getFirst().getPreviousVisitDates());
+    }
+
+    @Test
+    public void execute_dateAtOrBeforeLatestPreviousDate_preservesDataFilterAndSort() {
+        Person original = setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
+        model.updateFilteredPersonList(person -> person.equals(original));
+        model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
+
+        for (String visitDate : List.of("1/1/2024 0900", "1/1/2024 0901", "2/1/2024 0859",
+                "2/1/2024 0900", "1/1/2023 0900")) {
+            EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withVisitDate(visitDate)
+                    .withNote(REPLACEMENT_NOTE).build();
+            assertCommandFailure(new EditCommand(INDEX_FIRST_PERSON, descriptor), model,
+                    String.format(EditCommand.MESSAGE_VISIT_DATE_NOT_AFTER_PREVIOUS, "2/1/2024 0900"));
+        }
+    }
+
+    @Test
+    public void execute_dateBeforePreviousDate_reportsLatestDate() {
+        setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
+        EditCommand command = new EditCommand(INDEX_FIRST_PERSON,
+                new EditPersonDescriptorBuilder().withVisitDate("1/1/2024 0900").build());
+        String expectedMessage = "The current visit date and time must be later than the latest previous visit "
+                + "(2/1/2024 0900).";
+
+        assertThrows(CommandException.class, expectedMessage, () -> command.execute(model));
+    }
+
+    @Test
+    public void execute_sameDayAfterLatestPreviousDate_success() {
+        Person original = setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
+        Person editedPerson = new PersonBuilder(original).withVisitDate("2/1/2024 0901").build();
+
+        assertEditSuccess(INDEX_FIRST_PERSON, original, editedPerson,
+                new EditPersonDescriptorBuilder().withVisitDate("2/1/2024 0901").build());
+    }
+
+    @Test
     public void execute_sameVisitDate_success() {
-        Person original = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person original = setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
         EditCommand command = new EditCommand(INDEX_FIRST_PERSON,
                 new EditPersonDescriptorBuilder().withVisitDate(original.getVisitDate().toString()).build());
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
@@ -226,7 +339,13 @@ public class EditCommandTest {
         String expectedMessage = String.format(EditCommand.MESSAGE_DUPLICATE_VISIT_DATE,
                 firstPerson.getVisitDate());
 
-        assertCommandFailure(new EditCommand(INDEX_SECOND_PERSON, descriptor), model, expectedMessage);
+        AddressBook originalAddressBook = new AddressBook(model.getAddressBook());
+        List<Person> displayedPersons = List.copyOf(model.getFilteredPersonList());
+        CommandException exception = assertThrows(CommandException.class, expectedMessage, () ->
+                new EditCommand(INDEX_SECOND_PERSON, descriptor).execute(model));
+        assertEquals(originalAddressBook, model.getAddressBook());
+        assertEquals(firstPerson, exception.getPersonToView().orElseThrow());
+        assertEquals(displayedPersons, model.getFilteredPersonList());
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
     }
 
@@ -278,7 +397,7 @@ public class EditCommandTest {
 
     @Test
     public void execute_noteOnly_preservesOtherFields() {
-        Person original = setExistingNote(INDEX_FIRST_PERSON);
+        Person original = setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
         Person editedPerson = new PersonBuilder(original).withNote(REPLACEMENT_NOTE).build();
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withNote(REPLACEMENT_NOTE).build();
 
@@ -287,7 +406,7 @@ public class EditCommandTest {
 
     @Test
     public void execute_emptyNote_preservesOtherFields() {
-        Person original = setExistingNote(INDEX_FIRST_PERSON);
+        Person original = setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
         Person editedPerson = new PersonBuilder(original).withNote("").build();
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withNote("").build();
 
@@ -305,7 +424,7 @@ public class EditCommandTest {
 
     @Test
     public void execute_sameNote_success() {
-        Person original = setExistingNote(INDEX_FIRST_PERSON);
+        Person original = setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
 
         assertEditSuccess(INDEX_FIRST_PERSON, original, original,
                 new EditPersonDescriptorBuilder().withNote(VALID_NOTE_AMY).build());
@@ -313,7 +432,7 @@ public class EditCommandTest {
 
     @Test
     public void execute_noteOmitted_preservesExistingNote() {
-        Person original = setExistingNote(INDEX_FIRST_PERSON);
+        Person original = setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
         Person editedPerson = new PersonBuilder(original).withPhone(VALID_PHONE_BOB).build();
 
         assertEditSuccess(INDEX_FIRST_PERSON, original, editedPerson,
@@ -322,7 +441,7 @@ public class EditCommandTest {
 
     @Test
     public void execute_visitDateEmailAndNote_success() {
-        Person original = setExistingNote(INDEX_FIRST_PERSON);
+        Person original = setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
         Person editedPerson = new PersonBuilder(original).withVisitDate(VALID_VISIT_DATE_BOB)
                 .withEmail(VALID_EMAIL_BOB).withNote(REPLACEMENT_NOTE).build();
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withVisitDate(VALID_VISIT_DATE_BOB)
@@ -333,7 +452,7 @@ public class EditCommandTest {
 
     @Test
     public void execute_emptyEmailAndNote_successWithAndWithoutVisitDate() {
-        Person original = setExistingNote(INDEX_FIRST_PERSON);
+        Person original = setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
         Person clearedPerson = new PersonBuilder(original).withEmail("").withNote("").build();
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withEmail("").withNote("").build();
         assertEditSuccess(INDEX_FIRST_PERSON, original, clearedPerson, descriptor);
@@ -346,7 +465,7 @@ public class EditCommandTest {
 
     @Test
     public void execute_noteFilteredList_editsDisplayedPersonAndRestoresFullList() {
-        Person original = setExistingNote(INDEX_SECOND_PERSON);
+        Person original = setExistingNoteAndPreviousDates(INDEX_SECOND_PERSON);
         showPersonAtIndex(model, INDEX_SECOND_PERSON);
         Person editedPerson = new PersonBuilder(original).withNote(REPLACEMENT_NOTE).build();
 
@@ -357,7 +476,7 @@ public class EditCommandTest {
 
     @Test
     public void execute_noteSortedList_editsDisplayedPersonAndRestoresStoredOrder() {
-        Person original = setExistingNote(INDEX_SECOND_PERSON);
+        Person original = setExistingNoteAndPreviousDates(INDEX_SECOND_PERSON);
         Person earlierPerson = new PersonBuilder(original).withVisitDate(VALID_VISIT_DATE_BOB).build();
         model.setPerson(original, earlierPerson);
         model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
@@ -371,7 +490,7 @@ public class EditCommandTest {
 
     @Test
     public void execute_duplicateName_requestsConfirmationWithoutEditing() throws Exception {
-        Person firstPerson = setExistingNote(INDEX_FIRST_PERSON);
+        Person firstPerson = setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
         Person secondPerson = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
                 .withName(firstPerson.getName().fullName).withNote(REPLACEMENT_NOTE).build();
@@ -382,8 +501,10 @@ public class EditCommandTest {
         assertEquals(String.format(EditCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, firstPerson.getName()),
                 result.getFeedbackToUser());
         assertTrue(result.getInputRequest().isPresent());
+        assertEquals(firstPerson, result.getPersonToView().orElseThrow());
         assertFalse(result.shouldSaveAddressBook());
-        assertEquals(expectedModel, model);
+        assertEquals(expectedModel.getAddressBook(), model.getAddressBook());
+        assertEquals(expectedModel.getFilteredPersonList(), model.getFilteredPersonList());
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
     }
 
@@ -400,13 +521,51 @@ public class EditCommandTest {
         assertEquals(String.format(EditCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, normalizedNameVariant),
                 result.getFeedbackToUser());
         assertTrue(result.getInputRequest().isPresent());
+        assertEquals(firstPerson, result.getPersonToView().orElseThrow());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
+    }
+
+    @Test
+    public void execute_duplicateNameHiddenByFilter_previewsMatchWithoutChangingList() throws Exception {
+        Person hiddenMatch = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person personToEdit = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        showPersonAtIndex(model, INDEX_SECOND_PERSON);
+        List<Person> displayedPersons = List.copyOf(model.getFilteredPersonList());
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withName(hiddenMatch.getName().fullName).build();
+
+        CommandResult result = new EditCommand(INDEX_FIRST_PERSON, descriptor).execute(model);
+
+        assertEquals(hiddenMatch, result.getPersonToView().orElseThrow());
+        assertEquals(displayedPersons, model.getFilteredPersonList());
+        assertTrue(model.getAddressBook().getPersonList().contains(personToEdit));
+    }
+
+    @Test
+    public void execute_multipleDuplicateNames_displaysFirstMatchWithoutChangingList() throws Exception {
+        Person firstMatch = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person personToEdit = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        Person secondMatch = new PersonBuilder(firstMatch).withPhone("91234567")
+                .withVisitDate(VALID_VISIT_DATE_BOB).build();
+        model.addPerson(secondMatch);
+        EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
+                .withName(firstMatch.getName().fullName).build();
+
+        CommandResult result = new EditCommand(INDEX_SECOND_PERSON, descriptor).execute(model);
+
+        assertEquals(String.format(EditCommand.MESSAGE_CONFIRM_DUPLICATE_NAMES,
+                firstMatch.getName(), 2), result.getFeedbackToUser());
+        assertTrue(result.getFeedbackToUser().contains("Only one matching patient is shown"));
+        assertEquals(firstMatch, result.getPersonToView().orElseThrow());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
+        assertTrue(model.getAddressBook().getPersonList().contains(personToEdit));
     }
 
     @Test
     public void confirmation_duplicateNameConfirmed_editsPerson() throws Exception {
         Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
-        Person secondPerson = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        Person secondPerson = setExistingNoteAndPreviousDates(INDEX_SECOND_PERSON);
         Person editedPerson = new PersonBuilder(secondPerson).withName(firstPerson.getName().fullName).build();
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
                 .withName(firstPerson.getName().fullName).build();
@@ -419,12 +578,13 @@ public class EditCommandTest {
         assertTrue(confirmedResult.shouldSaveAddressBook());
         assertTrue(model.getAddressBook().getPersonList().contains(editedPerson));
         assertFalse(model.getAddressBook().getPersonList().contains(secondPerson));
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
     }
 
     @Test
     public void confirmation_duplicateNameNotConfirmed_cancelsEdit() throws Exception {
         Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
-        Person secondPerson = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        Person secondPerson = setExistingNoteAndPreviousDates(INDEX_SECOND_PERSON);
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
                 .withName(firstPerson.getName().fullName).build();
         CommandResult requestResult = new EditCommand(INDEX_SECOND_PERSON, descriptor).execute(model);
@@ -433,6 +593,7 @@ public class EditCommandTest {
 
         assertEquals(EditCommand.MESSAGE_EDIT_CANCELLED, cancelledResult.getFeedbackToUser());
         assertFalse(cancelledResult.shouldSaveAddressBook());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
     }
 
@@ -483,13 +644,15 @@ public class EditCommandTest {
                 .withVisitDate(VALID_VISIT_DATE_BOB).build();
         model.addPerson(trueDuplicate);
 
-        assertThrows(CommandException.class, EditCommand.MESSAGE_DUPLICATE_PERSON, () ->
+        CommandException exception = assertThrows(CommandException.class, EditCommand.MESSAGE_DUPLICATE_PERSON, () ->
                 requestResult.getInputRequest()
                         .orElseThrow()
                         .respond("y", model));
 
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
         assertTrue(model.getAddressBook().getPersonList().contains(trueDuplicate));
+        assertEquals(trueDuplicate, exception.getPersonToView().orElseThrow());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
     }
 
     @Test
@@ -505,13 +668,15 @@ public class EditCommandTest {
 
         String expectedMessage = String.format(EditCommand.MESSAGE_DUPLICATE_VISIT_DATE,
                 VALID_VISIT_DATE_AMY);
-        assertThrows(CommandException.class, expectedMessage, () ->
+        CommandException exception = assertThrows(CommandException.class, expectedMessage, () ->
                 requestResult.getInputRequest()
                         .orElseThrow()
                         .respond("y", model));
 
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));
         assertTrue(model.getAddressBook().getPersonList().contains(conflictingVisit));
+        assertEquals(conflictingVisit, exception.getPersonToView().orElseThrow());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
     }
 
     @Test
@@ -610,7 +775,7 @@ public class EditCommandTest {
 
     @Test
     public void execute_noteInvalidDisplayedIndex_preservesState() {
-        setExistingNote(INDEX_FIRST_PERSON);
+        setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
         showPersonAtIndex(model, INDEX_FIRST_PERSON);
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withNote(REPLACEMENT_NOTE).build();
 
@@ -620,7 +785,7 @@ public class EditCommandTest {
 
     @Test
     public void execute_descriptorChangedAfterConstruction_preservesCopiedNote() {
-        Person original = setExistingNote(INDEX_FIRST_PERSON);
+        Person original = setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withNote(REPLACEMENT_NOTE).build();
         EditCommand command = new EditCommand(INDEX_FIRST_PERSON, descriptor);
         descriptor.setNote(new Note(""));
@@ -668,11 +833,12 @@ public class EditCommandTest {
     }
 
     /**
-     * Gives the patient at the displayed index a nonempty note before testing an edit.
+     * Gives the patient a nonempty note and previous dates before testing their preservation during an edit.
      */
-    private Person setExistingNote(Index displayedIndex) {
+    private Person setExistingNoteAndPreviousDates(Index displayedIndex) {
         Person original = model.getFilteredPersonList().get(displayedIndex.getZeroBased());
-        Person personWithNote = new PersonBuilder(original).withNote(VALID_NOTE_AMY).build();
+        Person personWithNote = new PersonBuilder(original).withNote(VALID_NOTE_AMY)
+                .withPreviousVisitDates("1/1/2024 0900", "2/1/2024 0900").build();
         model.setPerson(original, personWithNote);
         return personWithNote;
     }

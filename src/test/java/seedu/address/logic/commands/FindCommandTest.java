@@ -65,7 +65,7 @@ public class FindCommandTest {
     @Test
     public void execute_zeroKeywords_noPersonFound() {
         String expectedMessage = "No patients found. "
-                + "Name keywords match the start of any word in a name, e.g. \"find n/b\" matches \"Bernice Yu\".";
+                + "Name keywords match the start of any word in a name, e.g. \"find n/g\" matches \"George Miller\".";
         NameContainsKeywordsPredicate predicate = preparePredicate(" ");
         FindCommand command = new FindCommand(predicate);
         expectedModel.updateFilteredPersonList(predicate);

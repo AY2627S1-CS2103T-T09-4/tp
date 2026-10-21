@@ -28,20 +28,20 @@ public class FindCommand extends Command {
             + "[" + PREFIX_PHONE + "PHONE_KEYWORD...] "
             + "[" + PREFIX_ADDRESS + "ADDRESS_KEYWORD...] "
             + "[" + PREFIX_TAG + "TAG_KEYWORD...]\n"
-            + "Example: " + COMMAND_WORD + " " + PREFIX_NAME + "alex ben " + PREFIX_ADDRESS + "clementi";
+            + "Example: " + COMMAND_WORD + " " + PREFIX_NAME + "george priya " + PREFIX_TAG + "morning";
     public static final String MESSAGE_KEYWORDS_NEED_PREFIX = "Put a prefix before search keywords, e.g. "
-            + COMMAND_WORD + " " + PREFIX_NAME + "alex for names or " + COMMAND_WORD + " " + PREFIX_PHONE
-            + "9123 for phone numbers.";
+            + COMMAND_WORD + " " + PREFIX_NAME + "george for names or " + COMMAND_WORD + " " + PREFIX_PHONE
+            + "8765 for phone numbers.";
 
     public static final String MESSAGE_PATIENTS_FOUND = "%1$d patients found.";
     public static final String MESSAGE_ONE_PATIENT_FOUND = "1 patient found.";
     public static final String MESSAGE_NO_PATIENTS_FOUND = "No patients found. "
-            + "Name keywords match the start of any word in a name, e.g. \"find n/b\" matches \"Bernice Yu\".";
+            + "Name keywords match the start of any word in a name, e.g. \"find n/g\" matches \"George Miller\".";
 
     private final Predicate<Person> predicate;
 
     /**
-     * Creates a command that lists the persons satisfying {@code predicate}.
+     * Creates a command that lists the patients satisfying {@code predicate}.
      */
     public FindCommand(Predicate<Person> predicate) {
         this.predicate = requireNonNull(predicate);

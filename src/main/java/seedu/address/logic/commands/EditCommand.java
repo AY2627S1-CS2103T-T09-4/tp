@@ -59,12 +59,19 @@ public class EditCommand extends Command {
     public static final String MESSAGE_EDIT_PERSON_SUCCESS = "Edited person: %1$s";
     public static final String MESSAGE_NOT_EDITED = "At least one field to edit must be provided.";
     public static final String MESSAGE_DUPLICATE_PERSON =
-            "A patient with the same name and phone number already exists in the address book.";
+            "A patient with the same name and phone number already exists in the address book. "
+                    + "The existing patient is shown in the patient details panel.";
     public static final String MESSAGE_DUPLICATE_VISIT_DATE =
-            "Another patient already has a visit scheduled for %1$s. Choose a different date and time.";
+            "Another patient already has a current or previous visit at %1$s. "
+                    + "The patient is shown in the patient details panel. Choose a different date and time.";
+    public static final String MESSAGE_VISIT_DATE_NOT_AFTER_PREVIOUS =
+            "The current visit date and time must be later than the latest previous visit (%1$s).";
     public static final String MESSAGE_CONFIRM_DUPLICATE_NAME =
-            "A patient named %1$s already exists. Apply this edit anyway? "
-                    + "Type y to confirm. Any other input cancels.";
+            "A patient named %1$s already exists. The matching patient is shown in the patient details panel. "
+                    + "Apply this edit anyway? Type y to confirm. Any other input cancels.";
+    public static final String MESSAGE_CONFIRM_DUPLICATE_NAMES =
+            "%2$d patients named %1$s already exist. Only one matching patient is shown in the patient details "
+                    + "panel. Apply this edit anyway? Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_CONFIRM_FULL_DAY =
             "Heads up: you already have %1$d visits on %2$s. Schedule %3$s on that day anyway? "
                     + "Type y to confirm. Any other input cancels.";
@@ -108,10 +115,15 @@ public class EditCommand extends Command {
         validateNoConflicts(model, personToEdit, editedPerson);
 
         boolean isNormalizedNameChanged = !personToEdit.hasSameName(editedPerson);
-        if (isNormalizedNameChanged && model.hasPersonWithSameName(editedPerson)) {
-            String prompt = String.format(MESSAGE_CONFIRM_DUPLICATE_NAME, editedPerson.getName());
-            return requestConfirmation(prompt,
-                    confirmedModel -> editPersonAfterVisitDayCheck(confirmedModel, personToEdit, editedPerson));
+        if (isNormalizedNameChanged) {
+            List<Person> nameDuplicates =
+                    DuplicatePersonFinder.findNameDuplicates(model.getAddressBook(), editedPerson);
+            if (!nameDuplicates.isEmpty()) {
+                String prompt = formatDuplicateNamePrompt(editedPerson, nameDuplicates.size());
+                return requestConfirmation(prompt,
+                        confirmedModel -> editPersonAfterVisitDayCheck(confirmedModel, personToEdit, editedPerson),
+                        nameDuplicates.getFirst());
+            }
         }
 
         return editPersonAfterVisitDayCheck(model, personToEdit, editedPerson);
@@ -147,9 +159,25 @@ public class EditCommand extends Command {
      */
     private static CommandResult requestConfirmation(String prompt,
             CommandInputRequest.ConfirmedAction confirmedAction) {
-        CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(
-                prompt, MESSAGE_EDIT_CANCELLED, confirmedAction);
+        CommandInputRequest inputRequest = createConfirmationRequest(prompt, confirmedAction);
         return CommandResult.requestInput(inputRequest);
+    }
+
+    /**
+     * Returns a result that also displays one matching patient while requesting confirmation.
+     */
+    private static CommandResult requestConfirmation(String prompt,
+            CommandInputRequest.ConfirmedAction confirmedAction, Person personToView) {
+        CommandInputRequest inputRequest = createConfirmationRequest(prompt, confirmedAction);
+        return CommandResult.requestInput(inputRequest, personToView);
+    }
+
+    /**
+     * Returns a confirmation request that edits the person only after a {@code y} response.
+     */
+    private static CommandInputRequest createConfirmationRequest(String prompt,
+            CommandInputRequest.ConfirmedAction confirmedAction) {
+        return CommandInputRequest.createConfirmation(prompt, MESSAGE_EDIT_CANCELLED, confirmedAction);
     }
 
     /**
@@ -174,21 +202,44 @@ public class EditCommand extends Command {
      */
     private static void validateNoConflicts(Model model, Person personToEdit, Person editedPerson)
             throws CommandException {
-        if (!personToEdit.isSamePerson(editedPerson) && model.hasPerson(editedPerson)) {
-            throw new CommandException(MESSAGE_DUPLICATE_PERSON);
+        if (!personToEdit.isSamePerson(editedPerson)) {
+            Optional<Person> identityDuplicate =
+                    DuplicatePersonFinder.findIdentityDuplicate(model.getAddressBook(), editedPerson);
+            if (identityDuplicate.isPresent()) {
+                throw new CommandException(MESSAGE_DUPLICATE_PERSON, identityDuplicate.get());
+            }
         }
 
         boolean isVisitDateChanged = !personToEdit.getVisitDate().equals(editedPerson.getVisitDate());
-        if (isVisitDateChanged && model.hasPersonWithSameVisitDate(editedPerson)) {
-            throw new CommandException(String.format(MESSAGE_DUPLICATE_VISIT_DATE, editedPerson.getVisitDate()));
+        if (isVisitDateChanged) {
+            Optional<Person> visitDateDuplicate = DuplicatePersonFinder.findVisitDateDuplicate(
+                    model.getAddressBook(), editedPerson, personToEdit);
+            if (visitDateDuplicate.isPresent()) {
+                throw new CommandException(String.format(MESSAGE_DUPLICATE_VISIT_DATE, editedPerson.getVisitDate()),
+                        visitDateDuplicate.get());
+            }
         }
+    }
+
+    /**
+     * Returns a grammatically correct confirmation prompt for the duplicate-name matches.
+     */
+    private static String formatDuplicateNamePrompt(Person editedPerson, int duplicateCount) {
+        assert duplicateCount > 0;
+
+        return (duplicateCount == 1)
+                ? String.format(MESSAGE_CONFIRM_DUPLICATE_NAME, editedPerson.getName())
+                : String.format(MESSAGE_CONFIRM_DUPLICATE_NAMES, editedPerson.getName(), duplicateCount);
     }
 
     /**
      * Creates and returns a {@code Person} with the details of {@code personToEdit}
      * edited with {@code editPersonDescriptor}.
+     *
+     * @throws CommandException If the proposed current date would invalidate the retained previous dates.
      */
-    private static Person createEditedPerson(Person personToEdit, EditPersonDescriptor editPersonDescriptor) {
+    private static Person createEditedPerson(Person personToEdit, EditPersonDescriptor editPersonDescriptor)
+            throws CommandException {
         assert personToEdit != null;
 
         Name updatedName = editPersonDescriptor.getName().orElse(personToEdit.getName());
@@ -199,8 +250,15 @@ public class EditCommand extends Command {
         Note updatedNote = editPersonDescriptor.getNote().orElse(personToEdit.getNote());
         Set<Tag> updatedTags = editPersonDescriptor.getTags().orElse(personToEdit.getTags());
 
+        List<VisitDate> previousVisitDates = personToEdit.getPreviousVisitDates();
+        if (!previousVisitDates.isEmpty()
+                && !updatedVisitDate.value.isAfter(previousVisitDates.getLast().value)) {
+            throw new CommandException(String.format(MESSAGE_VISIT_DATE_NOT_AFTER_PREVIOUS,
+                    previousVisitDates.getLast()));
+        }
+
         return new Person(updatedName, updatedPhone, updatedEmail, updatedAddress,
-                updatedVisitDate, updatedNote, updatedTags);
+                updatedVisitDate, previousVisitDates, updatedNote, updatedTags);
     }
 
     @Override
