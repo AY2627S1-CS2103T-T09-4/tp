@@ -380,6 +380,45 @@ public class NextCommandTest {
     }
 
     @Test
+    public void confirmation_appointmentPassedBeforeConfirmation_rejectsWithoutChangingData() throws Exception {
+        fillDay(FULL_DAY, Model.MAX_VISITS_PER_DAY);
+        CountingClock clock = new CountingClock(FIXED_CLOCK);
+        CommandResult requestResult = new NextCommand(INDEX_FIRST_PERSON, new VisitDate(FULL_DAY_VISIT_DATE), clock)
+                .execute(model);
+        AddressBook before = new AddressBook(model.getAddressBook());
+
+        // the prompt stays open until after the requested appointment time
+        clock.delegate = Clock.offset(FIXED_CLOCK, Duration.ofDays(30));
+        CommandInputRequest inputRequest = requestResult.getInputRequest().orElseThrow();
+        String expectedMessage = String.format(NextCommand.MESSAGE_NON_FUTURE_VISIT_DATE, "13/11/2026 1200");
+
+        assertThrows(CommandException.class, expectedMessage, () -> inputRequest.respond("y", model));
+        assertEquals(before, model.getAddressBook());
+    }
+
+    @Test
+    public void confirmation_slotTakenBeforeConfirmation_rejectsWithoutChangingData() throws Exception {
+        fillDay(FULL_DAY, Model.MAX_VISITS_PER_DAY);
+        CommandResult requestResult = new NextCommand(INDEX_FIRST_PERSON, new VisitDate(FULL_DAY_VISIT_DATE),
+                FIXED_CLOCK).execute(model);
+
+        // another patient is booked into the requested slot while the prompt is open
+        Person latePatient = new PersonBuilder().withName("Late Patient").withPhone("81112222")
+                .withVisitDate(FULL_DAY_VISIT_DATE).build();
+        model.addPerson(latePatient);
+        AddressBook before = new AddressBook(model.getAddressBook());
+        CommandInputRequest inputRequest = requestResult.getInputRequest().orElseThrow();
+        String expectedMessage = String.format(NextCommand.MESSAGE_DUPLICATE_VISIT_DATE,
+                latePatient.getName(), FULL_DAY_VISIT_DATE);
+
+        CommandException exception =
+                assertThrows(CommandException.class, expectedMessage, () -> inputRequest.respond("y", model));
+        assertEquals(latePatient, exception.getPersonToView().orElseThrow());
+        assertEquals(before, model.getAddressBook());
+        assertEquals(AMY, model.getAddressBook().getPersonList().getFirst());
+    }
+
+    @Test
     public void confirmation_patientDeletedBeforeConfirmation_throwsCommandException() throws Exception {
         fillDay(FULL_DAY, Model.MAX_VISITS_PER_DAY);
         CommandResult requestResult = new NextCommand(INDEX_FIRST_PERSON, new VisitDate(FULL_DAY_VISIT_DATE),

@@ -388,6 +388,8 @@ Format: `next INDEX DATETIME`
   `Heads up: you already have 7 visits on Mon, 2 Nov 2026. Schedule Jane Tan's next visit on that day anyway? Type y
   to confirm. Any other input cancels.` Type `y` and press Enter to schedule it; surrounding spaces and letter case
   are ignored. Any other input shows `Scheduling cancelled.`, keeps the data unchanged, and is not run as a command.
+  If the requested time has passed, or another patient has taken it, by the time you enter `y`, the visit is not
+  scheduled and the usual error is shown.
   A next visit later on the same day as the current visit does not ask, since that day's visit count does not grow.
 * Success appends the old current date and time to the previous dates, then sets the new current date and time.
   All other details, including empty optional fields, are preserved. Previous dates are saved in order in the

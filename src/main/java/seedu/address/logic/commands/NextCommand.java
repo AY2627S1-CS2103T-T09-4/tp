@@ -132,8 +132,20 @@ public class NextCommand extends Command {
         String prompt = String.format(MESSAGE_CONFIRM_FULL_DAY, visitsOnNewDay,
                 visitDate.toDayString(), updatedPerson.getName());
         CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(prompt, MESSAGE_NEXT_CANCELLED,
-                confirmedModel -> scheduleVisit(confirmedModel, personToUpdate, updatedPerson));
+                confirmedModel -> scheduleConfirmedVisit(confirmedModel, personToUpdate, updatedPerson));
         return CommandResult.requestInput(inputRequest);
+    }
+
+    /**
+     * Schedules the visit after the user confirms the full-day prompt.
+     * Rechecks the times first, since the requested appointment may have passed while the prompt was open.
+     *
+     * @throws CommandException If the appointment is no longer in the future or can no longer be scheduled.
+     */
+    private CommandResult scheduleConfirmedVisit(Model model, Person personToUpdate, Person updatedPerson)
+            throws CommandException {
+        validateVisitDate(personToUpdate);
+        return scheduleVisit(model, personToUpdate, updatedPerson);
     }
 
     /**

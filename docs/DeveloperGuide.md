@@ -448,7 +448,8 @@ The command follows the existing parser, model, and storage flow:
 1. If the requested day differs from the current visit's day and already has `Model.MAX_VISITS_PER_DAY` (7) or more
    current visits, it returns a `CommandInputRequest` confirmation instead of mutating, as `add` and `edit` do.
    A later visit on the same day does not ask, because it replaces that day's visit rather than adding one.
-   On `y`, the confirmed action checks again that the original record exists and that no conflict appeared.
+   On `y`, the confirmed action reads the clock again and rechecks that the requested visit is still in the future,
+   that the original record exists, and that no conflict appeared while the prompt was open.
 1. On success, it replaces the patient and restores the full list in stored order, clearing the filter and sort.
    `LogicManager` saves through the existing storage flow before returning the result to the UI.
 
