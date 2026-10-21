@@ -25,10 +25,12 @@ import seedu.address.model.UserPrefs;
 import seedu.address.model.person.AddressContainsKeywordsPredicate;
 import seedu.address.model.person.MatchesAllCriteriaPredicate;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
+import seedu.address.model.person.NoteContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.PhoneContainsKeywordsPredicate;
 import seedu.address.model.person.TagContainsKeywordsPredicate;
 import seedu.address.model.person.VisitDateOnDaysPredicate;
+import seedu.address.testutil.PersonBuilder;
 
 /**
  * Contains integration tests (interaction with the Model) for {@code FindCommand}.
@@ -138,6 +140,22 @@ public class FindCommandTest {
                 getTypicalAddressBook().getPersonList());
         assertFindSuccess(new VisitDateOnDaysPredicate(List.of(LocalDate.of(2026, 1, 2))),
                 FindCommand.MESSAGE_NO_PATIENTS_FOUND, List.of());
+    }
+
+    @Test
+    public void execute_noteKeyword_matchesStartOfNoteWords() {
+        // typical persons have no notes, so give two of them notes in both models
+        Person carlWithNote = new PersonBuilder(CARL).withNote("Review insulin dose").build();
+        Person elleWithNote = new PersonBuilder(ELLE).withNote("Check wound").build();
+        for (Model eachModel : List.of(model, expectedModel)) {
+            eachModel.setPerson(CARL, carlWithNote);
+            eachModel.setPerson(ELLE, elleWithNote);
+        }
+
+        assertFindSuccess(new NoteContainsKeywordsPredicate(List.of("insul")), "1 patient found.",
+                List.of(carlWithNote));
+        assertFindSuccess(new NoteContainsKeywordsPredicate(List.of("insulin", "wound")), "2 patients found.",
+                List.of(carlWithNote, elleWithNote));
     }
 
     @Test

@@ -3,6 +3,7 @@ package seedu.address.logic.commands;
 import static java.util.Objects.requireNonNull;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_VISIT_DATE;
@@ -21,8 +22,8 @@ public class FindCommand extends Command {
     public static final String COMMAND_WORD = "find";
 
     public static final String MESSAGE_USAGE = COMMAND_WORD + ": Finds all patients matching every given field "
-            + "and displays them as a list with index numbers. Name and address keywords match the start of any word, "
-            + "phone keywords match any part of the number, tag keywords match the start of a tag "
+            + "and displays them as a list with index numbers. Name, address and note keywords match the start of "
+            + "any word, phone keywords match any part of the number, tag keywords match the start of a tag "
             + "(all case-insensitive), and visit dates (d/M/yyyy) match current visits on that day. "
             + "Several keywords for one field match any of them.\n"
             + "Parameters (at least one): "
@@ -30,7 +31,8 @@ public class FindCommand extends Command {
             + "[" + PREFIX_PHONE + "PHONE_KEYWORD...] "
             + "[" + PREFIX_ADDRESS + "ADDRESS_KEYWORD...] "
             + "[" + PREFIX_TAG + "TAG_KEYWORD...] "
-            + "[" + PREFIX_VISIT_DATE + "DATE...]\n"
+            + "[" + PREFIX_VISIT_DATE + "DATE...] "
+            + "[" + PREFIX_NOTE + "NOTE_KEYWORD...]\n"
             + "Example: " + COMMAND_WORD + " " + PREFIX_NAME + "george priya " + PREFIX_TAG + "morning";
     public static final String MESSAGE_KEYWORDS_NEED_PREFIX = "Put a prefix before search keywords, e.g. "
             + COMMAND_WORD + " " + PREFIX_NAME + "george for names or " + COMMAND_WORD + " " + PREFIX_PHONE

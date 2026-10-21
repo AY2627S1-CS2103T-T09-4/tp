@@ -344,9 +344,9 @@ Examples (the selected patient's current visit must have arrived or passed; choo
 
 ### Locating patients: `find`
 
-Finds patients by name, phone number, address, tag or visit date.
+Finds patients by name, phone number, address, tag, visit date or notes.
 
-Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...]`
+Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`
 
 * Give at least one field. Every keyword must follow a prefix; for example, use `find n/george`, not `find george`.
 * How each field matches (all case-insensitive):
@@ -359,6 +359,8 @@ Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t
   * `vd/`: patients whose current visit is on that day, at any time. Give the date without a time in the format
     `d/M/yyyy`, e.g. `vd/15/10/2026`. Previous visit dates are not searched. An impossible date, another format,
     or a time such as `vd/15/10/2026 0900` is rejected with `"VALUE" is not a valid visit date.` and the format.
+  * `note/`: the start of any word in the patient's notes. For example, `note/gluc` matches
+    `Discuss glucose readings`, but `note/cose` does not. Patients with no notes never match.
 * Several keywords for one field find patients matching **any** of them (an `OR` search); for example,
   `n/george priya` returns `George Miller` and `Priya Nair`.
 * Different fields must **all** match (an `AND` search); for example, `n/m t/morning` returns only patients with a
@@ -376,6 +378,7 @@ Examples:
 * `find vd/15/10/2026` returns `Priya Nair`, whose visit is at 09:00 that day. Follow it with `sort date` to list
   that day's visits by time when planning your route.
 * `find vd/14/10/2026 15/10/2026` returns `Priya Nair` and `Mei Lin Tan`
+* `find note/review` returns `George Miller` and `Marcus Lim`, whose notes start with `Review`
 * `find n/m t/morning` returns `Mei Lin Tan`; `George Miller` and `Marcus Lim` also match `n/m` but are not tagged
   `morning`
 
@@ -476,7 +479,7 @@ Action     | Format, Examples
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
 **Edit**   | `edit INDEX [n/NAME] [p/PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
-**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...]`<br> e.g., `find n/James Jake a/clementi`, `find vd/18/9/2026`
+**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`<br> e.g., `find n/James Jake a/clementi`, `find vd/18/9/2026`, `find note/insulin`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (use an available future appointment)
 **Sort**   | `sort date [START_DATE]`<br> e.g., `sort date 18/9/2026`
