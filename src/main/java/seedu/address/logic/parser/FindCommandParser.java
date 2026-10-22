@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_VISIT_DATE;
@@ -20,6 +21,7 @@ import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.AddressContainsKeywordsPredicate;
 import seedu.address.model.person.MatchesAllCriteriaPredicate;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
+import seedu.address.model.person.NoteContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.PhoneContainsKeywordsPredicate;
 import seedu.address.model.person.TagContainsKeywordsPredicate;
@@ -52,14 +54,14 @@ public class FindCommandParser implements Parser<FindCommand> {
         String normalizedArgs = args.replaceAll("\\s+", " ");
         ArgumentMultimap argMultimap =
                 ArgumentTokenizer.tokenize(normalizedArgs, PREFIX_NAME, PREFIX_PHONE, PREFIX_ADDRESS, PREFIX_TAG,
-                        PREFIX_VISIT_DATE);
+                        PREFIX_VISIT_DATE, PREFIX_NOTE);
 
         if (!argMultimap.getPreamble().isEmpty()) {
             throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT,
                     FindCommand.MESSAGE_KEYWORDS_NEED_PREFIX + "\n" + FindCommand.MESSAGE_USAGE));
         }
         argMultimap.verifyNoDuplicatePrefixesFor(PREFIX_NAME, PREFIX_PHONE, PREFIX_ADDRESS, PREFIX_TAG,
-                PREFIX_VISIT_DATE);
+                PREFIX_VISIT_DATE, PREFIX_NOTE);
 
         List<Predicate<Person>> criteria = new ArrayList<>();
         parseKeywords(argMultimap, PREFIX_NAME).map(NameContainsKeywordsPredicate::new).ifPresent(criteria::add);
@@ -67,6 +69,7 @@ public class FindCommandParser implements Parser<FindCommand> {
         parseKeywords(argMultimap, PREFIX_ADDRESS).map(AddressContainsKeywordsPredicate::new).ifPresent(criteria::add);
         parseKeywords(argMultimap, PREFIX_TAG).map(TagContainsKeywordsPredicate::new).ifPresent(criteria::add);
         parseVisitDays(argMultimap).map(VisitDateOnDaysPredicate::new).ifPresent(criteria::add);
+        parseKeywords(argMultimap, PREFIX_NOTE).map(NoteContainsKeywordsPredicate::new).ifPresent(criteria::add);
 
         if (criteria.isEmpty()) {
             throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));

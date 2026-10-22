@@ -15,6 +15,7 @@ import seedu.address.logic.commands.FindCommand;
 import seedu.address.model.person.AddressContainsKeywordsPredicate;
 import seedu.address.model.person.MatchesAllCriteriaPredicate;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
+import seedu.address.model.person.NoteContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.PhoneContainsKeywordsPredicate;
 import seedu.address.model.person.TagContainsKeywordsPredicate;
@@ -136,6 +137,24 @@ public class FindCommandParserTest {
         assertParseFailure(parser, " vd/", String.format(FindCommandParser.MESSAGE_EMPTY_KEYWORDS, "vd/"));
         assertParseFailure(parser, " vd/18/9/2026 vd/19/9/2026",
                 Messages.getErrorMessageForDuplicatePrefixes(CliSyntax.PREFIX_VISIT_DATE));
+    }
+
+    @Test
+    public void parse_noteKeywords_returnsFindCommand() {
+        assertParseSuccess(parser, " note/insulin wound",
+                findCommandOf(new NoteContainsKeywordsPredicate(List.of("insulin", "wound"))));
+
+        // n/ is not mistaken for the start of note/
+        assertParseSuccess(parser, " n/alex note/insulin", findCommandOf(
+                new NameContainsKeywordsPredicate(List.of("alex")),
+                new NoteContainsKeywordsPredicate(List.of("insulin"))));
+    }
+
+    @Test
+    public void parse_emptyOrRepeatedNote_throwsParseException() {
+        assertParseFailure(parser, " note/", String.format(FindCommandParser.MESSAGE_EMPTY_KEYWORDS, "note/"));
+        assertParseFailure(parser, " note/insulin note/wound",
+                Messages.getErrorMessageForDuplicatePrefixes(CliSyntax.PREFIX_NOTE));
     }
 
     @SafeVarargs
