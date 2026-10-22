@@ -269,6 +269,33 @@ public class AddCommandIntegrationTest {
     }
 
     @Test
+    public void confirmation_multipleDuplicateNamesOnFullDay_requestsOneCombinedConfirmation() throws Exception {
+        Person firstMatch = model.getAddressBook().getPersonList().get(0);
+        // the second match is on another day, so the full day still has the seven typical visits
+        Person secondMatch = new PersonBuilder(firstMatch).withPhone("91234567")
+                .withVisitDate(AVAILABLE_VISIT_DATE).build();
+        model.addPerson(secondMatch);
+        Person thirdSameName = new PersonBuilder(firstMatch).withPhone("92345678")
+                .withVisitDate(FULL_DAY_VISIT_DATE).build();
+
+        CommandResult requestResult = new AddCommand(thirdSameName).execute(model);
+
+        String expectedPrompt = String.format(AddCommand.MESSAGE_WARNING_DUPLICATE_NAMES, thirdSameName.getName(), 2)
+                + " " + String.format(AddCommand.MESSAGE_WARNING_FULL_DAY, Model.MAX_VISITS_PER_DAY, "Thu, 1 Jan 2026")
+                + " " + String.format(AddCommand.MESSAGE_CONFIRM_ADD, thirdSameName.getName());
+        assertEquals(expectedPrompt, requestResult.getFeedbackToUser());
+        assertEquals(firstMatch, requestResult.getPersonToView().orElseThrow());
+        assertFalse(model.getAddressBook().getPersonList().contains(thirdSameName));
+
+        CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond("y", model);
+
+        assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, thirdSameName.getName()),
+                confirmedResult.getFeedbackToUser());
+        assertTrue(confirmedResult.getInputRequest().isEmpty());
+        assertTrue(model.getAddressBook().getPersonList().contains(thirdSameName));
+    }
+
+    @Test
     public void confirmation_duplicateNameOnFullDayConfirmedOnce_addsPerson() throws Exception {
         Person personInList = model.getAddressBook().getPersonList().get(0);
         Person sameNameOnFullDay = new PersonBuilder(personInList).withPhone("91234567")
