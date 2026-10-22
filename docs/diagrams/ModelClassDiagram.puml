@@ -52,7 +52,7 @@ Person *--> Email
 Person *--> Address
 Person *--> "1" Allergies
 Person *--> "1" AlcoholHistory
-Person *--> "1" SmokingStatus
+Person --> "1" SmokingStatus
 Person *--> "*" Tag
 
 Person -[hidden]up--> I
