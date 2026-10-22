@@ -173,14 +173,17 @@ Format: `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] p/PHONE_NUMBER a/ADDRESS vd/VISIT
 * On success, the app shows `Added patient NAME` and the new patient appears in the list.
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
 * A patient with the same normalized name and phone number as an existing patient is a duplicate and cannot be added.
-* If only the name matches an existing patient, the app asks
-  `A patient named NAME already exists. Add this patient anyway? Type y to confirm. Any other input cancels.`
+* If only the name matches an existing patient, the app shows the matching patient in the patient details panel and
+  asks `A patient named NAME already exists. The matching patient is shown in the patient details panel. Add NAME
+  anyway? Type y to confirm. Any other input cancels.`
 * Type `y` and press Enter to add the patient. Surrounding spaces and letter case are ignored. Any other input cancels
   the addition and is not run as a command. Confirmation rechecks that the visit date and time are still available.
 * If 7 or more patients already have a visit on the same day (at any time), the app warns you before adding another,
   e.g. `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Add Jane Tan anyway? Type y to confirm. Any other
-  input cancels.` Type `y` to add the patient anyway. If the name also matches an existing patient, you are asked to
-  confirm the name first and then the busy day.
+  input cancels.` Type `y` to add the patient anyway.
+* If the name matches an existing patient **and** the day already has 7 or more visits, the app asks only once,
+  listing both warnings before a single `Add NAME anyway?` question. One `y` adds the patient; any other input
+  cancels the addition.
 * For duplicate detection, names are compared without letter case after surrounding whitespace is removed and repeated
   spaces are collapsed to one space. For example, `John Doe`, `john doe`, and `John   Doe` are treated as the same
   name. The accepted name's spelling, capitalization, and internal spacing are still displayed and saved.

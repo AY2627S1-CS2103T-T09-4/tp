@@ -309,9 +309,11 @@ model replacement, sample data, and direct model use. `JsonSerializableAddressBo
 loading and reports an invalid data file with a visit-date-specific message.
 
 `Model#hasPersonWithSameVisitDate` exposes the scheduling check. `AddCommand` rejects a true duplicate first, then a
-visit-date conflict. For a name duplicate with an available visit time, it captures the proposed immutable `Person` in
-a `CommandInputRequest#createConfirmation` action. Confirmation rechecks both rejection rules before adding, which
-prevents a conflicting record from being introduced if model state changes while the prompt is pending.
+visit-date conflict. It then collects every warning that applies: a name duplicate, and a visit day that already
+has `Model.MAX_VISITS_PER_DAY` (7) or more visits. If any apply, it joins them into one prompt ending in a single
+`Add NAME anyway?` question, so the user confirms once even when both warnings apply. The proposed immutable `Person`
+is captured in a `CommandInputRequest#createConfirmation` action. Confirmation rechecks both rejection rules before
+adding, which prevents a conflicting record from being introduced if model state changes while the prompt is pending.
 
 `EditCommand` captures the selected patient without changing the displayed list. It similarly rejects a true
 duplicate or a datetime shared with another patient's current or previous dates before requesting confirmation,
