@@ -5,6 +5,7 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_VISIT_DATE;
 
 import java.util.function.Predicate;
 
@@ -21,13 +22,15 @@ public class FindCommand extends Command {
 
     public static final String MESSAGE_USAGE = COMMAND_WORD + ": Finds all patients matching every given field "
             + "and displays them as a list with index numbers. Name and address keywords match the start of any word, "
-            + "phone keywords match any part of the number, and tag keywords match the start of a tag "
-            + "(all case-insensitive). Several keywords for one field match any of them.\n"
+            + "phone keywords match any part of the number, tag keywords match the start of a tag "
+            + "(all case-insensitive), and visit dates (d/M/yyyy) match current visits on that day. "
+            + "Several keywords for one field match any of them.\n"
             + "Parameters (at least one): "
             + "[" + PREFIX_NAME + "NAME_KEYWORD...] "
             + "[" + PREFIX_PHONE + "PHONE_KEYWORD...] "
             + "[" + PREFIX_ADDRESS + "ADDRESS_KEYWORD...] "
-            + "[" + PREFIX_TAG + "TAG_KEYWORD...]\n"
+            + "[" + PREFIX_TAG + "TAG_KEYWORD...] "
+            + "[" + PREFIX_VISIT_DATE + "DATE...]\n"
             + "Example: " + COMMAND_WORD + " " + PREFIX_NAME + "george priya " + PREFIX_TAG + "morning";
     public static final String MESSAGE_KEYWORDS_NEED_PREFIX = "Put a prefix before search keywords, e.g. "
             + COMMAND_WORD + " " + PREFIX_NAME + "george for names or " + COMMAND_WORD + " " + PREFIX_PHONE
@@ -37,7 +40,8 @@ public class FindCommand extends Command {
     public static final String MESSAGE_ONE_PATIENT_FOUND = "1 patient found.";
     public static final String MESSAGE_NO_PATIENTS_FOUND = "No patients found. Search with "
             + PREFIX_NAME + " for names, " + PREFIX_PHONE + " for phone numbers, "
-            + PREFIX_ADDRESS + " for addresses, or " + PREFIX_TAG + " for tags.";
+            + PREFIX_ADDRESS + " for addresses, " + PREFIX_TAG + " for tags, or " + PREFIX_VISIT_DATE
+            + " for visit dates.";
 
     private final Predicate<Person> predicate;
 

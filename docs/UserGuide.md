@@ -477,9 +477,9 @@ does not act as redo. Repeated rollback eventually empties the previous-date lis
 
 ### Locating patients: `find`
 
-Finds patients by name, phone number, address or tag.
+Finds patients by name, phone number, address, tag or visit date.
 
-Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...]`
+Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...]`
 
 * Give at least one field. Every keyword must follow a prefix; for example, use `find n/george`, not `find george`.
 * How each field matches (all case-insensitive):
@@ -489,6 +489,9 @@ Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t
     Phone keywords may contain only digits.
   * `a/`: the start of any word in the address. For example, `a/tamp` matches `46 Tampines Street 21, #08-03`.
   * `t/`: the start of any tag. For example, `t/morn` matches a patient tagged `morning`.
+  * `vd/`: patients whose current visit is on that day, at any time. Give the date without a time in the format
+    `d/M/yyyy`, e.g. `vd/15/10/2026`. Previous visit dates are not searched. An impossible date, another format,
+    or a time such as `vd/15/10/2026 0900` is rejected with `"VALUE" is not a valid visit date.` and the format.
 * Several keywords for one field find patients matching **any** of them (an `OR` search); for example,
   `n/george priya` returns `George Miller` and `Priya Nair`.
 * Different fields must **all** match (an `AND` search); for example, `n/m t/morning` returns only patients with a
@@ -497,14 +500,17 @@ Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t
   instead, e.g. `n/george priya` rather than `n/george n/priya`.
 * Spaces, tabs or line breaks can separate fields; for example, `n/alex` and `p/9123` separated by a tab are still
   two separate fields.
-* The app shows how many patients were found, e.g. `3 patients found.` If none match, it shows
-  `No patients found. Search with n/ for names, p/ for phone numbers, a/ for addresses, or t/ for tags.`
+* The app shows how many patients were found, e.g. `3 patients found.` If none match, it lists every search prefix:
+  `No patients found. Search with n/ for names, p/ for phone numbers, a/ for addresses, t/ for tags, or vd/ for visit dates.`
 
 Examples:
 * `find n/m` returns `George Miller`, `Marcus Lim`, and `Mei Lin Tan`
 * `find n/george priya` returns `George Miller` and `Priya Nair`
 * `find p/8901` returns `Noor Aziz`, whose number ends in `8901`
 * `find a/tampines` returns `Marcus Lim`
+* `find vd/15/10/2026` returns `Priya Nair`, whose visit is at 09:00 that day. Follow it with `sort date` to list
+  that day's visits by time when planning your route.
+* `find vd/14/10/2026 15/10/2026` returns `Priya Nair` and `Mei Lin Tan`
 * `find n/m t/morning` returns `Mei Lin Tan`; `George Miller` and `Marcus Lim` also match `n/m` but are not tagged
   `morning`
 
@@ -615,7 +621,7 @@ Action     | Format, Examples
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
 **Edit**   | `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [p/PHONE_NUMBER] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
-**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...]`<br> e.g., `find n/James Jake a/clementi`
+**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...]`<br> e.g., `find n/James Jake a/clementi`, `find vd/18/9/2026`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (current visit must have arrived; choose an available future appointment)
 **Prev**   | `prev INDEX`<br> e.g., `prev 1` (requires a previous datetime; replaces and discards the current datetime; no redo)

@@ -13,6 +13,7 @@ import static seedu.address.testutil.TypicalPersons.FIONA;
 import static seedu.address.testutil.TypicalPersons.GEORGE;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -28,6 +29,7 @@ import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.PhoneContainsKeywordsPredicate;
 import seedu.address.model.person.TagContainsKeywordsPredicate;
+import seedu.address.model.person.VisitDateOnDaysPredicate;
 
 /**
  * Contains integration tests (interaction with the Model) for {@code FindCommand}.
@@ -66,7 +68,8 @@ public class FindCommandTest {
     @Test
     public void execute_zeroKeywords_noPersonFound() {
         String expectedMessage = "No patients found. "
-                + "Search with n/ for names, p/ for phone numbers, a/ for addresses, or t/ for tags.";
+                + "Search with n/ for names, p/ for phone numbers, a/ for addresses, t/ for tags, "
+                + "or vd/ for visit dates.";
         NameContainsKeywordsPredicate predicate = preparePredicate(" ");
         FindCommand command = new FindCommand(predicate);
         expectedModel.updateFilteredPersonList(predicate);
@@ -128,6 +131,15 @@ public class FindCommandTest {
     public void execute_tagKeyword_matchesStartOfTags() {
         assertFindSuccess(new TagContainsKeywordsPredicate(List.of("friend")), "3 patients found.",
                 List.of(ALICE, BENSON, DANIEL));
+    }
+
+    @Test
+    public void execute_visitDate_matchesVisitsOnThatDay() {
+        // every typical person is visited on 1/1/2026, at different times
+        assertFindSuccess(new VisitDateOnDaysPredicate(List.of(LocalDate.of(2026, 1, 1))), "7 patients found.",
+                getTypicalAddressBook().getPersonList());
+        assertFindSuccess(new VisitDateOnDaysPredicate(List.of(LocalDate.of(2026, 1, 2))),
+                FindCommand.MESSAGE_NO_PATIENTS_FOUND, List.of());
     }
 
     @Test

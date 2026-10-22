@@ -21,6 +21,10 @@ public class VisitDate {
     public static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("d/M/uuuu HHmm")
             .withResolverStyle(ResolverStyle.STRICT);
 
+    /** Format of a calendar day without a time, e.g. {@code 18/9/2026}, used when searching by visit day. */
+    public static final DateTimeFormatter DAY_INPUT_FORMATTER = DateTimeFormatter.ofPattern("d/M/uuuu")
+            .withResolverStyle(ResolverStyle.STRICT);
+
     // English is fixed so that weekday and month names do not change with the user's system language
     private static final DateTimeFormatter DAY_FORMATTER =
             DateTimeFormatter.ofPattern("EEE, d MMM uuuu", Locale.ENGLISH);
