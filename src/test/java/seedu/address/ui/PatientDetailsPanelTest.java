@@ -42,6 +42,101 @@ public class PatientDetailsPanelTest {
     }
 
     @Test
+    public void setPerson_allergies_displaysBeforeAlcoholAndSmokingAndClearsStaleText() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            Person recorded = new PersonBuilder().withBloodType("A+").withAllergies("Penicillin; latex")
+                    .withAlcoholHistory("Does not drink").withSmokingStatus("former").build();
+            panel.setPerson(recorded);
+            Label allergies = getLabel(panel, "allergies");
+            assertEquals("Allergies: Penicillin; latex", allergies.getText());
+            assertFieldVisible(panel, "allergies", true);
+            assertTrue(allergies.isWrapText());
+            VBox container = getDetailsContainer(panel);
+            int allergyIndex = container.getChildren().indexOf(allergies);
+            assertEquals(container.getChildren().indexOf(getLabel(panel, "bloodType")) + 1, allergyIndex);
+            assertEquals(allergyIndex + 1, container.getChildren().indexOf(getLabel(panel, "alcoholHistory")));
+            assertEquals(allergyIndex + 2, container.getChildren().indexOf(getLabel(panel, "smokingStatus")));
+
+            panel.setPerson(new PersonBuilder(recorded).withAllergies("").build());
+            assertFieldVisible(panel, "allergies", false);
+            panel.setPerson(new PersonBuilder().withAllergies("No known allergies").build());
+            assertFieldVisible(panel, "allergies", true);
+            assertEquals("Allergies: No known allergies", allergies.getText());
+        });
+    }
+
+    @Test
+    public void setPerson_longAllergies_wrapsWithinScrollableDetails() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            String allergies = "Penicillin; latex; recorded reaction details. ".repeat(30).strip();
+            panel.setPerson(new PersonBuilder().withAllergies(allergies).build());
+            assertEquals("Allergies: " + allergies, getLabel(panel, "allergies").getText());
+            assertRecordCanScrollToBottom(panel);
+        });
+    }
+
+    @Test
+    public void setPerson_smokingStatus_displaysAfterAlcoholHistoryAndHidesWhenCleared() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            Person recorded = new PersonBuilder().withAlcoholHistory("Does not drink")
+                    .withSmokingStatus("former").build();
+            panel.setPerson(recorded);
+            Label status = getLabel(panel, "smokingStatus");
+            assertEquals("Smoking status: former", status.getText());
+            assertFieldVisible(panel, "smokingStatus", true);
+            assertTrue(status.isWrapText());
+            VBox container = getDetailsContainer(panel);
+            assertEquals(container.getChildren().indexOf(getLabel(panel, "alcoholHistory")) + 1,
+                    container.getChildren().indexOf(status));
+
+            panel.setPerson(new PersonBuilder(recorded).withSmokingStatus("").build());
+            assertFieldVisible(panel, "smokingStatus", false);
+            panel.setPerson(new PersonBuilder().withSmokingStatus("unknown").build());
+            assertFieldVisible(panel, "smokingStatus", true);
+            assertEquals("Smoking status: unknown", status.getText());
+            panel.setPerson(new PersonBuilder().build());
+            assertFieldVisible(panel, "smokingStatus", false);
+        });
+    }
+
+    @Test
+    public void setPerson_alcoholHistory_displaysAfterAllergiesAndClearsStaleText() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            Person recorded = new PersonBuilder().withBloodType("A+").withAllergies("Penicillin")
+                    .withAlcoholHistory("Occasional drinking").build();
+            panel.setPerson(recorded);
+            Label history = getLabel(panel, "alcoholHistory");
+            assertEquals("Alcohol history: Occasional drinking", history.getText());
+            assertFieldVisible(panel, "alcoholHistory", true);
+            assertTrue(history.isWrapText());
+            VBox container = getDetailsContainer(panel);
+            assertEquals(container.getChildren().indexOf(getLabel(panel, "allergies")) + 1,
+                    container.getChildren().indexOf(history));
+
+            panel.setPerson(new PersonBuilder(recorded).withAlcoholHistory("").build());
+            assertFieldVisible(panel, "alcoholHistory", false);
+            panel.setPerson(new PersonBuilder().withAlcoholHistory("Does not drink").build());
+            assertFieldVisible(panel, "alcoholHistory", true);
+            assertEquals("Alcohol history: Does not drink", history.getText());
+        });
+    }
+
+    @Test
+    public void setPerson_longAlcoholHistory_wrapsWithinScrollableDetails() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            String history = "Occasional drinking with meals. ".repeat(30).strip();
+            panel.setPerson(new PersonBuilder().withAlcoholHistory(history).build());
+            assertEquals("Alcohol history: " + history, getLabel(panel, "alcoholHistory").getText());
+            assertRecordCanScrollToBottom(panel);
+        });
+    }
+
+    @Test
     public void setPerson_dateOfBirth_displaysAgeBelowNameAndHidesWhenAbsent() {
         runOnFxThread(() -> {
             PatientDetailsPanel panel = new PatientDetailsPanel();

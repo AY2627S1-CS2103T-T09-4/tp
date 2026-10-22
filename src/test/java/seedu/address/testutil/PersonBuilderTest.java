@@ -15,7 +15,9 @@ public class PersonBuilderTest {
     @Test
     public void build_copyWithOtherFieldsChanged_preservesVisitRecord() {
         Person original = new PersonBuilder().withPreviousVisitDates("1/9/2026 1000", "2/9/2026 1000")
-                .withDateOfBirth("15/6/1990").withEmergencyContact("Mary Tan, 91234567").withBloodType("A+").build();
+                .withDateOfBirth("15/6/1990").withEmergencyContact("Mary Tan, 91234567").withBloodType("A+")
+                .withAllergies("Penicillin; latex").withAlcoholHistory("Occasional drinking")
+                .withSmokingStatus("former").build();
         Person copy = new PersonBuilder(original).build();
         Person edited = new PersonBuilder(original).withName("Changed Name").withPhone("91234567")
                 .withEmail("changed@example.com").withAddress("Changed address").withNote("Changed note")
@@ -28,6 +30,9 @@ public class PersonBuilderTest {
         assertEquals(original.getEmergencyContact(), edited.getEmergencyContact());
         assertEquals(original.getBloodType(), edited.getBloodType());
         assertEquals(original.getDateOfBirth(), edited.getDateOfBirth());
+        assertEquals(original.getAllergies(), edited.getAllergies());
+        assertEquals(original.getAlcoholHistory(), edited.getAlcoholHistory());
+        assertEquals(original.getSmokingStatus(), edited.getSmokingStatus());
     }
 
     @Test

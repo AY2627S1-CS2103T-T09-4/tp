@@ -46,7 +46,9 @@ public class PrevCommandIntegrationTest {
             ZoneId.of("Asia/Singapore"));
     private static final Person AMY = new PersonBuilder().withVisitDate("30/10/2026 1000")
             .withPreviousVisitDates("10/10/2026 1000", "20/10/2026 1000")
-            .withDateOfBirth("15/6/1990").withBloodType("A+").withEmergencyContact("Mary Tan, 91234567")
+            .withDateOfBirth("15/6/1990").withBloodType("A+")
+            .withAllergies("Penicillin; latex").withAlcoholHistory("Does not drink").withSmokingStatus("former")
+            .withEmergencyContact("Mary Tan, 91234567")
             .withNote("Review medication").withTags("priority").build();
 
     @TempDir
@@ -112,13 +114,16 @@ public class PrevCommandIntegrationTest {
     @Test
     public void execute_afterDateAndOtherFieldEdits_restoresOnlyVisitDateState() throws Exception {
         logic.execute("edit 1 n/Amy Updated vd/2/11/2026 1000 p/92345678 e/updated@example.com"
-                + " a/20 New Road note/Updated note t/followup dob/20/7/1985 bt/O- ec/David Tan, 87654321");
+                + " a/20 New Road note/Updated note t/followup dob/20/7/1985 bt/O- ec/David Tan, 87654321"
+                + " all/No known allergies alc/Occasional drinking smk/current");
         CommandResult result = logic.execute("prev 1");
 
         Person expectedPerson = new PersonBuilder(AMY).withVisitDate("20/10/2026 1000")
                 .withPreviousVisitDates("10/10/2026 1000").withName("Amy Updated").withPhone("92345678")
                 .withEmail("updated@example.com").withAddress("20 New Road")
                 .withDateOfBirth("20/7/1985").withBloodType("O-").withEmergencyContact("David Tan, 87654321")
+                .withAllergies("No known allergies").withAlcoholHistory("Occasional drinking")
+                .withSmokingStatus("current")
                 .withNote("Updated note").withTags("followup").build();
         assertEquals("Visit date restored for Amy Updated: 20/10/2026 1000\n"
                 + "Discarded visit date and time: 2/11/2026 1000", result.getFeedbackToUser());
@@ -128,9 +133,10 @@ public class PrevCommandIntegrationTest {
 
     @Test
     public void execute_afterClearingOptionalFields_preservesEmptyFieldsAndPersistsRollback() throws Exception {
-        logic.execute("edit 1 e/ note/ t/ dob/ bt/ ec/");
+        logic.execute("edit 1 e/ note/ t/ dob/ bt/ ec/ all/ alc/ smk/");
         Person clearedPerson = new PersonBuilder(AMY).withEmail("").withNote("").withTags()
-                .withDateOfBirth("").withBloodType("").withEmergencyContact("").build();
+                .withDateOfBirth("").withBloodType("").withEmergencyContact("")
+                .withAllergies("").withAlcoholHistory("").withSmokingStatus("").build();
         assertPersistedPatient(clearedPerson);
 
         logic.execute("prev 1");

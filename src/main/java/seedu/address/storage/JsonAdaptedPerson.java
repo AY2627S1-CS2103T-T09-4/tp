@@ -11,6 +11,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.person.Address;
+import seedu.address.model.person.AlcoholHistory;
+import seedu.address.model.person.Allergies;
 import seedu.address.model.person.BloodType;
 import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.Email;
@@ -19,6 +21,7 @@ import seedu.address.model.person.Name;
 import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
+import seedu.address.model.person.SmokingStatus;
 import seedu.address.model.person.VisitDate;
 import seedu.address.model.tag.Tag;
 
@@ -32,6 +35,9 @@ class JsonAdaptedPerson {
     private final String name;
     private final String dateOfBirth;
     private final String bloodType;
+    private final String allergies;
+    private final String alcoholHistory;
+    private final String smokingStatus;
     private final String phone;
     private final String email;
     private final String address;
@@ -42,52 +48,13 @@ class JsonAdaptedPerson {
     private final List<JsonAdaptedTag> tags = new ArrayList<>();
 
     /**
-     * Constructs a {@code JsonAdaptedPerson} with the given person details.
-     */
-    public JsonAdaptedPerson(String name, String phone, String email, String address,
-            String visitDate, String note, List<JsonAdaptedTag> tags) {
-        this(name, phone, email, address, visitDate, null, note, null, tags);
-    }
-
-    /**
-     * Constructs a stored patient without previous visit dates.
-     */
-    public JsonAdaptedPerson(String name, String phone, String email, String address,
-            String visitDate, String note, String emergencyContact, List<JsonAdaptedTag> tags) {
-        this(name, phone, email, address, visitDate, null, note, emergencyContact, tags);
-    }
-
-    /**
-     * Constructs a stored patient without an emergency contact.
-     */
-    public JsonAdaptedPerson(String name, String phone, String email, String address,
-            String visitDate, List<String> previousVisitDates, String note, List<JsonAdaptedTag> tags) {
-        this(name, phone, email, address, visitDate, previousVisitDates, note, null, tags);
-    }
-
-    /**
-     * Constructs a stored patient without blood type.
-     */
-    public JsonAdaptedPerson(String name, String phone, String email, String address, String visitDate,
-            List<String> previousVisitDates, String note, String emergencyContact, List<JsonAdaptedTag> tags) {
-        this(name, null, phone, email, address, visitDate, previousVisitDates, note, emergencyContact, tags);
-    }
-
-    /**
-     * Constructs a stored patient without a date of birth.
-     */
-    public JsonAdaptedPerson(String name, String bloodType, String phone, String email, String address,
-            String visitDate, List<String> previousVisitDates, String note, String emergencyContact,
-            List<JsonAdaptedTag> tags) {
-        this(name, null, bloodType, phone, email, address, visitDate, previousVisitDates, note, emergencyContact, tags);
-    }
-
-    /**
-     * Constructs an adapted patient, accepting missing optional fields in older files.
+     * Constructs an adapted patient from JSON properties, accepting missing optional fields in older files.
      */
     @JsonCreator
     public JsonAdaptedPerson(@JsonProperty("name") String name,
             @JsonProperty("dateOfBirth") String dateOfBirth, @JsonProperty("bloodType") String bloodType,
+            @JsonProperty("allergies") String allergies, @JsonProperty("alcoholHistory") String alcoholHistory,
+            @JsonProperty("smokingStatus") String smokingStatus,
             @JsonProperty("phone") String phone,
             @JsonProperty("email") String email, @JsonProperty("address") String address,
             @JsonProperty("visitDate") String visitDate,
@@ -97,6 +64,9 @@ class JsonAdaptedPerson {
         this.name = name;
         this.dateOfBirth = dateOfBirth;
         this.bloodType = bloodType;
+        this.allergies = allergies;
+        this.alcoholHistory = alcoholHistory;
+        this.smokingStatus = smokingStatus;
         this.phone = phone;
         this.email = email;
         this.address = address;
@@ -118,6 +88,9 @@ class JsonAdaptedPerson {
         name = source.getName().fullName;
         dateOfBirth = source.getDateOfBirth().toString();
         bloodType = source.getBloodType().toString();
+        allergies = source.getAllergies().toString();
+        alcoholHistory = source.getAlcoholHistory().toString();
+        smokingStatus = source.getSmokingStatus().toString();
         phone = source.getPhone().value;
         email = source.getEmail().value;
         address = source.getAddress().value;
@@ -205,11 +178,20 @@ class JsonAdaptedPerson {
         }
         final EmergencyContact modelEmergencyContact = new EmergencyContact(storedContact);
 
+        final Allergies modelAllergies = new Allergies(allergies == null ? "" : allergies);
+        final AlcoholHistory modelAlcoholHistory = new AlcoholHistory(alcoholHistory == null ? "" : alcoholHistory);
+        final SmokingStatus modelSmokingStatus;
+        try {
+            modelSmokingStatus = SmokingStatus.fromString(smokingStatus == null ? "" : smokingStatus);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalValueException(SmokingStatus.MESSAGE_CONSTRAINTS, exception);
+        }
         final Set<Tag> modelTags = new HashSet<>(personTags);
         final List<VisitDate> modelPreviousVisitDates = parsePreviousVisitDates();
         try {
-            return new Person(modelName, modelDateOfBirth, modelBloodType, modelPhone, modelEmail, modelAddress,
-                    modelVisitDate, modelPreviousVisitDates, modelNote, modelEmergencyContact, modelTags);
+            return new Person(modelName, modelDateOfBirth, modelBloodType, modelAllergies, modelAlcoholHistory,
+                    modelSmokingStatus, modelPhone, modelEmail, modelAddress, modelVisitDate, modelPreviousVisitDates,
+                    modelNote, modelEmergencyContact, modelTags);
         } catch (IllegalArgumentException e) {
             throw new IllegalValueException(Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS, e);
         }

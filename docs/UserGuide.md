@@ -35,7 +35,7 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 
    * `list` : Lists all patients.
 
-   * `add n/John Doe dob/15/6/1990 bt/A+ p/98765432 e/johnd@example.com a/John street, block 123, #01-01 vd/18/9/2026 1000` : Adds a patient named `John Doe` to Doc.
+   * `add n/John Doe dob/15/6/1990 bt/A+ all/Penicillin; latex alc/Occasional drinking smk/former p/98765432 e/johnd@example.com a/John street, block 123, #01-01 vd/18/9/2026 1000` : Adds a patient named `John Doe` to Doc.
 
    * `delete 3` : Asks for confirmation before deleting the 3rd patient shown in the current list.
 
@@ -146,13 +146,13 @@ Format: `help`
 
 Adds a patient record to Doc.
 
-Format: `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]... `
+Format: `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]... `
 
 * `VISIT_DATE` must be a date and time in the format `d/M/yyyy HHmm`, e.g. `18/9/2026 1000`. Past dates are allowed.
 * Each current or previous visit date and time must be unique across patients. If another patient's visit record
   already uses the supplied date and time, including a patient hidden by filtering, the addition is rejected,
   the existing patient is shown in the patient details panel, and the app asks you to choose a different slot.
-* Date of birth, blood type, `EMAIL`, `NOTES`, and the emergency contact are optional.
+* Date of birth, blood type, allergies, alcohol history, smoking status, `EMAIL`, `NOTES`, and the emergency contact are optional.
 * Use `ec/[NAME, ]PHONE_NUMBER` to record one emergency contact, e.g. `ec/Mary Tan, 98765432`.
   The phone number is required; the name is optional. Use `ec/98765432` when the name is unknown.
   When supplying a name, include exactly one comma between the name and phone number.
@@ -170,6 +170,21 @@ Format: `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] p/PHONE_NUMBER a/ADDRESS vd/VISIT
   Letter case is ignored and surrounding whitespace is trimmed; `bt/ab-` is stored as `AB-`.
   Omitting `bt/` leaves blood type unrecorded. An empty or repeated `bt/` is rejected when adding a patient.
   Blood type does not affect duplicate-patient detection. Older saved records without blood type still load.
+* Use `all/ALLERGIES` to record free-text allergy information, e.g. `all/Penicillin; latex`.
+  Surrounding whitespace is removed; internal spacing, punctuation, and letter case are preserved.
+  Omitting `all/` leaves allergy information unrecorded. An empty, whitespace-only, or repeated `all/` is rejected on add.
+  An unrecorded field does not mean no known allergies. Record `all/No known allergies` explicitly when appropriate.
+  The examples place `all/` before `alc/` and `smk/`; prefixes can still appear in any order.
+* Use `alc/ALCOHOL_HISTORY` to record free-text alcohol history, e.g. `alc/Occasional drinking`.
+  Surrounding whitespace is removed; internal spacing, punctuation, and letter case are preserved.
+  Omitting `alc/` leaves the history unrecorded. An empty, whitespace-only, or repeated `alc/` is rejected on add.
+  An unrecorded history is distinct from an explicit `alc/Does not drink`.
+  The examples place `alc/` immediately after `all/`; prefixes can still appear in any order.
+* Use `smk/STATUS` to record smoking status: `never`, `former`, `current`, or `unknown`.
+  Letter case is ignored and surrounding whitespace is trimmed; `smk/ FORMER ` is stored as `former`.
+  Omitting `smk/` leaves the status unrecorded. Explicit `smk/unknown` records that the status is unknown;
+  it is distinct from having no record. Blank values, unsupported statuses, and repeated `smk/` are rejected on add.
+  The examples place `smk/` immediately after `alc/`; prefixes can still appear in any order.
 * On success, the app shows `Added patient NAME` and the new patient appears in the list.
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
 * A patient with the same normalized name and phone number as an existing patient is a duplicate and cannot be added.
@@ -210,7 +225,7 @@ Visit-time conflict detection has these limitations:
 </box>
 
 Examples:
-* `add n/John Doe dob/15/6/1990 bt/A+ p/98765432 a/John street, block 123, #01-01 vd/18/9/2026 1000 e/JohnDoe@gmail.com note/This man is sick`
+* `add n/John Doe dob/15/6/1990 bt/A+ all/Penicillin; latex alc/Occasional drinking smk/former p/98765432 a/John street, block 123, #01-01 vd/18/9/2026 1000 e/JohnDoe@gmail.com note/This man is sick`
 * `add n/John Tan p/91234567 a/123 Clementi Road vd/22/10/2026 1000 ec/Mary Tan, 98765432`
 * `add n/Betsy Crowe t/friend a/Newgate Prison p/1234567 vd/1/10/2026 1430 t/criminal`
 
@@ -297,6 +312,15 @@ Format: `view INDEX`
 * Viewing a patient does not change their stored details.
 * Recorded blood type appears below the date of birth (or directly below the name when DOB is absent) as
   `Blood type: A+` in both the left-hand patient list and the right-hand details panel. The row is hidden without reserving space when blood type is unrecorded.
+* Recorded allergies appear immediately below blood type and before alcohol history and smoking status in the
+  right-hand details panel as `Allergies: Penicillin; latex`. The row is hidden when allergy information is unrecorded.
+  An explicit `No known allergies` entry remains visible.
+* Recorded alcohol history appears below allergies in the right-hand details panel as
+  `Alcohol history: Occasional drinking`. If allergies are absent, it follows the preceding visible field.
+  The alcohol history row is hidden without reserving space when unrecorded; the left-hand patient cards stay compact.
+* Recorded smoking status appears immediately below alcohol history in the right-hand details panel as
+  `Smoking status: former`. If alcohol history is absent, it follows the preceding visible field.
+  An explicit `unknown` status is displayed; the row is hidden without reserving space when unrecorded.
 * After editing a patient, run `view INDEX` again to refresh the selected patient's details.
 
 * If an emergency contact is recorded, it appears directly below the patient's phone number as
@@ -310,7 +334,7 @@ Example:
 
 Edits an existing patient record in Doc.
 
-Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [p/PHONE] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`
+Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [p/PHONE] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`
 
 * Edits the patient at the specified `INDEX`. The index refers to the index number shown in the displayed patient
   list. The index **must be a positive integer** 1, 2, 3, ...
@@ -325,6 +349,18 @@ Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [p/PHONE] [ec/[NAME, ]PH
   Use an empty `bt/`, e.g. `edit 1 bt/`, to clear it; whitespace-only values also clear it.
   Repeated `bt/` prefixes are rejected, including identical or empty values.
 
+* Use `all/ALLERGIES` to add or replace allergy information, e.g. `edit 1 all/Penicillin; latex alc/Does not drink`.
+  Omitting `all/` preserves existing information. Use `edit 1 all/` to clear it; whitespace-only values also clear it.
+  Clearing an already unrecorded field succeeds. Repeated `all/` prefixes are rejected, including blank values.
+  Clearing allergies does not record `No known allergies`. Other patient details and visit history are preserved.
+* Use `alc/ALCOHOL_HISTORY` to add or replace alcohol history, e.g. `edit 1 bt/A+ alc/Does not drink`.
+  Omitting `alc/` preserves the current history. Use `edit 1 alc/` to clear it; whitespace-only values also clear it.
+  Clearing an already unrecorded value succeeds. Repeated `alc/` prefixes are rejected, including empty values.
+  Other patient details and visit history are preserved.
+* Use `smk/STATUS` to add or replace smoking status, e.g. `edit 1 alc/Does not drink smk/never`.
+  The same supported values and normalization as `add` apply. Omitting `smk/` preserves the current status.
+  Use `edit 1 smk/` to clear it; whitespace-only values also clear it, including an already unrecorded status.
+  Unsupported statuses and repeated `smk/` prefixes are rejected. Other patient details and visit history are preserved.
 * Use `ec/[NAME, ]PHONE_NUMBER` to add or replace the emergency contact, e.g. `edit 1 ec/Mary Tan, 98765432`.
   Use `edit 1 ec/98765432` when no contact name is known. Nonempty values follow the same validation rules as `add`.
   Omitting `ec/` preserves the existing contact.
@@ -447,7 +483,7 @@ Format: `prev INDEX`
 * Rollback is allowed even when the current or restored datetime is in the future. It does not apply `next`'s
   clock restrictions and does not ask for confirmation.
 * Rollback also works after an intervening `edit`. It preserves the patient's latest name, contact details,
-  address, note, and tags; it restores only visit-date state.
+  address, allergies, alcohol history, smoking status, note, and tags; it restores only visit-date state.
 * Success shows `Visit date restored for NAME: RESTORED_DATETIME` followed by
   `Discarded visit date and time: DISCARDED_DATETIME` on the next line. Both values include the time.
   It saves the record. Follow the [visit-record interaction rules](#visit-records) to find the patient and refresh details.
@@ -623,10 +659,10 @@ Doc home folder.
 
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-**Add**    | `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
+**Add**    | `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
-**Edit**   | `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [p/PHONE_NUMBER] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
+**Edit**   | `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [p/PHONE_NUMBER] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
 **Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`<br> e.g., `find n/James Jake a/clementi`, `find vd/18/9/2026`, `find note/insulin`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (current visit must have arrived; choose an available future appointment)

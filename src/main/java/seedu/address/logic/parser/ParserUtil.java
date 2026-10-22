@@ -10,12 +10,15 @@ import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.Address;
+import seedu.address.model.person.AlcoholHistory;
+import seedu.address.model.person.Allergies;
 import seedu.address.model.person.BloodType;
 import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Phone;
+import seedu.address.model.person.SmokingStatus;
 import seedu.address.model.person.VisitDate;
 import seedu.address.model.tag.Tag;
 
@@ -77,6 +80,52 @@ public class ParserUtil {
             throw new ParseException(DateOfBirth.MESSAGE_CONSTRAINTS);
         }
         return new DateOfBirth(trimmedDate);
+    }
+
+    /**
+     * Parses recorded allergy information, trimming surrounding whitespace and rejecting blank input.
+     *
+     * @throws ParseException If the supplied allergy information is blank.
+     * @throws NullPointerException If the supplied allergy information is null.
+     */
+    public static Allergies parseAllergies(String allergies) throws ParseException {
+        Allergies parsedAllergies = new Allergies(allergies);
+        if (parsedAllergies.isEmpty()) {
+            throw new ParseException(Allergies.MESSAGE_CONSTRAINTS);
+        }
+        return parsedAllergies;
+    }
+
+    /**
+     * Parses recorded alcohol history, trimming surrounding whitespace and rejecting blank input.
+     *
+     * @throws ParseException If the supplied history is blank.
+     * @throws NullPointerException If the supplied history is null.
+     */
+    public static AlcoholHistory parseAlcoholHistory(String alcoholHistory) throws ParseException {
+        AlcoholHistory parsedHistory = new AlcoholHistory(alcoholHistory);
+        if (parsedHistory.isEmpty()) {
+            throw new ParseException(AlcoholHistory.MESSAGE_CONSTRAINTS);
+        }
+        return parsedHistory;
+    }
+
+    /**
+     * Parses a recorded smoking status, rejecting blank or unsupported values.
+     *
+     * @throws ParseException If the supplied status is blank or unsupported.
+     * @throws NullPointerException If the supplied status is null.
+     */
+    public static SmokingStatus parseSmokingStatus(String smokingStatus) throws ParseException {
+        try {
+            SmokingStatus parsedStatus = SmokingStatus.fromString(smokingStatus);
+            if (parsedStatus.isEmpty()) {
+                throw new ParseException(SmokingStatus.MESSAGE_CONSTRAINTS);
+            }
+            return parsedStatus;
+        } catch (IllegalArgumentException exception) {
+            throw new ParseException(SmokingStatus.MESSAGE_CONSTRAINTS, exception);
+        }
     }
 
     /**

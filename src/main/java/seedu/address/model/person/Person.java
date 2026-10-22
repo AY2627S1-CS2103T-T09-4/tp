@@ -29,6 +29,9 @@ public class Person {
     // Data fields
     private final DateOfBirth dateOfBirth;
     private final BloodType bloodType;
+    private final Allergies allergies;
+    private final AlcoholHistory alcoholHistory;
+    private final SmokingStatus smokingStatus;
     private final Email email;
     private final Address address;
     private final VisitDate visitDate;
@@ -102,19 +105,53 @@ public class Person {
     }
 
     /**
+     * Creates a patient without recorded alcohol history.
+     */
+    public Person(Name name, DateOfBirth dateOfBirth, BloodType bloodType, Phone phone, Email email,
+            Address address, VisitDate visitDate, List<VisitDate> previousVisitDates, Note note,
+            EmergencyContact emergencyContact, Set<Tag> tags) {
+        this(name, dateOfBirth, bloodType, new AlcoholHistory(""), phone, email, address, visitDate,
+                previousVisitDates, note, emergencyContact, tags);
+    }
+
+    /**
+     * Creates a patient without recorded smoking status.
+     */
+    public Person(Name name, DateOfBirth dateOfBirth, BloodType bloodType, AlcoholHistory alcoholHistory,
+            Phone phone, Email email, Address address, VisitDate visitDate, List<VisitDate> previousVisitDates,
+            Note note, EmergencyContact emergencyContact, Set<Tag> tags) {
+        this(name, dateOfBirth, bloodType, alcoholHistory, SmokingStatus.UNRECORDED, phone, email, address,
+                visitDate, previousVisitDates, note, emergencyContact, tags);
+    }
+
+    /**
+     * Creates a patient without recorded allergy information.
+     */
+    public Person(Name name, DateOfBirth dateOfBirth, BloodType bloodType, AlcoholHistory alcoholHistory,
+            SmokingStatus smokingStatus, Phone phone, Email email, Address address, VisitDate visitDate,
+            List<VisitDate> previousVisitDates, Note note, EmergencyContact emergencyContact, Set<Tag> tags) {
+        this(name, dateOfBirth, bloodType, new Allergies(""), alcoholHistory, smokingStatus, phone, email,
+                address, visitDate, previousVisitDates, note, emergencyContact, tags);
+    }
+
+    /**
      * Creates a patient with all optional details and an immutable oldest-first visit history.
      *
      * @throws NullPointerException If any field or previous visit date is null.
      * @throws IllegalArgumentException If previous dates are not strictly increasing or any is at or after
      *     the current visit date.
      */
-    public Person(Name name, DateOfBirth dateOfBirth, BloodType bloodType, Phone phone, Email email,
-            Address address, VisitDate visitDate,
-            List<VisitDate> previousVisitDates, Note note, EmergencyContact emergencyContact, Set<Tag> tags) {
-        requireAllNonNull(name, dateOfBirth, bloodType, phone, email, address, visitDate, previousVisitDates, note,
-                emergencyContact, tags);
+    public Person(Name name, DateOfBirth dateOfBirth, BloodType bloodType, Allergies allergies,
+            AlcoholHistory alcoholHistory, SmokingStatus smokingStatus, Phone phone, Email email, Address address,
+            VisitDate visitDate, List<VisitDate> previousVisitDates, Note note, EmergencyContact emergencyContact,
+            Set<Tag> tags) {
+        requireAllNonNull(name, dateOfBirth, bloodType, allergies, alcoholHistory, smokingStatus, phone, email,
+                address, visitDate, previousVisitDates, note, emergencyContact, tags);
         this.dateOfBirth = dateOfBirth;
         this.bloodType = bloodType;
+        this.allergies = allergies;
+        this.alcoholHistory = alcoholHistory;
+        this.smokingStatus = smokingStatus;
         List<VisitDate> copiedPreviousVisitDates = List.copyOf(previousVisitDates);
         validatePreviousVisitDates(copiedPreviousVisitDates, visitDate);
         this.name = name;
@@ -151,6 +188,18 @@ public class Person {
 
     public BloodType getBloodType() {
         return bloodType;
+    }
+
+    public Allergies getAllergies() {
+        return allergies;
+    }
+
+    public AlcoholHistory getAlcoholHistory() {
+        return alcoholHistory;
+    }
+
+    public SmokingStatus getSmokingStatus() {
+        return smokingStatus;
     }
 
     public Phone getPhone() {
@@ -245,6 +294,9 @@ public class Person {
         return name.equals(otherPerson.name)
                 && dateOfBirth.equals(otherPerson.dateOfBirth)
                 && bloodType.equals(otherPerson.bloodType)
+                && allergies.equals(otherPerson.allergies)
+                && alcoholHistory.equals(otherPerson.alcoholHistory)
+                && smokingStatus.equals(otherPerson.smokingStatus)
                 && phone.equals(otherPerson.phone)
                 && email.equals(otherPerson.email)
                 && address.equals(otherPerson.address)
@@ -258,8 +310,8 @@ public class Person {
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(name, dateOfBirth, bloodType, phone, email, address, visitDate, previousVisitDates,
-                note, emergencyContact, tags);
+        return Objects.hash(name, dateOfBirth, bloodType, allergies, alcoholHistory, smokingStatus, phone, email,
+                address, visitDate, previousVisitDates, note, emergencyContact, tags);
     }
 
     @Override
@@ -268,6 +320,9 @@ public class Person {
                 .add("name", name)
                 .add("dateOfBirth", dateOfBirth)
                 .add("bloodType", bloodType)
+                .add("allergies", allergies)
+                .add("alcoholHistory", alcoholHistory)
+                .add("smokingStatus", smokingStatus)
                 .add("phone", phone)
                 .add("email", email)
                 .add("address", address)

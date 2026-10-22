@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Set;
 
 import seedu.address.model.person.Address;
+import seedu.address.model.person.AlcoholHistory;
+import seedu.address.model.person.Allergies;
 import seedu.address.model.person.BloodType;
 import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.Email;
@@ -14,6 +16,7 @@ import seedu.address.model.person.Name;
 import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
+import seedu.address.model.person.SmokingStatus;
 import seedu.address.model.person.VisitDate;
 import seedu.address.model.tag.Tag;
 import seedu.address.model.util.SampleDataUtil;
@@ -33,6 +36,9 @@ public class PersonBuilder {
     private Name name;
     private DateOfBirth dateOfBirth;
     private BloodType bloodType;
+    private Allergies allergies;
+    private AlcoholHistory alcoholHistory;
+    private SmokingStatus smokingStatus;
     private Phone phone;
     private Email email;
     private Address address;
@@ -49,6 +55,9 @@ public class PersonBuilder {
         name = new Name(DEFAULT_NAME);
         dateOfBirth = new DateOfBirth("");
         bloodType = BloodType.UNKNOWN;
+        allergies = new Allergies("");
+        alcoholHistory = new AlcoholHistory("");
+        smokingStatus = SmokingStatus.UNRECORDED;
         phone = new Phone(DEFAULT_PHONE);
         email = new Email(DEFAULT_EMAIL);
         address = new Address(DEFAULT_ADDRESS);
@@ -66,6 +75,9 @@ public class PersonBuilder {
         name = personToCopy.getName();
         dateOfBirth = personToCopy.getDateOfBirth();
         bloodType = personToCopy.getBloodType();
+        allergies = personToCopy.getAllergies();
+        alcoholHistory = personToCopy.getAlcoholHistory();
+        smokingStatus = personToCopy.getSmokingStatus();
         phone = personToCopy.getPhone();
         email = personToCopy.getEmail();
         address = personToCopy.getAddress();
@@ -97,6 +109,30 @@ public class PersonBuilder {
      */
     public PersonBuilder withBloodType(String bloodType) {
         this.bloodType = BloodType.fromString(bloodType);
+        return this;
+    }
+
+    /**
+     * Sets the optional allergy information of the patient being built.
+     */
+    public PersonBuilder withAllergies(String allergies) {
+        this.allergies = new Allergies(allergies);
+        return this;
+    }
+
+    /**
+     * Sets the optional alcohol history of the patient being built.
+     */
+    public PersonBuilder withAlcoholHistory(String alcoholHistory) {
+        this.alcoholHistory = new AlcoholHistory(alcoholHistory);
+        return this;
+    }
+
+    /**
+     * Sets the optional smoking status of the patient being built.
+     */
+    public PersonBuilder withSmokingStatus(String smokingStatus) {
+        this.smokingStatus = SmokingStatus.fromString(smokingStatus);
         return this;
     }
 
@@ -168,8 +204,8 @@ public class PersonBuilder {
      * Returns a patient with the configured details.
      */
     public Person build() {
-        return new Person(name, dateOfBirth, bloodType, phone, email, address, visitDate, previousVisitDates,
-                note, emergencyContact, tags);
+        return new Person(name, dateOfBirth, bloodType, allergies, alcoholHistory, smokingStatus, phone, email,
+                address, visitDate, previousVisitDates, note, emergencyContact, tags);
     }
 
 }

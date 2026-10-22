@@ -2,6 +2,8 @@ package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_ALCOHOL_HISTORY;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_ALLERGIES;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_BLOOD_TYPE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_DATE_OF_BIRTH;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
@@ -9,6 +11,7 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_EMERGENCY_CONTACT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_SMOKING_STATUS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_VISIT_DATE;
 
@@ -35,6 +38,9 @@ public class AddCommand extends Command {
             + PREFIX_NAME + "NAME "
             + "[" + PREFIX_DATE_OF_BIRTH + "DATE] "
             + "[" + PREFIX_BLOOD_TYPE + "BLOOD_TYPE] "
+            + "[" + PREFIX_ALLERGIES + "ALLERGIES] "
+            + "[" + PREFIX_ALCOHOL_HISTORY + "ALCOHOL_HISTORY] "
+            + "[" + PREFIX_SMOKING_STATUS + "STATUS] "
             + PREFIX_PHONE + "PHONE "
             + PREFIX_ADDRESS + "ADDRESS "
             + PREFIX_VISIT_DATE + "VISIT_DATE "
@@ -46,6 +52,9 @@ public class AddCommand extends Command {
             + PREFIX_NAME + "John Doe "
             + PREFIX_DATE_OF_BIRTH + "15/6/1990 "
             + PREFIX_BLOOD_TYPE + "A+ "
+            + PREFIX_ALLERGIES + "Penicillin; latex "
+            + PREFIX_ALCOHOL_HISTORY + "Occasional drinking "
+            + PREFIX_SMOKING_STATUS + "former "
             + PREFIX_PHONE + "98765432 "
             + PREFIX_EMAIL + "johnd@example.com "
             + PREFIX_ADDRESS + "311, Clementi Ave 2, #02-25 "
@@ -139,6 +148,9 @@ public class AddCommand extends Command {
         model.addPerson(toAdd);
         logger.fine(() -> "Added patient to model; optional fields recorded: dateOfBirth="
                 + !toAdd.getDateOfBirth().isEmpty() + ", bloodType=" + !toAdd.getBloodType().isEmpty()
+                + ", allergies=" + !toAdd.getAllergies().isEmpty()
+                + ", alcoholHistory=" + !toAdd.getAlcoholHistory().isEmpty()
+                + ", smokingStatus=" + !toAdd.getSmokingStatus().isEmpty()
                 + ", emergencyContact=" + !toAdd.getEmergencyContact().isEmpty());
         return new CommandResult(String.format(MESSAGE_SUCCESS, toAdd.getName()));
     }
