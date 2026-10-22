@@ -465,6 +465,82 @@ and 20 October are displayed in that order.
 layered over the current `FilteredList`, so the displayed patients are reordered without replacing the stored
 patient list. A later operation that resets the filter also clears this display-only ordering.
 
+### Finding patients by field
+
+`find` filters the displayed patient list by name, phone number, address, tag, visit date, and notes. Each field has
+its own prefix, and every keyword must follow one: `n/`, `p/`, `a/`, `t/`, `vd/`, or `note/`. Keywords given for one
+field match a patient if **any** of them matches, while different fields must **all** match. For example,
+`find n/m t/morning` lists patients with a name word starting with `m` who also have a tag starting with `morning`.
+
+#### Search criteria as predicates
+
+Each field is searched by its own `Predicate<Person>` class in the Model component, and
+`MatchesAllCriteriaPredicate` combines them. `FindCommand` stores this single combined predicate, so it does not need
+to know which fields were searched.
+
+<puml src="diagrams/FindPredicateClassDiagram.puml" alt="Classes used to represent find search criteria" width="650" />
+
+* `FieldContainsKeywordsPredicate` holds a field's keywords and implements `test` as "any keyword matches".
+  It also implements `equals`, `hashCode`, and `toString`, comparing exact classes so that, for example, a name
+  predicate and an address predicate with the same keywords are not equal. Each subclass only defines how one keyword
+  matches its field:
+  * `NameContainsKeywordsPredicate`, `AddressContainsKeywordsPredicate`, and `NoteContainsKeywordsPredicate` match
+    the start of any word, ignoring case, using `StringUtil#containsWordStartingWithIgnoreCase`.
+  * `PhoneContainsKeywordsPredicate` matches any part of the number, so remembered final digits are enough.
+  * `TagContainsKeywordsPredicate` matches the start of any tag, ignoring case.
+* `VisitDateOnDaysPredicate` does not extend the keyword base class because it stores parsed `LocalDate` values.
+  It matches a patient whose **current** visit falls on any given calendar day, at any time. Previous visit dates
+  are history, so they are not searched.
+* `MatchesAllCriteriaPredicate` returns true only when every criterion matches, which gives the `AND` behavior
+  across fields.
+
+#### Parsing and execution
+
+The sequence diagram below shows `find n/m t/morning`. The filtering loop is conceptual: the model's `FilteredList`
+evaluates the predicate for each stored patient whenever the displayed list is recomputed.
+
+<puml src="diagrams/FindSequenceDiagram.puml" alt="Interactions inside the Logic and Model components for find n/m t/morning" />
+
+`FindCommandParser#parse` handles the arguments in these steps:
+
+1. It replaces every run of whitespace, including tabs and line breaks, with one space. `ArgumentTokenizer` only
+   recognizes a prefix that follows a space, so without this step `n/alex<TAB>p/9123` would read `p/9123` as another
+   name keyword and silently drop the phone criterion. Keywords are split on whitespace anyway, so nothing is lost.
+1. It tokenizes the arguments, then rejects text before the first prefix with `MESSAGE_KEYWORDS_NEED_PREFIX` and
+   repeated prefixes with the shared duplicate-prefix error.
+1. For each prefix that is present, it splits the value into keywords and creates that field's predicate.
+   An empty prefix such as `n/` is rejected. Phone keywords must be digits. Visit dates are parsed strictly with
+   `VisitDate#DAY_INPUT_FORMATTER` (`d/M/yyyy`), so impossible dates and dates followed by a time are rejected and the
+   error names the invalid value.
+1. If no prefix was given, it shows the usage message; otherwise it wraps the predicates in a
+   `MatchesAllCriteriaPredicate` and returns a `FindCommand`.
+
+`FindCommand#execute` calls `Model#updateFilteredPersonList`, which also clears any `sort` ordering, and reports the
+number of matches. When nothing matches, the message lists every search prefix rather than a name-only hint, so the
+advice also suits phone, address, tag, visit date, and note searches.
+
+#### Design considerations
+
+**Aspect: how plain keywords such as `find alex` are handled**
+
+* **Alternative 1 (current choice):** Require a prefix for every keyword and reject plain keywords with an error that
+  shows how to search by name and by phone number.
+  * Pros: Every keyword visibly belongs to one field, so a search never mixes fields by accident.
+  * Cons: Users of the earlier name-only `find` must add `n/`.
+* **Alternative 2:** Treat keywords before the first prefix as name keywords.
+  * Pros: `find alex` keeps working.
+  * Cons: Two ways to search names, and mistakes such as a missing prefix silently become name searches.
+
+**Aspect: how fields are represented**
+
+* **Alternative 1 (current choice):** One predicate class per field, combined by `MatchesAllCriteriaPredicate`.
+  * Pros: Adding a field, as `vd/` and `note/` did, needs a new small class and one parser line, without changing
+    `FindCommand` or the existing predicates. Each predicate is tested on its own.
+  * Cons: More classes than a single predicate holding every field's keywords.
+* **Alternative 2:** One predicate that stores a keyword list for each field and checks them all.
+  * Pros: Fewer classes.
+  * Cons: Every new field changes the same class, and its `test` method grows with a branch per field.
+
 ### Scheduling the next visit
 
 `NextCommand` appends the current datetime to the previous-date list and sets the requested datetime as current,
@@ -1181,6 +1257,45 @@ Use a disposable data file. Start with no patients and use available visit slots
 1. Use `HelpWindowActionsTest` to simulate a browser exception, clipboard rejection, and clipboard exception without
    launching a browser or modifying the system clipboard. Expect specific fallback feedback, a readable URL,
    working alternative controls, successful retries, and a working Close button after each recoverable failure.
+
+### Finding patients
+
+Start with the seven sample patients by launching Doc from an empty folder. Run `list` before each step.
+
+1. Run `find n/m`.<br>
+   Expected: `3 patients found.` George Miller, Marcus Lim, and Mei Lin Tan are listed.
+
+1. Run `find n/george priya`.<br>
+   Expected: George Miller and Priya Nair are listed, because keywords for one field match any of them.
+
+1. Run `find n/m t/morning`.<br>
+   Expected: `1 patient found.` Only Mei Lin Tan is listed, because different fields must all match.
+
+1. Run `find p/8901`, `find a/tampines`, and `find note/review`.<br>
+   Expected: Noor Aziz; Marcus Lim; then George Miller and Marcus Lim.
+
+1. Run `find vd/15/10/2026`, then `find vd/14/10/2026 15/10/2026`, then `sort date`.<br>
+   Expected: Priya Nair; then Mei Lin Tan and Priya Nair, ordered by visit time after `sort date`.
+
+1. Run `find p/0000`.<br>
+   Expected: `No patients found.` followed by a hint listing every search prefix, and an empty list.
+
+1. Try each of these commands:
+
+   | Command | Expected feedback |
+   | --- | --- |
+   | `find` | Invalid command format, with find usage. |
+   | `find george` | A reminder to put a prefix before keywords, with find usage. |
+   | `find n/` | `Give at least one keyword after n/.` |
+   | `find n/george n/priya` | The duplicate-prefix error for `n/`. |
+   | `find p/9123abc` | `Phone keywords should only contain digits.` |
+   | `find vd/31/2/2026` | `"31/2/2026" is not a valid visit date.` with the date format. |
+   | `find vd/15/10/2026 0900` | `"0900" is not a valid visit date.` with the date format. |
+
+   Expected: Each rejected command leaves the displayed list unchanged.
+
+1. Paste `find n/george`, a tab character, and `p/0000` into the command box as one command, then press Enter.<br>
+   Expected: `No patients found.`, because the tab separates two fields and George Miller's phone does not match.
 
 ### Sorting visits by date
 
