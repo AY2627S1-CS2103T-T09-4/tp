@@ -1,0 +1,96 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+box Logic LOGIC_COLOR_T1
+participant ":LogicManager" as LogicManager LOGIC_COLOR
+participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
+participant ":FindCommandParser" as FindCommandParser LOGIC_COLOR
+participant "f:FindCommand" as FindCommand LOGIC_COLOR
+participant ":CommandResult" as CommandResult LOGIC_COLOR
+end box
+
+box Model MODEL_COLOR_T1
+participant "p:MatchesAllCriteriaPredicate" as Predicate MODEL_COLOR
+participant "m:Model" as Model MODEL_COLOR
+end box
+
+[-> LogicManager : execute("find n/m t/morning")
+activate LogicManager
+
+LogicManager -> AddressBookParser : parseCommand("find n/m t/morning")
+activate AddressBookParser
+
+create FindCommandParser
+AddressBookParser -> FindCommandParser
+activate FindCommandParser
+
+FindCommandParser --> AddressBookParser
+deactivate FindCommandParser
+
+AddressBookParser -> FindCommandParser : parse(" n/m t/morning")
+activate FindCommandParser
+
+note right of FindCommandParser
+  Builds one predicate per prefix,
+  here a name and a tag predicate
+end note
+
+create Predicate
+FindCommandParser -> Predicate : criteria
+activate Predicate
+
+Predicate --> FindCommandParser : p
+deactivate Predicate
+
+create FindCommand
+FindCommandParser -> FindCommand : p
+activate FindCommand
+
+FindCommand --> FindCommandParser : f
+deactivate FindCommand
+
+FindCommandParser --> AddressBookParser : f
+deactivate FindCommandParser
+'Hidden arrow to position the destroy marker below the end of the activation bar.
+FindCommandParser -[hidden]-> AddressBookParser
+destroy FindCommandParser
+
+AddressBookParser --> LogicManager : f
+deactivate AddressBookParser
+
+LogicManager -> FindCommand : execute(m)
+activate FindCommand
+
+FindCommand -> Model : updateFilteredPersonList(p)
+activate Model
+
+loop each stored patient
+  Model -> Predicate : test(patient)
+  activate Predicate
+  Predicate --> Model : true if every criterion matches
+  deactivate Predicate
+end
+
+Model --> FindCommand
+deactivate Model
+
+FindCommand -> Model : getFilteredPersonList()
+activate Model
+
+Model --> FindCommand : matching patients
+deactivate Model
+
+create CommandResult
+FindCommand -> CommandResult : "N patients found."
+activate CommandResult
+
+CommandResult --> FindCommand : r
+deactivate CommandResult
+
+FindCommand --> LogicManager : r
+deactivate FindCommand
+
+[<--LogicManager : r
+deactivate LogicManager
+@enduml
