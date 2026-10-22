@@ -2,7 +2,10 @@ package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_BLOOD_TYPE;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_DATE_OF_BIRTH;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_EMERGENCY_CONTACT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
@@ -16,7 +19,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.logging.Logger;
 
+import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.CollectionUtil;
 import seedu.address.commons.util.ToStringBuilder;
@@ -24,7 +29,10 @@ import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.person.Address;
+import seedu.address.model.person.BloodType;
+import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
@@ -44,13 +52,19 @@ public class EditCommand extends Command {
             + "Existing values will be overwritten by the input values.\n"
             + "Parameters: INDEX (must be a positive integer) "
             + "[" + PREFIX_NAME + "NAME] "
+            + "[" + PREFIX_DATE_OF_BIRTH + "DATE] "
+            + "[" + PREFIX_BLOOD_TYPE + "BLOOD_TYPE] "
             + "[" + PREFIX_PHONE + "PHONE] "
+            + "[" + PREFIX_EMERGENCY_CONTACT + "[NAME, ]PHONE_NUMBER] "
             + "[" + PREFIX_ADDRESS + "ADDRESS] "
             + "[" + PREFIX_VISIT_DATE + "DATE_TIME] "
             + "[" + PREFIX_EMAIL + "EMAIL] "
             + "[" + PREFIX_NOTE + "NOTES] "
             + "[" + PREFIX_TAG + "TAG]...\n"
             + "Example: " + COMMAND_WORD + " 1 "
+            + PREFIX_NAME + "John Doe "
+            + PREFIX_DATE_OF_BIRTH + "15/6/1990 "
+            + PREFIX_BLOOD_TYPE + "A+ "
             + PREFIX_PHONE + "91234567 "
             + PREFIX_VISIT_DATE + "8/10/2026 1000 "
             + PREFIX_EMAIL + "johndoe@example.com "
@@ -59,20 +73,27 @@ public class EditCommand extends Command {
     public static final String MESSAGE_EDIT_PERSON_SUCCESS = "Edited person: %1$s";
     public static final String MESSAGE_NOT_EDITED = "At least one field to edit must be provided.";
     public static final String MESSAGE_DUPLICATE_PERSON =
-            "A patient with the same name and phone number already exists in the address book.";
+            "A patient with the same name and phone number already exists in the address book. "
+                    + "The existing patient is shown in the patient details panel.";
     public static final String MESSAGE_DUPLICATE_VISIT_DATE =
-            "Another patient already has a current or previous visit at %1$s. Choose a different date and time.";
+            "Another patient already has a current or previous visit at %1$s. "
+                    + "The patient is shown in the patient details panel. Choose a different date and time.";
     public static final String MESSAGE_VISIT_DATE_NOT_AFTER_PREVIOUS =
             "The current visit date and time must be later than the latest previous visit (%1$s).";
     public static final String MESSAGE_CONFIRM_DUPLICATE_NAME =
-            "A patient named %1$s already exists. Apply this edit anyway? "
-                    + "Type y to confirm. Any other input cancels.";
+            "A patient named %1$s already exists. The matching patient is shown in the patient details panel. "
+                    + "Apply this edit anyway? Type y to confirm. Any other input cancels.";
+    public static final String MESSAGE_CONFIRM_DUPLICATE_NAMES =
+            "%2$d patients named %1$s already exist. Only one matching patient is shown in the patient details "
+                    + "panel. Apply this edit anyway? Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_CONFIRM_FULL_DAY =
             "Heads up: you already have %1$d visits on %2$s. Schedule %3$s on that day anyway? "
                     + "Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_EDIT_CANCELLED = "Edit cancelled.";
     public static final String MESSAGE_PERSON_NO_LONGER_EXISTS =
             "The person selected for editing no longer exists.";
+
+    private static final Logger logger = LogsCenter.getLogger(EditCommand.class);
 
     private final Index index;
     private final EditPersonDescriptor editPersonDescriptor;
@@ -110,10 +131,15 @@ public class EditCommand extends Command {
         validateNoConflicts(model, personToEdit, editedPerson);
 
         boolean isNormalizedNameChanged = !personToEdit.hasSameName(editedPerson);
-        if (isNormalizedNameChanged && model.hasPersonWithSameName(editedPerson)) {
-            String prompt = String.format(MESSAGE_CONFIRM_DUPLICATE_NAME, editedPerson.getName());
-            return requestConfirmation(prompt,
-                    confirmedModel -> editPersonAfterVisitDayCheck(confirmedModel, personToEdit, editedPerson));
+        if (isNormalizedNameChanged) {
+            List<Person> nameDuplicates =
+                    DuplicatePersonFinder.findNameDuplicates(model.getAddressBook(), editedPerson);
+            if (!nameDuplicates.isEmpty()) {
+                String prompt = formatDuplicateNamePrompt(editedPerson, nameDuplicates.size());
+                return requestConfirmation(prompt,
+                        confirmedModel -> editPersonAfterVisitDayCheck(confirmedModel, personToEdit, editedPerson),
+                        nameDuplicates.getFirst());
+            }
         }
 
         return editPersonAfterVisitDayCheck(model, personToEdit, editedPerson);
@@ -149,9 +175,25 @@ public class EditCommand extends Command {
      */
     private static CommandResult requestConfirmation(String prompt,
             CommandInputRequest.ConfirmedAction confirmedAction) {
-        CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(
-                prompt, MESSAGE_EDIT_CANCELLED, confirmedAction);
+        CommandInputRequest inputRequest = createConfirmationRequest(prompt, confirmedAction);
         return CommandResult.requestInput(inputRequest);
+    }
+
+    /**
+     * Returns a result that also displays one matching patient while requesting confirmation.
+     */
+    private static CommandResult requestConfirmation(String prompt,
+            CommandInputRequest.ConfirmedAction confirmedAction, Person personToView) {
+        CommandInputRequest inputRequest = createConfirmationRequest(prompt, confirmedAction);
+        return CommandResult.requestInput(inputRequest, personToView);
+    }
+
+    /**
+     * Returns a confirmation request that edits the person only after a {@code y} response.
+     */
+    private static CommandInputRequest createConfirmationRequest(String prompt,
+            CommandInputRequest.ConfirmedAction confirmedAction) {
+        return CommandInputRequest.createConfirmation(prompt, MESSAGE_EDIT_CANCELLED, confirmedAction);
     }
 
     /**
@@ -167,8 +209,21 @@ public class EditCommand extends Command {
         validateNoConflicts(model, personToEdit, editedPerson);
 
         model.setPerson(personToEdit, editedPerson);
+        logOptionalFieldUpdates();
         model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
         return new CommandResult(String.format(MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)));
+    }
+
+    /**
+     * Logs supplied optional-field updates after the model accepts the edit, without including patient values.
+     */
+    private void logOptionalFieldUpdates() {
+        editPersonDescriptor.getDateOfBirth().ifPresent(dateOfBirth -> logger.fine(dateOfBirth.isEmpty()
+                ? "Cleared patient date of birth in model" : "Set patient date of birth in model"));
+        editPersonDescriptor.getBloodType().ifPresent(bloodType -> logger.fine(bloodType.isEmpty()
+                ? "Cleared patient blood type in model" : "Set patient blood type in model"));
+        editPersonDescriptor.getEmergencyContact().ifPresent(emergencyContact -> logger.fine(emergencyContact.isEmpty()
+                ? "Cleared patient emergency contact in model" : "Set patient emergency contact in model"));
     }
 
     /**
@@ -176,13 +231,34 @@ public class EditCommand extends Command {
      */
     private static void validateNoConflicts(Model model, Person personToEdit, Person editedPerson)
             throws CommandException {
-        if (!personToEdit.isSamePerson(editedPerson) && model.hasPerson(editedPerson)) {
-            throw new CommandException(MESSAGE_DUPLICATE_PERSON);
+        if (!personToEdit.isSamePerson(editedPerson)) {
+            Optional<Person> identityDuplicate =
+                    DuplicatePersonFinder.findIdentityDuplicate(model.getAddressBook(), editedPerson);
+            if (identityDuplicate.isPresent()) {
+                throw new CommandException(MESSAGE_DUPLICATE_PERSON, identityDuplicate.get());
+            }
         }
 
-        if (model.hasPersonWithSameVisitDate(editedPerson, personToEdit)) {
-            throw new CommandException(String.format(MESSAGE_DUPLICATE_VISIT_DATE, editedPerson.getVisitDate()));
+        boolean isVisitDateChanged = !personToEdit.getVisitDate().equals(editedPerson.getVisitDate());
+        if (isVisitDateChanged) {
+            Optional<Person> visitDateDuplicate = DuplicatePersonFinder.findVisitDateDuplicate(
+                    model.getAddressBook(), editedPerson, personToEdit);
+            if (visitDateDuplicate.isPresent()) {
+                throw new CommandException(String.format(MESSAGE_DUPLICATE_VISIT_DATE, editedPerson.getVisitDate()),
+                        visitDateDuplicate.get());
+            }
         }
+    }
+
+    /**
+     * Returns a grammatically correct confirmation prompt for the duplicate-name matches.
+     */
+    private static String formatDuplicateNamePrompt(Person editedPerson, int duplicateCount) {
+        assert duplicateCount > 0;
+
+        return (duplicateCount == 1)
+                ? String.format(MESSAGE_CONFIRM_DUPLICATE_NAME, editedPerson.getName())
+                : String.format(MESSAGE_CONFIRM_DUPLICATE_NAMES, editedPerson.getName(), duplicateCount);
     }
 
     /**
@@ -196,11 +272,15 @@ public class EditCommand extends Command {
         assert personToEdit != null;
 
         Name updatedName = editPersonDescriptor.getName().orElse(personToEdit.getName());
+        DateOfBirth updatedDateOfBirth = editPersonDescriptor.getDateOfBirth().orElse(personToEdit.getDateOfBirth());
+        BloodType updatedBloodType = editPersonDescriptor.getBloodType().orElse(personToEdit.getBloodType());
         Phone updatedPhone = editPersonDescriptor.getPhone().orElse(personToEdit.getPhone());
         Email updatedEmail = editPersonDescriptor.getEmail().orElse(personToEdit.getEmail());
         Address updatedAddress = editPersonDescriptor.getAddress().orElse(personToEdit.getAddress());
         VisitDate updatedVisitDate = editPersonDescriptor.getVisitDate().orElse(personToEdit.getVisitDate());
         Note updatedNote = editPersonDescriptor.getNote().orElse(personToEdit.getNote());
+        EmergencyContact updatedEmergencyContact = editPersonDescriptor.getEmergencyContact()
+                .orElse(personToEdit.getEmergencyContact());
         Set<Tag> updatedTags = editPersonDescriptor.getTags().orElse(personToEdit.getTags());
 
         List<VisitDate> previousVisitDates = personToEdit.getPreviousVisitDates();
@@ -210,8 +290,8 @@ public class EditCommand extends Command {
                     previousVisitDates.getLast()));
         }
 
-        return new Person(updatedName, updatedPhone, updatedEmail, updatedAddress,
-                updatedVisitDate, previousVisitDates, updatedNote, updatedTags);
+        return new Person(updatedName, updatedDateOfBirth, updatedBloodType, updatedPhone, updatedEmail, updatedAddress,
+                updatedVisitDate, previousVisitDates, updatedNote, updatedEmergencyContact, updatedTags);
     }
 
     @Override
@@ -239,15 +319,19 @@ public class EditCommand extends Command {
 
     /**
      * Stores the details to edit the person with. Each supplied field replaces the corresponding
-     * value, including explicitly empty email, note, and tag values. Omitted fields remain unchanged.
+     * value, including explicitly empty date of birth, blood type, email, note, emergency contact, and tag values.
+     * Omitted fields remain unchanged.
      */
     public static class EditPersonDescriptor {
         private Name name;
+        private DateOfBirth dateOfBirth;
+        private BloodType bloodType;
         private Phone phone;
         private Email email;
         private Address address;
         private VisitDate visitDate;
         private Note note;
+        private EmergencyContact emergencyContact;
         private Set<Tag> tags;
 
         /**
@@ -261,11 +345,14 @@ public class EditCommand extends Command {
          */
         public EditPersonDescriptor(EditPersonDescriptor toCopy) {
             setName(toCopy.name);
+            setDateOfBirth(toCopy.dateOfBirth);
+            setBloodType(toCopy.bloodType);
             setPhone(toCopy.phone);
             setEmail(toCopy.email);
             setAddress(toCopy.address);
             setVisitDate(toCopy.visitDate);
             setNote(toCopy.note);
+            setEmergencyContact(toCopy.emergencyContact);
             setTags(toCopy.tags);
         }
 
@@ -273,7 +360,8 @@ public class EditCommand extends Command {
          * Returns true if at least one field is edited.
          */
         public boolean isAnyFieldEdited() {
-            return CollectionUtil.isAnyNonNull(name, phone, email, address, visitDate, note, tags);
+            return CollectionUtil.isAnyNonNull(name, dateOfBirth, bloodType, phone, email, address, visitDate,
+                    note, emergencyContact, tags);
         }
 
         public void setName(Name name) {
@@ -282,6 +370,22 @@ public class EditCommand extends Command {
 
         public Optional<Name> getName() {
             return Optional.ofNullable(name);
+        }
+
+        public void setDateOfBirth(DateOfBirth dateOfBirth) {
+            this.dateOfBirth = dateOfBirth;
+        }
+
+        public Optional<DateOfBirth> getDateOfBirth() {
+            return Optional.ofNullable(dateOfBirth);
+        }
+
+        public void setBloodType(BloodType bloodType) {
+            this.bloodType = bloodType;
+        }
+
+        public Optional<BloodType> getBloodType() {
+            return Optional.ofNullable(bloodType);
         }
 
         public void setPhone(Phone phone) {
@@ -314,6 +418,14 @@ public class EditCommand extends Command {
 
         public Optional<VisitDate> getVisitDate() {
             return Optional.ofNullable(visitDate);
+        }
+
+        public void setEmergencyContact(EmergencyContact emergencyContact) {
+            this.emergencyContact = emergencyContact;
+        }
+
+        public Optional<EmergencyContact> getEmergencyContact() {
+            return Optional.ofNullable(emergencyContact);
         }
 
         public void setNote(Note note) {
@@ -353,11 +465,14 @@ public class EditCommand extends Command {
             }
 
             return Objects.equals(name, otherEditPersonDescriptor.name)
+                    && Objects.equals(dateOfBirth, otherEditPersonDescriptor.dateOfBirth)
+                    && Objects.equals(bloodType, otherEditPersonDescriptor.bloodType)
                     && Objects.equals(phone, otherEditPersonDescriptor.phone)
                     && Objects.equals(email, otherEditPersonDescriptor.email)
                     && Objects.equals(address, otherEditPersonDescriptor.address)
                     && Objects.equals(visitDate, otherEditPersonDescriptor.visitDate)
                     && Objects.equals(note, otherEditPersonDescriptor.note)
+                    && Objects.equals(emergencyContact, otherEditPersonDescriptor.emergencyContact)
                     && Objects.equals(tags, otherEditPersonDescriptor.tags);
         }
 
@@ -365,11 +480,14 @@ public class EditCommand extends Command {
         public String toString() {
             return new ToStringBuilder(this)
                     .add("name", name)
+                    .add("dateOfBirth", dateOfBirth)
+                    .add("bloodType", bloodType)
                     .add("phone", phone)
                     .add("email", email)
                     .add("address", address)
                     .add("visitDate", visitDate)
                     .add("note", note)
+                    .add("emergencyContact", emergencyContact)
                     .add("tags", tags)
                     .toString();
         }

@@ -14,7 +14,8 @@ public class PersonBuilderTest {
 
     @Test
     public void build_copyWithOtherFieldsChanged_preservesVisitRecord() {
-        Person original = new PersonBuilder().withPreviousVisitDates("1/9/2026 1000", "2/9/2026 1000").build();
+        Person original = new PersonBuilder().withPreviousVisitDates("1/9/2026 1000", "2/9/2026 1000")
+                .withDateOfBirth("15/6/1990").withEmergencyContact("Mary Tan, 91234567").withBloodType("A+").build();
         Person copy = new PersonBuilder(original).build();
         Person edited = new PersonBuilder(original).withName("Changed Name").withPhone("91234567")
                 .withEmail("changed@example.com").withAddress("Changed address").withNote("Changed note")
@@ -24,6 +25,9 @@ public class PersonBuilderTest {
         assertNotEquals(original, edited);
         assertEquals(original.getVisitDate(), edited.getVisitDate());
         assertEquals(original.getPreviousVisitDates(), edited.getPreviousVisitDates());
+        assertEquals(original.getEmergencyContact(), edited.getEmergencyContact());
+        assertEquals(original.getBloodType(), edited.getBloodType());
+        assertEquals(original.getDateOfBirth(), edited.getDateOfBirth());
     }
 
     @Test

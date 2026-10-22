@@ -143,6 +143,30 @@ public class PersonTest {
     }
 
     @Test
+    public void constructor_withoutEmergencyContact_preservesOtherFields() {
+        Person expectedPerson = new PersonBuilder(ALICE)
+                .withNote("Monitor blood pressure")
+                .withTags("family", "priority")
+                .build();
+
+        Person person = new Person(expectedPerson.getName(), expectedPerson.getPhone(), expectedPerson.getEmail(),
+                expectedPerson.getAddress(), expectedPerson.getVisitDate(), expectedPerson.getNote(),
+                expectedPerson.getTags());
+
+        assertTrue(person.getEmergencyContact().isEmpty());
+        assertEquals(expectedPerson, person);
+    }
+
+    @Test
+    public void constructor_withoutBloodType_preservesExistingPatientDetails() {
+        Person patient = new Person(ALICE.getName(), ALICE.getPhone(), ALICE.getEmail(), ALICE.getAddress(),
+                ALICE.getVisitDate(), ALICE.getNote(), ALICE.getTags());
+
+        assertTrue(patient.getBloodType().isEmpty());
+        assertEquals(ALICE, patient);
+    }
+
+    @Test
     public void asObservableList_modifyList_throwsUnsupportedOperationException() {
         Person person = new PersonBuilder().build();
         assertThrows(UnsupportedOperationException.class, () -> person.getTags().remove(0));
@@ -223,6 +247,18 @@ public class PersonTest {
         Person editedAlice = new PersonBuilder(ALICE).withName(VALID_NAME_BOB).build();
         assertFalse(ALICE.equals(editedAlice));
 
+        // different date of birth changes data equality but preserves patient identity
+        editedAlice = new PersonBuilder(ALICE).withDateOfBirth("15/6/1990").build();
+        assertFalse(ALICE.equals(editedAlice));
+        assertTrue(ALICE.isSamePerson(editedAlice));
+
+        // different blood type changes data equality but preserves patient identity
+        editedAlice = new PersonBuilder(ALICE).withBloodType("A+").build();
+        assertFalse(ALICE.equals(editedAlice));
+        assertTrue(ALICE.isSamePerson(editedAlice));
+        assertEquals(editedAlice, new PersonBuilder(editedAlice).build());
+        assertEquals(editedAlice.hashCode(), new PersonBuilder(editedAlice).build().hashCode());
+
         // different phone -> returns false
         editedAlice = new PersonBuilder(ALICE).withPhone(VALID_PHONE_BOB).build();
         assertFalse(ALICE.equals(editedAlice));
@@ -242,11 +278,14 @@ public class PersonTest {
 
     @Test
     public void toStringMethod() {
-        String expected = Person.class.getCanonicalName() + "{name=" + ALICE.getName() + ", phone=" + ALICE.getPhone()
+        String expected = Person.class.getCanonicalName() + "{name=" + ALICE.getName()
+                + ", dateOfBirth=" + ALICE.getDateOfBirth()
+                + ", bloodType=" + ALICE.getBloodType()
+                + ", phone=" + ALICE.getPhone()
                 + ", email=" + ALICE.getEmail() + ", address=" + ALICE.getAddress()
                 + ", visitDate=" + ALICE.getVisitDate() + ", previousVisitDates=" + ALICE.getPreviousVisitDates()
                 + ", note=" + ALICE.getNote()
-                + ", tags=" + ALICE.getTags() + "}";
+                + ", emergencyContact=" + ALICE.getEmergencyContact() + ", tags=" + ALICE.getTags() + "}";
         assertEquals(expected, ALICE.toString());
     }
 
