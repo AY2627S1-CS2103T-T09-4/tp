@@ -23,9 +23,11 @@ import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.commands.HelpCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.NextCommand;
+import seedu.address.logic.commands.PrevCommand;
 import seedu.address.logic.commands.SortCommand;
 import seedu.address.logic.commands.ViewCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.person.MatchesAllCriteriaPredicate;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.VisitDate;
@@ -76,8 +78,9 @@ public class AddressBookParserTest {
     public void parseCommand_find() throws Exception {
         List<String> keywords = List.of("foo", "bar", "baz");
         FindCommand command = (FindCommand) parser.parseCommand(
-                FindCommand.COMMAND_WORD + " " + keywords.stream().collect(Collectors.joining(" ")));
-        assertEquals(new FindCommand(new NameContainsKeywordsPredicate(keywords)), command);
+                FindCommand.COMMAND_WORD + " n/" + keywords.stream().collect(Collectors.joining(" ")));
+        assertEquals(new FindCommand(new MatchesAllCriteriaPredicate(
+                List.of(new NameContainsKeywordsPredicate(keywords)))), command);
     }
 
     @Test
@@ -115,6 +118,25 @@ public class AddressBookParserTest {
     @Test
     public void parseCommand_nextCapitalized_preservesCommandCasePolicy() {
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("Next 1 1/11/2026 0930"));
+    }
+
+    @Test
+    public void parseCommand_prev() throws Exception {
+        PrevCommand expectedCommand = new PrevCommand(INDEX_FIRST_PERSON);
+        assertEquals(expectedCommand, parser.parseCommand("prev 1"));
+        assertEquals(expectedCommand, parser.parseCommand(" \tprev\t1  "));
+    }
+
+    @Test
+    public void parseCommand_barePrev_usesPrevUsage() {
+        String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, PrevCommand.MESSAGE_USAGE);
+        assertThrows(ParseException.class, expectedMessage, () -> parser.parseCommand("prev"));
+    }
+
+    @Test
+    public void parseCommand_oversizedPrevIndex_usesSpecificErrorAndPrevUsage() {
+        String expectedMessage = ParserUtil.MESSAGE_INDEX_TOO_LARGE + "\n" + PrevCommand.MESSAGE_USAGE;
+        assertThrows(ParseException.class, expectedMessage, () -> parser.parseCommand("prev 2147483648"));
     }
 
     @Test

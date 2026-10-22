@@ -78,15 +78,23 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 ### Visit records
 
 Each patient has one required **current visit date and time** and zero or more **previous visit dates**.
-Together, these form the patient's **visit record**.
+Together, these form the patient's **visit record**. The current datetime can be past, present, or future.
+Previous dates are stored oldest first and displayed newest first by [view](#viewing-a-patient-s-details-view).
+Notes belong to the patient; separate notes are not stored for each visit. Retained datetimes do not verify
+attendance, cancellation, or completion.
 
-* The current datetime may be in the past, present, or future. It stays stored until you change it using `edit` or `next`.
-* Previous datetimes are retained by `next` and stored oldest first. `view` displays them newest first.
-  `edit` preserves them, including when changing other details.
-* Notes belong to the patient record; separate notes are not stored for each previous datetime.
+Choose the command according to what you want to change:
 
-Use [view](#viewing-a-patient-s-details-view) to see the visit record. Retained datetimes do not verify attendance,
-cancellation, or completion.
+| Goal | Command | Effect on the visit record |
+| --- | --- | --- |
+| Correct or reschedule the current appointment. | [edit](#editing-a-patient-edit) `INDEX vd/DATETIME` | Replace the current datetime; keep previous dates unchanged. |
+| Plan the following visit after the current visit time has arrived. | [next](#scheduling-the-next-visit-next) `INDEX DATETIME` | Retain the old current datetime and set an unused future datetime. |
+| Restore the latest previous datetime. | [prev](#restoring-the-previous-visit-prev) `INDEX` | Remove the latest previous datetime from the list and use it to replace the current datetime; discard the replaced datetime. |
+| Leave a final visit recorded without planning another. | No command needed. | Keep the current datetime, including after it becomes past. |
+
+Successful `edit`, `next`, and `prev` commands show the full patient list in stored order, clearing filtering and
+sorting. The details panel continues showing the last record viewed. Check the newly displayed index and run
+`view INDEX` to refresh the record and its calendar label. To return to search results, run `find` again.
 
 ### Navigating command history
 
@@ -261,7 +269,7 @@ Format: `sort date [START_DATE]`
 * Visits earlier on the cutoff date remain in the first group because the cutoff applies to the whole calendar day.
 * Visual muting is always based on today's date, not `START_DATE`. A custom cutoff changes the order only.
 * Within the on-or-after and before-cutoff groups, visits are ordered by date and time, earliest first.
-* The command preserves the current displayed set. For example, `find Tan` followed by `sort date` sorts only the
+* The command preserves the current displayed set. For example, `find n/Tan` followed by `sort date` sorts only the
   matching patients.
 * Use the displayed indices for subsequent commands such as `edit` or `delete`.
 * `list` shows all patients again in stored order; a new `find` also returns its matches in stored order.
@@ -290,6 +298,12 @@ Format: `view INDEX`
 * The currently displayed patient list remains visible on the left.
 * The current visit date and time remain visible as `Visit date`. The `Previous visit dates:` section immediately
   below it lists retained datetimes in `d/M/yyyy HHmm` format, newest first and oldest last. The note follows.
+* A label beside the current datetime compares its calendar date with your computer's local date:
+  `Past` means before today, `Today` means today (including earlier or later times today), and `Upcoming` means
+  after today. For example, `Visit date: 21/10/2026 0900 (Today)` when viewed on 21 October 2026.
+* These labels do not indicate attendance or completion and do not change the time-based rules for `next`.
+  They update when you run `view`; run it again after midnight or a date change to refresh the details.
+  A visit later today shows `Today`; `next` still rejects it while its datetime is in the future.
 * A patient with no previous dates shows `No previous visit dates`. Scroll the details panel to read long records;
   all previous dates are included.
 * Viewing a patient does not change their stored details.
@@ -369,9 +383,7 @@ Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALC
 * Editing replaces the stored visit date and time; it does not append a visit-history entry.
   Use `edit ... vd/` to correct a missed or rescheduled appointment, or
   [next](#scheduling-the-next-visit-next) to schedule the following visit.
-* A successful edit restores the full patient list in stored order, clearing the filter and sort. Check the displayed
-  indices and run `view INDEX` again to refresh the details panel.
-* Existing values will be updated to the input values.
+* After editing, follow the [visit-record interaction rules](#visit-records) to find the patient and refresh details.
 * When editing tags, all of the patient's existing tags are removed; adding tags is not cumulative.
 * To remove all of a patient's tags, enter `t/` without a tag after it.
 * An edit that would give a patient the same normalized name and phone number as another patient is rejected.
@@ -420,12 +432,19 @@ Format: `next INDEX DATETIME`
   including hidden patients. Leading-zero dates compare equally: `1/11/2026 0930` and `01/11/2026 0930` are the same time.
 * Conflict detection covers identical start times, not visit duration, travel time, or partial overlaps.
   The [visit-time conflict limitations under add](#adding-a-patient-add) also apply.
+* When the requested appointment is on a different day that already has 7 or more visits, the app asks, e.g.
+  `Heads up: you already have 7 visits on Mon, 2 Nov 2026. Schedule Jane Tan's next visit on that day anyway? Type y
+  to confirm. Any other input cancels.` Type `y` and press Enter to schedule it; surrounding spaces and letter case
+  are ignored. Any other input shows `Scheduling cancelled.`, keeps the data unchanged, and is not run as a command.
+  If the requested time has passed, or another patient has taken it, by the time you enter `y`, the visit is not
+  scheduled and the usual error is shown.
+  A next visit later on the same day as the current visit does not ask, since that day's visit count does not grow.
 * Success appends the old current date and time to the previous dates, then sets the new current date and time.
   All other details, including empty optional fields, are preserved. Previous dates are saved in order in the
   JSON data file and appear below the current visit date when you run `view INDEX`.
 * If no further visit is planned, leave the current date and time unchanged, even after it passes.
-* Success shows `Next visit scheduled for patient NAME: DATETIME`, saves the record, and restores the full list in
-  stored order, clearing the filter and sort. Check the new indices; run `view` again to refresh the details panel.
+* Success shows `Next visit scheduled for patient NAME: DATETIME` and saves the record. Follow the
+  [visit-record interaction rules](#visit-records) to find the patient and refresh details.
 * Validation errors preserve data and the displayed list. A save failure reports a storage error; the in-memory
   appointment may already have changed.
 
@@ -445,28 +464,85 @@ The current time in the error uses `d/M/yyyy HHmm`, without seconds; validation 
 Examples (the selected patient's current visit must have arrived or passed; choose an unused future datetime):
 
 * `next 1 1/11/2026 0930` schedules the first displayed patient's next appointment for 1 November 2026 at 09:30.
-* `find Betsy`, then `next 1 2/11/2026 1430`, schedules the first matching patient and restores the full list.
+* `find n/Betsy`, then `next 1 2/11/2026 1430`, schedules the first matching patient and restores the full list.
 
-### Locating patients by name: `find`
+### Restoring the previous visit: `prev`
 
-Finds patients with a word in their name that starts with any of the given keywords.
+Restores the patient's latest previous visit date and time. Use this to roll back visit-date advancement;
+it does not undo changes to the patient's other details.
 
-Format: `find KEYWORD [MORE_KEYWORDS]`
+Format: `prev INDEX`
 
-* The search is case-insensitive; for example, `hans` matches `Hans`.
-* A keyword matches the start of any word in the name, whether first name or surname. For example, `m` matches
-  `George Miller`, `Marcus Lim`, and `Mei Lin Tan`, and `Han` matches `Hans`.
-* A keyword in the middle of a word does not match; for example, `ans` does not match `Hans`.
-* Keyword order does not matter; for example, `Hans Bo` matches `Bo Hans`.
-* The search considers only names.
-* Patients matching at least one keyword are returned (an `OR` search); for example, `Hans Bo` returns `Hans Gruber` and `Bo Yang`.
-* The app shows how many patients were found, e.g. `3 patients found.` If none match, it shows `No patients found.`
-  with a reminder of how keywords are matched.
+* Use a positive `INDEX` from the currently displayed list, including results of `find` or `sort date`.
+  Supply only the index, without a datetime or `vd/` prefix.
+* The current datetime is discarded and replaced with the latest previous datetime.
+  The restored datetime is removed from the previous-date list. There is no redo.
+* Rollback is allowed even when the current or restored datetime is in the future. It does not apply `next`'s
+  clock restrictions and does not ask for confirmation.
+* Rollback also works after an intervening `edit`. It preserves the patient's latest name, contact details,
+  address, allergies, alcohol history, smoking status, note, and tags; it restores only visit-date state.
+* Success shows `Visit date restored for NAME: RESTORED_DATETIME` followed by
+  `Discarded visit date and time: DISCARDED_DATETIME` on the next line. Both values include the time.
+  It saves the record. Follow the [visit-record interaction rules](#visit-records) to find the patient and refresh details.
+* Repeating `prev` restores one earlier datetime each time. When none remain, it reports
+  `Patient NAME has no previous visit dates to restore.` without changing data or the displayed list.
+* Missing, invalid, or additional arguments show usage. Oversized positive indices show `Index is too large.`
+  followed by guidance and usage. An index within the supported range but outside the displayed list shows
+  the invalid-index error. Rejected commands do not save changes.
+* A later `next` uses the restored state and still requires the current visit to have arrived or passed and the
+  requested datetime to be in the future. A save failure reports a storage error; the in-memory record may
+  already have changed.
+
+Example: suppose the clock reads `21/10/2026 1200`. Use globally unused replacement datetimes and Betsy's currently
+displayed `INDEX` for each command. Each row continues from the previous row:
+
+| Operation | Current datetime | Previous datetimes (stored oldest first) |
+| --- | --- | --- |
+| Initial record | `30/10/2026 1000` | `[10/10/2026 1000, 20/10/2026 1000]` |
+| `edit INDEX vd/1/11/2026 0930 note/Review medication` | `1/11/2026 0930` | `[10/10/2026 1000, 20/10/2026 1000]` |
+| `prev INDEX` | `20/10/2026 1000` | `[10/10/2026 1000]` |
+| `next INDEX 2/11/2026 0930` | `2/11/2026 0930` | `[10/10/2026 1000, 20/10/2026 1000]` |
+| `prev INDEX` | `20/10/2026 1000` | `[10/10/2026 1000]` |
+| `prev INDEX` again | `10/10/2026 1000` | `[]` |
+| `prev INDEX` again | Unchanged; no previous dates to restore. | `[]` |
+
+After the edit, the note remains `Review medication` through all later steps. The first rollback discards
+`1/11/2026 0930`; it does not restore the
+`30/10/2026 1000` replaced by the edit. The later `next` schedules a new appointment under its normal rules and
+does not act as redo. Repeated rollback eventually empties the previous-date list.
+
+### Locating patients: `find`
+
+Finds patients by name, phone number, address or tag.
+
+Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...]`
+
+* Give at least one field. Every keyword must follow a prefix; for example, use `find n/george`, not `find george`.
+* How each field matches (all case-insensitive):
+  * `n/`: the start of any word in the name, first name or surname. For example, `n/m` matches `George Miller`,
+    `Marcus Lim`, and `Mei Lin Tan`, but `n/ans` does not match `Hans`.
+  * `p/`: any part of the phone number, so the last few digits are enough. For example, `p/8901` matches `85678901`.
+    Phone keywords may contain only digits.
+  * `a/`: the start of any word in the address. For example, `a/tamp` matches `46 Tampines Street 21, #08-03`.
+  * `t/`: the start of any tag. For example, `t/morn` matches a patient tagged `morning`.
+* Several keywords for one field find patients matching **any** of them (an `OR` search); for example,
+  `n/george priya` returns `George Miller` and `Priya Nair`.
+* Different fields must **all** match (an `AND` search); for example, `n/m t/morning` returns only patients with a
+  name word starting with `m` who are tagged `morning`.
+* Fields can be given in any order, but each prefix can appear only once. Put several keywords after one prefix
+  instead, e.g. `n/george priya` rather than `n/george n/priya`.
+* Spaces, tabs or line breaks can separate fields; for example, `n/alex` and `p/9123` separated by a tab are still
+  two separate fields.
+* The app shows how many patients were found, e.g. `3 patients found.` If none match, it shows
+  `No patients found. Search with n/ for names, p/ for phone numbers, a/ for addresses, or t/ for tags.`
 
 Examples:
-* `find m` returns `George Miller`, `Marcus Lim`, and `Mei Lin Tan`
-* `find John` returns `john` and `John Doe`
-* `find george priya` returns `George Miller` and `Priya Nair`
+* `find n/m` returns `George Miller`, `Marcus Lim`, and `Mei Lin Tan`
+* `find n/george priya` returns `George Miller` and `Priya Nair`
+* `find p/8901` returns `Noor Aziz`, whose number ends in `8901`
+* `find a/tampines` returns `Marcus Lim`
+* `find n/m t/morning` returns `Mei Lin Tan`; `George Miller` and `Marcus Lim` also match `n/m` but are not tagged
+  `morning`
 
 ### Deleting a patient: `delete`
 
@@ -485,7 +561,7 @@ Format: `delete INDEX`
 
 Examples:
 * `list` followed by `delete 2`, then `y`, deletes the 2nd patient in Doc.
-* `find Betsy` followed by `delete 1`, then `y`, deletes the 1st patient in the results of the `find` command.
+* `find n/Betsy` followed by `delete 1`, then `y`, deletes the 1st patient in the results of the `find` command.
 
 ### Clearing all entries: `clear`
 
@@ -511,7 +587,8 @@ Format: `exit`
 
 ### Saving the data
 
-Doc automatically saves data after completed commands. Confirmation prompts, cancelled operations, and
+Doc automatically saves completed changes, including successful `add`, `edit`, `next`, and `prev` commands.
+`view` displays details without saving patient data. Confirmation prompts, cancelled operations, and
 `clear` when there are no patient records do not write a file because they do not change stored data. You do not need
 to save manually.
 
@@ -574,9 +651,10 @@ Action     | Format, Examples
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
 **Edit**   | `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [p/PHONE_NUMBER] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
-**Find**   | `find KEYWORD [MORE_KEYWORDS]`<br> e.g., `find James Jake`
+**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...]`<br> e.g., `find n/James Jake a/clementi`
 **List**   | `list`
-**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (use an available future appointment)
+**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (current visit must have arrived; choose an available future appointment)
+**Prev**   | `prev INDEX`<br> e.g., `prev 1` (requires a previous datetime; replaces and discards the current datetime; no redo)
 **Sort**   | `sort date [START_DATE]`<br> e.g., `sort date 18/9/2026`
-**View**   | `view INDEX`<br> e.g., `view 1`
+**View**   | `view INDEX`<br> e.g., `view 1` (refreshes details and the calendar label)
 **Help**   | `help`

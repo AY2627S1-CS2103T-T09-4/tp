@@ -18,8 +18,7 @@ public class NextCommandParser implements Parser<NextCommand> {
     public static final String MESSAGE_MISSING_ARGUMENTS = "Provide an index, date, and time in that order.";
     public static final String MESSAGE_EXTRA_ARGUMENTS = "Unexpected arguments after the visit time.";
     public static final String MESSAGE_PREFIX_NOT_SUPPORTED = "Use next INDEX DATETIME without the vd/ prefix.";
-    public static final String MESSAGE_INDEX_TOO_LARGE =
-            "Index is too large. Enter an index shown in the displayed patient list.";
+    public static final String MESSAGE_INDEX_TOO_LARGE = ParserUtil.MESSAGE_INDEX_TOO_LARGE;
 
     private static final int ARGUMENT_COUNT = 3;
 
@@ -75,20 +74,11 @@ public class NextCommandParser implements Parser<NextCommand> {
             return ParserUtil.parseIndex(argument);
         } catch (ParseException exception) {
             // A positive integer rejected by the shared parser exceeds the supported index range.
-            if (isPositiveInteger(argument)) {
+            if (ParserUtil.isPositiveInteger(argument)) {
                 throw usageError(MESSAGE_INDEX_TOO_LARGE);
             }
             throw usageError(exception.getMessage());
         }
-    }
-
-    /**
-     * Returns whether the input is a positive decimal integer, regardless of its size.
-     * Uses the same digit interpretation as Integer.parseInt without converting the numeric value.
-     */
-    private static boolean isPositiveInteger(String argument) {
-        return argument.chars().allMatch(character -> Character.digit(character, 10) >= 0)
-                && argument.chars().anyMatch(character -> Character.digit(character, 10) > 0);
     }
 
     private static ParseException usageError(String reason) {

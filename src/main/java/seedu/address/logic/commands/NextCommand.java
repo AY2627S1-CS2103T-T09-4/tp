@@ -10,7 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.logging.Logger;
 
+import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.Messages;
@@ -40,6 +42,14 @@ public class NextCommand extends Command {
     public static final String MESSAGE_DUPLICATE_VISIT_DATE =
             "Patient %1$s already has a current or previous visit at %2$s and is shown in the patient details panel. "
                     + "Choose a different date and time.";
+    public static final String MESSAGE_CONFIRM_FULL_DAY =
+            "Heads up: you already have %1$d visits on %2$s. Schedule %3$s's next visit on that day anyway? "
+                    + "Type y to confirm. Any other input cancels.";
+    public static final String MESSAGE_NEXT_CANCELLED = "Scheduling cancelled.";
+    public static final String MESSAGE_PERSON_NO_LONGER_EXISTS =
+            "The patient selected for scheduling no longer exists.";
+
+    private static final Logger logger = LogsCenter.getLogger(NextCommand.class);
 
     private final Index index;
     private final VisitDate visitDate;
@@ -66,6 +76,7 @@ public class NextCommand extends Command {
      * {@inheritDoc}
      * Appends the current visit to the previous dates, replaces it with the requested future visit,
      * and restores the full displayed list in stored order after validation.
+     * Asks for confirmation first if the requested day already has {@value Model#MAX_VISITS_PER_DAY} or more visits.
      */
     @Override
     public CommandResult execute(Model model) throws CommandException {
@@ -80,9 +91,7 @@ public class NextCommand extends Command {
 
         Person updatedPerson = createUpdatedPerson(personToUpdate);
         validateNoConflicts(model, personToUpdate, updatedPerson);
-        model.setPerson(personToUpdate, updatedPerson);
-        model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
-        return new CommandResult(String.format(MESSAGE_SUCCESS, updatedPerson.getName(), visitDate));
+        return scheduleVisitAfterVisitDayCheck(model, personToUpdate, updatedPerson);
     }
 
     /**
@@ -92,13 +101,71 @@ public class NextCommand extends Command {
     private Person createUpdatedPerson(Person personToUpdate) {
         List<VisitDate> previousVisitDates = new ArrayList<>(personToUpdate.getPreviousVisitDates());
         previousVisitDates.add(personToUpdate.getVisitDate());
-        return new Person(personToUpdate.getName(), personToUpdate.getDateOfBirth(),
+        Person updatedPerson = new Person(personToUpdate.getName(), personToUpdate.getDateOfBirth(),
                 personToUpdate.getBloodType(), personToUpdate.getAllergies(), personToUpdate.getAlcoholHistory(),
-                personToUpdate.getSmokingStatus(),
-                personToUpdate.getPhone(),
+                personToUpdate.getSmokingStatus(), personToUpdate.getPhone(),
                 personToUpdate.getEmail(), personToUpdate.getAddress(), visitDate,
                 previousVisitDates, personToUpdate.getNote(), personToUpdate.getEmergencyContact(),
                 personToUpdate.getTags());
+
+        assert updatedPerson.getPreviousVisitDates().size() == personToUpdate.getPreviousVisitDates().size() + 1
+                : "Exactly one visit date should be retained";
+        return updatedPerson;
+    }
+
+    /**
+     * Schedules the visit, first asking for confirmation if it moves to another day that already has
+     * {@value Model#MAX_VISITS_PER_DAY} or more visits. A next visit later on the same day as the current one
+     * never asks, since it replaces that day's visit instead of adding another.
+     *
+     * @throws CommandException If the visit cannot be scheduled.
+     */
+    private CommandResult scheduleVisitAfterVisitDayCheck(Model model, Person personToUpdate, Person updatedPerson)
+            throws CommandException {
+        boolean isVisitDayChanged = !personToUpdate.getVisitDate().isSameDay(visitDate);
+        int visitsOnNewDay = model.countPersonsWithSameVisitDay(updatedPerson);
+        if (!isVisitDayChanged || visitsOnNewDay < Model.MAX_VISITS_PER_DAY) {
+            return scheduleVisit(model, personToUpdate, updatedPerson);
+        }
+
+        logger.info("Requesting confirmation to schedule a visit on " + visitDate.toDayString()
+                + ", which already has " + visitsOnNewDay + " visits");
+        String prompt = String.format(MESSAGE_CONFIRM_FULL_DAY, visitsOnNewDay,
+                visitDate.toDayString(), updatedPerson.getName());
+        CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(prompt, MESSAGE_NEXT_CANCELLED,
+                confirmedModel -> scheduleConfirmedVisit(confirmedModel, personToUpdate, updatedPerson));
+        return CommandResult.requestInput(inputRequest);
+    }
+
+    /**
+     * Schedules the visit after the user confirms the full-day prompt.
+     * Rechecks the times first, since the requested appointment may have passed while the prompt was open.
+     *
+     * @throws CommandException If the appointment is no longer in the future or can no longer be scheduled.
+     */
+    private CommandResult scheduleConfirmedVisit(Model model, Person personToUpdate, Person updatedPerson)
+            throws CommandException {
+        validateVisitDate(personToUpdate);
+        return scheduleVisit(model, personToUpdate, updatedPerson);
+    }
+
+    /**
+     * Replaces the patient captured when this command was first executed and restores the full list.
+     * Checks again for conflicts, since the address book may have changed while confirmation was pending.
+     *
+     * @throws CommandException If the captured patient no longer exists or the visit now conflicts.
+     */
+    private CommandResult scheduleVisit(Model model, Person personToUpdate, Person updatedPerson)
+            throws CommandException {
+        if (!model.getAddressBook().getPersonList().contains(personToUpdate)) {
+            throw new CommandException(MESSAGE_PERSON_NO_LONGER_EXISTS);
+        }
+        validateNoConflicts(model, personToUpdate, updatedPerson);
+
+        model.setPerson(personToUpdate, updatedPerson);
+        model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
+        logger.fine("Scheduled next visit for " + updatedPerson.getName() + " at " + visitDate);
+        return new CommandResult(String.format(MESSAGE_SUCCESS, updatedPerson.getName(), visitDate));
     }
 
     /**

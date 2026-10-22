@@ -18,6 +18,8 @@ Class Address
 Class AlcoholHistory
 Class Allergies
 Enum SmokingStatus
+Enum BloodType
+Class DateOfBirth
 Class Email
 Class EmergencyContact
 Class Name
@@ -42,6 +44,8 @@ UserPrefs .up.|> ReadOnlyUserPrefs
 AddressBook *--> "1" UniquePersonList
 UniquePersonList --> "~* all" Person
 Person *--> Name
+Person *--> "1" DateOfBirth
+Person --> "1" BloodType
 Person *--> Phone
 Person *--> "1" EmergencyContact
 Person *--> Email
