@@ -48,78 +48,7 @@ class JsonAdaptedPerson {
     private final List<JsonAdaptedTag> tags = new ArrayList<>();
 
     /**
-     * Constructs a {@code JsonAdaptedPerson} with the given person details.
-     */
-    public JsonAdaptedPerson(String name, String phone, String email, String address,
-            String visitDate, String note, List<JsonAdaptedTag> tags) {
-        this(name, phone, email, address, visitDate, null, note, null, tags);
-    }
-
-    /**
-     * Constructs a stored patient without previous visit dates.
-     */
-    public JsonAdaptedPerson(String name, String phone, String email, String address,
-            String visitDate, String note, String emergencyContact, List<JsonAdaptedTag> tags) {
-        this(name, phone, email, address, visitDate, null, note, emergencyContact, tags);
-    }
-
-    /**
-     * Constructs a stored patient without an emergency contact.
-     */
-    public JsonAdaptedPerson(String name, String phone, String email, String address,
-            String visitDate, List<String> previousVisitDates, String note, List<JsonAdaptedTag> tags) {
-        this(name, phone, email, address, visitDate, previousVisitDates, note, null, tags);
-    }
-
-    /**
-     * Constructs a stored patient without blood type.
-     */
-    public JsonAdaptedPerson(String name, String phone, String email, String address, String visitDate,
-            List<String> previousVisitDates, String note, String emergencyContact, List<JsonAdaptedTag> tags) {
-        this(name, null, phone, email, address, visitDate, previousVisitDates, note, emergencyContact, tags);
-    }
-
-    /**
-     * Constructs a stored patient without a date of birth.
-     */
-    public JsonAdaptedPerson(String name, String bloodType, String phone, String email, String address,
-            String visitDate, List<String> previousVisitDates, String note, String emergencyContact,
-            List<JsonAdaptedTag> tags) {
-        this(name, null, bloodType, phone, email, address, visitDate, previousVisitDates, note, emergencyContact, tags);
-    }
-
-    /**
-     * Constructs an adapted patient, accepting missing optional fields in older files.
-     */
-    public JsonAdaptedPerson(String name, String dateOfBirth, String bloodType, String phone, String email,
-            String address, String visitDate, List<String> previousVisitDates, String note, String emergencyContact,
-            List<JsonAdaptedTag> tags) {
-        this(name, dateOfBirth, bloodType, null, phone, email, address, visitDate, previousVisitDates, note,
-                emergencyContact, tags);
-    }
-
-    /**
-     * Constructs an adapted patient, accepting missing optional fields in older files.
-     */
-    public JsonAdaptedPerson(String name, String dateOfBirth, String bloodType, String alcoholHistory,
-            String phone, String email, String address, String visitDate, List<String> previousVisitDates,
-            String note, String emergencyContact, List<JsonAdaptedTag> tags) {
-        this(name, dateOfBirth, bloodType, alcoholHistory, null, phone, email, address, visitDate,
-                previousVisitDates, note, emergencyContact, tags);
-    }
-
-    /**
-     * Constructs an adapted patient, accepting missing optional fields in older files.
-     */
-    public JsonAdaptedPerson(String name, String dateOfBirth, String bloodType, String alcoholHistory,
-            String smokingStatus, String phone, String email, String address, String visitDate,
-            List<String> previousVisitDates, String note, String emergencyContact, List<JsonAdaptedTag> tags) {
-        this(name, dateOfBirth, bloodType, null, alcoholHistory, smokingStatus, phone, email, address,
-                visitDate, previousVisitDates, note, emergencyContact, tags);
-    }
-
-    /**
-     * Constructs an adapted patient, accepting missing optional fields in older files.
+     * Constructs an adapted patient from JSON properties, accepting missing optional fields in older files.
      */
     @JsonCreator
     public JsonAdaptedPerson(@JsonProperty("name") String name,
