@@ -51,6 +51,7 @@
         "storage-component": "Storage component",
         "common-classes": "Common classes",
         "implementation": "Implementation",
+        "help-window": "Help window",
         "optional-emergency-contacts": "Optional emergency contacts",
         "visit-record-model": "Visit record model",
         "duplicate-patient-identity-visit-dates-and-name-confirmation": "Duplicate patient identity, visit dates, and name confirmation",
