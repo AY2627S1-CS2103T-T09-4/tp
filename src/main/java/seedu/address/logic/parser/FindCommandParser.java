@@ -6,7 +6,10 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_VISIT_DATE;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +23,8 @@ import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.PhoneContainsKeywordsPredicate;
 import seedu.address.model.person.TagContainsKeywordsPredicate;
+import seedu.address.model.person.VisitDate;
+import seedu.address.model.person.VisitDateOnDaysPredicate;
 
 /**
  * Parses input arguments and creates a new FindCommand object
@@ -28,6 +33,8 @@ public class FindCommandParser implements Parser<FindCommand> {
 
     public static final String MESSAGE_EMPTY_KEYWORDS = "Give at least one keyword after %1$s.";
     public static final String MESSAGE_INVALID_PHONE_KEYWORD = "Phone keywords should only contain digits.";
+    public static final String MESSAGE_INVALID_VISIT_DAY = "\"%1$s\" is not a valid visit date. "
+            + "Give dates without a time in the format d/M/yyyy, e.g. " + PREFIX_VISIT_DATE + "18/9/2026.";
 
     private static final String PHONE_KEYWORD_REGEX = "\\d+";
 
@@ -44,19 +51,22 @@ public class FindCommandParser implements Parser<FindCommand> {
         // so turning every whitespace run into one space loses nothing and lets tabs separate fields too.
         String normalizedArgs = args.replaceAll("\\s+", " ");
         ArgumentMultimap argMultimap =
-                ArgumentTokenizer.tokenize(normalizedArgs, PREFIX_NAME, PREFIX_PHONE, PREFIX_ADDRESS, PREFIX_TAG);
+                ArgumentTokenizer.tokenize(normalizedArgs, PREFIX_NAME, PREFIX_PHONE, PREFIX_ADDRESS, PREFIX_TAG,
+                        PREFIX_VISIT_DATE);
 
         if (!argMultimap.getPreamble().isEmpty()) {
             throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT,
                     FindCommand.MESSAGE_KEYWORDS_NEED_PREFIX + "\n" + FindCommand.MESSAGE_USAGE));
         }
-        argMultimap.verifyNoDuplicatePrefixesFor(PREFIX_NAME, PREFIX_PHONE, PREFIX_ADDRESS, PREFIX_TAG);
+        argMultimap.verifyNoDuplicatePrefixesFor(PREFIX_NAME, PREFIX_PHONE, PREFIX_ADDRESS, PREFIX_TAG,
+                PREFIX_VISIT_DATE);
 
         List<Predicate<Person>> criteria = new ArrayList<>();
         parseKeywords(argMultimap, PREFIX_NAME).map(NameContainsKeywordsPredicate::new).ifPresent(criteria::add);
         parsePhoneKeywords(argMultimap).map(PhoneContainsKeywordsPredicate::new).ifPresent(criteria::add);
         parseKeywords(argMultimap, PREFIX_ADDRESS).map(AddressContainsKeywordsPredicate::new).ifPresent(criteria::add);
         parseKeywords(argMultimap, PREFIX_TAG).map(TagContainsKeywordsPredicate::new).ifPresent(criteria::add);
+        parseVisitDays(argMultimap).map(VisitDateOnDaysPredicate::new).ifPresent(criteria::add);
 
         if (criteria.isEmpty()) {
             throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
@@ -95,5 +105,37 @@ public class FindCommandParser implements Parser<FindCommand> {
             throw new ParseException(MESSAGE_INVALID_PHONE_KEYWORD);
         }
         return phoneKeywords;
+    }
+
+    /**
+     * Returns the calendar days given after the visit date prefix, or an empty {@code Optional} if the prefix is
+     * absent.
+     *
+     * @throws ParseException If the prefix is present without dates or any date is not a valid d/M/yyyy date.
+     */
+    private static Optional<List<LocalDate>> parseVisitDays(ArgumentMultimap argMultimap) throws ParseException {
+        Optional<List<String>> dayKeywords = parseKeywords(argMultimap, PREFIX_VISIT_DATE);
+        if (dayKeywords.isEmpty()) {
+            return Optional.empty();
+        }
+
+        List<LocalDate> days = new ArrayList<>();
+        for (String dayKeyword : dayKeywords.get()) {
+            days.add(parseVisitDay(dayKeyword));
+        }
+        return Optional.of(days);
+    }
+
+    /**
+     * Parses one d/M/yyyy date, rejecting impossible dates such as 31/2/2026.
+     *
+     * @throws ParseException If {@code dayKeyword} is not a valid date in that format.
+     */
+    private static LocalDate parseVisitDay(String dayKeyword) throws ParseException {
+        try {
+            return LocalDate.parse(dayKeyword, VisitDate.DAY_INPUT_FORMATTER);
+        } catch (DateTimeParseException exception) {
+            throw new ParseException(String.format(MESSAGE_INVALID_VISIT_DAY, dayKeyword), exception);
+        }
     }
 }

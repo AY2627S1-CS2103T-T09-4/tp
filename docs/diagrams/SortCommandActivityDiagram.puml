@@ -1,0 +1,32 @@
+@startuml
+!include style.puml
+skinparam ActivityFontSize 15
+skinparam ArrowFontSize 12
+
+start
+:User executes `sort date [START_DATE]`;
+
+if () then ([START_DATE is provided])
+    :Use START_DATE as the cutoff date;
+else ([else])
+    :Use today's date as the cutoff date;
+endif
+
+:Create the visit-date comparator;
+:Apply the comparator to the
+currently filtered patient list;
+
+while () is ([another comparison is required])
+    :Compare two visits;
+
+    if () then ([exactly one visit is before the cutoff date])
+        :Place the visit on or after
+        the cutoff date first;
+    else ([else])
+        :Place the earlier visit date and time first;
+    endif
+endwhile ([else])
+
+:Return the success result;
+stop
+@enduml

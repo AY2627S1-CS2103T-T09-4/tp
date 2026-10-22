@@ -4,6 +4,7 @@ import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -17,6 +18,7 @@ import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.PhoneContainsKeywordsPredicate;
 import seedu.address.model.person.TagContainsKeywordsPredicate;
+import seedu.address.model.person.VisitDateOnDaysPredicate;
 
 public class FindCommandParserTest {
 
@@ -98,6 +100,42 @@ public class FindCommandParserTest {
     public void parse_nonDigitPhoneKeyword_throwsParseException() {
         assertParseFailure(parser, " p/9123 abc", FindCommandParser.MESSAGE_INVALID_PHONE_KEYWORD);
         assertParseFailure(parser, " p/+65", FindCommandParser.MESSAGE_INVALID_PHONE_KEYWORD);
+    }
+
+    @Test
+    public void parse_visitDates_returnsFindCommand() {
+        LocalDate visitDay = LocalDate.of(2026, 9, 18);
+        assertParseSuccess(parser, " vd/18/9/2026", findCommandOf(new VisitDateOnDaysPredicate(List.of(visitDay))));
+
+        // leading zeros give the same day
+        assertParseSuccess(parser, " vd/18/09/2026", findCommandOf(new VisitDateOnDaysPredicate(List.of(visitDay))));
+
+        // several dates match any of them
+        assertParseSuccess(parser, " vd/18/9/2026 19/9/2026", findCommandOf(
+                new VisitDateOnDaysPredicate(List.of(visitDay, visitDay.plusDays(1)))));
+
+        // combined with another field
+        assertParseSuccess(parser, " n/alex vd/18/9/2026", findCommandOf(
+                new NameContainsKeywordsPredicate(List.of("alex")),
+                new VisitDateOnDaysPredicate(List.of(visitDay))));
+    }
+
+    @Test
+    public void parse_invalidVisitDate_throwsParseException() {
+        // impossible date, wrong format, and a time given with the date
+        assertParseFailure(parser, " vd/31/2/2026", String.format(FindCommandParser.MESSAGE_INVALID_VISIT_DAY,
+                "31/2/2026"));
+        assertParseFailure(parser, " vd/2026-09-18", String.format(FindCommandParser.MESSAGE_INVALID_VISIT_DAY,
+                "2026-09-18"));
+        assertParseFailure(parser, " vd/18/9/2026 1000", String.format(FindCommandParser.MESSAGE_INVALID_VISIT_DAY,
+                "1000"));
+    }
+
+    @Test
+    public void parse_emptyOrRepeatedVisitDate_throwsParseException() {
+        assertParseFailure(parser, " vd/", String.format(FindCommandParser.MESSAGE_EMPTY_KEYWORDS, "vd/"));
+        assertParseFailure(parser, " vd/18/9/2026 vd/19/9/2026",
+                Messages.getErrorMessageForDuplicatePrefixes(CliSyntax.PREFIX_VISIT_DATE));
     }
 
     @SafeVarargs
