@@ -6,7 +6,10 @@ import java.util.List;
 import java.util.Set;
 
 import seedu.address.model.person.Address;
+import seedu.address.model.person.BloodType;
+import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Note;
 import seedu.address.model.person.Person;
@@ -28,12 +31,15 @@ public class PersonBuilder {
     public static final String DEFAULT_NOTE = "";
 
     private Name name;
+    private DateOfBirth dateOfBirth;
+    private BloodType bloodType;
     private Phone phone;
     private Email email;
     private Address address;
     private VisitDate visitDate;
     private List<VisitDate> previousVisitDates;
     private Note note;
+    private EmergencyContact emergencyContact;
     private Set<Tag> tags;
 
     /**
@@ -41,12 +47,15 @@ public class PersonBuilder {
      */
     public PersonBuilder() {
         name = new Name(DEFAULT_NAME);
+        dateOfBirth = new DateOfBirth("");
+        bloodType = BloodType.UNKNOWN;
         phone = new Phone(DEFAULT_PHONE);
         email = new Email(DEFAULT_EMAIL);
         address = new Address(DEFAULT_ADDRESS);
         visitDate = new VisitDate(DEFAULT_VISIT_DATE);
         previousVisitDates = List.of();
         note = new Note(DEFAULT_NOTE);
+        emergencyContact = new EmergencyContact("");
         tags = new HashSet<>();
     }
 
@@ -55,12 +64,15 @@ public class PersonBuilder {
      */
     public PersonBuilder(Person personToCopy) {
         name = personToCopy.getName();
+        dateOfBirth = personToCopy.getDateOfBirth();
+        bloodType = personToCopy.getBloodType();
         phone = personToCopy.getPhone();
         email = personToCopy.getEmail();
         address = personToCopy.getAddress();
         visitDate = personToCopy.getVisitDate();
         previousVisitDates = List.copyOf(personToCopy.getPreviousVisitDates());
         note = personToCopy.getNote();
+        emergencyContact = personToCopy.getEmergencyContact();
         tags = new HashSet<>(personToCopy.getTags());
     }
 
@@ -69,6 +81,22 @@ public class PersonBuilder {
      */
     public PersonBuilder withName(String name) {
         this.name = new Name(name);
+        return this;
+    }
+
+    /**
+     * Sets the optional date of birth of the patient being built.
+     */
+    public PersonBuilder withDateOfBirth(String dateOfBirth) {
+        this.dateOfBirth = new DateOfBirth(dateOfBirth);
+        return this;
+    }
+
+    /**
+     * Sets the optional blood type of the patient being built.
+     */
+    public PersonBuilder withBloodType(String bloodType) {
+        this.bloodType = BloodType.fromString(bloodType);
         return this;
     }
 
@@ -129,10 +157,19 @@ public class PersonBuilder {
     }
 
     /**
-     * Returns a patient with the configured details and validated visit record.
+     * Sets the optional emergency contact of the patient being built.
+     */
+    public PersonBuilder withEmergencyContact(String emergencyContact) {
+        this.emergencyContact = new EmergencyContact(emergencyContact);
+        return this;
+    }
+
+    /**
+     * Returns a patient with the configured details.
      */
     public Person build() {
-        return new Person(name, phone, email, address, visitDate, previousVisitDates, note, tags);
+        return new Person(name, dateOfBirth, bloodType, phone, email, address, visitDate, previousVisitDates,
+                note, emergencyContact, tags);
     }
 
 }

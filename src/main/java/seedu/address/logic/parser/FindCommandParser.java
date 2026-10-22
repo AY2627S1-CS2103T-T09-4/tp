@@ -1,5 +1,6 @@
 package seedu.address.logic.parser;
 
+import static java.util.Objects.requireNonNull;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
@@ -42,11 +43,17 @@ public class FindCommandParser implements Parser<FindCommand> {
     /**
      * Parses the given {@code String} of arguments in the context of the FindCommand
      * and returns a FindCommand object for execution.
+     * Any whitespace, such as a tab, separates fields, so no field is silently read as another field's keyword.
+     *
      * @throws ParseException if the user input does not conform to the expected format
      */
     public FindCommand parse(String args) throws ParseException {
+        requireNonNull(args);
+        // The tokenizer only recognizes a prefix after a space. Keywords are split on whitespace anyway,
+        // so turning every whitespace run into one space loses nothing and lets tabs separate fields too.
+        String normalizedArgs = args.replaceAll("\\s+", " ");
         ArgumentMultimap argMultimap =
-                ArgumentTokenizer.tokenize(args, PREFIX_NAME, PREFIX_PHONE, PREFIX_ADDRESS, PREFIX_TAG,
+                ArgumentTokenizer.tokenize(normalizedArgs, PREFIX_NAME, PREFIX_PHONE, PREFIX_ADDRESS, PREFIX_TAG,
                         PREFIX_VISIT_DATE, PREFIX_NOTE);
 
         if (!argMultimap.getPreamble().isEmpty()) {

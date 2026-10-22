@@ -10,7 +10,10 @@ import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.Address;
+import seedu.address.model.person.BloodType;
+import seedu.address.model.person.DateOfBirth;
 import seedu.address.model.person.Email;
+import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Phone;
 import seedu.address.model.person.VisitDate;
@@ -22,6 +25,8 @@ import seedu.address.model.tag.Tag;
 public class ParserUtil {
 
     public static final String MESSAGE_INVALID_INDEX = "Index must be a positive integer.";
+    public static final String MESSAGE_INDEX_TOO_LARGE =
+            "Index is too large. Enter an index shown in the displayed patient list.";
 
     /**
      * Parses {@code oneBasedIndex} into an {@code Index} and returns it. Leading and trailing whitespaces will be
@@ -37,6 +42,15 @@ public class ParserUtil {
     }
 
     /**
+     * Returns whether the input is a positive decimal integer, regardless of its size.
+     * Uses the same digit interpretation as Integer.parseInt without converting the numeric value.
+     */
+    static boolean isPositiveInteger(String argument) {
+        return argument.chars().allMatch(character -> Character.digit(character, 10) >= 0)
+                && argument.chars().anyMatch(character -> Character.digit(character, 10) > 0);
+    }
+
+    /**
      * Parses a {@code String name} into a {@code Name}.
      * Leading and trailing whitespaces will be trimmed.
      *
@@ -49,6 +63,38 @@ public class ParserUtil {
             throw new ParseException(Name.MESSAGE_CONSTRAINTS);
         }
         return new Name(trimmedName);
+    }
+
+    /**
+     * Parses a supplied date of birth, trimming surrounding whitespace and rejecting empty input.
+     *
+     * @throws ParseException If the date is empty, invalid, or in the future.
+     */
+    public static DateOfBirth parseDateOfBirth(String dateOfBirth) throws ParseException {
+        requireNonNull(dateOfBirth);
+        String trimmedDate = dateOfBirth.trim();
+        if (trimmedDate.isEmpty() || !DateOfBirth.isValidDateOfBirth(trimmedDate)) {
+            throw new ParseException(DateOfBirth.MESSAGE_CONSTRAINTS);
+        }
+        return new DateOfBirth(trimmedDate);
+    }
+
+    /**
+     * Parses a recorded blood type, rejecting empty input.
+     *
+     * @throws ParseException If the supplied blood type is empty or invalid.
+     */
+    public static BloodType parseBloodType(String bloodType) throws ParseException {
+        requireNonNull(bloodType);
+        try {
+            BloodType parsedBloodType = BloodType.fromString(bloodType);
+            if (parsedBloodType.isEmpty()) {
+                throw new ParseException(BloodType.MESSAGE_CONSTRAINTS);
+            }
+            return parsedBloodType;
+        } catch (IllegalArgumentException exception) {
+            throw new ParseException(BloodType.MESSAGE_CONSTRAINTS, exception);
+        }
     }
 
     /**
@@ -109,6 +155,20 @@ public class ParserUtil {
             throw new ParseException(VisitDate.MESSAGE_CONSTRAINTS);
         }
         return new VisitDate(trimmedVisitDate);
+    }
+
+    /**
+     * Parses a supplied emergency contact, rejecting blank or incomplete details.
+     *
+     * @throws ParseException If the contact lacks a valid phone number or supplies an invalid name.
+     */
+    public static EmergencyContact parseEmergencyContact(String emergencyContact) throws ParseException {
+        requireNonNull(emergencyContact);
+        String trimmedContact = emergencyContact.trim();
+        if (trimmedContact.isEmpty() || !EmergencyContact.isValidEmergencyContact(trimmedContact)) {
+            throw new ParseException(EmergencyContact.MESSAGE_CONSTRAINTS);
+        }
+        return new EmergencyContact(trimmedContact);
     }
 
     /**

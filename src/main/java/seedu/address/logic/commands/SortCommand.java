@@ -9,7 +9,9 @@ import java.time.format.ResolverStyle;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.logging.Logger;
 
+import seedu.address.commons.core.LogsCenter;
 import seedu.address.model.Model;
 import seedu.address.model.person.Person;
 
@@ -30,6 +32,8 @@ public class SortCommand extends Command {
             + COMMAND_WORD + " date 18/9/2026";
     public static final String MESSAGE_SUCCESS =
             "Sorted displayed visits by date, with visits on or after %1$s first.";
+
+    private static final Logger logger = LogsCenter.getLogger(SortCommand.class);
 
     private final Optional<LocalDate> specifiedCutoffDate;
     private final Clock clock;
@@ -67,6 +71,9 @@ public class SortCommand extends Command {
     public CommandResult execute(Model model) {
         requireNonNull(model);
         LocalDate cutoffDate = specifiedCutoffDate.orElseGet(() -> LocalDate.now(clock));
+        logger.fine(String.format("Sorting %d displayed patients using cutoff date %s",
+                model.getFilteredPersonList().size(), cutoffDate.format(CUTOFF_DATE_FORMATTER)));
+
         Comparator<Person> visitDateComparator = Comparator
                 .comparing((Person person) -> isBeforeCutoff(person, cutoffDate))
                 .thenComparing(person -> person.getVisitDate().value);

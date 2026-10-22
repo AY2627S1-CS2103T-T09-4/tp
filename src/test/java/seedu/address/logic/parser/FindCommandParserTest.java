@@ -74,6 +74,18 @@ public class FindCommandParserTest {
     }
 
     @Test
+    public void parse_nonSpaceWhitespaceBetweenFields_keepsEveryField() {
+        FindCommand expectedFindCommand = findCommandOf(
+                new NameContainsKeywordsPredicate(List.of("Alex")),
+                new PhoneContainsKeywordsPredicate(List.of("9123")));
+
+        // a tab, a newline or several spaces must not turn p/9123 into a name keyword
+        assertParseSuccess(parser, " n/Alex\tp/9123", expectedFindCommand);
+        assertParseSuccess(parser, " n/Alex\np/9123", expectedFindCommand);
+        assertParseSuccess(parser, "\tn/Alex \t p/9123", expectedFindCommand);
+    }
+
+    @Test
     public void parse_emptyKeywords_throwsParseException() {
         assertParseFailure(parser, " n/", String.format(FindCommandParser.MESSAGE_EMPTY_KEYWORDS, "n/"));
         assertParseFailure(parser, " n/alex a/  ", String.format(FindCommandParser.MESSAGE_EMPTY_KEYWORDS, "a/"));

@@ -40,6 +40,11 @@ xvfb-run --auto-servernum sh -eu -c '
 The Linux CI job uses this setup with `./gradlew check coverage`. Openbox is a test-environment dependency;
 users running Doc on a normal desktop do not need to install it.
 
+Help-window integration tests wait for the main window to receive native keyboard focus before starting.
+On desktops that support Java's foreground request (including macOS), the test process requests it explicitly.
+Allow the test windows to stay in front while these focus-dependent checks run; switching to another application
+can interrupt the native focus transitions being tested. Selection and focus assertions are still checked.
+
 <box type="info" seamless>
 
 **Link**: Read [this Gradle Tutorial from the se-edu/guides](https://se-education.org/guides/tutorials/gradle.html) to learn more about using Gradle.
@@ -63,13 +68,15 @@ for the IDE setup steps. Keep machine-specific run configurations local.
 
 ### Visit record verification
 
-The [Developer Guide's manual-testing appendix](DeveloperGuide.md#appendix-instructions-for-manual-testing) contains
-repeatable cases for loading previous dates, advancing visits, editing, conflicts, and viewing empty or long records.
-Use disposable data and choose past and future datetimes relative to the actual execution time. Recheck displayed
-indices after successful mutations, which restore the full list in stored order.
+Use the [Developer Guide's manual-testing appendix](DeveloperGuide.md#appendix-instructions-for-manual-testing)
+for repeatable visit-record checks, including [rollback and recovery](DeveloperGuide.md#testing-the-prev-command)
+and [calendar labels](DeveloperGuide.md#calendar-labels-for-current-visits). Use disposable data and choose past
+and future datetimes relative to execution time. Follow the [visit-record interaction rules](UserGuide.md#visit-records)
+when rechecking indices and refreshing details.
 
-Automated visit-record tests use injected fixed clocks for exact equality, sub-minute boundaries, time zones, and
-repeated advances. Do not change the OS clock or wait for an appointment to pass to test those boundaries manually.
+Automated visit-record tests use injected fixed clocks for exact equality, sub-minute boundaries, time zones,
+repeated advances, and calendar-label changes when details are rendered across midnight.
+Do not change the OS clock or wait for an appointment to pass to test those boundaries manually.
 Run the repository wrapper from the project root:
 
 | Purpose | Windows PowerShell | macOS/Linux |
