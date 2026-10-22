@@ -25,8 +25,28 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import seedu.address.logic.commands.AddCommand;
+import seedu.address.logic.commands.ClearCommand;
+import seedu.address.logic.commands.DeleteCommand;
+import seedu.address.logic.commands.EditCommand;
+import seedu.address.logic.commands.ExitCommand;
+import seedu.address.logic.commands.FindCommand;
+import seedu.address.logic.commands.HelpCommand;
+import seedu.address.logic.commands.ListCommand;
+import seedu.address.logic.commands.NextCommand;
+import seedu.address.logic.commands.PrevCommand;
+import seedu.address.logic.commands.SortCommand;
+import seedu.address.logic.commands.ViewCommand;
 
 public class HelpWindowTest {
+
+    private static final List<String> EXPECTED_PATIENT_COMMANDS = List.of(AddCommand.COMMAND_WORD,
+            ListCommand.COMMAND_WORD, FindCommand.COMMAND_WORD, ViewCommand.COMMAND_WORD,
+            EditCommand.COMMAND_WORD, DeleteCommand.COMMAND_WORD, ClearCommand.COMMAND_WORD);
+    private static final List<String> EXPECTED_VISIT_COMMANDS = List.of(NextCommand.COMMAND_WORD,
+            PrevCommand.COMMAND_WORD, SortCommand.COMMAND_WORD);
+    private static final List<String> EXPECTED_APPLICATION_COMMANDS = List.of(HelpCommand.COMMAND_WORD,
+            ExitCommand.COMMAND_WORD);
 
     @BeforeAll
     public static void setUpJavaFx() throws InterruptedException {
@@ -76,11 +96,12 @@ public class HelpWindowTest {
                 helpWindow.show();
                 Parent root = stage.getScene().getRoot();
                 assertEquals("Available commands", ((Label) root.lookup(".helpTitle")).getText());
-                assertCommandGroup(root, "#patientCommands",
-                        List.of("add", "list", "find", "view", "edit", "delete", "clear"));
-                assertCommandGroup(root, "#visitCommands", List.of("next", "prev", "sort"));
-                assertCommandGroup(root, "#applicationCommands", List.of("help", "exit"));
-                assertEquals(12, root.lookupAll(".helpCommand").size());
+                assertCommandGroup(root, "#patientCommands", EXPECTED_PATIENT_COMMANDS);
+                assertCommandGroup(root, "#visitCommands", EXPECTED_VISIT_COMMANDS);
+                assertCommandGroup(root, "#applicationCommands", EXPECTED_APPLICATION_COMMANDS);
+                int expectedCommandCount = EXPECTED_PATIENT_COMMANDS.size() + EXPECTED_VISIT_COMMANDS.size()
+                        + EXPECTED_APPLICATION_COMMANDS.size();
+                assertEquals(expectedCommandCount, root.lookupAll(".helpCommand").size());
                 ScrollPane scrollPane = (ScrollPane) root.lookup("#helpScrollPane");
                 Label keyboardHint = (Label) scrollPane.getContent().lookup("#keyboardHint");
                 assertEquals("↑/↓ Scroll · Tab/Shift+Tab Move focus · Esc Close", keyboardHint.getText());
@@ -91,6 +112,32 @@ public class HelpWindowTest {
                 assertTrue(scrollPane.getContent().getBoundsInLocal().getHeight()
                         <= scrollPane.getViewportBounds().getHeight(),
                         "All commands should fit in the default window");
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    @Test
+    public void helpWindow_minimumSize_arrowKeysScrollCommands() {
+        runOnFxThread(() -> {
+            HelpWindow helpWindow = new HelpWindow(url -> { });
+            Stage stage = helpWindow.getRoot();
+            try {
+                stage.setWidth(stage.getMinWidth());
+                stage.setHeight(stage.getMinHeight());
+                helpWindow.show();
+                ScrollPane scrollPane = (ScrollPane) stage.getScene().lookup("#helpScrollPane");
+                assertMinimumLayout(stage, scrollPane);
+                assertSame(scrollPane, stage.getScene().getFocusOwner());
+
+                double positionBeforeDown = scrollPane.getVvalue();
+                fireKeyPressed(scrollPane, KeyCode.DOWN);
+                assertTrue(scrollPane.getVvalue() > positionBeforeDown, "Down should scroll towards later commands");
+
+                double positionBeforeUp = scrollPane.getVvalue();
+                fireKeyPressed(scrollPane, KeyCode.UP);
+                assertTrue(scrollPane.getVvalue() < positionBeforeUp, "Up should scroll towards earlier commands");
             } finally {
                 stage.close();
             }
@@ -152,6 +199,10 @@ public class HelpWindowTest {
                 stage.close();
             }
         });
+    }
+
+    private void fireKeyPressed(Node target, KeyCode keyCode) {
+        target.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", keyCode, false, false, false, false));
     }
 
     private Button findButton(Stage stage, String selector) {
