@@ -1,0 +1,117 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+box Logic LOGIC_COLOR_T1
+participant ":LogicManager" as LogicManager LOGIC_COLOR
+participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
+participant "a:AddCommand" as AddCommand LOGIC_COLOR
+participant "q:CommandInputRequest" as CommandInputRequest LOGIC_COLOR
+participant ":CommandResult" as CommandResult LOGIC_COLOR
+end box
+
+box Model MODEL_COLOR_T1
+participant "m:Model" as Model MODEL_COLOR
+end box
+
+box Storage STORAGE_COLOR_T1
+participant ":Storage" as Storage STORAGE_COLOR
+end box
+
+[-> LogicManager : execute("add n/Alice Pauline ...")
+activate LogicManager
+
+LogicManager -> AddressBookParser : parseCommand("add n/Alice Pauline ...")
+activate AddressBookParser
+
+note right of AddressBookParser
+  AddCommandParser parses and
+  validates every field (omitted)
+end note
+
+create AddCommand
+AddressBookParser -> AddCommand : p
+activate AddCommand
+
+AddCommand --> AddressBookParser : a
+deactivate AddCommand
+
+AddressBookParser --> LogicManager : a
+deactivate AddressBookParser
+
+LogicManager -> AddCommand : execute(m)
+activate AddCommand
+
+AddCommand -> AddCommand : validateNoConflicts(m)
+activate AddCommand
+deactivate AddCommand
+
+AddCommand -> Model : getAddressBook()
+activate Model
+Model --> AddCommand : name duplicates found
+deactivate Model
+
+AddCommand -> Model : countPersonsWithSameVisitDay(p)
+activate Model
+Model --> AddCommand : 7
+deactivate Model
+
+create CommandInputRequest
+AddCommand -> CommandInputRequest : createConfirmation(prompt, cancellation, addPerson)
+activate CommandInputRequest
+
+CommandInputRequest --> AddCommand : q
+deactivate CommandInputRequest
+
+create CommandResult
+AddCommand -> CommandResult : requestInput(q, match)
+activate CommandResult
+
+CommandResult --> AddCommand : r
+deactivate CommandResult
+
+AddCommand --> LogicManager : r
+deactivate AddCommand
+
+note left of LogicManager
+  Keeps q as the pending request.
+  r does not save the data.
+end note
+
+[<--LogicManager : r
+deactivate LogicManager
+
+[-> LogicManager : execute("y")
+activate LogicManager
+
+LogicManager -> CommandInputRequest : respond("y", m)
+activate CommandInputRequest
+
+CommandInputRequest -> AddCommand : addPerson(m)
+activate AddCommand
+
+AddCommand -> AddCommand : validateNoConflicts(m)
+activate AddCommand
+deactivate AddCommand
+
+AddCommand -> Model : addPerson(p)
+activate Model
+
+Model --> AddCommand
+deactivate Model
+
+AddCommand --> CommandInputRequest : confirmed result
+deactivate AddCommand
+
+CommandInputRequest --> LogicManager : confirmed result
+deactivate CommandInputRequest
+
+LogicManager -> Storage : saveAddressBook(addressBook)
+activate Storage
+
+Storage --> LogicManager
+deactivate Storage
+
+[<--LogicManager : confirmed result
+deactivate LogicManager
+@enduml

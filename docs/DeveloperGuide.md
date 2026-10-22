@@ -308,12 +308,9 @@ the same value. This covers command mutations,
 model replacement, sample data, and direct model use. `JsonSerializableAddressBook` performs the same check while
 loading and reports an invalid data file with a visit-date-specific message.
 
-`Model#hasPersonWithSameVisitDate` exposes the scheduling check. `AddCommand` rejects a true duplicate first, then a
-visit-date conflict. It then collects every warning that applies: a name duplicate, and a visit day that already
-has `Model.MAX_VISITS_PER_DAY` (7) or more visits. If any apply, it joins them into one prompt ending in a single
-`Add NAME anyway?` question, so the user confirms once even when both warnings apply. The proposed immutable `Person`
-is captured in a `CommandInputRequest#createConfirmation` action. Confirmation rechecks both rejection rules before
-adding, which prevents a conflicting record from being introduced if model state changes while the prompt is pending.
+`Model#hasPersonWithSameVisitDate` exposes the scheduling check. How `add` applies these rules, and when it asks
+for confirmation, is described in
+[Adding a patient: validation and confirmation](#adding-a-patient-validation-and-confirmation).
 
 `EditCommand` captures the selected patient without changing the displayed list. It similarly rejects a true
 duplicate or a datetime shared with another patient's current or previous dates before requesting confirmation,
@@ -331,6 +328,45 @@ using the same presentation as `view`, while feedback remains in `ResultDisplay`
 the full patient list; a rejected or cancelled operation leaves the displayed list unchanged. While a confirmation is
 pending, the command box treats the next submission as the confirmation response, so displayed indices cannot be used
 by another command until the doctor confirms or cancels.
+
+#### Adding a patient: validation and confirmation
+
+`add` checks a new patient in three stages. Errors stop the command, while warnings only ask the doctor to confirm.
+
+1. **Parsing.** `AddCommandParser` requires `n/`, `p/`, `a/`, and `vd/`, rejects text before the first prefix and
+   repeated single-valued prefixes, and validates each field through `ParserUtil`. Any `ParseException` is wrapped
+   so that every failure starts with `The patient is not added due to:`.
+1. **Rejection rules.** `AddCommand#execute` calls `validateNoConflicts`, which uses `DuplicatePersonFinder` to look
+   for a true duplicate (same normalized name and phone) and then for a stored patient using the same current or
+   previous visit time. Either case throws a `CommandException` that carries the matching patient, so `MainWindow`
+   shows that patient in the details panel. These rules are never overridable.
+1. **Warnings.** `collectWarnings` gathers every warning that applies: a name duplicate, and a visit day that already
+   has `Model.MAX_VISITS_PER_DAY` (7) or more current visits. With no warnings, the patient is added immediately.
+   Otherwise, the warnings are joined into **one** prompt ending with `Add NAME anyway?`, so the doctor confirms once
+   even when both apply. When there is a name duplicate, the result also previews the first matching patient.
+
+<puml src="diagrams/AddCommandActivityDiagram.puml" alt="How add validates a patient and asks for confirmation" width="600" />
+
+The prompt is a `CommandInputRequest` created with `CommandInputRequest#createConfirmation`, whose confirmed action is
+`AddCommand#addPerson`. The sequence diagram below shows a name duplicate on a full day. The first `execute` returns a
+result that holds the request and does not save. `LogicManager` keeps the request pending, so the doctor's next input,
+`y`, goes to the request instead of the command parser.
+
+<puml src="diagrams/AddConfirmationSequenceDiagram.puml" alt="Interactions when add asks for confirmation and the doctor enters y" />
+
+`addPerson` calls `validateNoConflicts` again before `Model#addPerson`. The proposed `Person` was captured before the
+prompt, so this recheck stops a duplicate or a visit-time conflict that appeared while the prompt was open from being
+saved. Only the confirmed result asks `LogicManager` to save, so a cancelled addition never writes the data file.
+
+**Aspect: how several warnings are confirmed**
+
+* **Alternative 1 (current choice):** Collect every warning and ask once.
+  * Pros: One `y` per addition. The doctor sees every concern together before deciding.
+  * Cons: A longer prompt when both warnings apply.
+* **Alternative 2:** Ask about each warning in turn, chaining one confirmation request per warning.
+  * Pros: Each prompt is short and focused.
+  * Cons: A second `y` is easy to give without reading it, and the first `y` can look like it already added the
+    patient.
 
 #### Duplicate-detection limitations
 
@@ -610,8 +646,8 @@ The shared `CommandInputRequest#createConfirmation` helper trims the response an
 to case. It runs the supplied action only for that response; every other response returns the supplied cancellation
 message.
 
-For same-name additions and edits, `AddCommand` and `EditCommand` use the same confirmation helper as destructive
-commands. The prompt does not mutate or save patient data. Confirmation performs the captured mutation and saves
+For additions with a name duplicate or a full visit day, and for same-name edits, `AddCommand` and `EditCommand` use
+the same confirmation helper as destructive commands. The prompt does not mutate or save patient data. Confirmation performs the captured mutation and saves
 once; every other response cancels without saving. The proposed patient is captured before the prompt, and confirmed
 actions recheck both the true-duplicate and unique-visit-date invariants before modifying the model.
 
