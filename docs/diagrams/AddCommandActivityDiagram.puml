@@ -1,0 +1,53 @@
+@startuml
+!include style.puml
+skinparam ActivityFontSize 15
+skinparam ArrowFontSize 12
+
+start
+:User executes `add n/NAME p/PHONE a/ADDRESS vd/VISIT_DATE ...`;
+:Check required and repeated prefixes,
+then parse and validate each field;
+
+if () then ([a prefix or field is invalid])
+    :Show "The patient is not added due to:"
+    followed by the reason;
+    stop
+else ([else])
+endif
+
+if () then ([same name and phone as a stored patient])
+    :Reject the patient and show
+    the existing patient;
+    stop
+elseif () then ([visit time used by a stored patient])
+    :Reject the patient and show
+    the patient using that time;
+    stop
+else ([else])
+endif
+
+:Collect warnings: a stored patient with the same name,
+and a visit day that already has 7 or more visits;
+
+if () then ([no warnings])
+    :Add the patient;
+else ([else])
+    :Show every warning in one prompt
+    ending with "Add NAME anyway?";
+    if () then ([user enters y])
+        if () then ([a duplicate or visit-time conflict\nappeared while the prompt was open])
+            :Reject the patient and show
+            the conflicting patient;
+            stop
+        else ([else])
+            :Add the patient;
+        endif
+    else ([else])
+        :Show "Addition cancelled." without saving;
+        stop
+    endif
+endif
+
+:Save the patient data;
+stop
+@enduml

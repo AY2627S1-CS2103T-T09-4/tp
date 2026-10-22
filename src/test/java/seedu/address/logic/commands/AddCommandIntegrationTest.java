@@ -97,8 +97,7 @@ public class AddCommandIntegrationTest {
 
         CommandResult result = new AddCommand(sameNameDifferentPhone).execute(model);
 
-        assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, sameNameDifferentPhone.getName()),
-                result.getFeedbackToUser());
+        assertEquals(expectedDuplicateNamePrompt(sameNameDifferentPhone), result.getFeedbackToUser());
         assertTrue(result.getInputRequest().isPresent());
         assertEquals(personInList, result.getPersonToView().orElseThrow());
         assertFalse(result.shouldSaveAddressBook());
@@ -117,8 +116,7 @@ public class AddCommandIntegrationTest {
 
         CommandResult result = new AddCommand(sameNameDifferentPhone).execute(model);
 
-        assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, sameNameDifferentPhone.getName()),
-                result.getFeedbackToUser());
+        assertEquals(expectedDuplicateNamePrompt(sameNameDifferentPhone), result.getFeedbackToUser());
         assertTrue(result.getInputRequest().isPresent());
         assertEquals(personInList, result.getPersonToView().orElseThrow());
         assertFalse(model.getAddressBook().getPersonList().contains(sameNameDifferentPhone));
@@ -165,8 +163,8 @@ public class AddCommandIntegrationTest {
 
         CommandResult result = new AddCommand(personToAdd).execute(model);
 
-        assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_DUPLICATE_NAMES,
-                personToAdd.getName(), 2), result.getFeedbackToUser());
+        assertEquals(String.format(AddCommand.MESSAGE_WARNING_DUPLICATE_NAMES, personToAdd.getName(), 2) + " "
+                + String.format(AddCommand.MESSAGE_CONFIRM_ADD, personToAdd.getName()), result.getFeedbackToUser());
         assertTrue(result.getFeedbackToUser().contains("Only one matching patient is shown"));
         assertEquals(firstMatch, result.getPersonToView().orElseThrow());
         assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
@@ -254,23 +252,77 @@ public class AddCommandIntegrationTest {
     }
 
     @Test
-    public void confirmation_duplicateNameOnFullDay_requestsBothConfirmations() throws Exception {
+    public void execute_duplicateNameOnFullDay_requestsOneCombinedConfirmation() throws Exception {
         Person personInList = model.getAddressBook().getPersonList().get(0);
         Person sameNameOnFullDay = new PersonBuilder(personInList).withPhone("91234567")
                 .withVisitDate(FULL_DAY_VISIT_DATE).build();
-        CommandResult nameRequestResult = new AddCommand(sameNameOnFullDay).execute(model);
 
-        CommandResult dayRequestResult = nameRequestResult.getInputRequest().orElseThrow().respond("y", model);
+        CommandResult result = new AddCommand(sameNameOnFullDay).execute(model);
 
-        assertEquals(String.format(AddCommand.MESSAGE_CONFIRM_FULL_DAY, Model.MAX_VISITS_PER_DAY,
-                "Thu, 1 Jan 2026", sameNameOnFullDay.getName()), dayRequestResult.getFeedbackToUser());
+        String expectedPrompt = String.format(AddCommand.MESSAGE_WARNING_DUPLICATE_NAME, sameNameOnFullDay.getName())
+                + " " + String.format(AddCommand.MESSAGE_WARNING_FULL_DAY, Model.MAX_VISITS_PER_DAY, "Thu, 1 Jan 2026")
+                + " " + String.format(AddCommand.MESSAGE_CONFIRM_ADD, sameNameOnFullDay.getName());
+        assertEquals(expectedPrompt, result.getFeedbackToUser());
+        assertEquals(personInList, result.getPersonToView().orElseThrow());
+        assertFalse(result.shouldSaveAddressBook());
         assertFalse(model.getAddressBook().getPersonList().contains(sameNameOnFullDay));
+    }
 
-        CommandResult confirmedResult = dayRequestResult.getInputRequest().orElseThrow().respond("y", model);
+    @Test
+    public void confirmation_multipleDuplicateNamesOnFullDay_requestsOneCombinedConfirmation() throws Exception {
+        Person firstMatch = model.getAddressBook().getPersonList().get(0);
+        // the second match is on another day, so the full day still has the seven typical visits
+        Person secondMatch = new PersonBuilder(firstMatch).withPhone("91234567")
+                .withVisitDate(AVAILABLE_VISIT_DATE).build();
+        model.addPerson(secondMatch);
+        Person thirdSameName = new PersonBuilder(firstMatch).withPhone("92345678")
+                .withVisitDate(FULL_DAY_VISIT_DATE).build();
+
+        CommandResult requestResult = new AddCommand(thirdSameName).execute(model);
+
+        String expectedPrompt = String.format(AddCommand.MESSAGE_WARNING_DUPLICATE_NAMES, thirdSameName.getName(), 2)
+                + " " + String.format(AddCommand.MESSAGE_WARNING_FULL_DAY, Model.MAX_VISITS_PER_DAY, "Thu, 1 Jan 2026")
+                + " " + String.format(AddCommand.MESSAGE_CONFIRM_ADD, thirdSameName.getName());
+        assertEquals(expectedPrompt, requestResult.getFeedbackToUser());
+        assertEquals(firstMatch, requestResult.getPersonToView().orElseThrow());
+        assertFalse(model.getAddressBook().getPersonList().contains(thirdSameName));
+
+        CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond("y", model);
+
+        assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, thirdSameName.getName()),
+                confirmedResult.getFeedbackToUser());
+        assertTrue(confirmedResult.getInputRequest().isEmpty());
+        assertTrue(model.getAddressBook().getPersonList().contains(thirdSameName));
+    }
+
+    @Test
+    public void confirmation_duplicateNameOnFullDayConfirmedOnce_addsPerson() throws Exception {
+        Person personInList = model.getAddressBook().getPersonList().get(0);
+        Person sameNameOnFullDay = new PersonBuilder(personInList).withPhone("91234567")
+                .withVisitDate(FULL_DAY_VISIT_DATE).build();
+        CommandResult requestResult = new AddCommand(sameNameOnFullDay).execute(model);
+
+        CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond("y", model);
 
         assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, sameNameOnFullDay.getName()),
                 confirmedResult.getFeedbackToUser());
+        assertTrue(confirmedResult.getInputRequest().isEmpty());
+        assertTrue(confirmedResult.shouldSaveAddressBook());
         assertTrue(model.getAddressBook().getPersonList().contains(sameNameOnFullDay));
+    }
+
+    @Test
+    public void confirmation_duplicateNameOnFullDayNotConfirmed_cancelsAddition() throws Exception {
+        Person personInList = model.getAddressBook().getPersonList().get(0);
+        Person sameNameOnFullDay = new PersonBuilder(personInList).withPhone("91234567")
+                .withVisitDate(FULL_DAY_VISIT_DATE).build();
+        CommandResult requestResult = new AddCommand(sameNameOnFullDay).execute(model);
+
+        CommandResult cancelledResult = requestResult.getInputRequest().orElseThrow().respond("n", model);
+
+        assertEquals(AddCommand.MESSAGE_ADD_CANCELLED, cancelledResult.getFeedbackToUser());
+        assertFalse(cancelledResult.shouldSaveAddressBook());
+        assertFalse(model.getAddressBook().getPersonList().contains(sameNameOnFullDay));
     }
 
     @Test
@@ -307,4 +359,8 @@ public class AddCommandIntegrationTest {
         assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
     }
 
+    private static String expectedDuplicateNamePrompt(Person personToAdd) {
+        return String.format(AddCommand.MESSAGE_WARNING_DUPLICATE_NAME, personToAdd.getName()) + " "
+                + String.format(AddCommand.MESSAGE_CONFIRM_ADD, personToAdd.getName());
+    }
 }

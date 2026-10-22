@@ -1,0 +1,44 @@
+@startuml
+!include style.puml
+skinparam arrowThickness 1.1
+skinparam arrowColor MODEL_COLOR_T4
+skinparam classAttributeIconSize 0
+hide empty members
+
+package Logic as LogicPackage <<Rectangle>> {
+Class FindCommandParser LOGIC_COLOR
+Class FindCommand LOGIC_COLOR
+}
+
+package Model as ModelPackage <<Rectangle>> {
+Class "<<interface>>\nPredicate<Person>" as Predicate MODEL_COLOR
+Class MatchesAllCriteriaPredicate MODEL_COLOR
+Class "{abstract}\nFieldContainsKeywordsPredicate" as FieldPredicate MODEL_COLOR {
+  - keywords : List<String>
+  # matches(Person, String) : boolean
+}
+Class NameContainsKeywordsPredicate MODEL_COLOR
+Class PhoneContainsKeywordsPredicate MODEL_COLOR
+Class AddressContainsKeywordsPredicate MODEL_COLOR
+Class TagContainsKeywordsPredicate MODEL_COLOR
+Class NoteContainsKeywordsPredicate MODEL_COLOR
+Class VisitDateOnDaysPredicate MODEL_COLOR {
+  - days : List<LocalDate>
+}
+}
+
+FindCommandParser ..> FindCommand : creates >
+FindCommandParser ..> MatchesAllCriteriaPredicate : creates >
+FindCommand --> "1" Predicate : predicate
+
+MatchesAllCriteriaPredicate ..|> Predicate
+MatchesAllCriteriaPredicate --> "1..*" Predicate : criteria
+FieldPredicate ..|> Predicate
+VisitDateOnDaysPredicate ..|> Predicate
+
+NameContainsKeywordsPredicate -up-|> FieldPredicate
+PhoneContainsKeywordsPredicate -up-|> FieldPredicate
+AddressContainsKeywordsPredicate -up-|> FieldPredicate
+TagContainsKeywordsPredicate -up-|> FieldPredicate
+NoteContainsKeywordsPredicate -up-|> FieldPredicate
+@enduml

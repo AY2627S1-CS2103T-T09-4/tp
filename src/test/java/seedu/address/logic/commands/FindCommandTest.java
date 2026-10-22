@@ -13,6 +13,7 @@ import static seedu.address.testutil.TypicalPersons.FIONA;
 import static seedu.address.testutil.TypicalPersons.GEORGE;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -25,9 +26,12 @@ import seedu.address.model.UserPrefs;
 import seedu.address.model.person.AddressContainsKeywordsPredicate;
 import seedu.address.model.person.MatchesAllCriteriaPredicate;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
+import seedu.address.model.person.NoteContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.PhoneContainsKeywordsPredicate;
 import seedu.address.model.person.TagContainsKeywordsPredicate;
+import seedu.address.model.person.VisitDateOnDaysPredicate;
+import seedu.address.testutil.PersonBuilder;
 
 /**
  * Contains integration tests (interaction with the Model) for {@code FindCommand}.
@@ -66,7 +70,8 @@ public class FindCommandTest {
     @Test
     public void execute_zeroKeywords_noPersonFound() {
         String expectedMessage = "No patients found. "
-                + "Search with n/ for names, p/ for phone numbers, a/ for addresses, or t/ for tags.";
+                + "Search with n/ for names, p/ for phone numbers, a/ for addresses, t/ for tags, "
+                + "vd/ for visit dates, or note/ for notes.";
         NameContainsKeywordsPredicate predicate = preparePredicate(" ");
         FindCommand command = new FindCommand(predicate);
         expectedModel.updateFilteredPersonList(predicate);
@@ -131,6 +136,31 @@ public class FindCommandTest {
     }
 
     @Test
+    public void execute_visitDate_matchesVisitsOnThatDay() {
+        // every typical person is visited on 1/1/2026, at different times
+        assertFindSuccess(new VisitDateOnDaysPredicate(List.of(LocalDate.of(2026, 1, 1))), "7 patients found.",
+                getTypicalAddressBook().getPersonList());
+        assertFindSuccess(new VisitDateOnDaysPredicate(List.of(LocalDate.of(2026, 1, 2))),
+                FindCommand.MESSAGE_NO_PATIENTS_FOUND, List.of());
+    }
+
+    @Test
+    public void execute_noteKeyword_matchesStartOfNoteWords() {
+        // typical persons have no notes, so give two of them notes in both models
+        Person carlWithNote = new PersonBuilder(CARL).withNote("Review insulin dose").build();
+        Person elleWithNote = new PersonBuilder(ELLE).withNote("Check wound").build();
+        for (Model eachModel : List.of(model, expectedModel)) {
+            eachModel.setPerson(CARL, carlWithNote);
+            eachModel.setPerson(ELLE, elleWithNote);
+        }
+
+        assertFindSuccess(new NoteContainsKeywordsPredicate(List.of("insul")), "1 patient found.",
+                List.of(carlWithNote));
+        assertFindSuccess(new NoteContainsKeywordsPredicate(List.of("insulin", "wound")), "2 patients found.",
+                List.of(carlWithNote, elleWithNote));
+    }
+
+    @Test
     public void execute_noMatchInOtherFields_showsGenericNoMatchMessage() {
         // the hint must suit every field, not just names
         assertFindSuccess(new PhoneContainsKeywordsPredicate(List.of("0000")), FindCommand.MESSAGE_NO_PATIENTS_FOUND,
@@ -138,6 +168,8 @@ public class FindCommandTest {
         assertFindSuccess(new AddressContainsKeywordsPredicate(List.of("tampines")),
                 FindCommand.MESSAGE_NO_PATIENTS_FOUND, List.of());
         assertFindSuccess(new TagContainsKeywordsPredicate(List.of("diabetic")), FindCommand.MESSAGE_NO_PATIENTS_FOUND,
+                List.of());
+        assertFindSuccess(new NoteContainsKeywordsPredicate(List.of("insulin")), FindCommand.MESSAGE_NO_PATIENTS_FOUND,
                 List.of());
     }
 

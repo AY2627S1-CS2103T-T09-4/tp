@@ -188,14 +188,17 @@ Format: `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HIST
 * On success, the app shows `Added patient NAME` and the new patient appears in the list.
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
 * A patient with the same normalized name and phone number as an existing patient is a duplicate and cannot be added.
-* If only the name matches an existing patient, the app asks
-  `A patient named NAME already exists. Add this patient anyway? Type y to confirm. Any other input cancels.`
+* If only the name matches an existing patient, the app shows the matching patient in the patient details panel and
+  asks `A patient named NAME already exists. The matching patient is shown in the patient details panel. Add NAME
+  anyway? Type y to confirm. Any other input cancels.`
 * Type `y` and press Enter to add the patient. Surrounding spaces and letter case are ignored. Any other input cancels
   the addition and is not run as a command. Confirmation rechecks that the visit date and time are still available.
 * If 7 or more patients already have a visit on the same day (at any time), the app warns you before adding another,
   e.g. `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Add Jane Tan anyway? Type y to confirm. Any other
-  input cancels.` Type `y` to add the patient anyway. If the name also matches an existing patient, you are asked to
-  confirm the name first and then the busy day.
+  input cancels.` Type `y` to add the patient anyway.
+* If the name matches an existing patient **and** the day already has 7 or more visits, the app asks only once,
+  listing both warnings before a single `Add NAME anyway?` question. One `y` adds the patient; any other input
+  cancels the addition.
 * For duplicate detection, names are compared without letter case after surrounding whitespace is removed and repeated
   spaces are collapsed to one space. For example, `John Doe`, `john doe`, and `John   Doe` are treated as the same
   name. The accepted name's spelling, capitalization, and internal spacing are still displayed and saved.
@@ -513,9 +516,9 @@ does not act as redo. Repeated rollback eventually empties the previous-date lis
 
 ### Locating patients: `find`
 
-Finds patients by name, phone number, address or tag.
+Finds patients by name, phone number, address, tag, visit date or notes.
 
-Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...]`
+Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`
 
 * Give at least one field. Every keyword must follow a prefix; for example, use `find n/george`, not `find george`.
 * How each field matches (all case-insensitive):
@@ -525,6 +528,11 @@ Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t
     Phone keywords may contain only digits.
   * `a/`: the start of any word in the address. For example, `a/tamp` matches `46 Tampines Street 21, #08-03`.
   * `t/`: the start of any tag. For example, `t/morn` matches a patient tagged `morning`.
+  * `vd/`: patients whose current visit is on that day, at any time. Give the date without a time in the format
+    `d/M/yyyy`, e.g. `vd/15/10/2026`. Previous visit dates are not searched. An impossible date, another format,
+    or a time such as `vd/15/10/2026 0900` is rejected with `"VALUE" is not a valid visit date.` and the format.
+  * `note/`: the start of any word in the patient's notes. For example, `note/gluc` matches
+    `Discuss glucose readings`, but `note/cose` does not. Patients with no notes never match.
 * Several keywords for one field find patients matching **any** of them (an `OR` search); for example,
   `n/george priya` returns `George Miller` and `Priya Nair`.
 * Different fields must **all** match (an `AND` search); for example, `n/m t/morning` returns only patients with a
@@ -533,14 +541,18 @@ Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t
   instead, e.g. `n/george priya` rather than `n/george n/priya`.
 * Spaces, tabs or line breaks can separate fields; for example, `n/alex` and `p/9123` separated by a tab are still
   two separate fields.
-* The app shows how many patients were found, e.g. `3 patients found.` If none match, it shows
-  `No patients found. Search with n/ for names, p/ for phone numbers, a/ for addresses, or t/ for tags.`
+* The app shows how many patients were found, e.g. `3 patients found.` If none match, it lists every search prefix:
+  `No patients found. Search with n/ for names, p/ for phone numbers, a/ for addresses, t/ for tags, vd/ for visit dates, or note/ for notes.`
 
 Examples:
 * `find n/m` returns `George Miller`, `Marcus Lim`, and `Mei Lin Tan`
 * `find n/george priya` returns `George Miller` and `Priya Nair`
 * `find p/8901` returns `Noor Aziz`, whose number ends in `8901`
 * `find a/tampines` returns `Marcus Lim`
+* `find vd/15/10/2026` returns `Priya Nair`, whose visit is at 09:00 that day. Follow it with `sort date` to list
+  that day's visits by time when planning your route.
+* `find vd/14/10/2026 15/10/2026` returns `Priya Nair` and `Mei Lin Tan`
+* `find note/review` returns `George Miller` and `Marcus Lim`, whose notes start with `Review`
 * `find n/m t/morning` returns `Mei Lin Tan`; `George Miller` and `Marcus Lim` also match `n/m` but are not tagged
   `morning`
 
@@ -651,7 +663,7 @@ Action     | Format, Examples
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
 **Edit**   | `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [p/PHONE_NUMBER] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
-**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...]`<br> e.g., `find n/James Jake a/clementi`
+**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`<br> e.g., `find n/James Jake a/clementi`, `find vd/18/9/2026`, `find note/insulin`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (current visit must have arrived; choose an available future appointment)
 **Prev**   | `prev INDEX`<br> e.g., `prev 1` (requires a previous datetime; replaces and discards the current datetime; no redo)
