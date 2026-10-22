@@ -27,11 +27,14 @@ public class Person {
     private final Phone phone;
 
     // Data fields
+    private final DateOfBirth dateOfBirth;
+    private final BloodType bloodType;
     private final Email email;
     private final Address address;
     private final VisitDate visitDate;
     private final List<VisitDate> previousVisitDates;
     private final Note note;
+    private final EmergencyContact emergencyContact;
     private final Set<Tag> tags = new HashSet<>();
 
     /**
@@ -39,19 +42,79 @@ public class Person {
      */
     public Person(Name name, Phone phone, Email email, Address address, VisitDate visitDate, Note note,
             Set<Tag> tags) {
-        this(name, phone, email, address, visitDate, List.of(), note, tags);
+        this(name, phone, email, address, visitDate, List.of(), note, new EmergencyContact(""), tags);
     }
 
     /**
-     * Creates a patient with an immutable copy of the previous visit dates, ordered oldest first.
+     * Creates a patient with an optional emergency contact and no previous visit dates.
+     */
+    public Person(Name name, Phone phone, Email email, Address address, VisitDate visitDate, Note note,
+            EmergencyContact emergencyContact, Set<Tag> tags) {
+        this(name, phone, email, address, visitDate, List.of(), note, emergencyContact, tags);
+    }
+
+    /**
+     * Creates a patient with previous visit dates and no emergency contact.
+     */
+    public Person(Name name, Phone phone, Email email, Address address, VisitDate visitDate,
+            List<VisitDate> previousVisitDates, Note note, Set<Tag> tags) {
+        this(name, phone, email, address, visitDate, previousVisitDates, note, new EmergencyContact(""), tags);
+    }
+
+    /**
+     * Creates a patient with an immutable copy of previous visit dates and an optional emergency contact.
+     * Previous dates are ordered oldest first.
      *
      * @throws NullPointerException If any field or previous visit date is null.
      * @throws IllegalArgumentException If previous dates are not strictly increasing or any is at or after
      *     the current visit date.
      */
     public Person(Name name, Phone phone, Email email, Address address, VisitDate visitDate,
-            List<VisitDate> previousVisitDates, Note note, Set<Tag> tags) {
-        requireAllNonNull(name, phone, email, address, visitDate, previousVisitDates, note, tags);
+            List<VisitDate> previousVisitDates, Note note, EmergencyContact emergencyContact, Set<Tag> tags) {
+        this(name, BloodType.UNKNOWN, phone, email, address, visitDate, previousVisitDates, note,
+                emergencyContact, tags);
+    }
+
+    /**
+     * Creates a patient with an optional blood type, no previous visits, and no emergency contact.
+     */
+    public Person(Name name, BloodType bloodType, Phone phone, Email email, Address address,
+            VisitDate visitDate, Note note, Set<Tag> tags) {
+        this(name, bloodType, phone, email, address, visitDate, List.of(), note, new EmergencyContact(""), tags);
+    }
+
+    /**
+     * Creates a patient with an optional date of birth and no other optional details.
+     */
+    public Person(Name name, DateOfBirth dateOfBirth, Phone phone, Email email, Address address,
+            VisitDate visitDate, Note note, Set<Tag> tags) {
+        this(name, dateOfBirth, BloodType.UNKNOWN, phone, email, address, visitDate, List.of(), note,
+                new EmergencyContact(""), tags);
+    }
+
+    /**
+     * Creates a patient with blood type, visit history, and an emergency contact but no date of birth.
+     */
+    public Person(Name name, BloodType bloodType, Phone phone, Email email, Address address, VisitDate visitDate,
+            List<VisitDate> previousVisitDates, Note note, EmergencyContact emergencyContact, Set<Tag> tags) {
+        this(name, new DateOfBirth(""), bloodType, phone, email, address, visitDate, previousVisitDates, note,
+                emergencyContact, tags);
+    }
+
+    /**
+     * Creates a patient with all optional details and an immutable oldest-first visit history.
+     *
+     * @throws NullPointerException If any field or previous visit date is null.
+     * @throws IllegalArgumentException If previous dates are not strictly increasing or any is at or after
+     *     the current visit date.
+     */
+    public Person(Name name, DateOfBirth dateOfBirth, BloodType bloodType, Phone phone, Email email,
+            Address address, VisitDate visitDate,
+            List<VisitDate> previousVisitDates, Note note, EmergencyContact emergencyContact, Set<Tag> tags) {
+        requireAllNonNull(name, dateOfBirth, bloodType, phone, email, address, visitDate, previousVisitDates, note,
+                emergencyContact, tags);
+        this.dateOfBirth = dateOfBirth;
+        this.bloodType = bloodType;
         List<VisitDate> copiedPreviousVisitDates = List.copyOf(previousVisitDates);
         validatePreviousVisitDates(copiedPreviousVisitDates, visitDate);
         this.name = name;
@@ -61,6 +124,7 @@ public class Person {
         this.visitDate = visitDate;
         this.previousVisitDates = copiedPreviousVisitDates;
         this.note = note;
+        this.emergencyContact = emergencyContact;
         this.tags.addAll(tags);
     }
 
@@ -81,6 +145,14 @@ public class Person {
         return name;
     }
 
+    public DateOfBirth getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public BloodType getBloodType() {
+        return bloodType;
+    }
+
     public Phone getPhone() {
         return phone;
     }
@@ -95,6 +167,10 @@ public class Person {
 
     public VisitDate getVisitDate() {
         return visitDate;
+    }
+
+    public EmergencyContact getEmergencyContact() {
+        return emergencyContact;
     }
 
     /**
@@ -167,31 +243,38 @@ public class Person {
         }
 
         return name.equals(otherPerson.name)
+                && dateOfBirth.equals(otherPerson.dateOfBirth)
+                && bloodType.equals(otherPerson.bloodType)
                 && phone.equals(otherPerson.phone)
                 && email.equals(otherPerson.email)
                 && address.equals(otherPerson.address)
                 && visitDate.equals(otherPerson.visitDate)
                 && previousVisitDates.equals(otherPerson.previousVisitDates)
                 && note.equals(otherPerson.note)
+                && emergencyContact.equals(otherPerson.emergencyContact)
                 && tags.equals(otherPerson.tags);
     }
 
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(name, phone, email, address, visitDate, previousVisitDates, note, tags);
+        return Objects.hash(name, dateOfBirth, bloodType, phone, email, address, visitDate, previousVisitDates,
+                note, emergencyContact, tags);
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
                 .add("name", name)
+                .add("dateOfBirth", dateOfBirth)
+                .add("bloodType", bloodType)
                 .add("phone", phone)
                 .add("email", email)
                 .add("address", address)
                 .add("visitDate", visitDate)
                 .add("previousVisitDates", previousVisitDates)
                 .add("note", note)
+                .add("emergencyContact", emergencyContact)
                 .add("tags", tags)
                 .toString();
     }
