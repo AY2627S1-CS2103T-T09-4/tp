@@ -15,6 +15,9 @@ Class UserPrefs
 Class UniquePersonList
 Class Person
 Class Address
+Class AlcoholHistory
+Class Allergies
+Enum SmokingStatus
 Enum BloodType
 Class DateOfBirth
 Class Email
@@ -47,6 +50,9 @@ Person *--> Phone
 Person *--> "1" EmergencyContact
 Person *--> Email
 Person *--> Address
+Person *--> "1" Allergies
+Person *--> "1" AlcoholHistory
+Person --> "1" SmokingStatus
 Person *--> "*" Tag
 
 Person -[hidden]up--> I
