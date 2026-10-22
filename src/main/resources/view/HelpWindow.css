@@ -1,4 +1,4 @@
-.button, #helpMessage, .helpHint, .helpTitle {
+.button, .helpHint, .helpTitle, .helpSectionTitle, .helpCommand {
     -fx-text-fill: white;
 }
 
@@ -31,4 +31,14 @@
 
 .helpHint {
     -fx-font-size: 12px;
+}
+
+.helpMessage, .helpNavigationHint {
+    -fx-font-size: 11px;
+    -fx-text-fill: #c4c4c4;
+}
+
+.helpSectionTitle {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
 }

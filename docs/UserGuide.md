@@ -115,31 +115,35 @@ The command box keeps commands submitted during the current application session 
 
 ### Viewing help: `help`
 
-Opens a non-modal help window with the online User Guide's URL. Choose
-**Open User Guide** to request opening it in your default browser, or **Copy URL**
-to copy the address. Use Tab to reach the buttons and Space to activate them.
-The window can be resized and scrolled vertically. Choose **Close** or press
-**Escape** to dismiss it. You can continue using the main window while help is open.
-
-Opening the guide requires a browser and an Internet connection. A browser-launch
-request does not confirm that the page loaded. If no browser appears, try **Copy URL**
-and open the address manually. Detectable browser and clipboard failures are shown
-in the help window; you can retry or enter the displayed URL in your browser.
-Copy success is reported only when the clipboard accepts the URL.
-
-Press **F1** or choose **Help → Help** to open the same window. Repeating a help
-request brings that window to the front and restores it if it was minimized.
-After closing help, focus returns to the command box without submitting or
-discarding unfinished input. You can reopen help after using **Close**,
-**Escape**, or the window's native close control.
-
-If a confirmation or follow-up prompt is pending, use **F1** or **Help → Help**
-to consult the guide without answering the prompt. Typing `help` and pressing
-Enter still counts as the response to the pending prompt.
-
-![help message](images/helpMessage.png)
+Opens a separate help window listing **Available commands** in one column, grouped into patient management,
+visit planning, and application controls. Each command has a short description. The list works offline;
+syntax and examples are in the full User Guide.
 
 Format: `help`
+
+You can also press **F1** or choose **Help → Help**. Repeating a help request brings the existing
+window to the front, restoring it if minimized. You can resize Help and continue using the main window.
+
+* **Browse commands:** The command list receives keyboard focus when Help opens. Use **Up** and **Down** to scroll,
+  or **Home** and **End** to reach the top and bottom. At the default window size, the whole directory is visible;
+  smaller windows allow scrolling. The User Guide URL and buttons stay below the list.
+* **Read the full guide:** Choose **Open User Guide** to open it in your default browser. This requires
+  an Internet connection. The launch message does not guarantee that the page loaded. If nothing opens,
+  choose **Copy URL** and paste the address into your browser. If copying fails, retry or enter the displayed URL manually.
+* **Close Help:** Choose **Close**, press **Escape**, or use the window's close control. Focus returns to the
+  command box with your unfinished input unchanged. For example, type `find Be`, press F1, then close Help
+  to continue editing the same draft.
+
+Use **Tab** and **Shift+Tab** to move between the command list and buttons. Press **Space** to activate a focused
+button. On Windows and Linux, you can also press **Enter**.
+
+<box type="warning" seamless>
+
+While a confirmation or follow-up prompt is pending, open Help with **F1** or **Help → Help**.
+Typing `help` and pressing Enter answers that prompt instead of opening Help.
+</box>
+
+![Help window](images/helpMessage.png)
 
 
 ### Adding a patient: `add`

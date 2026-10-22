@@ -8,8 +8,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.KeyCode;
@@ -41,7 +41,7 @@ public class HelpWindow extends UiPart<Stage> {
     private Label helpMessage;
 
     @FXML
-    private Button closeButton;
+    private ScrollPane helpScrollPane;
 
     @FXML
     private Label guideStatus;
@@ -77,7 +77,7 @@ public class HelpWindow extends UiPart<Stage> {
         getRoot().show();
         getRoot().centerOnScreen();
         focus();
-        closeButton.requestFocus();
+        helpScrollPane.requestFocus();
     }
 
     /**
