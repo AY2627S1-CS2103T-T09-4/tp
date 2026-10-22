@@ -251,23 +251,31 @@ the clock, so the passage of time does not invalidate a record.
 
 The constructor takes an immutable defensive copy and rejects null entries or invalid chronology rather than
 sorting or repairing the input. The constructor without previous dates creates an empty list. Equality and hashing
-include previous dates; patient identity still uses the normalized name and phone number. `edit` and `PersonBuilder`
-copies preserve previous dates; `next` appends the old current date before replacing it. A replacement current date
-that would invalidate the record produces a command error before model or list changes.
+include previous dates; patient identity still uses the normalized name and phone number.
+
+Editing a patient or copying it with `PersonBuilder` preserves previous dates. The command-specific transitions
+are described under [Scheduling the next visit](#scheduling-the-next-visit) and
+[Restoring the previous visit](#restoring-the-previous-visit).
 
 `JsonAdaptedPerson` writes `previousVisitDates` as an ordered array of visit-date strings. Missing or JSON-null
-arrays load as empty lists for compatibility with older files. Non-arrays, null or malformed entries, invalid
-chronology, and duplicates within a record are rejected through the existing invalid-data path. The required
-`visitDate` field remains required. No entries are sorted, deduplicated, or dropped to repair an invalid file.
+arrays load as empty lists for compatibility with older files; `visitDate` is still required. Non-arrays, null or
+malformed entries, invalid chronology, and duplicates within a record follow the existing invalid-data path.
+No entries are sorted, deduplicated, or dropped to repair an invalid file.
 
-Previous dates are persisted and shown by `view INDEX`, with no arbitrary limit on their number.
+#### Displaying visit records
 
-`PatientDetailsPanel` retains the current visit datetime and adds `Previous visit dates:` immediately below it,
-followed by the note. It formats the immutable previous dates with `VisitDate#toString`, one full datetime per line
-newest first, or shows `No previous visit dates` for an empty record. The label keeps its preferred height inside
-the existing `ScrollPane`, so long records remain accessible by scrolling. Rendering preserves the patient's dates
-and their oldest-first order in the model and JSON file.
-Run `view` again after a mutation to refresh the details.
+`PatientDetailsPanel` shows `Previous visit dates:` below the current visit and above the note, with one datetime
+per line or `No previous visit dates` for an empty record. It reverses the dates only for display, placing recent
+visits first while preserving oldest-first storage. The existing `ScrollPane` accommodates long records without
+imposing a limit on the number of retained dates.
+
+The current datetime includes a calendar-day label in parentheses: `Past`, `Today`, or `Upcoming`.
+`PatientDetailsPanel` uses an injected `Clock` (the system's local clock in production) and reads its current
+`LocalDate` once per `setPerson` call. It compares calendar dates, so both earlier and later times today receive
+`Today`. This display-only label does not affect stored data, `next` eligibility, or the sort cutoff. Re-rendering
+details recomputes it; there is no automatic midnight refresh. Fixed-clock tests cover day and time-zone boundaries
+without changing the system clock. See [Calendar labels for current visits](#calendar-labels-for-current-visits)
+for manual checks.
 
 ### Duplicate patient identity, visit dates, and name confirmation
 
@@ -416,10 +424,24 @@ prefixes preceded by a literal space. A recognized prefix inside notes delimits 
 escaping or extra note validation. Repeated `note/` prefixes are rejected before field validation, including identical or empty
 values. Repeated `t/TAG` prefixes retain their existing replacement and clearing behavior.
 
-A successful edit restores the full displayed list in stored order and uses the existing logic/storage path
-to save the updated record, including empty notes, in the existing JSON format. The existing patient card displays
-the replacement visit date/time and notes. Editing replaces one stored visit date/time and one stored note;
-it does not append visit-history entries or per-visit notes.
+Editing replaces the supplied fields without appending visit-history entries or per-visit notes. Saving and UI
+behavior follow the [shared visit-change flow](#saving-and-displaying-visit-changes) below.
+
+### Saving and displaying visit changes
+
+`edit`, `next`, and `prev` validate the proposed change before replacing the patient. Successful commands follow
+the existing `add`/`edit` interaction pattern: clear filtering and sorting, show the full list in stored order,
+and return feedback with a `CommandResult` that requests saving. `LogicManager` saves through storage before
+returning the result to the UI.
+
+These results do not select a patient for the details panel. Users must run `view` with the patient's newly
+displayed index to refresh the record and calendar label. `view` supplies the patient without requesting a save.
+
+Validation errors and cancelled confirmations leave patient data, saved data, and list context unchanged.
+Duplicate-related errors and name-confirmation prompts can display an existing patient in the details panel;
+other rejected inputs do not change that panel.
+A storage I/O failure occurs after the in-memory update; the existing error handling reports it without rolling
+back the record or list.
 
 ### Sorting displayed visits by date
 
@@ -443,63 +465,51 @@ patient list. A later operation that resets the filter also clears this display-
 
 ### Scheduling the next visit
 
-`next INDEX DATETIME` retains the current datetime and schedules the following appointment for a displayed patient.
-Corrections use `edit ... vd/`, which preserves the previous dates unchanged. See the
-[User Guide](UserGuide.md#scheduling-the-next-visit-next) for syntax and errors.
+`NextCommand` appends the current datetime to the previous-date list and sets the requested datetime as current,
+preserving all other patient fields. This separates advancement from `edit`, which corrects the current datetime
+without adding history. The [User Guide](UserGuide.md#scheduling-the-next-visit-next) provides syntax and errors.
 
-For example, assume the clock reads `31/10/2026 1200`, Betsy is displayed at index 1, and the requested slot is unused.
-The two commands below are alternatives applied to the same initial record:
+Eligibility requires `current <= now < requested`. Keeping this clock-dependent rule in the command allows past
+appointments to remain valid in the model and storage. Together with the existing record chronology, it ensures
+that appending the old current datetime preserves strict ordering.
 
-| Operation | Current datetime | Previous datetimes |
-| --- | --- | --- |
-| Initial record | `30/10/2026 1000` | `[10/10/2026 1000]` |
-| `next 1 1/11/2026 0930` | `1/11/2026 0930` | `[10/10/2026 1000, 30/10/2026 1000]` |
-| `edit 1 vd/1/11/2026 0930` | `1/11/2026 0930` | `[10/10/2026 1000]` |
+The parser passes an injected clock to the command. Each eligibility check reads it once in the local time zone.
+Comparisons retain seconds and nanoseconds; error feedback formats the captured time as `d/M/yyyy HHmm` for
+readability. Fixed clocks make boundary tests deterministic.
 
-The command follows the existing parser, model, and storage flow:
+Before replacement, the command rejects an unchanged datetime and checks the complete candidate record against
+all other stored patients, including hidden patients and excluding the original record. The shared
+[visit-date uniqueness rule](#duplicate-patient-identity-visit-dates-and-name-confirmation) applies.
 
-1. `NextCommandParser` parses the displayed index and datetime, then passes its injected clock to `NextCommand`.
-1. `NextCommand` selects the displayed patient and rejects an unchanged requested datetime. It reads the clock once
-   and requires `current <= now < requested`, retaining seconds and nanoseconds for both comparisons.
-1. It constructs a replacement `Person`, appending the old current datetime and preserving every other field.
-   Before mutation, it compares the candidate's complete visit record against every other stored patient,
-   including hidden patients and excluding the original record. The
-   [visit-time conflict limitations](#visit-time-conflict-limitations) apply.
-1. If the requested day differs from the current visit's day and already has `Model.MAX_VISITS_PER_DAY` (7) or more
-   current visits, it returns a `CommandInputRequest` confirmation instead of mutating, as `add` and `edit` do.
-   A later visit on the same day does not ask, because it replaces that day's visit rather than adding one.
-   On `y`, the confirmed action reads the clock again and rechecks that the requested visit is still in the future,
-   that the original record exists, and that no conflict appeared while the prompt was open.
-1. On success, it replaces the patient and restores the full list in stored order, clearing the filter and sort.
-   `LogicManager` saves through the existing storage flow before returning the result to the UI.
+If the requested day differs from the current visit's day and already has `Model.MAX_VISITS_PER_DAY` (7) or more
+current visits, the command returns a `CommandInputRequest` confirmation before mutating, as `add` and `edit` do.
+A later visit on the same day does not ask, because it replaces that day's visit rather than adding one.
+On confirmation, the command rechecks eligibility using a fresh clock reading, verifies that the original record
+still exists, and repeats the conflict check before replacing the patient.
 
-A future current visit is rejected with advice to use `edit`. A requested datetime at or before now is rejected
-with the captured local time formatted as `d/M/yyyy HHmm`, without seconds. An immediate second `next` is rejected
-because the new current visit is still in the future. Details do not refresh automatically; users run `view` again
-using the patient's newly displayed index.
+A visit-time conflict supplies the conflicting patient through `CommandException` so `MainWindow` displays that
+record without changing the displayed list. If no further visit is planned, the current datetime remains stored
+after it becomes past; no attendance or completion state is updated.
+Manual cases appear under [Testing the next command](#testing-the-next-command).
 
-Validation failures stop before any mutation or save. When the requested time belongs to another patient,
-`NextCommand` attaches the conflicting patient to its `CommandException`; `MainWindow` displays that patient in the
-details panel. Every validation failure preserves the displayed list. A storage I/O failure happens after the
-in-memory update; the existing error handling reports it without rolling back the record or list. If no further visit
-is planned, the current datetime remains stored as it becomes past. There is no attendance or completion state to
-update.
+### Restoring the previous visit
 
-The design keeps three decisions explicit:
+`PrevCommand` discards the current datetime and replaces it with the latest previous datetime, removing the
+restored datetime from the previous-date list. There is no redo. It copies all other fields from the selected
+patient's latest record, preserving intervening edits.
+The [User Guide](UserGuide.md#restoring-the-previous-visit-prev) includes syntax, feedback, and a running example.
 
-* **Separate advancing from correction.** `next` retains the old current datetime; `edit` replaces it without
-  changing previous dates. The user chooses when to advance after handling a visit.
-* **Keep clock validation in the command.** Keeping eligibility outside `VisitDate` and storage allows past
-  appointments to remain valid for corrections and loading. Existing record chronology and `current <= now < requested`
-  ensure that appending the current date preserves strict order before the new current date.
-* **Inject the clock.** Production uses the system's local time zone and reads time once at execution without
-  truncating seconds. Fixed clocks make boundary and persistence tests deterministic without changing global time.
+There is no clock eligibility check: rollback must allow immediate correction of mistaken advancement, even while
+the current or restored datetime is still in the future. It does not request confirmation; success feedback names
+both the restored and discarded datetimes so the loss is visible.
 
-Tests cover parsing, displayed indices, hidden current and previous-date conflicts, appending to empty and populated
-records, field preservation, list reset, exact clock boundaries, and persistence. They also cover repeated advancement
-after an intervening edit, unchanged saved data after rejection, and saved appointments becoming past as the test
-clock advances. Manual cases appear in the
-[testing appendix](#testing-the-next-command).
+Empty previous dates produce a `CommandException` before the private rollback helper runs. The helper's assertion
+documents that internal precondition, while user-input validation remains effective with assertions disabled.
+The replacement contains only dates from the original record, so it cannot introduce a new cross-patient datetime
+conflict. The model still enforces chronology and uniqueness on replacement.
+
+Manual checks for repeated rollback, subsequent advancement, and persistence appear under
+[Testing the prev command](#testing-the-prev-command).
 
 ### Follow-up command-line input and confirmation
 
@@ -708,6 +718,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* * *`  | doctor                  | record that I visited a patient on a given date                           | know when I last saw each patient                                                       |
 | `* * *`  | doctor                  | schedule a patient's following visit                                     | plan their follow-up care                                                             |
 | `* * *`  | doctor                  | find patients whose next visit date is today                              | be reminded who is due for a visit                                                      |
+| `* *`    | doctor                  | restore the latest previous visit datetime                               | correct a visit-date advancement while keeping changes to the patient's other details |
 | `* *`    | doctor                  | add or update notes about a patient's medical conditions                  | prepare for future visits                                                               |
 | `* *`    | doctor                  | assign a priority level to a patient                                      | tell at a glance which patients need closer attention                                   |
 | `* *`    | doctor                  | sort my patients by their next visit date                                 | plan upcoming visits while retaining past schedules for reference                       |
@@ -956,6 +967,38 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case resumes at step 1.
 
+**Use case: UC07 - Restore the previous visit datetime**
+
+**Guarantees**
+
+* Only the selected patient's current and previous visit datetimes change; intervening edits to other fields remain.
+* The datetime stored as current before rollback is discarded, with no redo. Rollback does not verify attendance
+  or completion.
+* Invalid selection or empty previous dates leave patient data, saved data, list context, and details unchanged.
+
+**MSS**
+
+1.  Doctor requests rollback for a patient identified by their displayed index.
+2.  Doc makes the latest previous datetime current and removes it from the previous-date list.
+3.  Doc saves the changed record, reports the restored and discarded datetimes, and shows the full caseload in
+    stored order.
+
+    Use case ends.
+
+**Extensions**
+
+* 1a. The displayed index does not identify a patient.
+
+    * 1a1. Doc explains that the selection is invalid.
+
+      Use case resumes at step 1.
+
+* 1b. The selected patient has no previous datetime to restore.
+
+    * 1b1. Doc explains that no previous visit dates remain.
+
+      Use case ends.
+
 ### Non-Functional Requirements
 
 1.  Should work on any _mainstream OS_ as long as it has Java `25` or above installed.
@@ -979,9 +1022,12 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 * **Active patient record**: A patient record included in the doctor's current caseload and visit planning.
 * **Archived patient record**: A patient record retained for future reference but excluded from the active caseload and visit planning.
+* **Calendar label**: `Past`, `Today`, or `Upcoming` beside the current datetime, based on its calendar date relative
+  to the local date when details are rendered. It does not indicate attendance or completion.
 * **Caseload**: The collection of active patient records currently managed by a doctor.
 * **Current visit date**: The required date and time stored in `visitDate`. It can be past, present, or future and
-  remains stored until changed using `edit` or `next`. It must differ from every other current or previous datetime.
+  remains stored until changed using `edit`, `next`, or `prev`. It must differ from every other current or previous
+  datetime.
 * **House call**: A medical consultation carried out at the patient's home rather than at a clinic.
 * **House-call doctor**: A doctor who travels to patients' homes to provide medical consultations and follow-up care.
 * **Medical condition**: An ongoing health issue recorded in a patient's notes to help the doctor prepare for future visits.
@@ -992,6 +1038,8 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * **Patient record**: The information Doc stores for one patient, including their contact details, medical notes,
   tags, current visit date and time, and previous visit dates and times retained by `next`.
 * **Priority level**: A label indicating how closely a patient needs to be followed up, used when ordering planned visits.
+* **Rollback**: Restoring the latest previous visit datetime with `prev`, replacing and discarding the current datetime
+  while preserving the patient's other details. It is not a general undo operation and has no redo.
 * **Visit**: A single house call. Doc stores one current datetime, ordered previous datetimes, and one patient-level note.
 * **Visit record**: A patient's current and previous visit datetimes. These record scheduled times retained by the
   user and do not verify attendance or completion.
@@ -1348,8 +1396,44 @@ successful advances in one session without waiting or changing the system clock.
    Run `find n/Nextgamma` and `next 1 D 1700` again, then enter `y`; expect the visit to be scheduled on `D`.
    With only six visits on `D`, expect `next` to schedule without asking.
 
-Fixed-clock automated tests cover exact equality to now, nanosecond boundaries, one clock read, and saved appointments
-becoming past as time advances. These boundaries are not reliably reproducible by typing against the system clock.
+Fixed-clock automated tests cover exact equality to now, nanosecond boundaries, one initial clock read, and
+appointments becoming past as time advances, including while confirmation is pending. These boundaries are not
+reliably reproducible by typing against the system clock.
+
+### Testing the prev command
+
+Use disposable data. Start with Nextalpha from [Testing the next command](#testing-the-next-command), whose current
+datetime is `F2` and whose previous dates are `[P1, P2]`, with `P1 < P2 < actual now < F1 < F2`.
+When preparing that setup, choose `P1` and `P2` on calendar dates before today and `F1` and `F2` on dates after today.
+Choose another globally unused future datetime `F4` for an intervening edit.
+Find the patient again after each successful mutation, since success restores the full list in stored order.
+
+1. Run `find n/Nextalpha`, then `view 1`. Try `prev`, `prev 0`, `prev 2147483648`, `prev 1 extra`, and `prev 2`.<br>
+   Expect usage for malformed arguments, `Index is too large.` with guidance and usage for `prev 2147483648`,
+   and the invalid-index error for `prev 2`. Verify that patient data, the saved JSON, filtered list, and
+   displayed details remain unchanged.
+1. Run `edit 1 vd/F4 p/84567890 e/updated@example.com a/30 Updated Road note/Updated before rollback t/followup dob/15/6/1990 bt/A+ ec/Mary Tan, 91234567`,
+   then `find n/Nextalpha` and `prev 1`.<br>
+   Expect success even though `F4` is in the future. Verify that feedback identifies `P2` as restored and `F4`
+   as discarded, including the time for both. Find and view the patient again: current is `P2`, previous
+   dates are `[P1]`, and the updated phone, email, address, note, tags, date of birth, blood type, and emergency
+   contact remain. The replaced current datetime `F4` is discarded rather than restored or appended to previous dates.
+   Close and reopen Doc; verify that this state was saved.
+1. Run `find n/Nextalpha`, then `next 1 F2`.<br>
+   Expect current `F2` and previous dates `[P1, P2]`. Rollback did not retain either discarded future datetime.
+1. Run `find n/Nextalpha Nextbeta`, then `sort date 1/1/2000`.<br>
+   Expect Nextbeta at `F1` to be index 1 and Nextalpha at `F2` to be index 2. Run `view 2`, then `prev 2`.
+   Expect Nextalpha to change and the full list to return in stored order. The right-hand details remain as last
+   viewed until another `view`. Find and view Nextalpha again: current is `P2`, previous dates are `[P1]`.
+   Find and view Nextbeta separately: its record remains unchanged at `F1` with previous dates `[P3]`.
+   Run `find n/Nextalpha` and `view 1` before continuing.
+1. Run `prev 1` while only Nextalpha is displayed.<br>
+   Find and view it again: current is `P1`, previous dates are empty, and the note remains updated. Close and reopen
+   Doc and verify that this state persists.
+1. Run `find n/Nextalpha Nextbeta`, then `sort date`, then `view 2` and `prev 2`.<br>
+   Expect future Nextbeta first and past Nextalpha second before the rejected rollback.
+   Expect `Patient Nextalpha Patient has no previous visit dates to restore.` Verify that the record, saved file,
+   filtered list, sorted order, and details are unchanged. There is no redo command.
 
 ### Viewing one patient
 
@@ -1374,6 +1458,41 @@ becoming past as time advances. These boundaries are not reliably reproducible b
 1. Run `view 999`. Expect an invalid-index error, no change to the displayed list, and no changes to stored patient
    data.
 1. Close and reopen the application. Expect all patient data to remain unchanged.
+
+### Calendar labels for current visits
+
+Use disposable data and a fresh patient with no previous dates. Choose globally unused datetimes named
+`YESTERDAY`, `TODAY_EARLY`, `TODAY_LATE`, and `TOMORROW`, using your computer's current local calendar date.
+For today's values, use times near the start and end of the day, such as `0000` and `2359`.
+Replace the placeholders with full `d/M/yyyy HHmm` datetimes before submitting commands.
+
+1. Run these commands:
+
+   ```text
+   add n/Calendarcheck Patient p/83456789 a/30 Test Road vd/YESTERDAY
+   find n/Calendarcheck
+   view 1
+   ```
+
+   Expect the full current datetime followed by `(Past)`, with `No previous visit dates` below it.
+1. For each value below, run `edit 1 vd/VALUE`, then `find n/Calendarcheck` and `view 1`.
+
+   | Value | Expected label beside the current datetime |
+   | --- | --- |
+   | `TODAY_EARLY` | `Today`, even if the time has already passed. |
+   | `TODAY_LATE` | `Today`, including when the time is still in the future. |
+   | `TOMORROW` | `Upcoming`. |
+
+   The successful edit restores the full list; finding the test patient again ensures the correct displayed index.
+   Details refresh only when `view` runs. Verify that the label does not appear beside previous dates or in JSON.
+1. While only Calendarcheck is displayed, run `sort date 1/1/2000`, then `view 1`.<br>
+   Expect the label to remain based on today's local date, independently of the chosen sort cutoff.
+1. Close and reopen Doc, run `find n/Calendarcheck`, and view it again.<br>
+   Expect the saved datetime to remain unchanged and the label to reflect the local date when viewed.
+
+Fixed-clock tests cover the exact midnight and year boundary and time-zone differences. Do not change the OS clock
+or wait for midnight to exercise those cases manually. An already displayed label does not refresh automatically
+when midnight passes; another `view` recalculates it.
 
 ### Navigating command history
 

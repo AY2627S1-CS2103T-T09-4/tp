@@ -25,6 +25,8 @@ import seedu.address.model.tag.Tag;
 public class ParserUtil {
 
     public static final String MESSAGE_INVALID_INDEX = "Index must be a positive integer.";
+    public static final String MESSAGE_INDEX_TOO_LARGE =
+            "Index is too large. Enter an index shown in the displayed patient list.";
 
     /**
      * Parses {@code oneBasedIndex} into an {@code Index} and returns it. Leading and trailing whitespaces will be
@@ -37,6 +39,15 @@ public class ParserUtil {
             throw new ParseException(MESSAGE_INVALID_INDEX);
         }
         return Index.fromOneBased(Integer.parseInt(trimmedIndex));
+    }
+
+    /**
+     * Returns whether the input is a positive decimal integer, regardless of its size.
+     * Uses the same digit interpretation as Integer.parseInt without converting the numeric value.
+     */
+    static boolean isPositiveInteger(String argument) {
+        return argument.chars().allMatch(character -> Character.digit(character, 10) >= 0)
+                && argument.chars().anyMatch(character -> Character.digit(character, 10) > 0);
     }
 
     /**
