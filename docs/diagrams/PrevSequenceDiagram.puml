@@ -1,0 +1,102 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+
+box Logic LOGIC_COLOR_T1
+participant ":LogicManager" as LogicManager LOGIC_COLOR
+participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
+participant ":PrevCommandParser" as PrevCommandParser LOGIC_COLOR
+participant "p:PrevCommand" as PrevCommand LOGIC_COLOR
+participant ":CommandResult" as CommandResult LOGIC_COLOR
+end box
+
+box Model MODEL_COLOR_T1
+participant "m:Model" as Model MODEL_COLOR
+end box
+
+box Storage STORAGE_COLOR_T1
+participant ":Storage" as Storage STORAGE_COLOR
+end box
+
+[-> LogicManager : execute("prev 1")
+activate LogicManager
+
+LogicManager -> AddressBookParser : parseCommand("prev 1")
+activate AddressBookParser
+
+create PrevCommandParser
+AddressBookParser -> PrevCommandParser : PrevCommandParser()
+activate PrevCommandParser
+PrevCommandParser --> AddressBookParser
+deactivate PrevCommandParser
+
+AddressBookParser -> PrevCommandParser : parse(" 1")
+activate PrevCommandParser
+
+create PrevCommand
+PrevCommandParser -> PrevCommand : PrevCommand(...)
+activate PrevCommand
+
+PrevCommand --> PrevCommandParser
+deactivate PrevCommand
+
+PrevCommandParser --> AddressBookParser : p
+deactivate PrevCommandParser
+
+' Hidden arrow to position the destroy marker below the end of the activation bar.
+PrevCommandParser -[hidden]-> AddressBookParser
+destroy PrevCommandParser
+
+AddressBookParser --> LogicManager : p
+deactivate AddressBookParser
+
+LogicManager -> PrevCommand : execute(m)
+activate PrevCommand
+
+PrevCommand -> Model : getFilteredPersonList()
+activate Model
+Model --> PrevCommand : displayedPersons
+deactivate Model
+
+PrevCommand -> PrevCommand : createUpdatedPerson(personToUpdate)
+activate PrevCommand
+PrevCommand --> PrevCommand : updatedPerson
+deactivate PrevCommand
+
+note right of PrevCommand
+  Successful main flow only.
+  Validation and error paths omitted.
+end note
+
+PrevCommand -> Model : setPerson(personToUpdate, updatedPerson)
+activate Model
+Model --> PrevCommand
+deactivate Model
+
+PrevCommand -> Model : updateFilteredPersonList(show all)
+activate Model
+Model --> PrevCommand
+deactivate Model
+
+create CommandResult
+PrevCommand -> CommandResult : CommandResult(successMessage)
+activate CommandResult
+CommandResult --> PrevCommand
+deactivate CommandResult
+
+PrevCommand --> LogicManager : result
+deactivate PrevCommand
+
+LogicManager -> Model : getAddressBook()
+activate Model
+Model --> LogicManager : addressBook
+deactivate Model
+
+LogicManager -> Storage : saveAddressBook(addressBook)
+activate Storage
+Storage --> LogicManager
+deactivate Storage
+
+[<--LogicManager : result
+deactivate LogicManager
+@enduml

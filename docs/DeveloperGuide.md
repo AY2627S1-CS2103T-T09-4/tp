@@ -111,7 +111,7 @@ requests confirmation and `execute("y")` confirms it.
 
 How the `Logic` component works:
 
-1. When `Logic` is called upon to execute a command, the command is passed to an `AddressBookParser` object, which in turn creates a parser that matches the command (e.g., `DeleteCommandParser`) and uses it to parse the command.
+1. When `Logic` is called upon to execute a command, the command is passed to an `AddressBookParser` object, which dispatches it to the parser for that command. Parser instances may be reused or created on demand depending on their state and dependencies.
 1. This results in a `Command` object (more precisely, an object of one of its subclasses e.g., `DeleteCommand`) which is executed by the `LogicManager`.
 1. A command that needs more input returns a `CommandResult` containing a `CommandInputRequest`. `LogicManager`
    stores at most one pending request and sends the next command-line input directly to it without parsing that input
@@ -673,6 +673,11 @@ A later visit on the same day does not ask, because it replaces that day's visit
 On confirmation, the command rechecks eligibility using a fresh clock reading, verifies that the original record
 still exists, and repeats the conflict check before replacing the patient.
 
+The following sequence diagram shows the successful main flow when no full-day confirmation is needed. Validation,
+conflict checking, and the optional confirmation branch are treated as internal details of `NextCommand`.
+
+<puml src="diagrams/NextSequenceDiagram.puml" alt="Interactions for scheduling the next visit" width="650" />
+
 A visit-time conflict supplies the conflicting patient through `CommandException` so `MainWindow` displays that
 record without changing the displayed list. If no further visit is planned, the current datetime remains stored
 after it becomes past; no attendance or completion state is updated.
@@ -693,6 +698,11 @@ Empty previous dates produce a `CommandException` before the private rollback he
 documents that internal precondition, while user-input validation remains effective with assertions disabled.
 The replacement contains only dates from the original record, so it cannot introduce a new cross-patient datetime
 conflict. The model still enforces chronology and uniqueness on replacement.
+
+The following sequence diagram shows the successful rollback flow. The empty-history error path is described above and
+is omitted from the diagram to keep the interaction focused.
+
+<puml src="diagrams/PrevSequenceDiagram.puml" alt="Interactions for restoring the previous visit" width="650" />
 
 Manual checks for repeated rollback, subsequent advancement, and persistence appear under
 [Testing the prev command](#testing-the-prev-command).
