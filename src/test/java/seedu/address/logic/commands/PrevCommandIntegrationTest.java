@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -23,18 +22,14 @@ import org.junit.jupiter.api.io.TempDir;
 import seedu.address.logic.LogicManager;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
-import seedu.address.logic.parser.AddressBookParser;
 import seedu.address.logic.parser.ParserUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
-import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.UserPrefs;
 import seedu.address.model.person.Person;
-import seedu.address.storage.JsonAddressBookStorage;
-import seedu.address.storage.JsonUserPrefsStorage;
-import seedu.address.storage.StorageManager;
+import seedu.address.testutil.LogicManagerIntegrationFixture;
 import seedu.address.testutil.PersonBuilder;
 
 /**
@@ -56,27 +51,15 @@ public class PrevCommandIntegrationTest {
 
     private Model model;
     private LogicManager logic;
-    private JsonAddressBookStorage addressBookStorage;
-    private int saveCount;
+    private LogicManagerIntegrationFixture fixture;
 
     @BeforeEach
     public void setUp() throws IOException {
         AddressBook addressBook = new AddressBook();
         addressBook.addPerson(AMY);
         model = new ModelManager(addressBook, new UserPrefs());
-        addressBookStorage = new JsonAddressBookStorage(testFolder.resolve("addressBook.json")) {
-            /**
-             * Saves the address book and counts this write.
-             */
-            @Override
-            public void saveAddressBook(ReadOnlyAddressBook addressBook) throws IOException {
-                saveCount++;
-                super.saveAddressBook(addressBook);
-            }
-        };
-        addressBookStorage.saveAddressBook(addressBook);
-        saveCount = 0;
-        logic = createLogic(addressBookStorage);
+        fixture = new LogicManagerIntegrationFixture(model, testFolder, FIXED_CLOCK);
+        logic = fixture.getLogic();
     }
 
     @Test
@@ -87,12 +70,13 @@ public class PrevCommandIntegrationTest {
 
         assertEquals("Visit date restored for Amy Bee: 20/10/2026 1000\n"
                 + "Discarded visit date and time: 30/10/2026 1000", result.getFeedbackToUser());
-        assertPersistedPatient(expectedPerson);
-        assertEquals(1, saveCount);
+        fixture.assertPersistedPatients(expectedPerson);
+        assertEquals(1, fixture.getSaveCount());
         assertTrue(result.shouldSaveAddressBook());
         assertTrue(result.getPersonToView().isEmpty());
         assertFalse(logic.isInputRequestPending());
-        Model reloadedModel = new ModelManager(addressBookStorage.readAddressBook().orElseThrow(), new UserPrefs());
+        Model reloadedModel = new ModelManager(fixture.getAddressBookStorage().readAddressBook().orElseThrow(),
+                new UserPrefs());
         assertEquals(model.getAddressBook(), reloadedModel.getAddressBook());
     }
 
@@ -105,9 +89,9 @@ public class PrevCommandIntegrationTest {
                 .withPreviousVisitDates().build();
         assertEquals("Visit date restored for Amy Bee: 10/10/2026 1000\n"
                 + "Discarded visit date and time: 20/10/2026 1000", result.getFeedbackToUser());
-        assertPersistedPatient(expectedPerson);
-        assertEquals(2, saveCount);
-        assertRejectedCommand("prev 1", CommandException.class,
+        fixture.assertPersistedPatients(expectedPerson);
+        assertEquals(2, fixture.getSaveCount());
+        fixture.assertRejectedCommand("prev 1", CommandException.class,
                 String.format(PrevCommand.MESSAGE_NO_PREVIOUS_VISIT_DATES, AMY.getName()));
     }
 
@@ -127,8 +111,8 @@ public class PrevCommandIntegrationTest {
                 .withNote("Updated note").withTags("followup").build();
         assertEquals("Visit date restored for Amy Updated: 20/10/2026 1000\n"
                 + "Discarded visit date and time: 2/11/2026 1000", result.getFeedbackToUser());
-        assertPersistedPatient(expectedPerson);
-        assertEquals(2, saveCount);
+        fixture.assertPersistedPatients(expectedPerson);
+        assertEquals(2, fixture.getSaveCount());
     }
 
     @Test
@@ -137,15 +121,16 @@ public class PrevCommandIntegrationTest {
         Person clearedPerson = new PersonBuilder(AMY).withEmail("").withNote("").withTags()
                 .withDateOfBirth("").withBloodType("").withEmergencyContact("")
                 .withAllergies("").withAlcoholHistory("").withSmokingStatus("").build();
-        assertPersistedPatient(clearedPerson);
+        fixture.assertPersistedPatients(clearedPerson);
 
         logic.execute("prev 1");
 
         Person expectedPerson = new PersonBuilder(clearedPerson).withVisitDate("20/10/2026 1000")
                 .withPreviousVisitDates("10/10/2026 1000").build();
-        assertPersistedPatient(expectedPerson);
-        assertEquals(2, saveCount);
-        Model reloadedModel = new ModelManager(addressBookStorage.readAddressBook().orElseThrow(), new UserPrefs());
+        fixture.assertPersistedPatients(expectedPerson);
+        assertEquals(2, fixture.getSaveCount());
+        Model reloadedModel = new ModelManager(fixture.getAddressBookStorage().readAddressBook().orElseThrow(),
+                new UserPrefs());
         assertEquals(List.of(expectedPerson), reloadedModel.getAddressBook().getPersonList());
     }
 
@@ -155,12 +140,12 @@ public class PrevCommandIntegrationTest {
         logic.execute("next 1 1/11/2026 1000");
 
         Person expectedPerson = new PersonBuilder(AMY).withVisitDate("1/11/2026 1000").build();
-        assertPersistedPatient(expectedPerson);
+        fixture.assertPersistedPatients(expectedPerson);
 
         logic.execute("add n/Benson Meier p/91234567 a/10 Test Road vd/30/10/2026 1000");
         assertEquals(2, model.getAddressBook().getPersonList().size());
-        assertEquals(model.getAddressBook(), addressBookStorage.readAddressBook().orElseThrow());
-        assertEquals(3, saveCount);
+        assertEquals(model.getAddressBook(), fixture.getAddressBookStorage().readAddressBook().orElseThrow());
+        assertEquals(3, fixture.getSaveCount());
     }
 
     @Test
@@ -171,11 +156,12 @@ public class PrevCommandIntegrationTest {
         String formatError = String.format(Messages.MESSAGE_INVALID_COMMAND_FORMAT, PrevCommand.MESSAGE_USAGE);
 
         for (String commandText : List.of("prev", "prev 0", "prev -1", "prev 1 extra")) {
-            assertRejectedCommand(commandText, ParseException.class, formatError);
+            fixture.assertRejectedCommand(commandText, ParseException.class, formatError);
         }
-        assertRejectedCommand("prev 2147483648", ParseException.class,
+        fixture.assertRejectedCommand("prev 2147483648", ParseException.class,
                 ParserUtil.MESSAGE_INDEX_TOO_LARGE + "\n" + PrevCommand.MESSAGE_USAGE);
-        assertRejectedCommand("prev 2", CommandException.class, Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
+        fixture.assertRejectedCommand("prev 2", CommandException.class,
+                Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
         assertEquals(AMY, logic.execute("view 1").getPersonToView().orElseThrow());
     }
 
@@ -189,55 +175,19 @@ public class PrevCommandIntegrationTest {
 
     private void assertSaveFailure(IOException failure) throws Exception {
         model.setPerson(model.getAddressBook().getPersonList().getFirst(), AMY);
-        String savedData = Files.readString(addressBookStorage.getAddressBookFilePath());
-        Path storagePath = addressBookStorage.getAddressBookFilePath();
-        JsonAddressBookStorage failingStorage = new JsonAddressBookStorage(storagePath) {
-            /**
-             * Simulates a storage write failure.
-             */
-            @Override
-            public void saveAddressBook(ReadOnlyAddressBook addressBook) throws IOException {
-                throw failure;
-            }
-        };
-        logic = createLogic(failingStorage);
+        String savedData = Files.readString(fixture.getAddressBookStorage().getAddressBookFilePath());
+        fixture.useFailingStorage(failure);
+        logic = fixture.getLogic();
         String errorFormat = failure instanceof AccessDeniedException
                 ? LogicManager.FILE_OPS_PERMISSION_ERROR_FORMAT : LogicManager.FILE_OPS_ERROR_FORMAT;
 
-        assertThrows(CommandException.class, String.format(errorFormat, failure.getMessage()), ()
-                -> logic.execute("prev 1"));
+        assertThrows(CommandException.class, String.format(errorFormat, failure.getMessage()), () ->
+                logic.execute("prev 1"));
 
-        assertEquals(savedData, Files.readString(addressBookStorage.getAddressBookFilePath()));
+        assertEquals(savedData, Files.readString(fixture.getAddressBookStorage().getAddressBookFilePath()));
         assertEquals(new PersonBuilder(AMY).withVisitDate("20/10/2026 1000")
                 .withPreviousVisitDates("10/10/2026 1000").build(),
                 model.getAddressBook().getPersonList().getFirst());
     }
 
-    private LogicManager createLogic(JsonAddressBookStorage storage) {
-        return new LogicManager(model,
-                new StorageManager(storage, new JsonUserPrefsStorage(testFolder.resolve("userPrefs.json"))),
-                new AddressBookParser(FIXED_CLOCK));
-    }
-
-    private void assertPersistedPatient(Person expectedPerson) throws Exception {
-        assertEquals(List.of(expectedPerson), model.getAddressBook().getPersonList());
-        assertEquals(List.of(expectedPerson), model.getFilteredPersonList());
-        assertEquals(model.getAddressBook(), addressBookStorage.readAddressBook().orElseThrow());
-    }
-
-    private void assertRejectedCommand(String commandText, Class<? extends Exception> exceptionClass,
-            String expectedMessage) throws IOException {
-        AddressBook before = new AddressBook(model.getAddressBook());
-        List<Person> displayedPersons = new ArrayList<>(model.getFilteredPersonList());
-        String savedData = Files.readString(addressBookStorage.getAddressBookFilePath());
-        int savesBefore = saveCount;
-
-        assertThrows(exceptionClass, expectedMessage, () -> logic.execute(commandText));
-
-        assertEquals(before, model.getAddressBook());
-        assertEquals(displayedPersons, model.getFilteredPersonList());
-        assertEquals(savedData, Files.readString(addressBookStorage.getAddressBookFilePath()));
-        assertEquals(savesBefore, saveCount);
-        assertFalse(logic.isInputRequestPending());
-    }
 }

@@ -119,8 +119,11 @@ public class LogicManagerTest {
             String savedBefore = Files.readString(savedFile);
             List<Person> recordsBefore = List.copyOf(model.getAddressBook().getPersonList());
             String duplicateName = recordsBefore.getFirst().getName().fullName;
+            int targetPosition = model.getFilteredPersonList().indexOf(original);
+            assertTrue(targetPosition >= 0);
+            int displayedIndex = targetPosition + 1;
 
-            logic.execute("edit 8 n/" + duplicateName + " vd/1/1/2026 1500");
+            logic.execute("edit " + displayedIndex + " n/" + duplicateName + " vd/1/1/2026 1500");
             if (shouldConfirmName) {
                 logic.execute("y");
                 assertTrue(logic.isInputRequestPending());

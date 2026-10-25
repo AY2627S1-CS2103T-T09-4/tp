@@ -116,8 +116,8 @@ public class PrevCommandTest {
 
     @Test
     public void execute_emptyList_rejectsIndex() {
-        assertThrows(CommandException.class, Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX, ()
-                -> new PrevCommand(INDEX_FIRST_PERSON).execute(new ModelManager()));
+        assertThrows(CommandException.class, Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX, () ->
+                new PrevCommand(INDEX_FIRST_PERSON).execute(new ModelManager()));
     }
 
     @Test

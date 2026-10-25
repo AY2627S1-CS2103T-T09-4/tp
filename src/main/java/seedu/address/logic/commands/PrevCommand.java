@@ -77,12 +77,7 @@ public class PrevCommand extends Command {
         assert !personToUpdate.getPreviousVisitDates().isEmpty() : "Rollback requires a previous visit date.";
         List<VisitDate> previousVisitDates = new ArrayList<>(personToUpdate.getPreviousVisitDates());
         VisitDate restoredVisitDate = previousVisitDates.removeLast();
-        return new Person(personToUpdate.getName(), personToUpdate.getDateOfBirth(),
-                personToUpdate.getBloodType(), personToUpdate.getAllergies(), personToUpdate.getAlcoholHistory(),
-                personToUpdate.getSmokingStatus(), personToUpdate.getPhone(),
-                personToUpdate.getEmail(), personToUpdate.getAddress(), restoredVisitDate,
-                previousVisitDates, personToUpdate.getNote(), personToUpdate.getEmergencyContact(),
-                personToUpdate.getTags());
+        return personToUpdate.copyWithVisitDates(restoredVisitDate, previousVisitDates);
     }
 
     /**

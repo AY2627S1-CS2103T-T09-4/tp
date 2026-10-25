@@ -50,7 +50,7 @@ public class JsonAddressBookStorageTest {
         Path filePath = testFolder.resolve("legacy.json");
         JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
         for (String property : List.of("", "\"previousVisitDates\": null,", "\"previousVisitDates\": [],")) {
-            Files.writeString(filePath, "{\"persons\":[" + patientJson(property) + "]}");
+            Files.writeString(filePath, "{\"persons\":[" + createPatientJson(property) + "]}");
             Person loaded = storage.readAddressBook().orElseThrow().getPersonList().getFirst();
             assertEquals(List.of(), loaded.getPreviousVisitDates());
             assertEquals("10/10/2026 1000", loaded.getVisitDate().toString());
@@ -68,7 +68,8 @@ public class JsonAddressBookStorageTest {
                 "[\"2/10/2026 1000\",\"1/10/2026 1000\"]",
                 "[\"1/10/2026 1000\",\"01/10/2026 1000\"]",
                 "[\"10/10/2026 1000\"]", "[\"11/10/2026 1000\"]")) {
-            String json = "{\"persons\":[" + patientJson("\"previousVisitDates\":" + previousDates + ",") + "]}";
+            String json = "{\"persons\":["
+                    + createPatientJson("\"previousVisitDates\":" + previousDates + ",") + "]}";
             Files.writeString(filePath, json);
 
             assertThrows(DataLoadingException.class, () -> storage.readAddressBook());
@@ -80,7 +81,7 @@ public class JsonAddressBookStorageTest {
     public void readAddressBook_missingOrNullCurrentWithHistory_stillRejectsRequiredField() throws Exception {
         Path filePath = testFolder.resolve("missing-current.json");
         JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
-        String patient = patientJson("\"previousVisitDates\":[\"1/10/2026 1000\"],");
+        String patient = createPatientJson("\"previousVisitDates\":[\"1/10/2026 1000\"],");
         for (String replacement : List.of("", "\"visitDate\":null,")) {
             String json = "{\"persons\":[" + patient.replace("\"visitDate\":\"10/10/2026 1000\",", replacement)
                     + "]}";
@@ -93,8 +94,8 @@ public class JsonAddressBookStorageTest {
     @Test
     public void readAddressBook_crossPatientHistoryConflict_throwsDataLoadingException() throws Exception {
         Path filePath = testFolder.resolve("duplicate-history.json");
-        String firstPatient = patientJson("\"previousVisitDates\":[\"1/10/2026 1000\"],");
-        String secondPatient = patientJson("").replace("Test Patient", "Other Patient")
+        String firstPatient = createPatientJson("\"previousVisitDates\":[\"1/10/2026 1000\"],");
+        String secondPatient = createPatientJson("").replace("Test Patient", "Other Patient")
                 .replace("10/10/2026 1000", "01/10/2026 1000");
         String json = "{\"persons\":[" + firstPatient + "," + secondPatient + "]}";
         Files.writeString(filePath, json);
@@ -106,7 +107,7 @@ public class JsonAddressBookStorageTest {
     /**
      * Returns an otherwise valid patient JSON object with the supplied previous-date property.
      */
-    private String patientJson(String previousDatesProperty) {
+    private String createPatientJson(String previousDatesProperty) {
         return "{\"name\":\"Test Patient\",\"phone\":\"91234567\",\"email\":\"\",\"address\":\"Test Road\","
                 + "\"visitDate\":\"10/10/2026 1000\"," + previousDatesProperty + "\"note\":\"\",\"tags\":[]}";
     }

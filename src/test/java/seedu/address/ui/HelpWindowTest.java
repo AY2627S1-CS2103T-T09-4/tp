@@ -54,7 +54,7 @@ public class HelpWindowTest {
     }
 
     @Test
-    public void helpWindow_layoutIsResizableAndScrollable() {
+    public void helpWindow_minimumSize_isResizableAndScrollable() {
         runOnFxThread(() -> {
             HelpWindow helpWindow = new HelpWindow(new Stage(), url -> { }, () -> false);
             Stage stage = helpWindow.getRoot();
