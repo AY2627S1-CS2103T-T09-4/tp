@@ -186,7 +186,8 @@ public class Person {
      * @param visitDate Replacement current visit date.
      * @param previousVisitDates Replacement previous visit dates in oldest-first order.
      * @return A new patient with the replacement visit dates.
-     * @throws NullPointerException If a replacement date or list element is null.
+     * @throws NullPointerException If the current visit date, previous visit-date list, or any previous visit date
+     *     is null.
      * @throws IllegalArgumentException If the replacement history is not strictly increasing or is not earlier
      *     than the replacement current visit date.
      */

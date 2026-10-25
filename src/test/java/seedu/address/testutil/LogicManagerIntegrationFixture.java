@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 
+import seedu.address.commons.exceptions.DataLoadingException;
 import seedu.address.logic.LogicManager;
 import seedu.address.logic.parser.AddressBookParser;
 import seedu.address.model.AddressBook;
@@ -48,13 +49,6 @@ public class LogicManagerIntegrationFixture {
         addressBookStorage.saveAddressBook(model.getAddressBook());
         saveCount = 0;
         logic = createLogic(addressBookStorage);
-    }
-
-    /**
-     * Returns the model under test.
-     */
-    public Model getModel() {
-        return model;
     }
 
     /**
@@ -122,9 +116,9 @@ public class LogicManagerIntegrationFixture {
      * Asserts that the model, displayed list, and reloaded file contain the expected patients.
      *
      * @param expectedPersons Patients expected in stored order.
-     * @throws Exception If the persisted address book cannot be read.
+     * @throws DataLoadingException If the persisted address book cannot be read.
      */
-    public void assertPersistedPatients(Person... expectedPersons) throws Exception {
+    public void assertPersistedPatients(Person... expectedPersons) throws DataLoadingException {
         List<Person> expectedPatients = List.of(expectedPersons);
         assertEquals(expectedPatients, model.getAddressBook().getPersonList());
         assertEquals(expectedPatients, model.getFilteredPersonList());
