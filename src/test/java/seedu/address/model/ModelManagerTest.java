@@ -27,6 +27,8 @@ public class ModelManagerTest {
 
     @Test
     public void hasPersonWithSameVisitDate_hiddenPreviousDate_checksFullCollectionAndExcludesTarget() {
+        // EP: Stored historical conflicts remain relevant when their patient is hidden from the displayed list.
+        // EP: The replaced target is excluded from its own conflict check.
         Person existing = new PersonBuilder(ALICE).withVisitDate("10/10/2026 1000")
                 .withPreviousVisitDates("1/10/2026 1000").build();
         modelManager.addPerson(existing);
@@ -39,6 +41,7 @@ public class ModelManagerTest {
         assertFalse(modelManager.hasPersonWithSameVisitDate(existing, existing));
         assertFalse(modelManager.hasPersonWithSameVisitDate(BENSON, BENSON));
         assertEquals(List.of(BENSON), modelManager.getFilteredPersonList());
+        // API preconditions: Both the candidate and excluded target must be non-null.
         assertThrows(NullPointerException.class, () -> modelManager.hasPersonWithSameVisitDate(null, BENSON));
         assertThrows(NullPointerException.class, () -> modelManager.hasPersonWithSameVisitDate(candidate, null));
     }

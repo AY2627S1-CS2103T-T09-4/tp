@@ -93,6 +93,7 @@ public class EditPersonDescriptorTest {
 
     @Test
     public void equals_noteValues_distinguishesOmittedEmptyAndReplacement() {
+        // EP: Note input distinguishes omitted, explicitly empty, and nonempty replacement values.
         EditPersonDescriptor omitted = new EditPersonDescriptor();
         EditPersonDescriptor empty = new EditPersonDescriptorBuilder().withNote("").build();
         EditPersonDescriptor replacement = new EditPersonDescriptorBuilder().withNote(VALID_NOTE_AMY).build();
@@ -123,6 +124,7 @@ public class EditPersonDescriptorTest {
 
     @Test
     public void isAnyFieldEdited_noteOnly_returnsTrueForEmptyAndReplacement() {
+        // EP: A note is edited when explicitly supplied, whether empty or nonempty; omission remains unedited.
         EditPersonDescriptor descriptor = new EditPersonDescriptor();
         assertFalse(descriptor.isAnyFieldEdited());
         descriptor.setNote(new Note(""));

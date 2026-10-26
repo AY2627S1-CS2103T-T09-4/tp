@@ -146,6 +146,7 @@ public class HelpWindowTest {
 
     @Test
     public void helpWindow_closeButton_closesWindow() {
+        // EP: A shown Help stage transitions to hidden through its real Close button.
         runOnFxThread(() -> {
             HelpWindow helpWindow = new HelpWindow(url -> { });
             Stage stage = helpWindow.getRoot();
@@ -182,6 +183,7 @@ public class HelpWindowTest {
 
     @Test
     public void show_minimizedWindow_restoresWindow() {
+        // EP: Showing an iconified Help stage must restore it, rather than leave it minimized.
         runOnFxThread(() -> {
             HelpWindow helpWindow = new HelpWindow(url -> { });
             Stage stage = helpWindow.getRoot();

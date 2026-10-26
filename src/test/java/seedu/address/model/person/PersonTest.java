@@ -84,6 +84,8 @@ public class PersonTest {
 
     @Test
     public void hasCommonVisitDate_currentAndPreviousDates_comparesParsedDatetimes() {
+        // EPs: Current/current, current/history, history/current, history/history, and no overlap.
+        // Representation: Equivalent datetime spellings compare as the same visit date.
         Person original = createPerson(CURRENT_VISIT_DATE, List.of(EARLIER_VISIT_DATE));
         Person sameCurrent = createPerson(CURRENT_VISIT_DATE, List.of());
         Person currentInHistory = createPerson(new VisitDate("01/10/2026 1000"), List.of());
@@ -98,7 +100,45 @@ public class PersonTest {
         }
         assertFalse(original.hasCommonVisitDate(differentTimes));
         assertFalse(differentTimes.hasCommonVisitDate(original));
+        // API precondition: null is not a CLI input partition.
         assertThrows(NullPointerException.class, () -> original.hasCommonVisitDate(null));
+    }
+
+    @Test
+    public void hasCommonVisitDate_currentMatchesLaterHistory_returnsTrueSymmetrically() {
+        // EP: A current date can match a later historical entry in the other record.
+        Person first = createPerson(new VisitDate("9/10/2026 0900"), List.of(
+                new VisitDate("1/10/2026 0900"), new VisitDate("3/10/2026 0900")));
+        Person second = createPerson(new VisitDate("3/10/2026 0900"), List.of());
+
+        assertTrue(first.hasCommonVisitDate(second));
+        assertTrue(second.hasCommonVisitDate(first));
+    }
+
+    @Test
+    public void hasCommonVisitDate_historyOverlapAfterInitialMiss_returnsTrueSymmetrically() {
+        // EP: A nonmatching first history entry must not stop scanning unequal-length histories.
+        Person first = createPerson(new VisitDate("9/10/2026 0900"), List.of(
+                new VisitDate("1/10/2026 0900"), new VisitDate("3/10/2026 0900")));
+        Person second = createPerson(new VisitDate("10/10/2026 0900"), List.of(
+                new VisitDate("2/10/2026 0900"), new VisitDate("3/10/2026 0900"),
+                new VisitDate("4/10/2026 0900")));
+
+        assertTrue(first.hasCommonVisitDate(second));
+        assertTrue(second.hasCommonVisitDate(first));
+    }
+
+    @Test
+    public void hasCommonVisitDate_interleavedHistoriesAreDisjoint_returnsFalseSymmetrically() {
+        // EP: Nonempty interleaved histories can be disjoint; adjacent dates do not imply a conflict.
+        Person first = createPerson(new VisitDate("9/10/2026 0900"), List.of(
+                new VisitDate("1/10/2026 0900"), new VisitDate("3/10/2026 0900")));
+        Person second = createPerson(new VisitDate("10/10/2026 0900"), List.of(
+                new VisitDate("2/10/2026 0900"), new VisitDate("4/10/2026 0900"),
+                new VisitDate("5/10/2026 0900")));
+
+        assertFalse(first.hasCommonVisitDate(second));
+        assertFalse(second.hasCommonVisitDate(first));
     }
 
     @Test
@@ -126,6 +166,7 @@ public class PersonTest {
 
     @Test
     public void constructor_nullVisitRecord_throwsNullPointerException() {
+        // API preconditions: Reject a null current date, history collection, or history entry.
         assertThrows(NullPointerException.class, () -> createPerson(CURRENT_VISIT_DATE, null));
         assertThrows(NullPointerException.class, () -> createPerson(CURRENT_VISIT_DATE,
                 Arrays.asList(EARLIER_VISIT_DATE, null)));
@@ -136,6 +177,7 @@ public class PersonTest {
 
     @Test
     public void constructor_unorderedOrDuplicatePreviousVisitDates_throwsIllegalArgumentException() {
+        // EP: Descending dates and equal parsed datetimes violate strictly increasing history.
         for (List<VisitDate> previousVisitDates : List.of(
                 List.of(LATER_VISIT_DATE, EARLIER_VISIT_DATE),
                 List.of(EARLIER_VISIT_DATE, new VisitDate("01/10/2026 1000")))) {
@@ -146,6 +188,7 @@ public class PersonTest {
 
     @Test
     public void constructor_previousDateAtOrAfterCurrent_throwsIllegalArgumentException() {
+        // Boundary: Equality and one minute after the current visit are invalid.
         for (VisitDate previousVisitDate : List.of(new VisitDate("10/10/2026 1001"),
                 new VisitDate("10/10/2026 1000"))) {
             assertThrows(IllegalArgumentException.class, Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS, () ->
@@ -162,6 +205,7 @@ public class PersonTest {
 
     @Test
     public void constructor_mutablePreviousVisitDates_defensivelyCopiesList() {
+        // EP: Mutating the caller-owned list must not change the constructed record.
         List<VisitDate> previousVisitDates = new ArrayList<>(List.of(EARLIER_VISIT_DATE, LATER_VISIT_DATE));
         Person person = createPerson(CURRENT_VISIT_DATE, previousVisitDates);
         previousVisitDates.clear();

@@ -1,5 +1,6 @@
 package seedu.address.logic.commands;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,6 +31,7 @@ import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.VisitDate;
+import seedu.address.testutil.CountingClock;
 import seedu.address.testutil.LogicManagerIntegrationFixture;
 import seedu.address.testutil.PersonBuilder;
 
@@ -41,6 +43,8 @@ public class NextCommandIntegrationTest {
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-14T04:00:30Z"),
             ZoneId.of("Asia/Singapore"));
     private static final String NEW_VISIT_DATE = "1/11/2026 0930";
+    private static final String FULL_DAY = "2/11/2026";
+    private static final String FULL_DAY_VISIT_DATE = FULL_DAY + " 1630";
 
     @TempDir
     private Path testFolder;
@@ -48,6 +52,7 @@ public class NextCommandIntegrationTest {
     private Model model;
     private LogicManager logic;
     private LogicManagerIntegrationFixture fixture;
+    private CountingClock clock;
     private Person amy;
     private Person benson;
 
@@ -61,7 +66,8 @@ public class NextCommandIntegrationTest {
         AddressBook addressBook = new AddressBook();
         addressBook.setPersons(List.of(amy, benson));
         model = new ModelManager(addressBook, new UserPrefs());
-        fixture = new LogicManagerIntegrationFixture(model, testFolder, FIXED_CLOCK);
+        clock = new CountingClock(FIXED_CLOCK);
+        fixture = new LogicManagerIntegrationFixture(model, testFolder, clock);
         logic = fixture.getLogic();
     }
 
@@ -210,6 +216,118 @@ public class NextCommandIntegrationTest {
         VisitDate storedVisitDate = fixture.getAddressBookStorage().readAddressBook().orElseThrow()
                 .getPersonList().getFirst().getVisitDate();
         assertEquals(new VisitDate("14/10/2026 1000"), storedVisitDate);
+    }
+
+    @Test
+    public void execute_deferredConfirmationAccepted_persistsOnceAndSurvivesReload() throws Exception {
+        // EP: Confirmation operates on a filtered, reordered display while capacity counts hidden patients.
+        int displayedAmyIndex = prepareFullDayRequest();
+        DeferredSnapshot beforeRequest = takeSnapshot();
+        openDeferredRequest(displayedAmyIndex, beforeRequest);
+
+        CommandResult confirmedResult = logic.execute(" Y ");
+
+        Person expectedAmy = new PersonBuilder(amy).withVisitDate(FULL_DAY_VISIT_DATE)
+                .withPreviousVisitDates("1/10/2026 1000", "2/10/2026 1000", "13/10/2026 1000").build();
+        AddressBook expectedAddressBook = new AddressBook(beforeRequest.addressBook());
+        expectedAddressBook.setPerson(amy, expectedAmy);
+        assertEquals(String.format(NextCommand.MESSAGE_SUCCESS, amy.getName(), FULL_DAY_VISIT_DATE),
+                confirmedResult.getFeedbackToUser());
+        assertTrue(confirmedResult.shouldSaveAddressBook());
+        assertFalse(logic.isInputRequestPending());
+        assertTrue(confirmedResult.getInputRequest().isEmpty());
+        assertTrue(confirmedResult.getPersonToView().isEmpty());
+        fixture.assertPersistedPatients(expectedAddressBook.getPersonList().toArray(Person[]::new));
+        assertEquals(beforeRequest.saveCount() + 1, fixture.getSaveCount());
+        Model reloadedModel = new ModelManager(fixture.getAddressBookStorage().readAddressBook().orElseThrow(),
+                new UserPrefs());
+        assertEquals(model.getAddressBook(), reloadedModel.getAddressBook());
+        assertEquals(model.getFilteredPersonList(), reloadedModel.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_deferredConfirmationCancelled_doesNotPersistOrMutate() throws Exception {
+        // EP: Blank input belongs to the pending request, rather than the normal command parser.
+        int displayedAmyIndex = prepareFullDayRequest();
+        DeferredSnapshot beforeRequest = takeSnapshot();
+        openDeferredRequest(displayedAmyIndex, beforeRequest);
+
+        CommandResult cancelledResult = logic.execute("");
+
+        assertEquals(NextCommand.MESSAGE_NEXT_CANCELLED, cancelledResult.getFeedbackToUser());
+        assertFalse(cancelledResult.shouldSaveAddressBook());
+        assertFalse(logic.isInputRequestPending());
+        assertTrue(cancelledResult.getInputRequest().isEmpty());
+        assertUnchanged(beforeRequest);
+    }
+
+    @Test
+    public void execute_deferredConfirmationAtAppointmentTime_rejectsAndClearsPendingInput() throws Exception {
+        // Boundary: Confirmation exactly at the requested appointment must revalidate and clear the request.
+        int displayedAmyIndex = prepareFullDayRequest();
+        DeferredSnapshot beforeRequest = takeSnapshot();
+        openDeferredRequest(displayedAmyIndex, beforeRequest);
+        clock.setDelegate(Clock.fixed(Instant.parse("2026-11-02T08:30:00Z"), FIXED_CLOCK.getZone()));
+
+        String expectedMessage = String.format(NextCommand.MESSAGE_NON_FUTURE_VISIT_DATE, FULL_DAY_VISIT_DATE);
+        assertThrows(CommandException.class, expectedMessage, () -> logic.execute("y"));
+
+        assertFalse(logic.isInputRequestPending());
+        assertUnchanged(beforeRequest);
+        CommandResult viewResult = logic.execute("view " + displayedAmyIndex);
+        assertEquals(amy, viewResult.getPersonToView().orElseThrow());
+        assertFalse(viewResult.shouldSaveAddressBook());
+        assertTrue(viewResult.getInputRequest().isEmpty());
+        assertFalse(logic.isInputRequestPending());
+        assertUnchanged(beforeRequest);
+    }
+
+    /** Opens the pending request through the real parser and verifies its no-write contract. */
+    private void openDeferredRequest(int displayedAmyIndex, DeferredSnapshot beforeRequest) throws Exception {
+        CommandResult requestResult = logic.execute("next " + displayedAmyIndex + " " + FULL_DAY_VISIT_DATE);
+        assertEquals(String.format(NextCommand.MESSAGE_CONFIRM_FULL_DAY, Model.MAX_VISITS_PER_DAY,
+                "Mon, 2 Nov 2026", amy.getName()), requestResult.getFeedbackToUser());
+        assertTrue(requestResult.getInputRequest().isPresent());
+        assertFalse(requestResult.shouldSaveAddressBook());
+        assertTrue(logic.isInputRequestPending());
+        assertUnchanged(beforeRequest);
+    }
+
+    private void assertUnchanged(DeferredSnapshot snapshot) throws IOException {
+        assertEquals(snapshot.addressBook(), model.getAddressBook());
+        assertEquals(snapshot.displayedPersons(), model.getFilteredPersonList());
+        assertArrayEquals(snapshot.savedBytes(),
+                Files.readAllBytes(fixture.getAddressBookStorage().getAddressBookFilePath()));
+        assertEquals(snapshot.saveCount(), fixture.getSaveCount());
+    }
+
+    private DeferredSnapshot takeSnapshot() throws IOException {
+        return new DeferredSnapshot(new AddressBook(model.getAddressBook()),
+                List.copyOf(model.getFilteredPersonList()),
+                Files.readAllBytes(fixture.getAddressBookStorage().getAddressBookFilePath()), fixture.getSaveCount());
+    }
+
+    /** Persists the complete busy-day fixture before recording any command writes or display state. */
+    private int prepareFullDayRequest() throws IOException {
+        for (int i = 0; i < Model.MAX_VISITS_PER_DAY; i++) {
+            model.addPerson(new PersonBuilder().withName("Busy Patient " + i).withPhone("8000000" + i)
+                    .withVisitDate(String.format("%s %02d00", FULL_DAY, 8 + i)).build());
+        }
+        fixture = new LogicManagerIntegrationFixture(model, testFolder, clock);
+        logic = fixture.getLogic();
+        model.updateFilteredPersonList(person -> person.equals(amy) || person.equals(benson));
+        model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getName().fullName)
+                .reversed());
+        assertEquals(List.of(benson, amy), model.getFilteredPersonList());
+        int amyPosition = model.getFilteredPersonList().indexOf(amy);
+        assertTrue(amyPosition >= 0);
+        assertEquals(0, fixture.getSaveCount());
+        return amyPosition + 1;
+    }
+
+    /** Captures all state that a pending, cancelled, or rejected request must preserve. */
+    private record DeferredSnapshot(AddressBook addressBook, List<Person> displayedPersons, byte[] savedBytes,
+            int saveCount) {
     }
 
     private void assertSaveFailure(IOException failure, String expectedMessage) throws Exception {

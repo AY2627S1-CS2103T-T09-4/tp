@@ -286,6 +286,8 @@ public class EditCommandTest {
 
     @Test
     public void execute_dateAtOrBeforeLatestPreviousDate_preservesDataFilterAndSort() {
+        // EP: A replacement current visit before or equal to the latest history entry is invalid.
+        // Boundary: The one-minute neighbor below and exact equality distinguish strict chronology.
         Person original = setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
         model.updateFilteredPersonList(person -> person.equals(original));
         model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
@@ -312,6 +314,7 @@ public class EditCommandTest {
 
     @Test
     public void execute_sameDayAfterLatestPreviousDate_success() {
+        // Boundary: One minute after the latest history entry is valid, even on the same calendar day.
         Person original = setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
         Person editedPerson = new PersonBuilder(original).withVisitDate("2/1/2024 0901").build();
 
@@ -397,6 +400,7 @@ public class EditCommandTest {
 
     @Test
     public void execute_noteOnly_preservesOtherFields() {
+        // EP: A nonempty note is replaced while the other fields and history remain unchanged.
         Person original = setExistingNoteAndPreviousDates(INDEX_FIRST_PERSON);
         Person editedPerson = new PersonBuilder(original).withNote(REPLACEMENT_NOTE).build();
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withNote(REPLACEMENT_NOTE).build();
@@ -415,6 +419,7 @@ public class EditCommandTest {
 
     @Test
     public void execute_emptyNoteAlreadyEmpty_success() {
+        // EP: An explicitly empty note is a valid replacement for an already empty note.
         Person original = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
         assertEquals(new Note(""), original.getNote());
 

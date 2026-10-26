@@ -201,6 +201,7 @@ public class EditCommandParserTest {
 
     @Test
     public void parse_repeatedVisitDate_failure() {
+        // EP: A repeated prefix fails regardless of whether either datetime value is valid.
         String[] repeatedDates = {VISIT_DATE_DESC_AMY + VISIT_DATE_DESC_BOB,
             VISIT_DATE_DESC_AMY + INVALID_VISIT_DATE_DESC, INVALID_VISIT_DATE_DESC + VISIT_DATE_DESC_AMY,
             VISIT_DATE_DESC_AMY + VISIT_DATE_DESC_AMY};
@@ -212,6 +213,7 @@ public class EditCommandParserTest {
 
     @Test
     public void parse_validationOrder_failure() {
+        // Precedence: These staged cases verify index, duplicate-prefix, and invalid-value errors in order.
         assertParseFailure(parser, "0" + EMAIL_DESC_AMY + EMAIL_DESC_BOB, MESSAGE_INVALID_FORMAT);
         assertParseFailure(parser, "1" + EMAIL_DESC_AMY + EMAIL_DESC_BOB,
                 Messages.getErrorMessageForDuplicatePrefixes(PREFIX_EMAIL));
@@ -235,6 +237,7 @@ public class EditCommandParserTest {
 
     @Test
     public void parse_emptyNote_success() {
+        // Boundary: Zero note characters, including trimmed whitespace-only input, means explicit clearing.
         EditCommand expectedCommand = new EditCommand(INDEX_FIRST_PERSON,
                 new EditPersonDescriptorBuilder().withNote("").build());
         assertParseSuccess(parser, "1 note/", expectedCommand);
@@ -302,6 +305,7 @@ public class EditCommandParserTest {
 
     @Test
     public void parse_noteValidationOrder_failure() {
+        // Precedence: Index errors precede duplicate-prefix errors, which precede field-value validation.
         assertParseFailure(parser, "0" + NOTE_DESC_AMY + NOTE_DESC_AMY, MESSAGE_INVALID_FORMAT);
         assertParseFailure(parser, "x note/ note/", MESSAGE_INVALID_FORMAT);
         assertParseFailure(parser, "1" + INVALID_NAME_DESC + NOTE_DESC_AMY + NOTE_DESC_AMY,

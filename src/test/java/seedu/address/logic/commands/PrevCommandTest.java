@@ -41,6 +41,7 @@ public class PrevCommandTest {
 
     @Test
     public void execute_severalPreviousDates_restoresLatestAndPreservesOtherFields() throws Exception {
+        // EP: Several retained dates restore only the latest and preserve earlier entries.
         Person expectedPerson = new PersonBuilder(AMY).withVisitDate("20/10/2026 1000")
                 .withPreviousVisitDates("10/10/2026 1000").build();
 
@@ -51,6 +52,7 @@ public class PrevCommandTest {
 
     @Test
     public void execute_onePreviousDate_restoresDateAndLeavesEmptyHistory() throws Exception {
+        // Boundary: One retained date becomes the current visit and leaves no previous dates.
         Person original = new PersonBuilder(BENSON).withPreviousVisitDates("1/9/2026 1000").build();
         model.setPerson(BENSON, original);
         Person expectedPerson = new PersonBuilder(original).withVisitDate("1/9/2026 1000")
@@ -61,6 +63,7 @@ public class PrevCommandTest {
 
     @Test
     public void execute_futureCurrentAndPreviousDates_allowsRollback() throws Exception {
+        // EP: Rollback is independent of whether the retained or current visit is in the future.
         Person original = new PersonBuilder(AMY).withVisitDate("30/10/9999 1000")
                 .withPreviousVisitDates("20/10/9999 1000").build();
         model.setPerson(AMY, original);
@@ -94,6 +97,7 @@ public class PrevCommandTest {
 
     @Test
     public void execute_emptyHistory_preservesDataFilterAndSort() {
+        // Boundary: Zero retained dates cannot be rolled back; the arranged view must remain intact.
         model.updateFilteredPersonList(person -> person.getName().fullName.contains("e"));
         model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
 
@@ -122,6 +126,7 @@ public class PrevCommandTest {
 
     @Test
     public void constructorAndExecute_nullArguments_throwsNullPointerException() {
+        // API preconditions, distinct from CLI argument validation.
         assertThrows(NullPointerException.class, () -> new PrevCommand(null));
         assertThrows(NullPointerException.class, () -> new PrevCommand(INDEX_FIRST_PERSON).execute(null));
     }
