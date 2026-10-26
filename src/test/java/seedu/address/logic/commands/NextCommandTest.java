@@ -42,6 +42,7 @@ public class NextCommandTest {
     private static final String NEW_VISIT_DATE = "1/11/2026 0930";
     private static final String FULL_DAY = "2/11/2026";
     private static final String FULL_DAY_VISIT_DATE = FULL_DAY + " 1630";
+    private static final String FULL_DAY_DISPLAY_DATE = new VisitDate(FULL_DAY_VISIT_DATE).toDayString();
     private static final Person AMY = new PersonBuilder().withVisitDate("13/10/2026 1000")
             .withDateOfBirth("15/6/1990").withBloodType("A+").withEmergencyContact("Mary Tan, 91234567")
             .withAllergies("Penicillin; latex").withAlcoholHistory("Does not drink")
@@ -401,7 +402,7 @@ public class NextCommandTest {
 
     @Test
     public void execute_laterOnSameDayAboveLimit_doesNotRequestConfirmation() throws Exception {
-        // The target visit is replaced on the same day, so seven other visits do not increase the day total.
+        // Moving the visit later on the same day replaces the existing slot, so the total remains one above capacity.
         Person original = new PersonBuilder(AMY).withVisitDate("14/10/2026 0730").build();
         model.setPerson(AMY, original);
         fillDay("14/10/2026", Model.MAX_VISITS_PER_DAY);
@@ -554,7 +555,7 @@ public class NextCommandTest {
                 .execute(model);
 
         assertEquals(String.format(NextCommand.MESSAGE_CONFIRM_FULL_DAY, expectedVisitCount,
-                "Mon, 2 Nov 2026", AMY.getName()), result.getFeedbackToUser());
+                FULL_DAY_DISPLAY_DATE, AMY.getName()), result.getFeedbackToUser());
         assertTrue(result.getInputRequest().isPresent());
         assertFalse(result.shouldSaveAddressBook());
         assertEquals(before, model.getAddressBook());

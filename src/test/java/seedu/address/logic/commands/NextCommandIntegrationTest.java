@@ -45,6 +45,7 @@ public class NextCommandIntegrationTest {
     private static final String NEW_VISIT_DATE = "1/11/2026 0930";
     private static final String FULL_DAY = "2/11/2026";
     private static final String FULL_DAY_VISIT_DATE = FULL_DAY + " 1630";
+    private static final String FULL_DAY_DISPLAY_DATE = new VisitDate(FULL_DAY_VISIT_DATE).toDayString();
 
     @TempDir
     private Path testFolder;
@@ -286,7 +287,7 @@ public class NextCommandIntegrationTest {
     private void openDeferredRequest(int displayedAmyIndex, DeferredSnapshot beforeRequest) throws Exception {
         CommandResult requestResult = logic.execute("next " + displayedAmyIndex + " " + FULL_DAY_VISIT_DATE);
         assertEquals(String.format(NextCommand.MESSAGE_CONFIRM_FULL_DAY, Model.MAX_VISITS_PER_DAY,
-                "Mon, 2 Nov 2026", amy.getName()), requestResult.getFeedbackToUser());
+                FULL_DAY_DISPLAY_DATE, amy.getName()), requestResult.getFeedbackToUser());
         assertTrue(requestResult.getInputRequest().isPresent());
         assertFalse(requestResult.shouldSaveAddressBook());
         assertTrue(logic.isInputRequestPending());

@@ -84,7 +84,7 @@ public class UiManagerIntegrationTest {
     }
 
     private void assertGuideAction(Stage primaryStage, List<Window> existingWindows, List<String> requestedUrls) {
-        // The recording consumer tests forwarding through all three controllers, excluding the external browser.
+        // The recording consumer verifies the UI flow without opening an external browser.
         getHelpMenuItem(primaryStage).fire();
         Stage helpStage = getOnlyShowingHelpStage(existingWindows);
         Button openGuideButton = (Button) helpStage.getScene().lookup("#openGuideButton");

@@ -18,7 +18,7 @@ public class CountingClockTest {
     private static final ZoneId INITIAL_ZONE = ZoneId.of("Asia/Singapore");
 
     @Test
-    public void instant_initialRead_returnsInstantAndIncrementsCounter() {
+    public void instant_initialRead_returnsInstantWithoutCountingZoneReads() {
         CountingClock clock = new CountingClock(Clock.fixed(INITIAL_INSTANT, INITIAL_ZONE));
 
         assertEquals(INITIAL_ZONE, clock.getZone());
