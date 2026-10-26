@@ -101,12 +101,7 @@ public class NextCommand extends Command {
     private Person createUpdatedPerson(Person personToUpdate) {
         List<VisitDate> previousVisitDates = new ArrayList<>(personToUpdate.getPreviousVisitDates());
         previousVisitDates.add(personToUpdate.getVisitDate());
-        Person updatedPerson = new Person(personToUpdate.getName(), personToUpdate.getDateOfBirth(),
-                personToUpdate.getBloodType(), personToUpdate.getAllergies(), personToUpdate.getAlcoholHistory(),
-                personToUpdate.getSmokingStatus(), personToUpdate.getPhone(),
-                personToUpdate.getEmail(), personToUpdate.getAddress(), visitDate,
-                previousVisitDates, personToUpdate.getNote(), personToUpdate.getEmergencyContact(),
-                personToUpdate.getTags());
+        Person updatedPerson = personToUpdate.copyWithVisitDates(visitDate, previousVisitDates);
 
         assert updatedPerson.getPreviousVisitDates().size() == personToUpdate.getPreviousVisitDates().size() + 1
                 : "Exactly one visit date should be retained";

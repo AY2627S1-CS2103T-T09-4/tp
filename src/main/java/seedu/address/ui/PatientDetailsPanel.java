@@ -121,11 +121,7 @@ public class PatientDetailsPanel extends UiPart<Region> {
         address.setText("Address: " + person.getAddress().value);
         visitDate.setText("Visit date: " + person.getVisitDate()
                 + " (" + getVisitDateLabel(person.getVisitDate()) + ")");
-        previousVisitDates.setText(person.getPreviousVisitDates().isEmpty()
-                ? "No previous visit dates"
-                : person.getPreviousVisitDates().reversed().stream()
-                        .map(VisitDate::toString)
-                        .collect(Collectors.joining("\n")));
+        previousVisitDates.setText(formatPreviousVisitDates(person));
         note.setText("Note: " + person.getNote().value);
         emergencyContact.setText("Emergency Contact: " + person.getEmergencyContact().toDisplayString());
         boolean hasEmergencyContact = !person.getEmergencyContact().isEmpty();
@@ -140,6 +136,18 @@ public class PatientDetailsPanel extends UiPart<Region> {
 
         detailsContainer.setManaged(true);
         detailsContainer.setVisible(true);
+    }
+
+    /**
+     * Formats previous visit dates newest first without changing the patient's stored order.
+     */
+    private String formatPreviousVisitDates(Person person) {
+        if (person.getPreviousVisitDates().isEmpty()) {
+            return "No previous visit dates";
+        }
+        return person.getPreviousVisitDates().reversed().stream()
+                .map(VisitDate::toString)
+                .collect(Collectors.joining("\n"));
     }
 
     /**

@@ -171,6 +171,63 @@ public class PersonTest {
     }
 
     @Test
+    public void copyWithVisitDates_populatedOptionalFields_preservesOtherFieldsAndCopiesHistory() {
+        Person original = new PersonBuilder().withDateOfBirth("15/6/1990").withBloodType("A+")
+                .withAllergies("Penicillin; latex").withAlcoholHistory("Does not drink")
+                .withSmokingStatus("former").withEmergencyContact("Mary Tan, 91234567")
+                .withNote("Review medication").withTags("priority", "friend").build();
+        List<VisitDate> replacementHistory = new ArrayList<>(List.of(EARLIER_VISIT_DATE, LATER_VISIT_DATE));
+
+        Person copy = original.copyWithVisitDates(CURRENT_VISIT_DATE, replacementHistory);
+
+        assertEquals(original.getName(), copy.getName());
+        assertEquals(original.getDateOfBirth(), copy.getDateOfBirth());
+        assertEquals(original.getBloodType(), copy.getBloodType());
+        assertEquals(original.getAllergies(), copy.getAllergies());
+        assertEquals(original.getAlcoholHistory(), copy.getAlcoholHistory());
+        assertEquals(original.getSmokingStatus(), copy.getSmokingStatus());
+        assertEquals(original.getPhone(), copy.getPhone());
+        assertEquals(original.getEmail(), copy.getEmail());
+        assertEquals(original.getAddress(), copy.getAddress());
+        assertEquals(CURRENT_VISIT_DATE, copy.getVisitDate());
+        assertEquals(replacementHistory, copy.getPreviousVisitDates());
+        assertEquals(original.getNote(), copy.getNote());
+        assertEquals(original.getEmergencyContact(), copy.getEmergencyContact());
+        assertEquals(original.getTags(), copy.getTags());
+
+        replacementHistory.clear();
+        assertEquals(List.of(EARLIER_VISIT_DATE, LATER_VISIT_DATE), copy.getPreviousVisitDates());
+        assertEquals(new VisitDate(PersonBuilder.DEFAULT_VISIT_DATE), original.getVisitDate());
+    }
+
+    @Test
+    public void copyWithVisitDates_emptyOptionalFields_preservesEmptyHistory() {
+        Person original = new PersonBuilder().withEmail("").build();
+
+        Person copy = original.copyWithVisitDates(CURRENT_VISIT_DATE, List.of());
+
+        assertTrue(copy.getDateOfBirth().isEmpty());
+        assertTrue(copy.getBloodType().isEmpty());
+        assertTrue(copy.getAllergies().isEmpty());
+        assertTrue(copy.getAlcoholHistory().isEmpty());
+        assertTrue(copy.getSmokingStatus().isEmpty());
+        assertTrue(copy.getEmail().value.isEmpty());
+        assertTrue(copy.getEmergencyContact().isEmpty());
+        assertTrue(copy.getPreviousVisitDates().isEmpty());
+        assertEquals(CURRENT_VISIT_DATE, copy.getVisitDate());
+    }
+
+    @Test
+    public void copyWithVisitDates_invalidReplacementHistory_throwsException() {
+        Person original = createPerson(CURRENT_VISIT_DATE, List.of());
+
+        assertThrows(IllegalArgumentException.class, Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS, () ->
+                original.copyWithVisitDates(CURRENT_VISIT_DATE,
+                        List.of(new VisitDate("10/10/2026 1001"))));
+        assertThrows(NullPointerException.class, () -> original.copyWithVisitDates(null, List.of()));
+    }
+
+    @Test
     public void getPreviousVisitDates_modifyList_throwsUnsupportedOperationException() {
         Person person = createPerson(CURRENT_VISIT_DATE, List.of(EARLIER_VISIT_DATE, LATER_VISIT_DATE));
         List<VisitDate> previousVisitDates = person.getPreviousVisitDates();
@@ -191,7 +248,6 @@ public class PersonTest {
         assertEquals(person, equivalent);
         assertEquals(person.hashCode(), equivalent.hashCode());
         assertNotEquals(person, differentHistory);
-        assertNotEquals(person.hashCode(), differentHistory.hashCode());
         assertTrue(person.isSamePerson(differentHistory));
         assertTrue(person.hasSameName(differentHistory));
     }

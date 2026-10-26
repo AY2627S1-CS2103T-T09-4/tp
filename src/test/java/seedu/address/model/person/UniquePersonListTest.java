@@ -31,7 +31,7 @@ public class UniquePersonListTest {
         Person existing = new PersonBuilder(ALICE).withVisitDate("10/10/2026 1000")
                 .withPreviousVisitDates("1/10/2026 1000").build();
         uniquePersonList.add(existing);
-        for (Person conflicting : conflictingVisitRecords()) {
+        for (Person conflicting : createConflictingVisitRecords()) {
             assertTrue(uniquePersonList.containsSameVisitDate(conflicting));
             assertThrows(DuplicateVisitDateException.class, () -> uniquePersonList.add(conflicting));
             assertEquals(List.of(existing), uniquePersonList.asUnmodifiableObservableList());
@@ -43,7 +43,7 @@ public class UniquePersonListTest {
         Person existing = new PersonBuilder(ALICE).withVisitDate("10/10/2026 1000")
                 .withPreviousVisitDates("1/10/2026 1000").build();
         uniquePersonList.setPersons(List.of(existing, BOB));
-        for (Person conflicting : conflictingVisitRecords()) {
+        for (Person conflicting : createConflictingVisitRecords()) {
             assertTrue(uniquePersonList.containsSameVisitDate(conflicting, BOB));
             assertThrows(DuplicateVisitDateException.class, () -> uniquePersonList.setPerson(BOB, conflicting));
             assertEquals(List.of(existing, BOB), uniquePersonList.asUnmodifiableObservableList());
@@ -69,7 +69,7 @@ public class UniquePersonListTest {
         uniquePersonList.add(ALICE);
         Person existing = new PersonBuilder(ALICE).withVisitDate("10/10/2026 1000")
                 .withPreviousVisitDates("1/10/2026 1000").build();
-        for (Person conflicting : conflictingVisitRecords()) {
+        for (Person conflicting : createConflictingVisitRecords()) {
             assertThrows(DuplicateVisitDateException.class, () ->
                     uniquePersonList.setPersons(List.of(existing, conflicting)));
             assertEquals(List.of(ALICE), uniquePersonList.asUnmodifiableObservableList());
@@ -109,7 +109,7 @@ public class UniquePersonListTest {
     /**
      * Returns distinct patients exercising all current/previous datetime conflict combinations.
      */
-    private List<Person> conflictingVisitRecords() {
+    private List<Person> createConflictingVisitRecords() {
         return List.of(new PersonBuilder(BOB).withVisitDate("01/10/2026 1000").build(),
                 new PersonBuilder(BOB).withVisitDate("10/10/2026 1000").build(),
                 new PersonBuilder(BOB).withVisitDate("20/10/2026 1000")

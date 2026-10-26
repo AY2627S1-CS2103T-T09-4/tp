@@ -178,6 +178,24 @@ public class Person {
         }
     }
 
+    /**
+     * Returns a copy with the supplied current and previous visit dates.
+     * All other patient fields are preserved, and the canonical constructor validates and defensively copies the
+     * replacement history.
+     *
+     * @param visitDate Replacement current visit date.
+     * @param previousVisitDates Replacement previous visit dates in oldest-first order.
+     * @return A new patient with the replacement visit dates.
+     * @throws NullPointerException If the current visit date, previous visit-date list, or any previous visit date
+     *     is null.
+     * @throws IllegalArgumentException If the replacement history is not strictly increasing or is not earlier
+     *     than the replacement current visit date.
+     */
+    public Person copyWithVisitDates(VisitDate visitDate, List<VisitDate> previousVisitDates) {
+        return new Person(name, dateOfBirth, bloodType, allergies, alcoholHistory, smokingStatus, phone, email,
+                address, visitDate, previousVisitDates, note, emergencyContact, tags);
+    }
+
     public Name getName() {
         return name;
     }

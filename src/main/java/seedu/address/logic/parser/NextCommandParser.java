@@ -54,14 +54,14 @@ public class NextCommandParser implements Parser<NextCommand> {
         String[] arguments = trimmedArgs.split("\\s+");
         for (String argument : arguments) {
             if (argument.contains(CliSyntax.PREFIX_VISIT_DATE.toString())) {
-                throw usageError(MESSAGE_PREFIX_NOT_SUPPORTED);
+                throw createUsageError(MESSAGE_PREFIX_NOT_SUPPORTED);
             }
         }
         if (arguments.length < ARGUMENT_COUNT) {
-            throw usageError(MESSAGE_MISSING_ARGUMENTS);
+            throw createUsageError(MESSAGE_MISSING_ARGUMENTS);
         }
         if (arguments.length > ARGUMENT_COUNT) {
-            throw usageError(MESSAGE_EXTRA_ARGUMENTS);
+            throw createUsageError(MESSAGE_EXTRA_ARGUMENTS);
         }
 
         Index index = parseIndex(arguments[0]);
@@ -75,13 +75,13 @@ public class NextCommandParser implements Parser<NextCommand> {
         } catch (ParseException exception) {
             // A positive integer rejected by the shared parser exceeds the supported index range.
             if (ParserUtil.isPositiveInteger(argument)) {
-                throw usageError(MESSAGE_INDEX_TOO_LARGE);
+                throw createUsageError(MESSAGE_INDEX_TOO_LARGE);
             }
-            throw usageError(exception.getMessage());
+            throw createUsageError(exception.getMessage());
         }
     }
 
-    private static ParseException usageError(String reason) {
+    private static ParseException createUsageError(String reason) {
         return new ParseException(reason + "\n" + NextCommand.MESSAGE_USAGE);
     }
 }

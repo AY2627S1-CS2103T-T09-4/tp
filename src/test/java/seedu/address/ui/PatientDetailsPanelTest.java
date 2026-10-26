@@ -29,6 +29,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.VisitDate;
+import seedu.address.testutil.CountingClock;
 import seedu.address.testutil.PersonBuilder;
 
 public class PatientDetailsPanelTest {
@@ -395,18 +396,18 @@ public class PatientDetailsPanelTest {
             CountingClock clock = new CountingClock(beforeMidnight);
             PatientDetailsPanel patientDetailsPanel = new PatientDetailsPanel(clock);
             Person person = new PersonBuilder().withVisitDate("31/12/2026 0000").build();
-            assertEquals(0, clock.readCount);
+            assertEquals(0, clock.getReadCount());
 
             patientDetailsPanel.setPerson(person);
             assertEquals("Visit date: 31/12/2026 0000 (Today)", getLabel(patientDetailsPanel, "visitDate").getText());
-            assertEquals(1, clock.readCount);
+            assertEquals(1, clock.getReadCount());
 
-            clock.delegate = Clock.offset(beforeMidnight, Duration.ofNanos(1));
+            clock.setDelegate(Clock.offset(beforeMidnight, Duration.ofNanos(1)));
             assertEquals("Visit date: 31/12/2026 0000 (Today)", getLabel(patientDetailsPanel, "visitDate").getText());
             patientDetailsPanel.setPerson(person);
 
             assertEquals("Visit date: 31/12/2026 0000 (Past)", getLabel(patientDetailsPanel, "visitDate").getText());
-            assertEquals(2, clock.readCount);
+            assertEquals(2, clock.getReadCount());
         });
     }
 
@@ -456,34 +457,4 @@ public class PatientDetailsPanelTest {
         return label;
     }
 
-    /**
-     * Counts calendar-label clock reads and permits deterministic advancement across midnight.
-     */
-    private static class CountingClock extends Clock {
-        private Clock delegate;
-        private int readCount;
-
-        CountingClock(Clock delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public ZoneId getZone() {
-            return delegate.getZone();
-        }
-
-        @Override
-        public Clock withZone(ZoneId zone) {
-            return new CountingClock(delegate.withZone(zone));
-        }
-
-        /**
-         * Returns the delegated instant and counts this read.
-         */
-        @Override
-        public Instant instant() {
-            readCount++;
-            return delegate.instant();
-        }
-    }
 }

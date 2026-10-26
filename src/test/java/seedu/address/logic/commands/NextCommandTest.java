@@ -29,6 +29,7 @@ import seedu.address.model.UserPrefs;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.VisitDate;
+import seedu.address.testutil.CountingClock;
 import seedu.address.testutil.PersonBuilder;
 
 /**
@@ -258,12 +259,12 @@ public class NextCommandTest {
     public void execute_timeAdvancedAfterCreation_validatesAtExecution() {
         CountingClock clock = new CountingClock(FIXED_CLOCK);
         NextCommand command = new NextCommand(INDEX_FIRST_PERSON, new VisitDate(NEW_VISIT_DATE), clock);
-        assertEquals(0, clock.readCount);
-        clock.delegate = Clock.offset(FIXED_CLOCK, Duration.ofDays(30));
+        assertEquals(0, clock.getReadCount());
+        clock.setDelegate(Clock.offset(FIXED_CLOCK, Duration.ofDays(30)));
         String expectedMessage = String.format(NextCommand.MESSAGE_NON_FUTURE_VISIT_DATE, "13/11/2026 1200");
 
         assertThrows(CommandException.class, expectedMessage, () -> command.execute(model));
-        assertEquals(1, clock.readCount);
+        assertEquals(1, clock.getReadCount());
         assertEquals(List.of(AMY, BENSON, CARL), model.getAddressBook().getPersonList());
     }
 
@@ -273,12 +274,12 @@ public class NextCommandTest {
         model.setPerson(AMY, original);
         CountingClock clock = new CountingClock(FIXED_CLOCK);
         NextCommand command = new NextCommand(INDEX_FIRST_PERSON, new VisitDate(NEW_VISIT_DATE), clock);
-        assertEquals(0, clock.readCount);
-        clock.delegate = Clock.offset(FIXED_CLOCK, Duration.ofDays(2));
+        assertEquals(0, clock.getReadCount());
+        clock.setDelegate(Clock.offset(FIXED_CLOCK, Duration.ofDays(2)));
 
         command.execute(model);
 
-        assertEquals(1, clock.readCount);
+        assertEquals(1, clock.getReadCount());
         assertEquals(List.of(original.getVisitDate()),
                 model.getAddressBook().getPersonList().getFirst().getPreviousVisitDates());
     }
@@ -287,7 +288,7 @@ public class NextCommandTest {
     public void execute_validAppointment_readsClockOnce() throws Exception {
         CountingClock clock = new CountingClock(FIXED_CLOCK);
         new NextCommand(INDEX_FIRST_PERSON, new VisitDate(NEW_VISIT_DATE), clock).execute(model);
-        assertEquals(1, clock.readCount);
+        assertEquals(1, clock.getReadCount());
     }
 
     @Test
@@ -298,7 +299,7 @@ public class NextCommandTest {
 
         assertScheduleFailure(INDEX_FIRST_PERSON, new VisitDate("14/10/2026 1200"), clock, expectedMessage);
 
-        assertEquals(1, clock.readCount);
+        assertEquals(1, clock.getReadCount());
     }
 
     @Test
@@ -389,7 +390,7 @@ public class NextCommandTest {
         AddressBook before = new AddressBook(model.getAddressBook());
 
         // the prompt stays open until after the requested appointment time
-        clock.delegate = Clock.offset(FIXED_CLOCK, Duration.ofDays(30));
+        clock.setDelegate(Clock.offset(FIXED_CLOCK, Duration.ofDays(30)));
         CommandInputRequest inputRequest = requestResult.getInputRequest().orElseThrow();
         String expectedMessage = String.format(NextCommand.MESSAGE_NON_FUTURE_VISIT_DATE, "13/11/2026 1200");
 
@@ -523,34 +524,4 @@ public class NextCommandTest {
         return new ModelManager(addressBook, new UserPrefs());
     }
 
-    /**
-     * Counts execution-time clock reads and allows time to advance within one test.
-     */
-    private static class CountingClock extends Clock {
-        private Clock delegate;
-        private int readCount;
-
-        CountingClock(Clock delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public ZoneId getZone() {
-            return delegate.getZone();
-        }
-
-        @Override
-        public Clock withZone(ZoneId zone) {
-            return new CountingClock(delegate.withZone(zone));
-        }
-
-        /**
-         * Returns the delegated instant and counts this read.
-         */
-        @Override
-        public Instant instant() {
-            readCount++;
-            return delegate.instant();
-        }
-    }
 }
