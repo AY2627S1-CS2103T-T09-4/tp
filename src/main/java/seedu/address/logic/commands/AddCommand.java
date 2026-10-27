@@ -152,7 +152,7 @@ public class AddCommand extends Command {
                 + ", alcoholHistory=" + !toAdd.getAlcoholHistory().isEmpty()
                 + ", smokingStatus=" + !toAdd.getSmokingStatus().isEmpty()
                 + ", emergencyContact=" + !toAdd.getEmergencyContact().isEmpty());
-        return new CommandResult(String.format(MESSAGE_SUCCESS, toAdd.getName()));
+        return CommandResult.showUpdatedPerson(String.format(MESSAGE_SUCCESS, toAdd.getName()), toAdd);
     }
 
     /**

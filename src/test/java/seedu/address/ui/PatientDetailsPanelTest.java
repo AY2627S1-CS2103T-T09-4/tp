@@ -171,6 +171,52 @@ public class PatientDetailsPanelTest {
     }
 
     @Test
+    public void clear_displayedPerson_hidesDetails() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel patientDetailsPanel = new PatientDetailsPanel(FIXED_CLOCK);
+            patientDetailsPanel.setPerson(new PersonBuilder().build());
+
+            patientDetailsPanel.clear();
+
+            VBox detailsContainer = getDetailsContainer(patientDetailsPanel);
+            assertFalse(detailsContainer.isManaged());
+            assertFalse(detailsContainer.isVisible());
+        });
+    }
+
+    @Test
+    public void clearIfShowing_matchingPerson_hidesDetails() {
+        runOnFxThread(() -> {
+            Person displayedPerson = new PersonBuilder().build();
+            PatientDetailsPanel patientDetailsPanel = new PatientDetailsPanel(FIXED_CLOCK);
+            patientDetailsPanel.setPerson(displayedPerson);
+
+            patientDetailsPanel.clearIfShowing(displayedPerson);
+
+            VBox detailsContainer = getDetailsContainer(patientDetailsPanel);
+            assertFalse(detailsContainer.isManaged());
+            assertFalse(detailsContainer.isVisible());
+        });
+    }
+
+    @Test
+    public void clearIfShowing_differentPerson_keepsDetails() {
+        runOnFxThread(() -> {
+            Person displayedPerson = new PersonBuilder().withName("Displayed Patient").build();
+            Person otherPerson = new PersonBuilder().withName("Other Patient").build();
+            PatientDetailsPanel patientDetailsPanel = new PatientDetailsPanel(FIXED_CLOCK);
+            patientDetailsPanel.setPerson(displayedPerson);
+
+            patientDetailsPanel.clearIfShowing(otherPerson);
+
+            VBox detailsContainer = getDetailsContainer(patientDetailsPanel);
+            assertTrue(detailsContainer.isManaged());
+            assertTrue(detailsContainer.isVisible());
+            assertEquals("Displayed Patient", getLabel(patientDetailsPanel, "name").getText());
+        });
+    }
+
+    @Test
     public void setPerson_validPerson_displaysAllDetails() {
         runOnFxThread(() -> {
             Person person = new PersonBuilder()

@@ -56,6 +56,9 @@ public class DeleteCommandTest {
                 confirmedResult.getFeedbackToUser());
         assertFalse(model.getAddressBook().getPersonList().contains(personToDelete));
         assertTrue(confirmedResult.shouldSaveAddressBook());
+        assertEquals(CommandResult.DetailsPanelAction.CLEAR_IF_SHOWING,
+                confirmedResult.getDetailsPanelAction());
+        assertEquals(personToDelete, confirmedResult.getPersonToClearFromView().orElseThrow());
     }
 
     @Test

@@ -73,7 +73,7 @@ public class PrevCommandIntegrationTest {
         fixture.assertPersistedPatients(expectedPerson);
         assertEquals(1, fixture.getSaveCount());
         assertTrue(result.shouldSaveAddressBook());
-        assertTrue(result.getPersonToView().isEmpty());
+        assertEquals(expectedPerson, result.getPersonToView().orElseThrow());
         assertFalse(logic.isInputRequestPending());
         Model reloadedModel = new ModelManager(fixture.getAddressBookStorage().readAddressBook().orElseThrow(),
                 new UserPrefs());
