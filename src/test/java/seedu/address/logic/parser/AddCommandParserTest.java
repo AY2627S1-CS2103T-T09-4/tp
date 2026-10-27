@@ -75,6 +75,14 @@ public class AddCommandParserTest {
     }
 
     @Test
+    public void parse_nameWithSlash_success() {
+        Person expectedPerson = new PersonBuilder(BOB).withName("s/o Rajan").withEmail("").withTags().build();
+
+        assertParseSuccess(parser, " n/s/o Rajan" + PHONE_DESC_BOB + ADDRESS_DESC_BOB + VISIT_DATE_DESC_BOB,
+                new AddCommand(expectedPerson));
+    }
+
+    @Test
     public void parse_repeatedNonTagValue_failure() {
         String validExpectedPersonString = NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB
                 + ADDRESS_DESC_BOB + VISIT_DATE_DESC_BOB + TAG_DESC_FRIEND;
