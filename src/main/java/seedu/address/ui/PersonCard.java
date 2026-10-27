@@ -76,9 +76,15 @@ public class PersonCard extends UiPart<Region> {
         bloodType.setManaged(hasBloodType);
         phone.setText(person.getPhone().value);
         address.setText(person.getAddress().value);
-        email.setText(person.getEmail().value);
+        boolean hasEmail = !person.getEmail().value.isEmpty();
+        email.setText(hasEmail ? person.getEmail().value : "");
+        email.setVisible(hasEmail);
+        email.setManaged(hasEmail);
         visitDate.setText(person.getVisitDate().toString());
-        note.setText(person.getNote().value);
+        boolean hasNote = !person.getNote().value.isEmpty();
+        note.setText(hasNote ? person.getNote().value : "");
+        note.setVisible(hasNote);
+        note.setManaged(hasNote);
         person.getTags().stream()
                 .sorted(Comparator.comparing(tag -> tag.tagName))
                 .forEach(tag -> tags.getChildren().add(new Label(tag.tagName)));
