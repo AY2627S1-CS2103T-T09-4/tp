@@ -399,14 +399,15 @@ Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALC
 * To remove all of a patient's tags, enter `t/` without a tag after it.
 * An edit that would give a patient the same normalized name and phone number as another patient is rejected.
 * When an edit changes the patient's name to one already used by another patient with a different phone number, the
-  app asks `A patient named NAME already exists. Apply this edit anyway? Type y to confirm. Any other input cancels.`
+  app warns that the name is already used and asks
+  `Apply this edit to NAME anyway? Type y to confirm. Any other input cancels.`
 * Type `y` and press Enter to apply the edit. Surrounding spaces and letter case are ignored. Any other input cancels
   the edit and is not run as a command. Editing other details of a patient whose name is already shared does not ask
   for confirmation again. A confirmed name-duplicate edit rechecks that its requested visit slot is still available.
 * When an edit moves a patient's visit to a different day that already has 7 or more visits, the app asks, e.g.
-  `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Schedule Jane Tan on that day anyway? Type y to confirm.
-  Any other input cancels.` Changing only the time within the same day, or editing other fields, does not ask. If the
-  name also matches another patient, you are asked to confirm the name first and then the busy day.
+  `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Apply this edit to Jane Tan anyway? Type y to confirm.
+  Any other input cancels.` Changing only the time within the same day, or editing other fields, does not ask.
+  If the name also matches another patient, both warnings appear together and require only one confirmation.
 * The normalized-name comparison and duplicate-detection limitations described under `add` also apply to edits.
 * The visit-time conflict limitations described under `add` also apply to edits.
 
