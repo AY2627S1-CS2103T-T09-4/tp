@@ -799,11 +799,8 @@ public class EditCommandTest {
 
         assertEquals(String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
                 confirmedResult.getFeedbackToUser());
-<<<<<<< Updated upstream
-=======
         assertEquals(editedPerson, confirmedResult.getPersonToView().orElseThrow());
         assertTrue(confirmedResult.getInputRequest().isEmpty());
->>>>>>> Stashed changes
         assertTrue(model.getAddressBook().getPersonList().contains(editedPerson));
     }
 
