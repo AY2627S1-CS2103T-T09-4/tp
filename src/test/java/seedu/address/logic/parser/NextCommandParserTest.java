@@ -97,8 +97,9 @@ public class NextCommandParserTest {
     @Test
     public void parse_invalidDateTime_showsVisitDateConstraints() {
         // EPs: Impossible calendar dates and malformed datetime spellings.
-        // Boundaries: Day 0, month 13, hour 24, and minute 60 are outside their valid ranges.
+        // Boundaries: Day 0, month 13, hour 24, minute 60, and years 1899 and 2100 are outside their valid ranges.
         for (String dateTime : List.of("31/2/2026 0930", "29/2/2027 0930", "0/11/2026 0930", "1/13/2026 0930",
+                "31/12/1899 0930", "1/1/2100 0930",
                 "1/11/2026 2400", "1/11/2026 1260", "1/11/2026 930", "1/11/2026 09:30", "1/11/2026 09300",
                 "1/11/2026 0930extra", "\"1/11/2026 0930\"", "1/11/20260930 0930")) {
             assertParseFailure(parser, "1 " + dateTime, VisitDate.MESSAGE_CONSTRAINTS);

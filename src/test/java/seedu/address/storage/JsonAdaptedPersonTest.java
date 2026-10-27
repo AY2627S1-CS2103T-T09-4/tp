@@ -269,6 +269,18 @@ public class JsonAdaptedPersonTest {
     }
 
     @Test
+    public void toModelType_visitDateYearOutOfRange_throwsIllegalValueException() {
+        JsonAdaptedPerson person = new JsonAdaptedPerson(VALID_NAME, null, null, null, null, null,
+                VALID_PHONE, VALID_EMAIL, VALID_ADDRESS, "1/1/2100 1000",
+                null, VALID_NOTE, null, VALID_TAGS);
+        assertThrows(IllegalValueException.class, VisitDate.MESSAGE_CONSTRAINTS, person::toModelType);
+
+        JsonAdaptedPerson withOldPreviousDate = withPreviousVisitDates(List.of("1/1/1899 1000"));
+        assertThrows(IllegalValueException.class, "Invalid previous visit date. " + VisitDate.MESSAGE_CONSTRAINTS,
+                withOldPreviousDate::toModelType);
+    }
+
+    @Test
     public void toModelType_nullVisitDate_throwsIllegalValueException() {
         JsonAdaptedPerson person = new JsonAdaptedPerson(VALID_NAME, null, null, null, null, null,
                 VALID_PHONE, VALID_EMAIL, VALID_ADDRESS, null,
