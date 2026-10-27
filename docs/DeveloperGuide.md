@@ -312,6 +312,11 @@ details recomputes it; there is no automatic midnight refresh. Fixed-clock tests
 without changing the system clock. See [Calendar labels for current visits](#calendar-labels-for-current-visits)
 for manual checks.
 
+**Visit-record roadmap:** `Person` owns the current and immutable previous-date state; `NextCommand` appends the old
+current datetime before replacing it; `PrevCommand` pops the latest previous datetime and discards the old current one;
+`LogicManager` saves successful mutations and the UI renders the resulting record. The sections below follow this same
+model → command → persistence and display path.
+
 ### Duplicate patient identity, visit dates, and name confirmation
 
 Doc normalizes names only for duplicate detection. Normalization trims surrounding whitespace, replaces each sequence
@@ -673,10 +678,11 @@ A later visit on the same day does not ask, because it replaces that day's visit
 On confirmation, the command rechecks eligibility using a fresh clock reading, verifies that the original record
 still exists, and repeats the conflict check before replacing the patient.
 
-The following sequence diagram shows the successful main flow when no full-day confirmation is needed. Validation,
-conflict checking, and the optional confirmation branch are treated as internal details of `NextCommand`.
+The following sequence diagram shows successful execution of `next` when no busy-day confirmation is required. It
+includes command creation, replacement-patient construction, model updates, and saving through `Storage`. Validation,
+conflict checking, and the optional confirmation branch are omitted.
 
-<puml src="diagrams/NextSequenceDiagram.puml" alt="Interactions for scheduling the next visit" width="650" />
+<puml src="diagrams/NextSequenceDiagram.puml" alt="Successful execution of next when no busy-day confirmation is required" width="800" />
 
 A visit-time conflict supplies the conflicting patient through `CommandException` so `MainWindow` displays that
 record without changing the displayed list. If no further visit is planned, the current datetime remains stored
@@ -699,10 +705,11 @@ documents that internal precondition, while user-input validation remains effect
 The replacement contains only dates from the original record, so it cannot introduce a new cross-patient datetime
 conflict. The model still enforces chronology and uniqueness on replacement.
 
-The following sequence diagram shows the successful rollback flow. The empty-history error path is described above and
-is omitted from the diagram to keep the interaction focused.
+The following sequence diagram shows successful execution of `prev` when the selected patient has visit history. It
+includes command creation, replacement-patient construction, model updates, and saving through `Storage`. Validation
+and error paths are omitted.
 
-<puml src="diagrams/PrevSequenceDiagram.puml" alt="Interactions for restoring the previous visit" width="650" />
+<puml src="diagrams/PrevSequenceDiagram.puml" alt="Successful execution of prev when the selected patient has visit history" width="800" />
 
 Manual checks for repeated rollback, subsequent advancement, and persistence appear under
 [Testing the prev command](#testing-the-prev-command).
@@ -911,7 +918,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* * *`  | doctor                  | view a patient's full record including notes about their medical conditions | prepare for a visit before I arrive at their home                                     |
 | `* * *`  | doctor                  | edit a patient's details                                                  | keep their record accurate when their contact information, address, next visit date or medical notes change |
 | `* * *`  | doctor                  | permanently delete an incorrectly created or duplicate patient record     | ensure erroneous records do not remain in my caseload                                   |
-| `* * *`  | doctor                  | record that I visited a patient on a given date                           | know when I last saw each patient                                                       |
+| `* * *`  | doctor                  | retain a previous scheduled datetime when planning a patient's following visit | review the patient's planned visit history                                             |
 | `* * *`  | doctor                  | schedule a patient's following visit                                     | plan their follow-up care                                                             |
 | `* * *`  | doctor                  | find patients whose next visit date is today                              | be reminded who is due for a visit                                                      |
 | `* *`    | doctor                  | restore the latest previous visit datetime                               | correct a visit-date advancement while keeping changes to the patient's other details |
@@ -1163,6 +1170,32 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case resumes at step 1.
 
+* 1d. The requested datetime is on a different day that already has at least seven current appointments.
+
+    * 1d1. Doc warns the doctor that the selected day is busy and asks for confirmation.
+    * 1d2. The doctor confirms the warning.
+    * 1d3. Doc rechecks that the requested datetime is still in the future and unoccupied, then resumes step 2.
+
+        Use case ends.
+
+    * 1d2a. The doctor does not confirm the warning.
+
+        * 1d2a1. Doc cancels the scheduling request without changing the record or displayed list.
+
+          Use case ends.
+
+    * 1d3a. The requested datetime is no longer in the future when the doctor confirms.
+
+        * 1d3a1. Doc rejects the request and explains that a future datetime is required.
+
+          Use case resumes at step 1.
+
+    * 1d3b. Another patient takes the requested datetime before approval.
+
+        * 1d3b1. Doc identifies the conflict and rejects the request.
+
+          Use case resumes at step 1.
+
 **Use case: UC07 - Restore the previous visit datetime**
 
 **Guarantees**
@@ -1199,20 +1232,24 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 1.  Should work on any _mainstream OS_ as long as it has Java `25` or above installed.
 2.  Should work without requiring an installer, and without the user having to install any software other than Java.
-3.  Should work fully offline, with no dependency on a remote server or an internet connection, so that it remains usable in homes with poor reception.
-4. Should support at least 1,000 patient records, with up to 100 visit notes per record.
-5. Should respond to each valid command within 2 seconds when operating on
-   1,000 patient records with up to 100 visit notes each. This excludes the
-   time spent entering the command.
-6. For common tasks such as adding, finding, listing, editing, and archiving
-   patients, a user who types at above-average speed should be able to complete
-   the task faster through the CLI than by using the mouse.
+3.  Should support local patient management, visit planning, and the offline command directory without an internet
+    connection. Opening the hosted full User Guide from Help requires internet access.
+4. Should support at least 1,000 patient records, with up to 100 previous visit datetimes and one patient-level note
+   per record.
+5. **Target:** Should respond to each valid command within 2 seconds when operating on 1,000 patient records with up
+   to 100 previous visit datetimes and one patient-level note per record. This excludes the time spent entering the
+   command. **Verification:** Not yet verified; a benchmark under this workload remains to be run.
+6. For common tasks such as adding, finding, listing, editing, scheduling, and restoring patient visits, a user who
+   types at above-average speed should be able to complete the task faster through the CLI than by using the mouse.
 7.  A doctor who has not used a CLI application before should be able to add a patient and look up that patient's record within 15 minutes of reading the User Guide.
 8.  Should save every change to the local data file before accepting the next command, so that at most one command's worth of data is lost if the app terminates unexpectedly.
 9.  Should store all patient data only on the user's own machine, so that no patient data leaves the doctor's computer.
 10. Should start up and be ready to accept a command within 5 seconds on a typical modern laptop.
 11. Should not crash or lose existing records if the data file has been manually edited into an invalid state; it should instead report the problem and start with an empty caseload.
 12. Should be delivered as a single JAR file of no more than 100MB, so that it can be copied onto a laptop taken on house visits.
+
+NFR 6 is an unverified usability goal. The team must agree on a concrete mouse-versus-CLI comparison procedure before
+it can be assessed.
 
 ### Glossary
 
@@ -1251,6 +1288,43 @@ Given below are instructions to test the app manually.
 **Note:** These instructions only provide a starting point for testers to work on;
 testers are expected to do more *exploratory* testing.
 </box>
+
+### Manual-testing conventions and disposable fixtures
+
+For the visit-record testing routes below, use a newly created writable scratch folder and prepare the fixture stated for
+each route. Other manual-testing sections retain their own setup instructions.
+Never clear or edit the user's normal data folder.
+When a route says **continue**, keep the state produced by the preceding numbered step. A route marked **independent**
+starts from its own fixture. Reset the scratch data to the stated starting state before repeating a variation or moving
+to another independent case.
+
+For the visit-record routes, choose globally unused datetimes relative to the execution clock. A simple illustration
+for an execution on 26 October 2026 is:
+
+| Symbol | Full datetime in the illustration | Meaning |
+| --- | --- | --- |
+| `P0` | `25/10/2026 0800` | Sentinel patient's current datetime. |
+| `P1` | `25/10/2026 0900` | Nextalpha's initial current datetime. |
+| `P2` | `25/10/2026 1000` | Nextalpha's replacement current datetime. |
+| `P3` | `25/10/2026 1100` | Nextbeta's replacement current datetime. |
+| `P4` | `25/10/2026 1200` | An additional past datetime for an independent case. |
+| `F1` | `27/10/2026 0900` | First future datetime. |
+| `F2` | `28/10/2026 0900` | Second future datetime. |
+| `F3` | `29/10/2026 0900` | Nextbeta's initial current datetime. |
+| `F4` | `30/10/2026 0900` | Intervening-edit datetime for rollback. |
+
+The required ordering is `P0 < P1 < P2 < actual now < F1 < F2 < F3 < F4`. `P1`, `P2`, `P3`, and `P4` must be on
+calendar dates before today; `F1` through `F4` must be on dates after today. The example uses yesterday for the past
+values and successive future dates; on another execution date, replace every symbol with a complete unused
+`d/M/yyyy HHmm` value that preserves the same ordering and local-date relationship. `D` below means a calendar date
+only, so replace `D 1700` with a full value such as `2/11/2026 1700` before submitting it. Symbols are explanatory
+labels, not executable command arguments.
+
+The continuous `next` route and the rollback route deliberately share the sentinel and Nextalpha/Nextbeta fixture. The
+JSON, capacity, calendar, and Help checks are independent cases; preserve other patients and omitted optional fields when a
+case does not say to reset them. After every successful `edit`, `next`, or `prev`, find the intended patient again
+before using an index, because the command restores the full list in stored order. A patient card may update as the
+list refreshes, but the details panel remains the last rendered record until `view` or a relevant conflict preview.
 
 ### Launch and shutdown
 
@@ -1662,78 +1736,98 @@ nonempty notes, and record the selected patient's existing details before editin
 
 ### Testing the next command
 
-Use a disposable data copy and fresh test names. Choose globally unused datetimes satisfying
-`P1 < P2 < actual now < F1 < F2 < F3`. Choose another unused past datetime `P3` for Nextbeta.
-Replace each placeholder with a full `d/M/yyyy HHmm` datetime before submitting commands. This permits repeated
-successful advances in one session without waiting or changing the system clock.
+This is the continuous `next`-command route. Use a new disposable data folder and the common fixture from
+[Manual-testing conventions and disposable fixtures](#manual-testing-conventions-and-disposable-fixtures). In the
+illustration, use the concrete values in the commands below; on another execution date, replace every datetime with a
+full unused `d/M/yyyy HHmm` value that preserves `P0 < P1 < P2 < actual now < F1 < F2 < F3 < F4`.
 
-1. Add the two patients in this order:
+1. Launch Doc from the disposable folder, run `clear`, and enter `y`. Expect an empty patient list before continuing.
+
+1. Add the three patients in this order:
 
    ```text
-   add n/Nextalpha Patient p/81234567 a/10 Test Road vd/P1 e/alpha@example.com note/Keep this note t/priority
-   add n/Nextbeta Patient p/82345678 a/20 Test Road vd/F3
+   add n/Sentinel Patient p/80234567 a/1 Sentinel Road vd/25/10/2026 0800
+   add n/Nextalpha Patient p/81234567 a/10 Test Road vd/25/10/2026 0900 e/alpha@example.com note/Keep this note t/priority
+   add n/Nextbeta Patient p/82345678 a/20 Test Road vd/29/10/2026 0900
    ```
 
-   Expect success, with nonempty optional fields for Nextalpha and empty email, notes, and tags for Nextbeta.
+   The sentinel is deliberately stored before Nextalpha, so Nextalpha is not first in the full list. Expect success,
+   with nonempty optional fields for Nextalpha and empty email, notes, and tags for Nextbeta.
 
-1. Run `find n/Nextalpha`, then `next 1 F3`.<br>
-   Expect a conflict naming hidden Nextbeta and the occupied time, with Nextbeta shown in the patient details panel
-   and both data and the filtered patient list unchanged.
-   Repeat with a leading-zero day or month when applicable; expect the same conflict.
+1. Run `find n/Nextalpha Nextbeta`, then `sort date`.<br>
+   The displayed list must be:
 
-1. While only Nextalpha is displayed, try each of these commands:
+   | Displayed index | Patient | Current |
+   | --- | --- | --- |
+   | 1 | Nextbeta Patient | `29/10/2026 0900` (`F3`) |
+   | 2 | Nextalpha Patient | `25/10/2026 0900` (`P1`) |
+
+   Run `next 2 29/10/2026 0900` (the illustration's `next 2 F3`). Expect a conflict naming Nextbeta and the
+   occupied time, with Nextbeta shown in the patient details panel. The sorted list, stored data, and file remain
+   unchanged. This verifies that the command uses the current displayed index rather than the full-list index.
+
+1. Run `find n/Nextalpha` so that only Nextalpha is displayed. Try each of these commands:
 
    | Command | Expected feedback |
    | --- | --- |
    | `next` | Next usage. |
    | `next 1` | Missing arguments and usage. |
-   | `next 0 F1` | Invalid index syntax and usage. |
-   | `next 2147483648 F1` | Oversized index error and usage. |
-   | `next 2 F1` | Index outside the displayed list. |
-   | `next 1 P1` | Unchanged appointment. |
-   | `next 1 P2` | Non-future appointment. |
+   | `next 0 27/10/2026 0900` | Invalid index syntax and usage. |
+   | `next 2147483648 27/10/2026 0900` | Oversized index error and usage. |
+   | `next 2 27/10/2026 0900` | Index outside the displayed list. |
+   | `next 1 25/10/2026 0900` | Unchanged appointment. |
+   | `next 1 25/10/2026 1000` | Non-future appointment. |
    | `next 1 31/2/2027 0930` | Invalid date. |
    | `next 1 1/11/2026 2400` | Invalid time. |
-   | `next 1 vd/F1` | Prefix misuse and usage. |
-   | `next 1 F1 extra` | Extra arguments and usage. |
+   | `next 1 vd/27/10/2026 0900` | Prefix misuse and usage. |
+   | `next 1 27/10/2026 0900 extra` | Extra arguments and usage. |
 
    Each rejection must preserve records, file contents, and the displayed list. Also test today's current local
    minute; expect rejection. Repeat the unchanged-date test with equivalent leading zeros when applicable.
 
-1. Run `find n/Nextalpha Nextbeta`, then `sort date`.<br>
-   Expect Nextalpha first. Try `next 1 F3`; expect rejection with the sorted order preserved.
-   Run `view 1`, then `next 1 F1`; expect Nextalpha's current datetime to become `F1`, retaining all other fields,
-   and the full list to return in stored order. Run `find n/Nextalpha`, then `view 1`, to refresh its details.
-   Close Doc and inspect the JSON: expect current `F1` and previous dates `[P1]`.
+1. Run `find n/Nextalpha Nextbeta`, then `sort date` again. Run `view 2`, followed by
+   `next 2 27/10/2026 0900` (the illustration's `next 2 F1`). Expect Nextalpha's current datetime to become
+   `27/10/2026 0900`, retaining all other fields, and the full list to return in stored order: Sentinel, Nextalpha,
+   Nextbeta. Success requests saving. Run `find n/Nextalpha` again, then `view 1`, to refresh its details. Close Doc
+   and inspect the JSON: expect current `27/10/2026 0900` and previous dates `[25/10/2026 0900]` in stored order.
 
-1. Reopen Doc, run `find n/Nextalpha`, then immediately try `next 1 F2`.<br>
-   Expect the future-current-visit error advising `edit`, with record, saved file, and list unchanged.
-   Run `edit 1 vd/P2`, then `next   1   F2`. Expect repeated spaces to be accepted and the full list to return.
-   Inspect the JSON after closing Doc: expect current `F2` and previous dates `[P1, P2]`, in that order.
-   The edit does not append the replaced `F1`.
+1. Reopen Doc, run `find n/Nextalpha`, then immediately try `next 1 28/10/2026 0900` (the illustration's `F2`).<br>
+   Expect the future-current-visit error advising `edit`, with record, saved file, and list unchanged. Run
+   `edit 1 vd/25/10/2026 1000` (the illustration's `P2`), re-run `find n/Nextalpha`, then submit
+   `next   1   28/10/2026 0900`. Expect repeated spaces to be accepted and the full list to return. Inspect the JSON
+   after closing Doc: expect current `28/10/2026 0900` and previous dates
+   `[25/10/2026 0900, 25/10/2026 1000]`, in that order. The edit does not append the replaced `27/10/2026 0900`.
 
-1. Reopen Doc, run `find n/Nextbeta`, then `edit 1 vd/P3`. Run `find n/Nextbeta` again before `next 1 F1`, since the
-   successful edit resets the list.<br>
-   Expect Nextbeta to change, retaining empty email, notes, and tags. Its previous dates contain `[P3]`.
+1. Reopen Doc, run `find n/Nextbeta`, then `edit 1 vd/25/10/2026 1100` (the illustration's `P3`). Run
+   `find n/Nextbeta` again before `next 1 27/10/2026 0900`, since the successful edit resets the list.<br>
+   Expect Nextbeta to change, retaining empty email, notes, and tags. Its previous dates contain
+   `[25/10/2026 1100]`.
 
-1. Close and reopen the application. Find and view each test patient.<br>
-   Expect Nextalpha at `F2` with saved previous dates `[P1, P2]` and `P2` displayed above `P1`. Expect Nextbeta at
-   `F1` with previous dates `[P3]` and every other field preserved. Check the previous-date section below the current
-   datetime and the persisted JSON.
-   Use the newly displayed indices after each successful mutation.
+1. **Rollback starting state:** Close and reopen the application. Find and view each test patient.<br>
+   Expect Nextalpha at `28/10/2026 0900` with saved previous dates `[25/10/2026 0900, 25/10/2026 1000]`, with the
+   latter displayed above the former. Expect Nextbeta at `27/10/2026 0900` with previous dates
+   `[25/10/2026 1100]` and every other field preserved. Check the previous-date section below the current datetime
+   and the persisted JSON. Re-find the intended patient after every successful mutation. Close Doc, then copy this
+   scratch folder's `data/addressbook.json` into a separate backup folder as `rollback-start-addressbook.json`.
+   Keep this backup outside the active scratch folder as the rollback starting state before running the independent
+   cases below.
 
 1. Repeat the conflict case using another patient's previous datetime, loaded through the disposable-file setup in
    [Loading and validating previous visit dates](#loading-and-validating-previous-visit-dates). Choose a future
    previous datetime and a later current datetime for that other patient, and an eligible current datetime for the
    selected patient. Expect rejection without mutation or saving, including when the other patient is hidden.
 
-1. Choose a future day `D` with no visits and a globally unused past datetime `P4`. Add
-   `add n/Nextgamma Patient p/83456789 a/30 Test Road vd/P4`, then add seven more patients with unused times on `D`.
-   Run `find n/Nextgamma`, then `next 1 D 1700`.<br>
-   Expect `Heads up: you already have 7 visits on DAY. Schedule Nextgamma Patient's next visit on that day anyway?
-   ...`, with `DAY` shown as e.g. `Mon, 2 Nov 2026`. Enter `n`; expect `Scheduling cancelled.` with data unchanged.
-   Run `find n/Nextgamma` and `next 1 D 1700` again, then enter `y`; expect the visit to be scheduled on `D`.
-   With only six visits on `D`, expect `next` to schedule without asking.
+1. **Independent seven-visit case:** choose a future calendar date `D`, distinct from `F1`–`F4`, and an unused past
+   datetime `P4`. Create `Nextgamma Patient` at `P4`, then create seven filler patients whose current datetimes on
+   `D` are `0800`, `0900`, `1000`, `1100`, `1200`, `1300`, and `1400`. Run `find n/Nextgamma`, then replace `D`
+   with its full date in `next 1 D 1700` (for example, `next 1 2/11/2026 1700`). Expect the seven-visit warning.
+   Enter `n`; expect `Scheduling cancelled.` with the current visit, history, saved file, and list unchanged. Re-find
+   Nextgamma, submit the same concrete command, and enter `y`; expect the visit to be scheduled at 1700 on `D`, with
+   `P4` appended to its history.
+
+1. **Independent six-visit case:** reset the scratch data, create a new `Nextdelta Patient` at an unused past
+   datetime, and create only six filler patients on a new future date `D` at `0800` through `1300`. Submit the
+   concrete `next 1 D 1700` command after substituting the full date. Expect no busy-day prompt and a successful save.
 
 Fixed-clock automated tests cover exact equality to now, nanosecond boundaries, one initial clock read, and
 appointments becoming past as time advances, including while confirmation is pending. These boundaries are not
@@ -1741,10 +1835,19 @@ reliably reproducible by typing against the system clock.
 
 ### Testing the prev command
 
-Use disposable data. Start with Nextalpha from [Testing the next command](#testing-the-next-command), whose current
-datetime is `F2` and whose previous dates are `[P1, P2]`, with `P1 < P2 < actual now < F1 < F2`.
-When preparing that setup, choose `P1` and `P2` on calendar dates before today and `F1` and `F2` on dates after today.
-Choose another globally unused future datetime `F4` for an intervening edit.
+Restore the preserved **rollback starting state** from the persistence checkpoint in
+[Testing the next command](#testing-the-next-command) before testing `prev`:
+
+1. Close Doc if it is running.
+1. Copy the preserved `rollback-start-addressbook.json` over the disposable scratch folder's `data/addressbook.json`,
+   replacing the active file and retaining the filename `addressbook.json`.
+1. Relaunch Doc from the same scratch folder. Find and view Nextalpha and Nextbeta to verify the starting records.
+
+Do not continue from either independent capacity case. The restored state should have Nextalpha
+at `28/10/2026 0900` (`F2`) with history `[25/10/2026 0900, 25/10/2026 1000]` (`[P1, P2]`), and Nextbeta at
+`27/10/2026 0900` (`F1`) with history `[25/10/2026 1100]` (`[P3]`). Restore this state before repeating an
+independent rollback variation. On another execution date, substitute the full datetime values from the common fixture
+table. Choose another globally unused future datetime for `F4`.
 Find the patient again after each successful mutation, since success restores the full list in stored order.
 Record `all/Penicillin; latex alc/Does not drink smk/former` before rollback and check that all three fields
 remain unchanged after each `prev`, including after restarting Doc.
@@ -1753,14 +1856,14 @@ remain unchanged after each `prev`, including after restarting Doc.
    Expect usage for malformed arguments, `Index is too large.` with guidance and usage for `prev 2147483648`,
    and the invalid-index error for `prev 2`. Verify that patient data, the saved JSON, filtered list, and
    displayed details remain unchanged.
-1. Run `edit 1 vd/F4 p/84567890 e/updated@example.com a/30 Updated Road note/Updated before rollback t/followup dob/15/6/1990 bt/A+ ec/Mary Tan, 91234567`,
+1. Run `edit 1 vd/30/10/2026 0900 p/84567890 e/updated@example.com a/30 Updated Road all/Penicillin; latex alc/Does not drink smk/former note/Updated before rollback t/followup dob/15/6/1990 bt/A+ ec/Mary Tan, 91234567`,
    then `find n/Nextalpha` and `prev 1`.<br>
-   Expect success even though `F4` is in the future. Verify that feedback identifies `P2` as restored and `F4`
+   Expect success even though the replacement datetime is in the future. Verify that feedback identifies `P2` as restored and the replacement datetime
    as discarded, including the time for both. Find and view the patient again: current is `P2`, previous
    dates are `[P1]`, and the updated phone, email, address, note, tags, date of birth, blood type, and emergency
    contact remain. The replaced current datetime `F4` is discarded rather than restored or appended to previous dates.
    Close and reopen Doc; verify that this state was saved.
-1. Run `find n/Nextalpha`, then `next 1 F2`.<br>
+1. Run `find n/Nextalpha`, then `next 1 28/10/2026 0900` (the illustration's `F2`).<br>
    Expect current `F2` and previous dates `[P1, P2]`. Rollback did not retain either discarded future datetime.
 1. Run `find n/Nextalpha Nextbeta`, then `sort date 1/1/2000`.<br>
    Expect Nextbeta at `F1` to be index 1 and Nextalpha at `F2` to be index 2. Run `view 2`, then `prev 2`.
