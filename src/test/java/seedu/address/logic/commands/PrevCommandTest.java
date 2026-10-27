@@ -1,8 +1,10 @@
 package seedu.address.logic.commands;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
 import static seedu.address.testutil.TypicalIndexes.INDEX_SECOND_PERSON;
@@ -36,6 +38,8 @@ public class PrevCommandTest {
             .withNote("Review  medication").withTags("priority", "friend").build();
     private static final Person BENSON = new PersonBuilder().withName("Benson Meier").withPhone("91234567")
             .withVisitDate("1/10/2026 1000").withEmail("").withNote("").withTags().build();
+    private static final Person CHARLIE = new PersonBuilder().withName("Charlie Tan").withPhone("81234567")
+            .withVisitDate("5/10/2026 1000").withEmail("").withNote("").withTags().build();
 
     private final Model model = createModel(AMY, BENSON);
 
@@ -74,16 +78,18 @@ public class PrevCommandTest {
     }
 
     @Test
-    public void execute_filteredSortedIndex_updatesDisplayedPatientAndResetsList() throws Exception {
-        Person original = new PersonBuilder(BENSON).withPreviousVisitDates("1/9/2026 1000").build();
-        model.setPerson(BENSON, original);
-        model.updateFilteredPersonList(person -> person.getName().equals(BENSON.getName()));
+    public void execute_filteredSortedIndex_targetsPatientAndResetsList() throws Exception {
+        // EP: The restrictive filter hides one patient, and sorting changes the displayed order.
+        model.addPerson(CHARLIE);
+        model.updateFilteredPersonList(person -> person.equals(AMY) || person.equals(CHARLIE));
         model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
-        assertEquals(List.of(original), model.getFilteredPersonList());
-        Person expectedPerson = new PersonBuilder(original).withVisitDate("1/9/2026 1000")
-                .withPreviousVisitDates().build();
+        assertEquals(List.of(CHARLIE, AMY), model.getFilteredPersonList());
+        Person expectedPerson = new PersonBuilder(AMY).withVisitDate("20/10/2026 1000")
+                .withPreviousVisitDates("10/10/2026 1000").build();
 
-        assertRollbackSuccess(INDEX_FIRST_PERSON, original, expectedPerson);
+        assertRollbackSuccess(INDEX_SECOND_PERSON, AMY, expectedPerson);
+        assertEquals(BENSON, model.getAddressBook().getPersonList().get(1));
+        assertEquals(CHARLIE, model.getAddressBook().getPersonList().get(2));
     }
 
     @Test
@@ -109,6 +115,62 @@ public class PrevCommandTest {
         assertEquals(List.of(AMY, laterBenson), model.getFilteredPersonList());
         model.setPerson(laterBenson, new PersonBuilder(laterBenson).withName("Carl Kurz").build());
         assertEquals(List.of(AMY), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_validIndex_returnsPromptWithoutMutatingPatient() throws Exception {
+        AddressBook before = new AddressBook(model.getAddressBook());
+
+        CommandResult result = new PrevCommand(INDEX_FIRST_PERSON).execute(model);
+
+        assertEquals(String.format(PrevCommand.MESSAGE_CONFIRM_PREV, AMY.getName(), AMY.getPhone(),
+                "20/10/2026 1000", AMY.getVisitDate()), result.getFeedbackToUser());
+        assertFalse(result.shouldSaveAddressBook());
+        assertTrue(result.getInputRequest().isPresent());
+        assertEquals(before, model.getAddressBook());
+        assertEquals(before.getPersonList(), model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_cancelledConfirmation_preservesDataAndDisplayedOrder() throws Exception {
+        model.updateFilteredPersonList(person -> person.getName().equals(AMY.getName()));
+        model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
+        AddressBook before = new AddressBook(model.getAddressBook());
+        List<Person> displayedPersons = new ArrayList<>(model.getFilteredPersonList());
+
+        CommandResult requestResult = new PrevCommand(INDEX_FIRST_PERSON).execute(model);
+        CommandResult result = requestResult.getInputRequest().orElseThrow().respond("list", model);
+
+        assertEquals(PrevCommand.MESSAGE_PREV_CANCELLED, result.getFeedbackToUser());
+        assertFalse(result.shouldSaveAddressBook());
+        assertEquals(before, model.getAddressBook());
+        assertEquals(displayedPersons, model.getFilteredPersonList());
+    }
+
+    @Test
+    public void execute_confirmationAfterDisplayedOrderChanges_restoresCapturedPatient() throws Exception {
+        model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
+        CommandResult requestResult = new PrevCommand(INDEX_SECOND_PERSON).execute(model);
+        model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
+
+        CommandResult result = requestResult.getInputRequest().orElseThrow().respond("Y", model);
+
+        Person expectedPerson = new PersonBuilder(AMY).withVisitDate("20/10/2026 1000")
+                .withPreviousVisitDates("10/10/2026 1000").build();
+        assertEquals(expectedPerson, model.getAddressBook().getPersonList().getFirst());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
+        assertTrue(result.shouldSaveAddressBook());
+    }
+
+    @Test
+    public void execute_confirmationAfterCapturedPatientChanges_rejectsStaleRequest() throws Exception {
+        CommandResult requestResult = new PrevCommand(INDEX_FIRST_PERSON).execute(model);
+        Person replacementPerson = new PersonBuilder(AMY).withName("Amy Updated").build();
+        model.setPerson(AMY, replacementPerson);
+
+        assertThrows(CommandException.class, PrevCommand.MESSAGE_PERSON_NO_LONGER_EXISTS, () ->
+                requestResult.getInputRequest().orElseThrow().respond("y", model));
+        assertEquals(replacementPerson, model.getAddressBook().getPersonList().getFirst());
     }
 
     @Test
@@ -153,7 +215,10 @@ public class PrevCommandTest {
         AddressBook expectedAddressBook = new AddressBook(model.getAddressBook());
         expectedAddressBook.setPerson(originalPerson, expectedPerson);
 
-        CommandResult result = new PrevCommand(index).execute(model);
+        CommandResult requestResult = new PrevCommand(index).execute(model);
+        assertFalse(requestResult.shouldSaveAddressBook());
+        assertTrue(requestResult.getInputRequest().isPresent());
+        CommandResult result = requestResult.getInputRequest().orElseThrow().respond("y", model);
 
         String expectedMessage = String.format(PrevCommand.MESSAGE_SUCCESS,
                 expectedPerson.getName(), expectedPerson.getVisitDate(), originalPerson.getVisitDate());
