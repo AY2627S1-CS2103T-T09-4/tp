@@ -2,29 +2,37 @@
 !include style.puml
 skinparam ArrowFontStyle plain
 
+skinparam ParticipantPadding 6
+skinparam Participant {
+  FontSize 15
+  Padding 8
+}
+skinparam Sequence {
+  ArrowFontSize 14
+  ParticipantFontSize 15
+}
+skinparam Note {
+  FontSize 14
+}
+
 box Logic LOGIC_COLOR_T1
 participant ":LogicManager" as LogicManager LOGIC_COLOR
 participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
 participant ":NextCommandParser" as NextCommandParser LOGIC_COLOR
 participant "n:NextCommand" as NextCommand LOGIC_COLOR
-participant ":CommandResult" as CommandResult LOGIC_COLOR
 end box
 
 box Model MODEL_COLOR_T1
 participant "m:Model" as Model MODEL_COLOR
 end box
 
-box Storage STORAGE_COLOR_T1
-participant ":Storage" as Storage STORAGE_COLOR
-end box
-
-[-> LogicManager : execute("next 1 31/12/2026 0930")
+[-> LogicManager : execute(commandText)
 activate LogicManager
 
-LogicManager -> AddressBookParser : parseCommand("next 1 31/12/2026 0930")
+LogicManager -> AddressBookParser : parseCommand(commandText)
 activate AddressBookParser
 
-AddressBookParser -> NextCommandParser : parse(" 1 31/12/2026 0930")
+AddressBookParser -> NextCommandParser : parse(arguments)
 activate NextCommandParser
 
 create NextCommand
@@ -48,44 +56,34 @@ activate Model
 Model --> NextCommand : displayedPersons
 deactivate Model
 
-NextCommand -> NextCommand : createUpdatedPerson(personToUpdate)
+NextCommand -> NextCommand : createUpdatedPerson(...)
 activate NextCommand
+note right of NextCommand
+  Replacement patient:
+  Append original current datetime
+  to visit history.
+  Set requested datetime as current.
+  Preserve all other patient fields.
+end note
 NextCommand --> NextCommand : updatedPerson
 deactivate NextCommand
 
-note right of NextCommand
-  Successful main flow only.
-  Validation, conflict, and confirmation paths omitted.
-end note
-
-NextCommand -> Model : setPerson(personToUpdate, updatedPerson)
+NextCommand -> Model : setPerson(...)
 activate Model
 Model --> NextCommand
 deactivate Model
 
-NextCommand -> Model : updateFilteredPersonList(show all)
+NextCommand -> Model : updateFilteredPersonList(...)
 activate Model
 Model --> NextCommand
 deactivate Model
-
-create CommandResult
-NextCommand -> CommandResult : CommandResult(successMessage)
-activate CommandResult
-CommandResult --> NextCommand
-deactivate CommandResult
 
 NextCommand --> LogicManager : result
 deactivate NextCommand
 
-LogicManager -> Model : getAddressBook()
-activate Model
-Model --> LogicManager : addressBook
-deactivate Model
-
-LogicManager -> Storage : saveAddressBook(addressBook)
-activate Storage
-Storage --> LogicManager
-deactivate Storage
+LogicManager -> LogicManager : saveAddressBook()
+activate LogicManager
+deactivate LogicManager
 
 [<--LogicManager : result
 deactivate LogicManager

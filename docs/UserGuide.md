@@ -96,6 +96,10 @@ Successful `edit`, `next`, and `prev` commands show the full patient list in sto
 sorting. The details panel continues showing the last record viewed. Check the newly displayed index and run
 `view INDEX` to refresh the record and its calendar label. To return to search results, run `find` again.
 
+When `next` moves an appointment to a different day that already has seven or more current appointments, Doc asks for
+confirmation. Patients hidden by filtering still count, but previous visit history does not. Moving the appointment to
+a later time on the same day does not trigger this warning.
+
 ### Navigating command history
 
 The command box keeps commands submitted during the current application session so that you can reuse or edit them.
