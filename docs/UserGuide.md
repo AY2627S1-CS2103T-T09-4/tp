@@ -422,7 +422,7 @@ Examples:
 * `edit 1 note/` Clears the notes, keeping all other details unchanged.
 * `edit 1 e/ note/` Clears both email and notes, keeping the visit and other details unchanged.
 * `edit 1 vd/8/10/2026 1000 e/new@example.com note/Review medication` Updates the visit, email, and notes.
-* `edit 2 n/Betsy Crower t/` Updates the name and clears all existing tags, keeping the visit unchanged.
+* `edit 2 n/Priya Devi Nair t/` Updates Priya Nair's name and clears all existing tags, keeping the visit unchanged.
 
 ### Scheduling the next visit: `next`
 
@@ -475,7 +475,7 @@ The current time in the error uses `d/M/yyyy HHmm`, without seconds; validation 
 Examples (the selected patient's current visit must have arrived or passed; choose an unused future datetime):
 
 * `next 1 1/11/2026 0930` schedules the first displayed patient's next appointment for 1 November 2026 at 09:30.
-* `find n/Betsy`, then `next 1 2/11/2026 1430`, schedules the first matching patient and restores the full list.
+* `find n/Priya`, then `next 1 2/11/2026 1430`, schedules Priya Nair and restores the full list.
 
 ### Restoring the previous visit: `prev`
 
@@ -504,23 +504,23 @@ Format: `prev INDEX`
   requested datetime to be in the future. A save failure reports a storage error; the in-memory record may
   already have changed.
 
-Example: suppose the clock reads `21/10/2026 1200`. Use globally unused replacement datetimes and Betsy's currently
-displayed `INDEX` for each command. Each row continues from the previous row:
+Example: suppose the clock reads `21/10/2026 1200`. Use globally unused replacement datetimes and George Miller's
+currently displayed `INDEX` for each command. Each row continues from the previous row:
 
 | Operation | Current datetime | Previous datetimes (stored oldest first) |
 | --- | --- | --- |
-| Initial record | `30/10/2026 1000` | `[10/10/2026 1000, 20/10/2026 1000]` |
-| `edit INDEX vd/1/11/2026 0930 note/Review medication` | `1/11/2026 0930` | `[10/10/2026 1000, 20/10/2026 1000]` |
-| `prev INDEX` | `20/10/2026 1000` | `[10/10/2026 1000]` |
-| `next INDEX 2/11/2026 0930` | `2/11/2026 0930` | `[10/10/2026 1000, 20/10/2026 1000]` |
-| `prev INDEX` | `20/10/2026 1000` | `[10/10/2026 1000]` |
-| `prev INDEX` again | `10/10/2026 1000` | `[]` |
+| Initial sample record | `5/10/2026 1530` | `[]` |
+| `next INDEX 30/10/2026 1000` | `30/10/2026 1000` | `[5/10/2026 1530]` |
+| `edit INDEX vd/1/11/2026 0930 note/Review medication` | `1/11/2026 0930` | `[5/10/2026 1530]` |
+| `prev INDEX` | `5/10/2026 1530` | `[]` |
+| `next INDEX 2/11/2026 0930` | `2/11/2026 0930` | `[5/10/2026 1530]` |
+| `prev INDEX` | `5/10/2026 1530` | `[]` |
 | `prev INDEX` again | Unchanged; no previous dates to restore. | `[]` |
 
 After the edit, the note remains `Review medication` through all later steps. The first rollback discards
-`1/11/2026 0930`; it does not restore the
-`30/10/2026 1000` replaced by the edit. The later `next` schedules a new appointment under its normal rules and
-does not act as redo. Repeated rollback eventually empties the previous-date list.
+`1/11/2026 0930`; it does not restore the `30/10/2026 1000` replaced by the edit. The later `next` schedules a new
+appointment under its normal rules and does not act as redo. Repeated rollback eventually reports that the
+previous-date list is already empty.
 
 ### Locating patients: `find`
 
@@ -547,7 +547,7 @@ Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t
   name word starting with `m` who are tagged `morning`.
 * Fields can be given in any order, but each prefix can appear only once. Put several keywords after one prefix
   instead, e.g. `n/george priya` rather than `n/george n/priya`.
-* Spaces, tabs or line breaks can separate fields; for example, `n/alex` and `p/9123` separated by a tab are still
+* Spaces, tabs or line breaks can separate fields; for example, `n/george` and `p/8876` separated by a tab are still
   two separate fields.
 * The app shows how many patients were found, e.g. `3 patients found.` If none match, it lists every search prefix:
   `No patients found. Search with n/ for names, p/ for phone numbers, a/ for addresses, t/ for tags, vd/ for visit dates, or note/ for notes.`
@@ -581,7 +581,7 @@ Format: `delete INDEX`
 
 Examples:
 * `list` followed by `delete 2`, then `y`, deletes the 2nd patient in Doc.
-* `find n/Betsy` followed by `delete 1`, then `y`, deletes the 1st patient in the results of the `find` command.
+* `find n/George` followed by `delete 1`, then `y`, deletes George Miller as the 1st patient in the search results.
 
 ### Clearing all entries: `clear`
 
@@ -671,7 +671,7 @@ Action     | Format, Examples
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
 **Edit**   | `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [p/PHONE_NUMBER] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
-**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`<br> e.g., `find n/James Jake a/clementi`, `find vd/18/9/2026`, `find note/insulin`
+**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`<br> e.g., `find n/George a/maple`, `find vd/15/10/2026`, `find note/mobility`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (current visit must have arrived; choose an available future appointment)
 **Prev**   | `prev INDEX`<br> e.g., `prev 1` (requires a previous datetime; replaces and discards the current datetime; no redo)
