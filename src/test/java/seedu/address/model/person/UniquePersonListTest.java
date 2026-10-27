@@ -28,6 +28,8 @@ public class UniquePersonListTest {
 
     @Test
     public void add_conflictingVisitRecords_rejectsWithoutChangingList() {
+        // EP: Conflicts can match the candidate's current date or any previous date.
+        // EP: All four current/history pairings are checked while the stored list remains unchanged.
         Person existing = new PersonBuilder(ALICE).withVisitDate("10/10/2026 1000")
                 .withPreviousVisitDates("1/10/2026 1000").build();
         uniquePersonList.add(existing);
@@ -40,6 +42,7 @@ public class UniquePersonListTest {
 
     @Test
     public void setPerson_conflictingVisitRecords_rejectsCompleteCandidateWithoutChangingList() {
+        // EP: Replacements must be checked against every retained current and historical date.
         Person existing = new PersonBuilder(ALICE).withVisitDate("10/10/2026 1000")
                 .withPreviousVisitDates("1/10/2026 1000").build();
         uniquePersonList.setPersons(List.of(existing, BOB));
@@ -78,6 +81,7 @@ public class UniquePersonListTest {
 
     @Test
     public void setPerson_ownDatesMovedToHistory_excludesOriginalTarget() {
+        // EP: A replacement may retain the target's own old dates without self-conflicting.
         Person original = new PersonBuilder(ALICE).withVisitDate("10/10/2026 1000")
                 .withPreviousVisitDates("1/10/2026 1000").build();
         uniquePersonList.add(original);
@@ -89,12 +93,14 @@ public class UniquePersonListTest {
         uniquePersonList.setPerson(replacement, replacement);
 
         assertEquals(List.of(replacement), uniquePersonList.asUnmodifiableObservableList());
+        // API preconditions: Both the candidate and excluded target must be non-null.
         assertThrows(NullPointerException.class, () -> uniquePersonList.containsSameVisitDate(null, original));
         assertThrows(NullPointerException.class, () -> uniquePersonList.containsSameVisitDate(replacement, null));
     }
 
     @Test
     public void countSameVisitDay_previousDates_doNotCountTowardsCapacity() {
+        // EP: Capacity counts current visits only; historical visits on the same day are excluded.
         Person existing = new PersonBuilder(ALICE).withVisitDate("10/10/2026 1000")
                 .withPreviousVisitDates("1/10/2026 1000", "1/10/2026 1100").build();
         uniquePersonList.add(existing);
@@ -110,10 +116,15 @@ public class UniquePersonListTest {
      * Returns distinct patients exercising all current/previous datetime conflict combinations.
      */
     private List<Person> createConflictingVisitRecords() {
-        return List.of(new PersonBuilder(BOB).withVisitDate("01/10/2026 1000").build(),
+        return List.of(
+                // Candidate current matches stored history, including normalized datetime text.
+                new PersonBuilder(BOB).withVisitDate("01/10/2026 1000").build(),
+                // Candidate current matches stored current.
                 new PersonBuilder(BOB).withVisitDate("10/10/2026 1000").build(),
+                // Candidate history matches stored current.
                 new PersonBuilder(BOB).withVisitDate("20/10/2026 1000")
                         .withPreviousVisitDates("10/10/2026 1000").build(),
+                // Candidate history matches stored history.
                 new PersonBuilder(BOB).withVisitDate("20/10/2026 1000")
                         .withPreviousVisitDates("01/10/2026 1000").build());
     }

@@ -18,7 +18,7 @@ public class CountingClockTest {
     private static final ZoneId INITIAL_ZONE = ZoneId.of("Asia/Singapore");
 
     @Test
-    public void instant_countsExactlyOnceWithoutCountingZoneReads() {
+    public void instant_initialRead_returnsInstantWithoutCountingZoneReads() {
         CountingClock clock = new CountingClock(Clock.fixed(INITIAL_INSTANT, INITIAL_ZONE));
 
         assertEquals(INITIAL_ZONE, clock.getZone());
@@ -28,7 +28,7 @@ public class CountingClockTest {
     }
 
     @Test
-    public void withZone_returnsIndependentCounter() {
+    public void withZone_existingRead_returnsIndependentCounter() {
         CountingClock clock = new CountingClock(Clock.fixed(INITIAL_INSTANT, INITIAL_ZONE));
         clock.instant();
 
@@ -40,7 +40,7 @@ public class CountingClockTest {
     }
 
     @Test
-    public void setDelegate_preservesAccumulatedCount() {
+    public void setDelegate_existingRead_preservesAccumulatedCount() {
         CountingClock clock = new CountingClock(Clock.fixed(INITIAL_INSTANT, INITIAL_ZONE));
         clock.instant();
         clock.setDelegate(Clock.offset(Clock.fixed(INITIAL_INSTANT, INITIAL_ZONE), Duration.ofDays(1)));

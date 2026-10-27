@@ -266,6 +266,7 @@ public class PatientDetailsPanelTest {
 
     @Test
     public void setPerson_populatedPreviousDates_displaysNewestFirstWithoutChangingPerson() {
+        // EP: Several stored oldest-first entries render newest first without modifying the Person.
         runOnFxThread(() -> {
             Person person = new PersonBuilder()
                     .withPreviousVisitDates("01/08/2026 0930", "2/8/2026 0900", "2/8/2026 1030")
@@ -291,6 +292,7 @@ public class PatientDetailsPanelTest {
 
     @Test
     public void setPerson_differentPatients_replacesPreviousDatesAndEmptyState() {
+        // Boundary: Switching between one and zero retained dates must replace stale history text.
         runOnFxThread(() -> {
             Person personWithPreviousDates = new PersonBuilder().withPreviousVisitDates("1/8/2026 0930").build();
             Person personWithoutPreviousDates = new PersonBuilder().withName("Another Patient").build();
@@ -311,6 +313,7 @@ public class PatientDetailsPanelTest {
 
     @Test
     public void setPerson_longRecord_displaysEveryDateWithScrolling() {
+        // Stress sample: 400 dates exercise scrolling and wrapping, not a specified maximum history length.
         runOnFxThread(() -> {
             LocalDateTime firstVisit = LocalDateTime.of(2025, 1, 1, 9, 30);
             String[] previousDates = IntStream.range(0, 400)
@@ -333,6 +336,7 @@ public class PatientDetailsPanelTest {
 
     @Test
     public void setPerson_visitOnPreviousDay_displaysPast() {
+        // Boundary: 2359 on yesterday is Past; Today begins at local midnight, regardless of appointment time.
         runOnFxThread(() -> {
             PatientDetailsPanel patientDetailsPanel = new PatientDetailsPanel(FIXED_CLOCK);
             Person person = new PersonBuilder().withVisitDate("20/10/2026 2359").build();
@@ -345,6 +349,8 @@ public class PatientDetailsPanelTest {
 
     @Test
     public void setPerson_visitTodayAtAnyTime_displaysToday() {
+        // EP: All times on the clock's local date are Today, before or after its current instant.
+        // Boundary: Include both day endpoints, 0000 and 2359.
         runOnFxThread(() -> {
             PatientDetailsPanel patientDetailsPanel = new PatientDetailsPanel(FIXED_CLOCK);
             for (String dateTime : List.of("21/10/2026 0000", "21/10/2026 1159", "21/10/2026 1200",
@@ -361,6 +367,7 @@ public class PatientDetailsPanelTest {
 
     @Test
     public void setPerson_visitOnNextDay_displaysUpcoming() {
+        // Boundary: Tomorrow at 0000 is Upcoming, immediately outside today's calendar partition.
         runOnFxThread(() -> {
             PatientDetailsPanel patientDetailsPanel = new PatientDetailsPanel(FIXED_CLOCK);
             Person person = new PersonBuilder().withVisitDate("22/10/2026 0000").build();
@@ -391,6 +398,7 @@ public class PatientDetailsPanelTest {
 
     @Test
     public void setPerson_clockCrossesMidnight_recomputesLabelOnlyWhenRendered() {
+        // Boundary: Advance one nanosecond across local midnight; labels update on explicit rendering only.
         runOnFxThread(() -> {
             Clock beforeMidnight = Clock.fixed(Instant.parse("2026-12-31T15:59:59.999999999Z"), FIXED_CLOCK.getZone());
             CountingClock clock = new CountingClock(beforeMidnight);
@@ -413,6 +421,7 @@ public class PatientDetailsPanelTest {
 
     @Test
     public void constructorAndSetPerson_nullArguments_throwsNullPointerException() {
+        // API preconditions, distinct from patient data entered through the CLI.
         runOnFxThread(() -> {
             assertThrows(NullPointerException.class, () -> new PatientDetailsPanel(null));
             PatientDetailsPanel patientDetailsPanel = new PatientDetailsPanel(FIXED_CLOCK);

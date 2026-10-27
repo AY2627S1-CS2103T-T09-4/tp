@@ -1,5 +1,6 @@
 package seedu.address.storage;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,6 +48,7 @@ public class JsonAddressBookStorageTest {
 
     @Test
     public void readAddressBook_missingNullOrEmptyPreviousDates_loadsEmptyHistory() throws Exception {
+        // EP: Legacy files may omit the field or encode it as null/empty without losing compatibility.
         Path filePath = testFolder.resolve("legacy.json");
         JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
         for (String property : List.of("", "\"previousVisitDates\": null,", "\"previousVisitDates\": [],")) {
@@ -63,17 +65,24 @@ public class JsonAddressBookStorageTest {
     public void readAddressBook_invalidPreviousDates_rejectsWithoutRepairingFile() throws Exception {
         Path filePath = testFolder.resolve("invalid-history.json");
         JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
-        for (String previousDates : List.of("\"1/10/2026 1000\"", "{}", "1", "true", "[null]",
-                "[\"31/2/2026 1000\"]", "[\"\"]", "[{}]", "[[]]", "[false]", "[1]",
-                "[\"2/10/2026 1000\",\"1/10/2026 1000\"]",
-                "[\"1/10/2026 1000\",\"01/10/2026 1000\"]",
-                "[\"10/10/2026 1000\"]", "[\"11/10/2026 1000\"]")) {
+        String[] invalidHistories = {
+            // EP: The history container must be an array, rather than a scalar or object.
+            "\"1/10/2026 1000\"", "{}", "1", "true",
+            // EP: Array entries must be non-null, syntactically valid datetime strings.
+            "[null]", "[\"31/2/2026 1000\"]", "[\"\"]", "[{}]", "[[]]", "[false]", "[1]",
+            // EP: Valid datetimes still fail if descending or equal after normalization.
+            "[\"2/10/2026 1000\",\"1/10/2026 1000\"]", "[\"1/10/2026 1000\",\"01/10/2026 1000\"]",
+            // EP: History at or after the current visit is invalid; equality is the boundary case.
+            "[\"10/10/2026 1000\"]", "[\"11/10/2026 1000\"]"
+        };
+        for (String previousDates : invalidHistories) {
             String json = "{\"persons\":["
                     + createPatientJson("\"previousVisitDates\":" + previousDates + ",") + "]}";
             Files.writeString(filePath, json);
+            byte[] savedBytes = Files.readAllBytes(filePath);
 
             assertThrows(DataLoadingException.class, () -> storage.readAddressBook());
-            assertEquals(json, Files.readString(filePath));
+            assertArrayEquals(savedBytes, Files.readAllBytes(filePath));
         }
     }
 
@@ -93,15 +102,17 @@ public class JsonAddressBookStorageTest {
 
     @Test
     public void readAddressBook_crossPatientHistoryConflict_throwsDataLoadingException() throws Exception {
+        // EP: Cross-patient conflicts include historical dates, not only current appointments.
         Path filePath = testFolder.resolve("duplicate-history.json");
         String firstPatient = createPatientJson("\"previousVisitDates\":[\"1/10/2026 1000\"],");
         String secondPatient = createPatientJson("").replace("Test Patient", "Other Patient")
                 .replace("10/10/2026 1000", "01/10/2026 1000");
         String json = "{\"persons\":[" + firstPatient + "," + secondPatient + "]}";
         Files.writeString(filePath, json);
+        byte[] savedBytes = Files.readAllBytes(filePath);
 
         assertThrows(DataLoadingException.class, () -> new JsonAddressBookStorage(filePath).readAddressBook());
-        assertEquals(json, Files.readString(filePath));
+        assertArrayEquals(savedBytes, Files.readAllBytes(filePath));
     }
 
     /**

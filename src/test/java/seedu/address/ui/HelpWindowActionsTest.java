@@ -30,6 +30,7 @@ public class HelpWindowActionsTest {
 
     @Test
     public void openUserGuide_browserAcceptsRequest_reportsRequestWithoutClaimingPageLoaded() {
+        // External browser calls are replaced with a recording action; acceptance does not prove page loading.
         List<String> requestedUrls = new ArrayList<>();
         withHelpWindow(requestedUrls::add, () -> true, stage -> {
             assertFalse(stage.getScene().lookup("#guideStatus").isVisible());
@@ -73,6 +74,7 @@ public class HelpWindowActionsTest {
 
     @Test
     public void copyUrl_clipboardAccepts_reportsSuccessWithoutOpeningBrowser() {
+        // Native clipboard access is replaced with a fake action; success does not prove system delivery.
         AtomicInteger copies = new AtomicInteger();
         withHelpWindow(url -> fail("Copy URL must not open the browser"), () -> {
             copies.incrementAndGet();

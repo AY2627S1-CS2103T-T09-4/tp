@@ -42,6 +42,7 @@ public class NextCommandTest {
     private static final String NEW_VISIT_DATE = "1/11/2026 0930";
     private static final String FULL_DAY = "2/11/2026";
     private static final String FULL_DAY_VISIT_DATE = FULL_DAY + " 1630";
+    private static final String FULL_DAY_DISPLAY_DATE = new VisitDate(FULL_DAY_VISIT_DATE).toDayString();
     private static final Person AMY = new PersonBuilder().withVisitDate("13/10/2026 1000")
             .withDateOfBirth("15/6/1990").withBloodType("A+").withEmergencyContact("Mary Tan, 91234567")
             .withAllergies("Penicillin; latex").withAlcoholHistory("Does not drink")
@@ -66,6 +67,7 @@ public class NextCommandTest {
 
     @Test
     public void execute_futureCurrentVisit_preservesDataAndDisplay() {
+        // EP: A future current visit blocks Next whether the requested visit is before or after that visit.
         Person original = new PersonBuilder(AMY).withVisitDate("2/11/2026 1000").build();
         model.setPerson(AMY, original);
         model.updateFilteredPersonList(person -> !person.equals(CARL));
@@ -184,6 +186,8 @@ public class NextCommandTest {
 
     @Test
     public void execute_pastAndCurrentMinuteAppointments_preservesDataAndDisplay() {
+        // Rule: Scheduling requires currentVisit <= now < requestedVisit.
+        // EP: Non-future requests, represented by past-day and same-day appointments.
         for (String dateTime : List.of("1/1/2026 1000", "14/10/2026 1159", "14/10/2026 1200")) {
             assertScheduleFailure(INDEX_FIRST_PERSON, new VisitDate(dateTime), FIXED_CLOCK,
                     String.format(NextCommand.MESSAGE_NON_FUTURE_VISIT_DATE, "14/10/2026 1200"));
@@ -221,6 +225,7 @@ public class NextCommandTest {
 
     @Test
     public void execute_currentVisitOneNanosecondAfterNow_rejectsAppointment() {
+        // Boundary: Nanosecond precision distinguishes a current visit just after now from one at now.
         Person original = new PersonBuilder(AMY).withVisitDate("14/10/2026 1201").build();
         model.setPerson(AMY, original);
         Clock justBeforeCurrentVisit = Clock.fixed(Instant.parse("2026-10-14T04:00:59.999999999Z"),
@@ -233,6 +238,7 @@ public class NextCommandTest {
 
     @Test
     public void execute_requestedVisitOneNanosecondAfterNow_acceptsAppointment() throws Exception {
+        // Boundary: A requested visit one nanosecond after now is still strictly future.
         Clock justBeforeRequestedVisit = Clock.fixed(Instant.parse("2026-10-14T04:00:59.999999999Z"),
                 FIXED_CLOCK.getZone());
 
@@ -320,17 +326,29 @@ public class NextCommandTest {
 
     @Test
     public void execute_fullDay_requestsConfirmationWithoutChangingData() throws Exception {
+        // Boundary: Seven is the confirmation threshold, rather than a maximum permitted capacity.
         fillDay(FULL_DAY, Model.MAX_VISITS_PER_DAY);
-        AddressBook before = new AddressBook(model.getAddressBook());
+        assertFullDayRequest(INDEX_FIRST_PERSON, Model.MAX_VISITS_PER_DAY);
+    }
 
-        CommandResult result = new NextCommand(INDEX_FIRST_PERSON, new VisitDate(FULL_DAY_VISIT_DATE), FIXED_CLOCK)
-                .execute(model);
+    @Test
+    public void execute_dayAboveLimit_requestsConfirmationWithActualCount() throws Exception {
+        // Boundary: The first count above the threshold detects an incorrect equality-only capacity check.
+        fillDay(FULL_DAY, Model.MAX_VISITS_PER_DAY + 1);
+        assertFullDayRequest(INDEX_FIRST_PERSON, Model.MAX_VISITS_PER_DAY + 1);
+    }
 
-        assertEquals(String.format(NextCommand.MESSAGE_CONFIRM_FULL_DAY, Model.MAX_VISITS_PER_DAY,
-                "Mon, 2 Nov 2026", AMY.getName()), result.getFeedbackToUser());
-        assertTrue(result.getInputRequest().isPresent());
-        assertFalse(result.shouldSaveAddressBook());
-        assertEquals(before, model.getAddressBook());
+    @Test
+    public void execute_dayAboveLimitWithBusyPatientsHidden_countsStoredVisits() throws Exception {
+        // EP: The command uses a displayed index but capacity must use all stored patients.
+        fillDay(FULL_DAY, Model.MAX_VISITS_PER_DAY + 1);
+        model.updateFilteredPersonList(person -> person.equals(AMY) || person.equals(BENSON));
+        model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
+        assertEquals(List.of(BENSON, AMY), model.getFilteredPersonList());
+        int amyPosition = model.getFilteredPersonList().indexOf(AMY);
+        assertTrue(amyPosition >= 0);
+
+        assertFullDayRequest(Index.fromZeroBased(amyPosition), Model.MAX_VISITS_PER_DAY + 1);
     }
 
     @Test
@@ -366,6 +384,7 @@ public class NextCommandTest {
 
     @Test
     public void execute_dayBelowLimit_schedulesWithoutConfirmation() throws Exception {
+        // Boundary: One below the warning threshold schedules immediately.
         fillDay(FULL_DAY, Model.MAX_VISITS_PER_DAY - 1);
 
         assertScheduleSuccess(INDEX_FIRST_PERSON, AMY, FULL_DAY_VISIT_DATE);
@@ -379,6 +398,25 @@ public class NextCommandTest {
         fillDay("14/10/2026", Model.MAX_VISITS_PER_DAY - 1);
 
         assertScheduleSuccess(INDEX_FIRST_PERSON, original, "14/10/2026 1500");
+    }
+
+    @Test
+    public void execute_laterOnSameDayAboveLimit_doesNotRequestConfirmation() throws Exception {
+        // Moving the visit later on the same day replaces the existing slot, so the total remains one above capacity.
+        Person original = new PersonBuilder(AMY).withVisitDate("14/10/2026 0730").build();
+        model.setPerson(AMY, original);
+        fillDay("14/10/2026", Model.MAX_VISITS_PER_DAY);
+        model.updateFilteredPersonList(person -> person.equals(original) || person.equals(BENSON));
+        model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
+        assertEquals(List.of(BENSON, original), model.getFilteredPersonList());
+        int amyPosition = model.getFilteredPersonList().indexOf(original);
+        assertTrue(amyPosition >= 0);
+
+        assertScheduleSuccess(Index.fromZeroBased(amyPosition), original, "14/10/2026 1500");
+        Person updatedAmy = model.getAddressBook().getPersonList().getFirst();
+        assertEquals(List.of(original.getVisitDate()), updatedAmy.getPreviousVisitDates());
+        assertEquals(Model.MAX_VISITS_PER_DAY + 1, model.countPersonsWithSameVisitDay(updatedAmy));
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
     }
 
     @Test
@@ -506,6 +544,22 @@ public class NextCommandTest {
         assertEquals(before, model.getAddressBook());
         assertEquals(displayedPersons, model.getFilteredPersonList());
         return exception;
+    }
+
+    /** Checks that requesting confirmation preserves both the complete book and the arranged display. */
+    private void assertFullDayRequest(Index displayedIndex, int expectedVisitCount) throws Exception {
+        AddressBook before = new AddressBook(model.getAddressBook());
+        List<Person> displayedPersons = List.copyOf(model.getFilteredPersonList());
+
+        CommandResult result = new NextCommand(displayedIndex, new VisitDate(FULL_DAY_VISIT_DATE), FIXED_CLOCK)
+                .execute(model);
+
+        assertEquals(String.format(NextCommand.MESSAGE_CONFIRM_FULL_DAY, expectedVisitCount,
+                FULL_DAY_DISPLAY_DATE, AMY.getName()), result.getFeedbackToUser());
+        assertTrue(result.getInputRequest().isPresent());
+        assertFalse(result.shouldSaveAddressBook());
+        assertEquals(before, model.getAddressBook());
+        assertEquals(displayedPersons, model.getFilteredPersonList());
     }
 
     /**

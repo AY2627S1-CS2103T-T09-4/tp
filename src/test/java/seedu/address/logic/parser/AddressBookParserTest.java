@@ -97,6 +97,7 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_next() throws Exception {
+        // EP: Valid dispatch preserves arguments while accepting surrounding and inter-token whitespace.
         NextCommand expectedCommand = new NextCommand(INDEX_FIRST_PERSON, new VisitDate("1/11/2026 0930"));
         assertEquals(expectedCommand, parser.parseCommand("next 1 1/11/2026 0930"));
         assertEquals(expectedCommand, parser.parseCommand(" \tnext\t1  01/11/2026\t0930  "));
@@ -104,12 +105,14 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_bareNext_usesNextUsage() {
+        // Boundary: A recognized command with zero arguments must retain that command's usage.
         String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, NextCommand.MESSAGE_USAGE);
         assertThrows(ParseException.class, expectedMessage, () -> parser.parseCommand("next"));
     }
 
     @Test
     public void parseCommand_oversizedNextIndex_usesSpecificErrorAndNextUsage() {
+        // Boundary: The decimal string immediately above Integer.MAX_VALUE survives dispatch to the Next parser.
         String expectedMessage = NextCommandParser.MESSAGE_INDEX_TOO_LARGE + "\n" + NextCommand.MESSAGE_USAGE;
         assertThrows(ParseException.class,
                 expectedMessage, () -> parser.parseCommand("next 2147483648 2/11/2026 1000"));
@@ -117,6 +120,7 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_nextCapitalized_preservesCommandCasePolicy() {
+        // EP: Command words are case-sensitive even though valid arguments allow whitespace normalization.
         assertThrows(ParseException.class, MESSAGE_UNKNOWN_COMMAND, () -> parser.parseCommand("Next 1 1/11/2026 0930"));
     }
 
@@ -129,12 +133,14 @@ public class AddressBookParserTest {
 
     @Test
     public void parseCommand_barePrev_usesPrevUsage() {
+        // Boundary: The zero-argument Prev case remains a Prev usage error after dispatch.
         String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, PrevCommand.MESSAGE_USAGE);
         assertThrows(ParseException.class, expectedMessage, () -> parser.parseCommand("prev"));
     }
 
     @Test
     public void parseCommand_oversizedPrevIndex_usesSpecificErrorAndPrevUsage() {
+        // Boundary: The first overflowing positive index must keep the Prev-specific usage context.
         String expectedMessage = ParserUtil.MESSAGE_INDEX_TOO_LARGE + "\n" + PrevCommand.MESSAGE_USAGE;
         assertThrows(ParseException.class, expectedMessage, () -> parser.parseCommand("prev 2147483648"));
     }
