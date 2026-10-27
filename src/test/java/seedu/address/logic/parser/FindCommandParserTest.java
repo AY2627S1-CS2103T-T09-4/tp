@@ -34,11 +34,16 @@ public class FindCommandParserTest {
     }
 
     @Test
-    public void parse_keywordsWithoutPrefix_throwsParseException() {
+    public void parse_keywordsWithoutSupportedPrefix_throwsParseException() {
         assertParseFailure(parser, "Alice Bob", MESSAGE_KEYWORDS_NEED_PREFIX);
 
         // keywords before a valid prefix are still rejected
         assertParseFailure(parser, "Alice n/Bob", MESSAGE_KEYWORDS_NEED_PREFIX);
+
+        // prefix-like text unsupported by find is rejected with the same accurate message
+        assertParseFailure(parser, " all/penicillin", MESSAGE_KEYWORDS_NEED_PREFIX);
+        assertParseFailure(parser, " e/asjdf", MESSAGE_KEYWORDS_NEED_PREFIX);
+        assertParseFailure(parser, " x/value", MESSAGE_KEYWORDS_NEED_PREFIX);
     }
 
     @Test
