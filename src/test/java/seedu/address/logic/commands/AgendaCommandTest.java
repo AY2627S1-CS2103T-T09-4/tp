@@ -76,6 +76,18 @@ public class AgendaCommandTest {
     }
 
     @Test
+    public void execute_rangeEndingOnLastSupportedDate_includesLastDay() {
+        Person finalDayVisit = personWithVisit("Final day", LocalDate.of(9999, 12, 31), 23);
+        addPersons(finalDayVisit);
+
+        CommandResult result = new AgendaCommand(LocalDate.of(9999, 12, 31), 1).execute(model);
+
+        assertEquals(List.of(finalDayVisit), model.getFilteredPersonList());
+        assertEquals(String.format(AgendaCommand.MESSAGE_ONE_VISIT, "31/12/9999", "31/12/9999"),
+                result.getFeedbackToUser());
+    }
+
+    @Test
     public void execute_listAfterAgenda_restoresStoredOrder() {
         addPersons(middleDay, firstDayEarly);
         new AgendaCommand(START_DATE, 7).execute(model);
@@ -91,6 +103,8 @@ public class AgendaCommandTest {
         assertThrows(IllegalArgumentException.class, () -> new AgendaCommand(START_DATE, 0));
         assertThrows(IllegalArgumentException.class, () ->
                 new AgendaCommand(START_DATE, AgendaCommand.MAX_DAYS + 1));
+        assertThrows(IllegalArgumentException.class, () -> new AgendaCommand(LocalDate.of(9999, 12, 31), 2));
+        assertThrows(IllegalArgumentException.class, () -> new AgendaCommand(LocalDate.MAX, 1));
         assertThrows(NullPointerException.class, () -> new AgendaCommand(START_DATE).execute(null));
     }
 

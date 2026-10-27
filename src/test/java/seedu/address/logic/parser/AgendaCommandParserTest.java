@@ -51,6 +51,24 @@ public class AgendaCommandParserTest {
     }
 
     @Test
+    public void parse_overflowingDateRange_throwsParseException() {
+        String expectedError = AgendaCommand.MESSAGE_INVALID_DATE_RANGE + "\n" + AgendaCommand.MESSAGE_USAGE;
+
+        assertParseFailure(parser, "2/1/9999 365", expectedError);
+        assertParseFailure(parser, "26/12/9999", expectedError);
+        assertParseFailure(parser, "28/10/9999 365", expectedError);
+        assertParseFailure(parser, "31/12/9999 2", expectedError);
+        assertParseFailure(parser, "31/12/+999999999 1", expectedError);
+    }
+
+    @Test
+    public void parse_rangeEndingOnLastSupportedDate_returnsAgenda() throws Exception {
+        assertEquals(new AgendaCommand(LocalDate.of(9999, 1, 1), 365), parser.parse("1/1/9999 365"));
+        assertEquals(new AgendaCommand(LocalDate.of(9999, 12, 25)), parser.parse("25/12/9999"));
+        assertEquals(new AgendaCommand(LocalDate.of(9999, 12, 31), 1), parser.parse("31/12/9999 1"));
+    }
+
+    @Test
     public void parse_invalidDays_throwsParseException() {
         assertParseFailure(parser, "27/10/2026 0", EXPECTED_ERROR);
         assertParseFailure(parser, "27/10/2026 -1", EXPECTED_ERROR);

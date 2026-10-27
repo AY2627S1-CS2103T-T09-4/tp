@@ -32,10 +32,12 @@ public class AgendaCommandParser implements Parser<AgendaCommand> {
         }
 
         LocalDate startDate = parseStartDate(arguments[0]);
-        if (arguments.length == 1) {
-            return new AgendaCommand(startDate);
+        int days = arguments.length == 1 ? AgendaCommand.DEFAULT_DAYS : parseDays(arguments[1]);
+        try {
+            return new AgendaCommand(startDate, days);
+        } catch (IllegalArgumentException exception) {
+            throw new ParseException(AgendaCommand.MESSAGE_INVALID_DATE_RANGE + "\n" + AgendaCommand.MESSAGE_USAGE);
         }
-        return new AgendaCommand(startDate, parseDays(arguments[1]));
     }
 
     private static LocalDate parseStartDate(String argument) throws ParseException {

@@ -583,6 +583,9 @@ patient list. A later operation that resets the filter also clears this display-
 `agenda START_DATE [DAYS]` shows current visits in a consecutive range of calendar days. `AgendaCommandParser`
 requires a start date and accepts an optional duration from 1 to 365 days. A bare `agenda` command displays the
 usage message, while an omitted duration defaults to seven days.
+The constructor checks that the final included day is on or before 31 December 9999, so the exclusive end used for
+filtering can be calculated safely without showing dates in year 10000. The parser reports an invalid range before
+execution when this bound is exceeded.
 
 `AgendaCommand` constructs a `VisitDateWithinRangePredicate` using an inclusive start and exclusive end. The
 exclusive end keeps the predicate independent of visit times: a seven-day agenda starting on 27 October accepts
@@ -1628,6 +1631,9 @@ displayed order, preserving the usual behavior of `list` and `find`.
 1. Run `agenda`, `agenda 31/2/2026`, `agenda 27/10/2026 0`, `agenda 27/10/2026 366`, and
    `agenda 27/10/2026 7 extra`.<br>
    Expected: Each command shows the agenda usage message and leaves the displayed list unchanged.
+1. Run `agenda 31/12/9999 1`, then `agenda 31/12/9999 2`.<br>
+   Expected: The first shows visits on 31 December 9999; the second reports that the date range must end on or before
+   31/12/9999 and leaves the displayed list unchanged.
 
 ### Distinguishing past visits in the patient list
 

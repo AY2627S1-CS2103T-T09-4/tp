@@ -29,7 +29,10 @@ public class AgendaCommand extends Command {
     public static final String MESSAGE_NO_VISITS = "No visits scheduled from %1$s to %2$s.";
     public static final String MESSAGE_ONE_VISIT = "Showing 1 visit from %1$s to %2$s.";
     public static final String MESSAGE_MULTIPLE_VISITS = "Showing %1$d visits from %2$s to %3$s.";
+    public static final String MESSAGE_INVALID_DATE_RANGE =
+            "The agenda date range must end on or before 31/12/9999.";
 
+    private static final LocalDate LAST_SUPPORTED_DATE = LocalDate.of(9999, 12, 31);
     private static final String MESSAGE_INVALID_DAYS = "Days must be between 1 and " + MAX_DAYS + ".";
 
     private final LocalDate startDate;
@@ -48,6 +51,7 @@ public class AgendaCommand extends Command {
     public AgendaCommand(LocalDate startDate, int days) {
         this.startDate = requireNonNull(startDate);
         checkArgument(days >= 1 && days <= MAX_DAYS, MESSAGE_INVALID_DAYS);
+        checkArgument(!startDate.isAfter(LAST_SUPPORTED_DATE.minusDays(days - 1)), MESSAGE_INVALID_DATE_RANGE);
         this.days = days;
     }
 

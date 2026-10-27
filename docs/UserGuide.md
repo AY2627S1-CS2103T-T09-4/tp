@@ -279,6 +279,7 @@ Format: `agenda START_DATE [DAYS]`
 * `DAYS` must be a whole number from 1 to 365.
 * If `DAYS` is omitted, the agenda covers seven calendar days starting from `START_DATE`.
 * Both the first and last calendar days are included, regardless of the visit time.
+* The last included day must be on or before 31/12/9999. A range extending beyond this date is rejected.
 * The command replaces any current `find` results and `sort` ordering with the agenda results.
 * The stored patient order and saved data are not changed. Run `list` to return to the full list in stored order.
 
