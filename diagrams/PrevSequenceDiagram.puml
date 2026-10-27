@@ -2,12 +2,24 @@
 !include style.puml
 skinparam ArrowFontStyle plain
 
+skinparam ParticipantPadding 6
+skinparam Participant {
+  FontSize 15
+  Padding 8
+}
+skinparam Sequence {
+  ArrowFontSize 14
+  ParticipantFontSize 15
+}
+skinparam Note {
+  FontSize 14
+}
+
 box Logic LOGIC_COLOR_T1
 participant ":LogicManager" as LogicManager LOGIC_COLOR
 participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
 participant ":PrevCommandParser" as PrevCommandParser LOGIC_COLOR
 participant "p:PrevCommand" as PrevCommand LOGIC_COLOR
-participant ":CommandResult" as CommandResult LOGIC_COLOR
 end box
 
 box Model MODEL_COLOR_T1
@@ -18,10 +30,10 @@ box Storage STORAGE_COLOR_T1
 participant ":Storage" as Storage STORAGE_COLOR
 end box
 
-[-> LogicManager : execute("prev 1")
+[-> LogicManager : execute(commandText)
 activate LogicManager
 
-LogicManager -> AddressBookParser : parseCommand("prev 1")
+LogicManager -> AddressBookParser : parseCommand(commandText)
 activate AddressBookParser
 
 create PrevCommandParser
@@ -30,7 +42,7 @@ activate PrevCommandParser
 PrevCommandParser --> AddressBookParser
 deactivate PrevCommandParser
 
-AddressBookParser -> PrevCommandParser : parse(" 1")
+AddressBookParser -> PrevCommandParser : parse(arguments)
 activate PrevCommandParser
 
 create PrevCommand
@@ -58,35 +70,33 @@ activate Model
 Model --> PrevCommand : displayedPersons
 deactivate Model
 
-PrevCommand -> PrevCommand : createUpdatedPerson(personToUpdate)
+PrevCommand -> PrevCommand : createUpdatedPerson(...)
 activate PrevCommand
+note right of PrevCommand
+  Replacement patient:
+  Remove the latest history entry
+  and use it as current.
+  Discard the original current datetime.
+  Preserve all other patient fields.
+end note
 PrevCommand --> PrevCommand : updatedPerson
 deactivate PrevCommand
 
-note right of PrevCommand
-  Successful main flow only.
-  Validation and error paths omitted.
-end note
-
-PrevCommand -> Model : setPerson(personToUpdate, updatedPerson)
+PrevCommand -> Model : setPerson(...)
 activate Model
 Model --> PrevCommand
 deactivate Model
 
-PrevCommand -> Model : updateFilteredPersonList(show all)
+PrevCommand -> Model : updateFilteredPersonList(...)
 activate Model
 Model --> PrevCommand
 deactivate Model
-
-create CommandResult
-PrevCommand -> CommandResult : CommandResult(successMessage)
-activate CommandResult
-CommandResult --> PrevCommand
-deactivate CommandResult
 
 PrevCommand --> LogicManager : result
 deactivate PrevCommand
 
+LogicManager -> LogicManager : saveAddressBook()
+activate LogicManager
 LogicManager -> Model : getAddressBook()
 activate Model
 Model --> LogicManager : addressBook
@@ -96,6 +106,9 @@ LogicManager -> Storage : saveAddressBook(addressBook)
 activate Storage
 Storage --> LogicManager
 deactivate Storage
+
+LogicManager --> LogicManager
+deactivate LogicManager
 
 [<--LogicManager : result
 deactivate LogicManager

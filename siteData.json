@@ -78,6 +78,7 @@
         "non-functional-requirements": "Non-Functional Requirements",
         "glossary": "Glossary",
         "appendix-instructions-for-manual-testing": "Appendix: Instructions for manual testing",
+        "manual-testing-conventions-and-disposable-fixtures": "Manual-testing conventions and disposable fixtures",
         "launch-and-shutdown": "Launch and shutdown",
         "dates-of-birth": "Dates of birth",
         "allergies": "Allergies",
