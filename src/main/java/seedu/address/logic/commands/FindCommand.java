@@ -34,9 +34,9 @@ public class FindCommand extends Command {
             + "[" + PREFIX_VISIT_DATE + "DATE...] "
             + "[" + PREFIX_NOTE + "NOTE_KEYWORD...]\n"
             + "Example: " + COMMAND_WORD + " " + PREFIX_NAME + "george priya " + PREFIX_TAG + "morning";
-    public static final String MESSAGE_KEYWORDS_NEED_PREFIX = "Put a prefix before search keywords, e.g. "
-            + COMMAND_WORD + " " + PREFIX_NAME + "george for names or " + COMMAND_WORD + " " + PREFIX_PHONE
-            + "8765 for phone numbers.";
+    public static final String MESSAGE_KEYWORDS_NEED_PREFIX = "Search keywords must use a supported prefix: "
+            + PREFIX_NAME + ", " + PREFIX_PHONE + ", " + PREFIX_ADDRESS + ", " + PREFIX_TAG + ", "
+            + PREFIX_VISIT_DATE + ", or " + PREFIX_NOTE + ".";
 
     public static final String MESSAGE_PATIENTS_FOUND = "%1$d patients found.";
     public static final String MESSAGE_ONE_PATIENT_FOUND = "1 patient found.";
