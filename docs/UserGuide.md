@@ -268,6 +268,25 @@ Patients with a visit date before today are shown using darker backgrounds and m
 also appears in patient lists produced by commands such as `find` and `sort date`. Past patients remain selectable,
 and their complete details remain readable in the details panel.
 
+### Viewing visits as an agenda: `agenda START_DATE [DAYS]`
+
+Shows patients whose current visits fall within a range of calendar days, ordered by visit date and time.
+
+Format: `agenda START_DATE [DAYS]`
+
+* `START_DATE` must use the format `d/M/yyyy`, e.g. `27/10/2026`.
+* `START_DATE` is required. Entering only `agenda` shows the command parameters and examples.
+* `DAYS` must be a whole number from 1 to 365.
+* If `DAYS` is omitted, the agenda covers seven calendar days starting from `START_DATE`.
+* Both the first and last calendar days are included, regardless of the visit time.
+* The command replaces any current `find` results and `sort` ordering with the agenda results.
+* The stored patient order and saved data are not changed. Run `list` to return to the full list in stored order.
+
+Examples:
+
+* `agenda 27/10/2026` shows visits from 27 October through 2 November 2026.
+* `agenda 27/10/2026 14` shows visits from 27 October through 9 November 2026.
+
 ### Sorting visits by date: `sort date [START_DATE]`
 
 Sorts the currently displayed patients by visit date and time around an optional cutoff date. Visits on or after the
@@ -668,6 +687,7 @@ Doc home folder.
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Add**    | `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
+**Agenda** | `agenda START_DATE [DAYS]`<br> e.g., `agenda 27/10/2026 7`
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
 **Edit**   | `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [p/PHONE_NUMBER] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`

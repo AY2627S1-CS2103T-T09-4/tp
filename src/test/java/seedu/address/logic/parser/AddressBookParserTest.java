@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.commands.AddCommand;
+import seedu.address.logic.commands.AgendaCommand;
 import seedu.address.logic.commands.ClearCommand;
 import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.EditCommand;
@@ -44,6 +45,19 @@ public class AddressBookParserTest {
         Person person = new PersonBuilder().build();
         AddCommand command = (AddCommand) parser.parseCommand(PersonUtil.getAddCommand(person));
         assertEquals(new AddCommand(person), command);
+    }
+
+    @Test
+    public void parseCommand_agenda() throws Exception {
+        assertEquals(new AgendaCommand(LocalDate.of(2026, 10, 27), 14),
+                parser.parseCommand("agenda 27/10/2026 14"));
+    }
+
+    @Test
+    public void parseCommand_bareAgenda_usesAgendaUsage() {
+        String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, AgendaCommand.MESSAGE_USAGE);
+
+        assertThrows(ParseException.class, expectedMessage, () -> parser.parseCommand("agenda"));
     }
 
     @Test
