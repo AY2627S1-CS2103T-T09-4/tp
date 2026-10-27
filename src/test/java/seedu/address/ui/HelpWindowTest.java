@@ -39,12 +39,12 @@ public class HelpWindowTest {
 
     private static final List<List<String>> EXPECTED_PATIENT_AND_VISIT_ENTRIES = List.of(
             List.of("add — Add a patient.", "add n/NAME p/PHONE a/ADDRESS vd/DATETIME",
-                    "[dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [e/EMAIL] "
-                            + "[note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]..."),
+                    "[e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] "
+                            + "[alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]..."),
             List.of("edit — Update a patient's details. Provide at least one field.", "edit INDEX",
-                    "[n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [dob/DATE] [bt/BLOOD_TYPE] "
-                            + "[all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [e/EMAIL] [note/NOTES] "
-                            + "[ec/[NAME, ]PHONE_NUMBER] [t/TAG]..."),
+                    "[n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] "
+                            + "[dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] "
+                            + "[smk/STATUS] [note/NOTES] [t/TAG]..."),
             List.of("next — Schedule a patient's next visit.", "next INDEX DATETIME"),
             List.of("prev — Restore the latest previous visit date.", "prev INDEX"),
             List.of("delete — Delete a patient.", "delete INDEX"),
@@ -199,16 +199,17 @@ public class HelpWindowTest {
                 List<Label> syntaxLabels = root.lookupAll(".helpCommandSyntax").stream()
                         .map(Label.class::cast)
                         .toList();
-                List<Label> continuationLabels = root.lookupAll(".helpCommandContinuation").stream()
-                        .map(Label.class::cast)
+                List<FlowPane> continuationPanes = root.lookupAll(".helpCommandContinuation").stream()
+                        .map(FlowPane.class::cast)
                         .toList();
                 assertEquals(12, syntaxLabels.size());
-                assertEquals(3, continuationLabels.size());
+                assertEquals(3, continuationPanes.size());
                 assertTrue(syntaxLabels.stream().allMatch(Label::isWrapText));
-                assertTrue(continuationLabels.stream().allMatch(Label::isWrapText));
+                assertTrue(continuationPanes.stream().allMatch(pane -> pane.getChildren().stream()
+                        .allMatch(Label.class::isInstance)));
                 double availableWidth = scrollPane.getViewportBounds().getWidth();
                 assertTemplateLabelsFit(syntaxLabels, availableWidth);
-                assertTemplateLabelsFit(continuationLabels, availableWidth);
+                assertTemplatePanesFit(continuationPanes, availableWidth);
                 scrollPane.setVvalue(1.0);
                 root.layout();
                 Node finalCommand = findCommandEntry((VBox) root.lookup("#applicationCommands"), "exit");
@@ -326,16 +327,27 @@ public class HelpWindowTest {
                     .filter(Label.class::isInstance)
                     .map(Label.class::cast)
                     .toList();
+            List<FlowPane> continuationPanes = actualEntry.getChildren().stream()
+                    .skip(1)
+                    .filter(FlowPane.class::isInstance)
+                    .map(FlowPane.class::cast)
+                    .toList();
             List<String> actualEntryText = new ArrayList<>();
             actualEntryText.add(getTextFlowText(description));
             actualEntryText.addAll(labels.stream().map(Label::getText).toList());
+            actualEntryText.addAll(continuationPanes.stream().map(this::getFlowPaneText).toList());
             assertEquals(expectedEntries.get(i), actualEntryText);
             assertTrue(description.getStyleClass().contains("helpCommandDescription"));
             assertTrue(description.getChildren().stream().allMatch(Text.class::isInstance));
             assertTrue(((Text) description.getChildren().getFirst()).getStyleClass().contains("helpCommandName"));
             assertTrue(labels.stream().allMatch(label -> label.getStyleClass().contains("helpCommandSyntax")
-                    || label.getStyleClass().contains("helpCommandContinuation")));
-            assertTrue(labels.stream().allMatch(Label::isWrapText));
+                    && label.isWrapText()));
+            assertTrue(continuationPanes.stream().allMatch(pane -> pane.getStyleClass()
+                    .contains("helpCommandContinuation")));
+            assertTrue(continuationPanes.stream().flatMap(pane -> pane.getChildren().stream())
+                    .map(Label.class::cast)
+                    .allMatch(label -> label.getStyleClass().contains("helpCommandToken")
+                            && !label.isWrapText()));
 
             String[] commandParts = getTextFlowText(description).split(" — ", 2);
             assertEquals(2, commandParts.length);
@@ -359,6 +371,20 @@ public class HelpWindowTest {
     private void assertTemplateLabelsFit(List<Label> labels, double availableWidth) {
         assertTrue(labels.stream().allMatch(label -> label.getWidth() > 0
                 && label.getWidth() <= availableWidth));
+    }
+
+    private void assertTemplatePanesFit(List<FlowPane> panes, double availableWidth) {
+        assertTrue(panes.stream().allMatch(pane -> pane.getWidth() > 0 && pane.getWidth() <= availableWidth));
+        assertTrue(panes.stream().flatMap(pane -> pane.getChildren().stream())
+                .map(Label.class::cast)
+                .allMatch(label -> label.getWidth() > 0 && label.getWidth() <= availableWidth));
+    }
+
+    private String getFlowPaneText(FlowPane pane) {
+        return String.join(" ", pane.getChildren().stream()
+                .map(Label.class::cast)
+                .map(Label::getText)
+                .toList());
     }
 
     private String getTextFlowText(TextFlow textFlow) {

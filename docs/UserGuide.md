@@ -146,7 +146,7 @@ While a confirmation or follow-up prompt is pending, open Help with **F1** or **
 Typing `help` and pressing Enter answers that prompt instead of opening Help.
 </box>
 
-![Help window](images/helpMessage.png)
+![Help window](images/helpWindow.png)
 
 
 ### Adding a patient: `add`

@@ -90,7 +90,7 @@
     -fx-font-weight: bold;
 }
 
-.helpCommandSyntax, .helpCommandContinuation {
+.helpCommandSyntax, .helpCommandToken {
     -fx-font-family: monospace;
     -fx-font-size: 12px;
     -fx-text-fill: #d6d6d6;

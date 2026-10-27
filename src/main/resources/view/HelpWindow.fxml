@@ -74,9 +74,19 @@
                           </TextFlow>
                           <Label styleClass="helpCommandSyntax" text="add n/NAME p/PHONE a/ADDRESS vd/DATETIME"
                                  wrapText="true" />
-                          <Label styleClass="helpCommandContinuation"
-                                 text="[dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]..."
-                                 wrapText="true" />
+                          <FlowPane alignment="TOP_LEFT" hgap="8.0" styleClass="helpCommandContinuation" vgap="2.0">
+                            <children>
+                              <Label styleClass="helpCommandToken" text="[e/EMAIL]" />
+                              <Label styleClass="helpCommandToken" text="[ec/[NAME, ]PHONE_NUMBER]" />
+                              <Label styleClass="helpCommandToken" text="[dob/DATE]" />
+                              <Label styleClass="helpCommandToken" text="[bt/BLOOD_TYPE]" />
+                              <Label styleClass="helpCommandToken" text="[all/ALLERGIES]" />
+                              <Label styleClass="helpCommandToken" text="[alc/ALCOHOL_HISTORY]" />
+                              <Label styleClass="helpCommandToken" text="[smk/STATUS]" />
+                              <Label styleClass="helpCommandToken" text="[note/NOTES]" />
+                              <Label styleClass="helpCommandToken" text="[t/TAG]..." />
+                            </children>
+                          </FlowPane>
                         </children>
                       </VBox>
                       <VBox styleClass="helpCommand" fillWidth="true" spacing="2.0">
@@ -89,9 +99,23 @@
                             </children>
                           </TextFlow>
                           <Label styleClass="helpCommandSyntax" text="edit INDEX" wrapText="true" />
-                          <Label styleClass="helpCommandContinuation"
-                                 text="[n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]..."
-                                 wrapText="true" />
+                          <FlowPane alignment="TOP_LEFT" hgap="8.0" styleClass="helpCommandContinuation" vgap="2.0">
+                            <children>
+                              <Label styleClass="helpCommandToken" text="[n/NAME]" />
+                              <Label styleClass="helpCommandToken" text="[p/PHONE]" />
+                              <Label styleClass="helpCommandToken" text="[a/ADDRESS]" />
+                              <Label styleClass="helpCommandToken" text="[vd/DATETIME]" />
+                              <Label styleClass="helpCommandToken" text="[e/EMAIL]" />
+                              <Label styleClass="helpCommandToken" text="[ec/[NAME, ]PHONE_NUMBER]" />
+                              <Label styleClass="helpCommandToken" text="[dob/DATE]" />
+                              <Label styleClass="helpCommandToken" text="[bt/BLOOD_TYPE]" />
+                              <Label styleClass="helpCommandToken" text="[all/ALLERGIES]" />
+                              <Label styleClass="helpCommandToken" text="[alc/ALCOHOL_HISTORY]" />
+                              <Label styleClass="helpCommandToken" text="[smk/STATUS]" />
+                              <Label styleClass="helpCommandToken" text="[note/NOTES]" />
+                              <Label styleClass="helpCommandToken" text="[t/TAG]..." />
+                            </children>
+                          </FlowPane>
                         </children>
                       </VBox>
                       <VBox styleClass="helpCommand" fillWidth="true" spacing="2.0">
@@ -166,9 +190,16 @@
                             </children>
                           </TextFlow>
                           <Label styleClass="helpCommandSyntax" text="find" wrapText="true" />
-                          <Label styleClass="helpCommandContinuation"
-                                 text="[n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]"
-                                 wrapText="true" />
+                          <FlowPane alignment="TOP_LEFT" hgap="8.0" styleClass="helpCommandContinuation" vgap="2.0">
+                            <children>
+                              <Label styleClass="helpCommandToken" text="[n/NAME_KEYWORD...]" />
+                              <Label styleClass="helpCommandToken" text="[p/PHONE_KEYWORD...]" />
+                              <Label styleClass="helpCommandToken" text="[a/ADDRESS_KEYWORD...]" />
+                              <Label styleClass="helpCommandToken" text="[t/TAG_KEYWORD...]" />
+                              <Label styleClass="helpCommandToken" text="[vd/DATE...]" />
+                              <Label styleClass="helpCommandToken" text="[note/NOTE_KEYWORD...]" />
+                            </children>
+                          </FlowPane>
                         </children>
                       </VBox>
                       <VBox styleClass="helpCommand" fillWidth="true" spacing="2.0">
