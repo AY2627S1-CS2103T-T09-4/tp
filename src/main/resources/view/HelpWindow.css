@@ -1,5 +1,9 @@
-.button, .helpHint, .helpTitle, .helpSectionTitle, .helpCommand {
+.button, .helpHint, .helpTitle, .helpSectionTitle {
     -fx-text-fill: white;
+}
+
+.helpCommandDescriptionText, .helpCommandName {
+    -fx-fill: white;
 }
 
 .button {
@@ -38,7 +42,60 @@
     -fx-text-fill: #c4c4c4;
 }
 
+.helpNavigationHintText, .helpKeySeparator {
+    -fx-text-fill: #c4c4c4;
+}
+
+.helpKeyCap {
+    -fx-background-color: #484848;
+    -fx-background-radius: 3px;
+    -fx-border-color: #777777;
+    -fx-border-radius: 3px;
+    -fx-font-family: monospace;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-padding: 2px 5px 2px 5px;
+    -fx-text-fill: #e4e4e4;
+}
+
+.helpNotationLegend {
+    -fx-font-size: 11px;
+}
+
+.helpNotationLegendText {
+    -fx-fill: #a8a8a8;
+}
+
+.helpNotationToken {
+    -fx-fill: #d6d6d6;
+    -fx-font-family: monospace;
+}
+
 .helpSectionTitle {
     -fx-font-size: 14px;
     -fx-font-weight: bold;
+    -fx-padding: 0 0 3px 0;
+    -fx-underline: true;
+}
+
+.helpCommand {
+    -fx-padding: 0 0 8px 0;
+}
+
+.helpCommandDescription {
+    -fx-font-size: 12px;
+}
+
+.helpCommandName {
+    -fx-font-weight: bold;
+}
+
+.helpCommandSyntax, .helpCommandContinuation {
+    -fx-font-family: monospace;
+    -fx-font-size: 12px;
+    -fx-text-fill: #d6d6d6;
+}
+
+.helpCommandContinuation {
+    -fx-padding: 0 0 0 16px;
 }

@@ -8,8 +8,11 @@
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Text?>
+<?import javafx.scene.text.TextFlow?>
 <?import javafx.stage.Stage?>
 
 <fx:root height="500.0" minHeight="280.0" minWidth="460.0" resizable="true" title="Help"
@@ -32,35 +35,193 @@
               <VBox alignment="TOP_LEFT" fillWidth="true" spacing="8.0">
                 <children>
                   <Label styleClass="helpTitle" text="Available commands" />
-                  <Label fx:id="keyboardHint" styleClass="helpNavigationHint" wrapText="true"
-                         text="↑/↓ Scroll · Tab/Shift+Tab Move focus · Esc Close" />
-                  <VBox fx:id="patientCommands" fillWidth="true" spacing="2.0">
+                  <FlowPane fx:id="keyboardHint" alignment="CENTER_LEFT" focusTraversable="false" hgap="4.0"
+                            prefWrapLength="500.0" styleClass="helpNavigationHint" vgap="4.0">
                     <children>
-                      <Label styleClass="helpSectionTitle" text="Patient management" />
-                      <Label styleClass="helpCommand" text="add — Add a patient." wrapText="true" />
-                      <Label styleClass="helpCommand" text="list — Show all patients." wrapText="true" />
-                      <Label styleClass="helpCommand" text="find — Find patients." wrapText="true" />
-                      <Label styleClass="helpCommand" text="view — Show a patient's details." wrapText="true" />
-                      <Label styleClass="helpCommand" text="edit — Update a patient's details." wrapText="true" />
-                      <Label styleClass="helpCommand" text="delete — Delete a patient." wrapText="true" />
-                      <Label styleClass="helpCommand" text="clear — Remove all patients." wrapText="true" />
+                      <Label mouseTransparent="true" styleClass="helpKeyCap" text="↑" />
+                      <Label mouseTransparent="true" styleClass="helpKeyCap" text="↓" />
+                      <Label styleClass="helpNavigationHintText" text="Scroll ·" />
+                      <Label mouseTransparent="true" styleClass="helpKeyCap" text="Tab" />
+                      <Label styleClass="helpKeySeparator" text="/" />
+                      <Label mouseTransparent="true" styleClass="helpKeyCap" text="Shift" />
+                      <Label styleClass="helpKeySeparator" text="+" />
+                      <Label mouseTransparent="true" styleClass="helpKeyCap" text="Tab" />
+                      <Label styleClass="helpNavigationHintText" text="Move focus ·" />
+                      <Label mouseTransparent="true" styleClass="helpKeyCap" text="Esc" />
+                      <Label styleClass="helpNavigationHintText" text="Close" />
+                    </children>
+                  </FlowPane>
+                  <TextFlow fx:id="notationLegend" styleClass="helpNotationLegend">
+                    <children>
+                      <Text styleClass="helpNotationToken" text="UPPERCASE" />
+                      <Text styleClass="helpNotationLegendText" text=": replace with your values · " />
+                      <Text styleClass="helpNotationToken" text="[ ]" />
+                      <Text styleClass="helpNotationLegendText" text=": optional · " />
+                      <Text styleClass="helpNotationToken" text="..." />
+                      <Text styleClass="helpNotationLegendText" text=": repeatable" />
+                    </children>
+                  </TextFlow>
+                  <VBox fx:id="patientAndVisitCommands" fillWidth="true" spacing="6.0">
+                    <children>
+                      <Label styleClass="helpSectionTitle" text="Manage patients and visits" />
+                      <VBox styleClass="helpCommand" fillWidth="true" spacing="2.0">
+                        <children>
+                          <TextFlow styleClass="helpCommandDescription">
+                            <children>
+                              <Text styleClass="helpCommandName" text="add" />
+                              <Text styleClass="helpCommandDescriptionText" text=" — Add a patient." />
+                            </children>
+                          </TextFlow>
+                          <Label styleClass="helpCommandSyntax" text="add n/NAME p/PHONE a/ADDRESS vd/DATETIME"
+                                 wrapText="true" />
+                          <Label styleClass="helpCommandContinuation"
+                                 text="[dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]..."
+                                 wrapText="true" />
+                        </children>
+                      </VBox>
+                      <VBox styleClass="helpCommand" fillWidth="true" spacing="2.0">
+                        <children>
+                          <TextFlow styleClass="helpCommandDescription">
+                            <children>
+                              <Text styleClass="helpCommandName" text="edit" />
+                              <Text styleClass="helpCommandDescriptionText"
+                                    text=" — Update a patient's details. Provide at least one field." />
+                            </children>
+                          </TextFlow>
+                          <Label styleClass="helpCommandSyntax" text="edit INDEX" wrapText="true" />
+                          <Label styleClass="helpCommandContinuation"
+                                 text="[n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]..."
+                                 wrapText="true" />
+                        </children>
+                      </VBox>
+                      <VBox styleClass="helpCommand" fillWidth="true" spacing="2.0">
+                        <children>
+                          <TextFlow styleClass="helpCommandDescription">
+                            <children>
+                              <Text styleClass="helpCommandName" text="next" />
+                              <Text styleClass="helpCommandDescriptionText"
+                                    text=" — Schedule a patient's next visit." />
+                            </children>
+                          </TextFlow>
+                          <Label styleClass="helpCommandSyntax" text="next INDEX DATETIME" wrapText="true" />
+                        </children>
+                      </VBox>
+                      <VBox styleClass="helpCommand" fillWidth="true" spacing="2.0">
+                        <children>
+                          <TextFlow styleClass="helpCommandDescription">
+                            <children>
+                              <Text styleClass="helpCommandName" text="prev" />
+                              <Text styleClass="helpCommandDescriptionText"
+                                    text=" — Restore the latest previous visit date." />
+                            </children>
+                          </TextFlow>
+                          <Label styleClass="helpCommandSyntax" text="prev INDEX" wrapText="true" />
+                        </children>
+                      </VBox>
+                      <VBox styleClass="helpCommand" fillWidth="true" spacing="2.0">
+                        <children>
+                          <TextFlow styleClass="helpCommandDescription">
+                            <children>
+                              <Text styleClass="helpCommandName" text="delete" />
+                              <Text styleClass="helpCommandDescriptionText" text=" — Delete a patient." />
+                            </children>
+                          </TextFlow>
+                          <Label styleClass="helpCommandSyntax" text="delete INDEX" wrapText="true" />
+                        </children>
+                      </VBox>
+                      <VBox styleClass="helpCommand" fillWidth="true" spacing="2.0">
+                        <children>
+                          <TextFlow styleClass="helpCommandDescription">
+                            <children>
+                              <Text styleClass="helpCommandName" text="clear" />
+                              <Text styleClass="helpCommandDescriptionText" text=" — Remove all patients." />
+                            </children>
+                          </TextFlow>
+                          <Label styleClass="helpCommandSyntax" text="clear" wrapText="true" />
+                        </children>
+                      </VBox>
                     </children>
                   </VBox>
-                  <VBox fx:id="visitCommands" fillWidth="true" spacing="2.0">
+                  <VBox fx:id="findingAndViewingCommands" fillWidth="true" spacing="6.0">
                     <children>
-                      <Label styleClass="helpSectionTitle" text="Visit planning" />
-                      <Label styleClass="helpCommand" text="next — Schedule a patient's next visit." wrapText="true" />
-                      <Label styleClass="helpCommand" text="prev — Restore the latest previous visit date."
-                             wrapText="true" />
-                      <Label styleClass="helpCommand" text="sort — Sort displayed patients by visit date."
-                             wrapText="true" />
+                      <Label styleClass="helpSectionTitle" text="Find and view patients" />
+                      <VBox styleClass="helpCommand" fillWidth="true" spacing="2.0">
+                        <children>
+                          <TextFlow styleClass="helpCommandDescription">
+                            <children>
+                              <Text styleClass="helpCommandName" text="list" />
+                              <Text styleClass="helpCommandDescriptionText" text=" — Show all patients." />
+                            </children>
+                          </TextFlow>
+                          <Label styleClass="helpCommandSyntax" text="list" wrapText="true" />
+                        </children>
+                      </VBox>
+                      <VBox styleClass="helpCommand" fillWidth="true" spacing="2.0">
+                        <children>
+                          <TextFlow styleClass="helpCommandDescription">
+                            <children>
+                              <Text styleClass="helpCommandName" text="find" />
+                              <Text styleClass="helpCommandDescriptionText"
+                                    text=" — Find patients. Provide at least one field." />
+                            </children>
+                          </TextFlow>
+                          <Label styleClass="helpCommandSyntax" text="find" wrapText="true" />
+                          <Label styleClass="helpCommandContinuation"
+                                 text="[n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]"
+                                 wrapText="true" />
+                        </children>
+                      </VBox>
+                      <VBox styleClass="helpCommand" fillWidth="true" spacing="2.0">
+                        <children>
+                          <TextFlow styleClass="helpCommandDescription">
+                            <children>
+                              <Text styleClass="helpCommandName" text="view" />
+                              <Text styleClass="helpCommandDescriptionText"
+                                    text=" — Show a patient's details." />
+                            </children>
+                          </TextFlow>
+                          <Label styleClass="helpCommandSyntax" text="view INDEX" wrapText="true" />
+                        </children>
+                      </VBox>
+                      <VBox styleClass="helpCommand" fillWidth="true" spacing="2.0">
+                        <children>
+                          <TextFlow styleClass="helpCommandDescription">
+                            <children>
+                              <Text styleClass="helpCommandName" text="sort" />
+                              <Text styleClass="helpCommandDescriptionText"
+                                    text=" — Sort displayed patients by visit date." />
+                            </children>
+                          </TextFlow>
+                          <Label styleClass="helpCommandSyntax" text="sort date [START_DATE]" wrapText="true" />
+                        </children>
+                      </VBox>
                     </children>
                   </VBox>
                   <VBox fx:id="applicationCommands" fillWidth="true" spacing="2.0">
                     <children>
                       <Label styleClass="helpSectionTitle" text="Application controls" />
-                      <Label styleClass="helpCommand" text="help — Open this help window." wrapText="true" />
-                      <Label styleClass="helpCommand" text="exit — Close Doc." wrapText="true" />
+                      <VBox styleClass="helpCommand" fillWidth="true" spacing="2.0">
+                        <children>
+                          <TextFlow styleClass="helpCommandDescription">
+                            <children>
+                              <Text styleClass="helpCommandName" text="help" />
+                              <Text styleClass="helpCommandDescriptionText" text=" — Open this help window." />
+                            </children>
+                          </TextFlow>
+                          <Label styleClass="helpCommandSyntax" text="help" wrapText="true" />
+                        </children>
+                      </VBox>
+                      <VBox styleClass="helpCommand" fillWidth="true" spacing="2.0">
+                        <children>
+                          <TextFlow styleClass="helpCommandDescription">
+                            <children>
+                              <Text styleClass="helpCommandName" text="exit" />
+                              <Text styleClass="helpCommandDescriptionText" text=" — Close Doc." />
+                            </children>
+                          </TextFlow>
+                          <Label styleClass="helpCommandSyntax" text="exit" wrapText="true" />
+                        </children>
+                      </VBox>
                     </children>
                   </VBox>
                 </children>
