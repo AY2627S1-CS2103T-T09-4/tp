@@ -164,8 +164,9 @@ Format: `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HIST
 * Use `ec/[NAME, ]PHONE_NUMBER` to record one emergency contact, e.g. `ec/Mary Tan, 98765432`.
   The phone number is required; the name is optional. Use `ec/98765432` when the name is unknown.
   When supplying a name, include exactly one comma between the name and phone number.
-  Names follow the patient-name rules (alphanumeric characters and spaces, not blank); phone numbers contain
-  only digits and are at least 3 digits long. Surrounding whitespace is trimmed from both details.
+  Names follow the patient-name rules (letters, numbers, spaces, and common name punctuation, not blank); phone
+  numbers contain only digits and are at least 3 digits long. A name cannot contain `p/`, which is reserved for the
+  phone field. Surrounding whitespace is trimmed from both details.
   An empty `ec/`, missing phone number, invalid detail, or repeated `ec/` is rejected.
 * Use `dob/DATE` to record the date of birth in `d/M/yyyy` format, e.g. `dob/15/6/1990`.
   The year must have four digits, from `0001` onwards. The date must exist and must not be in the future;
