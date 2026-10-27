@@ -679,7 +679,7 @@ On confirmation, the command rechecks eligibility using a fresh clock reading, v
 still exists, and repeats the conflict check before replacing the patient.
 
 The following sequence diagram shows successful execution of `next` when no busy-day confirmation is required. It
-includes command creation, replacement-patient construction, model updates, and saving. Validation,
+includes command creation, replacement-patient construction, model updates, and saving through `Storage`. Validation,
 conflict checking, and the optional confirmation branch are omitted.
 
 <puml src="diagrams/NextSequenceDiagram.puml" alt="Successful execution of next when no busy-day confirmation is required" width="800" />
@@ -706,7 +706,7 @@ The replacement contains only dates from the original record, so it cannot intro
 conflict. The model still enforces chronology and uniqueness on replacement.
 
 The following sequence diagram shows successful execution of `prev` when the selected patient has visit history. It
-includes command creation, replacement-patient construction, model updates, and saving. Validation
+includes command creation, replacement-patient construction, model updates, and saving through `Storage`. Validation
 and error paths are omitted.
 
 <puml src="diagrams/PrevSequenceDiagram.puml" alt="Successful execution of prev when the selected patient has visit history" width="800" />
@@ -1807,8 +1807,10 @@ full unused `d/M/yyyy HHmm` value that preserves `P0 < P1 < P2 < actual now < F1
    Expect Nextalpha at `28/10/2026 0900` with saved previous dates `[25/10/2026 0900, 25/10/2026 1000]`, with the
    latter displayed above the former. Expect Nextbeta at `27/10/2026 0900` with previous dates
    `[25/10/2026 1100]` and every other field preserved. Check the previous-date section below the current datetime
-   and the persisted JSON. Re-find the intended patient after every successful mutation. Preserve a copy of this
-   scratch data folder as the rollback starting state before running the independent cases below.
+   and the persisted JSON. Re-find the intended patient after every successful mutation. Close Doc, then copy this
+   scratch folder's `data/addressbook.json` into a separate backup folder as `rollback-start-addressbook.json`.
+   Keep this backup outside the active scratch folder as the rollback starting state before running the independent
+   cases below.
 
 1. Repeat the conflict case using another patient's previous datetime, loaded through the disposable-file setup in
    [Loading and validating previous visit dates](#loading-and-validating-previous-visit-dates). Choose a future
@@ -1833,8 +1835,15 @@ reliably reproducible by typing against the system clock.
 
 ### Testing the prev command
 
-Restore the preserved **rollback starting state** from the persistence checkpoint in [Testing the next command](#testing-the-next-command)
-before testing `prev`; do not continue from either independent capacity case. The restored state should have Nextalpha
+Restore the preserved **rollback starting state** from the persistence checkpoint in
+[Testing the next command](#testing-the-next-command) before testing `prev`:
+
+1. Close Doc if it is running.
+1. Copy the preserved `rollback-start-addressbook.json` over the disposable scratch folder's `data/addressbook.json`,
+   replacing the active file and retaining the filename `addressbook.json`.
+1. Relaunch Doc from the same scratch folder. Find and view Nextalpha and Nextbeta to verify the starting records.
+
+Do not continue from either independent capacity case. The restored state should have Nextalpha
 at `28/10/2026 0900` (`F2`) with history `[25/10/2026 0900, 25/10/2026 1000]` (`[P1, P2]`), and Nextbeta at
 `27/10/2026 0900` (`F1`) with history `[25/10/2026 1100]` (`[P3]`). Restore this state before repeating an
 independent rollback variation. On another execution date, substitute the full datetime values from the common fixture
