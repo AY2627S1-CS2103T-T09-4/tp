@@ -229,7 +229,9 @@ Visit-time conflict detection has these limitations:
 
 <box type="tip" seamless>
 
-**Tip:** A patient can have any number of tags, including zero.
+**Tip:** A patient can have any number of tags, including zero. Tags that differ only in letter case, such as
+`followup` and `FollowUp`, count as the same tag: the first spelling you type is kept. Tags are listed
+alphabetically, ignoring letter case.
 </box>
 
 Examples:
