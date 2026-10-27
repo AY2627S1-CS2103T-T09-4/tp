@@ -32,6 +32,7 @@ public class PhoneTest {
         assertFalse(Phone.isValidPhone("9011p041")); // alphabets within digits
         assertFalse(Phone.isValidPhone("---")); // formatting characters without digits
         assertFalse(Phone.isValidPhone("++ ")); // formatting characters without digits
+        assertFalse(Phone.isValidPhone("1".repeat(31))); // exceeds the raw string length limit
 
         // valid phone numbers
         assertTrue(Phone.isValidPhone("911")); // exactly 3 numbers
@@ -39,6 +40,7 @@ public class PhoneTest {
         assertTrue(Phone.isValidPhone("9312 1534")); // spaces within digits
         assertTrue(Phone.isValidPhone("+65 9312-1534")); // country code, spaces, and dashes
         assertTrue(Phone.isValidPhone("124293842033123")); // long phone numbers
+        assertTrue(Phone.isValidPhone("1".repeat(30))); // exactly the raw string length limit
     }
 
     @Test
