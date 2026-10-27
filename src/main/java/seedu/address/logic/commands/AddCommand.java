@@ -62,7 +62,7 @@ public class AddCommand extends Command {
             + PREFIX_VISIT_DATE + "18/9/2026 1000 "
             + PREFIX_TAG + "followup ";
 
-    public static final String MESSAGE_SUCCESS = "Added patient %1$s\nVisit date: %2$s";
+    public static final String MESSAGE_SUCCESS = "Added patient %1$s";
     public static final String MESSAGE_DUPLICATE_PERSON =
             "A patient with the same name and phone number already exists in the address book. "
                     + "The existing patient is shown in the patient details panel.";
@@ -157,12 +157,12 @@ public class AddCommand extends Command {
     }
 
     /**
-     * Returns the message shown after {@code person} is added, listing their contact details, tags, and visit date
-     * so that the doctor can check what was recorded.
+     * Returns the message shown after {@code person} is added, listing the recorded details, including the visit
+     * date, so that the doctor can check what was saved.
      */
     public static String formatSuccessMessage(Person person) {
         requireNonNull(person);
-        return String.format(MESSAGE_SUCCESS, Messages.format(person), person.getVisitDate());
+        return String.format(MESSAGE_SUCCESS, Messages.format(person));
     }
 
     /**

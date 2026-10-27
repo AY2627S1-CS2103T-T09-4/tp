@@ -19,16 +19,33 @@ public class MessagesTest {
         String formattedPerson = Messages.format(person);
 
         assertEquals("Amy Bee; Phone: 85355255; Email: amy@example.com; "
-                + "Address: 123, Jurong West Ave 6, #08-111; Tags: ", formattedPerson);
+                + "Address: 123, Jurong West Ave 6, #08-111; Visit date: 18/9/2026 1000", formattedPerson);
     }
 
     @Test
-    public void format_personWithoutEmail_omitsEmail() {
+    public void format_personWithoutOptionalFields_omitsUnrecordedFields() {
         Person person = new PersonBuilder().withEmail("").build();
 
         String formattedPerson = Messages.format(person);
 
-        assertEquals("Amy Bee; Phone: 85355255; Address: 123, Jurong West Ave 6, #08-111; Tags: ",
+        // no empty "Email: ", "Tags: ", or health-field labels
+        assertEquals("Amy Bee; Phone: 85355255; Address: 123, Jurong West Ave 6, #08-111; Visit date: 18/9/2026 1000",
+                formattedPerson);
+    }
+
+    @Test
+    public void format_personWithEveryField_listsVisitAndHealthDetails() {
+        Person person = new PersonBuilder().withDateOfBirth("15/6/1990").withBloodType("A+")
+                .withAllergies("Penicillin").withAlcoholHistory("Does not drink").withSmokingStatus("former")
+                .withEmergencyContact("Mary Tan, 98765432").withNote("Review medication")
+                .withTags("morning", "Diabetes").build();
+
+        String formattedPerson = Messages.format(person);
+
+        assertEquals("Amy Bee; Phone: 85355255; Email: amy@gmail.com; Address: 123, Jurong West Ave 6, #08-111; "
+                + "Visit date: 18/9/2026 1000; Date of birth: 15/6/1990; Blood type: A+; Allergies: Penicillin; "
+                + "Alcohol history: Does not drink; Smoking status: former; "
+                + "Emergency contact: 98765432 (Mary Tan); Note: Review medication; Tags: [Diabetes][morning]",
                 formattedPerson);
     }
 }
