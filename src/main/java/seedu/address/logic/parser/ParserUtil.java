@@ -193,17 +193,19 @@ public class ParserUtil {
 
     /**
      * Parses a {@code String visitDate} into a {@code VisitDate}.
-     * Leading and trailing whitespaces will be trimmed.
+     * Leading and trailing whitespaces will be trimmed, and repeated whitespace between the date and time is
+     * treated as a single space.
      *
      * @throws ParseException if the given {@code visitDate} is invalid.
      */
     public static VisitDate parseVisitDate(String visitDate) throws ParseException {
         requireNonNull(visitDate);
-        String trimmedVisitDate = visitDate.trim();
-        if (!VisitDate.isValidVisitDate(trimmedVisitDate)) {
+        // Any run of spaces or tabs between the date and time counts as one separator, as next already allows
+        String normalizedVisitDate = visitDate.trim().replaceAll("\\s+", " ");
+        if (!VisitDate.isValidVisitDate(normalizedVisitDate)) {
             throw new ParseException(VisitDate.MESSAGE_CONSTRAINTS);
         }
-        return new VisitDate(trimmedVisitDate);
+        return new VisitDate(normalizedVisitDate);
     }
 
     /**

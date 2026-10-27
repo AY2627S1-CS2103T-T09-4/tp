@@ -173,6 +173,20 @@ public class ParserUtilTest {
     }
 
     @Test
+    public void parseVisitDate_repeatedWhitespaceBetweenDateAndTime_returnsVisitDate() throws Exception {
+        VisitDate expectedVisitDate = new VisitDate(VALID_VISIT_DATE);
+        for (String visitDate : new String[] {"18/9/2026  1000", "18/9/2026\t1000", " 18/9/2026 \t  1000 "}) {
+            assertEquals(expectedVisitDate, ParserUtil.parseVisitDate(visitDate));
+        }
+    }
+
+    @Test
+    public void parseVisitDate_whitespaceInsideDate_throwsParseException() {
+        assertThrows(ParseException.class, () -> ParserUtil.parseVisitDate("18/ 9/2026 1000"));
+        assertThrows(ParseException.class, () -> ParserUtil.parseVisitDate("18/9/2026 10 00"));
+    }
+
+    @Test
     public void parseTag_null_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> ParserUtil.parseTag(null));
     }

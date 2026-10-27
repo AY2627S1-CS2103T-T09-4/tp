@@ -178,6 +178,9 @@ public class EditCommandParserTest {
     public void parse_visitDateWhitespace_success() {
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withVisitDate(VALID_VISIT_DATE_AMY).build();
         assertParseSuccess(parser, " 1 vd/  18/09/2026 1000  ", new EditCommand(INDEX_FIRST_PERSON, descriptor));
+
+        // repeated spaces between the date and time, as next already accepts
+        assertParseSuccess(parser, " 1 vd/18/09/2026    1000", new EditCommand(INDEX_FIRST_PERSON, descriptor));
     }
 
     @Test
