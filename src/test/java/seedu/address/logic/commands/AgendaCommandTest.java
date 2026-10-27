@@ -89,8 +89,8 @@ public class AgendaCommandTest {
     public void constructor_invalidArguments_throwsException() {
         assertThrows(NullPointerException.class, () -> new AgendaCommand((LocalDate) null));
         assertThrows(IllegalArgumentException.class, () -> new AgendaCommand(START_DATE, 0));
-        assertThrows(IllegalArgumentException.class,
-                () -> new AgendaCommand(START_DATE, AgendaCommand.MAX_DAYS + 1));
+        assertThrows(IllegalArgumentException.class, () ->
+                new AgendaCommand(START_DATE, AgendaCommand.MAX_DAYS + 1));
         assertThrows(NullPointerException.class, () -> new AgendaCommand(START_DATE).execute(null));
     }
 

@@ -35,14 +35,14 @@ public class VisitDateWithinRangePredicateTest {
 
     @Test
     public void constructor_invalidArguments_throwsException() {
-        assertThrows(NullPointerException.class,
-                () -> new VisitDateWithinRangePredicate(null, END_DATE));
-        assertThrows(NullPointerException.class,
-                () -> new VisitDateWithinRangePredicate(START_DATE, null));
-        assertThrows(IllegalArgumentException.class,
-                () -> new VisitDateWithinRangePredicate(START_DATE, START_DATE));
-        assertThrows(IllegalArgumentException.class,
-                () -> new VisitDateWithinRangePredicate(START_DATE, START_DATE.minusDays(1)));
+        assertThrows(NullPointerException.class, () ->
+                new VisitDateWithinRangePredicate(null, END_DATE));
+        assertThrows(NullPointerException.class, () ->
+                new VisitDateWithinRangePredicate(START_DATE, null));
+        assertThrows(IllegalArgumentException.class, () ->
+                new VisitDateWithinRangePredicate(START_DATE, START_DATE));
+        assertThrows(IllegalArgumentException.class, () ->
+                new VisitDateWithinRangePredicate(START_DATE, START_DATE.minusDays(1)));
         assertThrows(NullPointerException.class, () -> predicate.test(null));
     }
 
