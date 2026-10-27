@@ -11,8 +11,10 @@ public class Phone {
 
 
     public static final String MESSAGE_CONSTRAINTS =
-            "Phone numbers should only contain digits, and should be at least 3 digits long";
-    public static final String VALIDATION_REGEX = "\\d{3,}";
+            "Phone numbers should contain at least 3 digits and may include '+', spaces, and dashes";
+    public static final String VALIDATION_REGEX = "[+\\d -]*";
+
+    private static final int MINIMUM_DIGIT_COUNT = 3;
     public final String value;
 
     /**
@@ -30,7 +32,8 @@ public class Phone {
      * Returns true if a given string is a valid phone number.
      */
     public static boolean isValidPhone(String test) {
-        return test.matches(VALIDATION_REGEX);
+        String digitOnlyPhone = test.replaceAll("[^\\d]", "");
+        return test.matches(VALIDATION_REGEX) && digitOnlyPhone.length() >= MINIMUM_DIGIT_COUNT;
     }
 
     @Override
