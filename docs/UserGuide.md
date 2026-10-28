@@ -160,11 +160,14 @@ Format: `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HIST
   already uses the supplied date and time, including a patient hidden by filtering, the addition is rejected,
   the existing patient is shown in the patient details panel, and the app asks you to choose a different slot.
 * Date of birth, blood type, allergies, alcohol history, smoking status, `EMAIL`, `NOTES`, and the emergency contact are optional.
+* Use `p/PHONE_NUMBER` to record the patient's phone number. It must contain at least 3 digits, be at most 30
+  characters long, and may include `+`, spaces, and dashes. Surrounding whitespace is trimmed.
 * Use `ec/[NAME, ]PHONE_NUMBER` to record one emergency contact, e.g. `ec/Mary Tan, 98765432`.
   The phone number is required; the name is optional. Use `ec/98765432` when the name is unknown.
   When supplying a name, include exactly one comma between the name and phone number.
-  Names follow the patient-name rules (alphanumeric characters and spaces, not blank); phone numbers contain
-  only digits and are at least 3 digits long. Surrounding whitespace is trimmed from both details.
+  Names follow the patient-name rules (alphanumeric characters and spaces, not blank); phone numbers contain at
+  least 3 digits, are at most 30 characters long, and may include `+`, spaces, and dashes. Surrounding whitespace
+  is trimmed from both details.
   An empty `ec/`, missing phone number, invalid detail, or repeated `ec/` is rejected.
 * Use `dob/DATE` to record the date of birth in `d/M/yyyy` format, e.g. `dob/15/6/1990`.
   The year must have four digits, from `0001` onwards. The date must exist and must not be in the future;
@@ -370,6 +373,8 @@ Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALC
 * Edits the patient at the specified `INDEX`. The index refers to the index number shown in the displayed patient
   list. The index **must be a positive integer** 1, 2, 3, ...
 * All editable fields are optional, but at least one must be provided.
+* Use `p/PHONE` to replace the patient's phone number, e.g. `edit 1 p/+65 9123-4567`. The same phone-number
+  restrictions as `add` apply. Omitting `p/` preserves the current phone number.
 * Use `dob/DATE` to add or replace the date of birth, e.g. `edit 1 n/John Doe dob/15/6/1990`.
   The same date rules as `add` apply to nonempty values. Omitting `dob/` preserves the current value.
   Use an empty `dob/`, e.g. `edit 1 dob/`, to clear the date of birth. Whitespace-only values also clear it.

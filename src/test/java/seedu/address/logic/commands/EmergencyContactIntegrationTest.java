@@ -190,8 +190,7 @@ public class EmergencyContactIntegrationTest {
     @Test
     public void execute_invalidContact_preservesModelAndFile() throws Exception {
         logic.execute(ADD_COMMAND + " ec/" + CONTACT);
-        for (String invalid : List.of("12", "abc", "+6591234567", "9123 4567",
-                "Mary Tan", "Mary Tan 98765432", "Mary Tan,",
+        for (String invalid : List.of("12", "abc", "Mary Tan", "Mary Tan 98765432", "Mary Tan,",
                 ",98765432", "Mary Tan, 12", "Mary Tan, abc", "Mary@Tan, 98765432",
                 "Mary Tan, 98765432, 87654321")) {
             assertRejectedCommand("edit 1 ec/" + invalid, EmergencyContact.MESSAGE_CONSTRAINTS);
