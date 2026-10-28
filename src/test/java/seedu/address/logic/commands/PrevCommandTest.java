@@ -226,7 +226,7 @@ public class PrevCommandTest {
         assertEquals(expectedAddressBook, model.getAddressBook());
         assertEquals(expectedAddressBook.getPersonList(), model.getFilteredPersonList());
         assertTrue(result.shouldSaveAddressBook());
-        assertTrue(result.getPersonToView().isEmpty());
+        assertEquals(expectedPerson, result.getPersonToView().orElseThrow());
         assertTrue(result.getInputRequest().isEmpty());
     }
 

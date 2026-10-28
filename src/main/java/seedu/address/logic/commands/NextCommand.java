@@ -160,7 +160,8 @@ public class NextCommand extends Command {
         model.setPerson(personToUpdate, updatedPerson);
         model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
         logger.fine("Scheduled next visit for " + updatedPerson.getName() + " at " + visitDate);
-        return new CommandResult(String.format(MESSAGE_SUCCESS, updatedPerson.getName(), visitDate));
+        return CommandResult.showUpdatedPerson(
+                String.format(MESSAGE_SUCCESS, updatedPerson.getName(), visitDate), updatedPerson);
     }
 
     /**

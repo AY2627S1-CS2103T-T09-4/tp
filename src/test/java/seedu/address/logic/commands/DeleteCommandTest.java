@@ -56,6 +56,21 @@ public class DeleteCommandTest {
                 confirmedResult.getFeedbackToUser());
         assertFalse(model.getAddressBook().getPersonList().contains(personToDelete));
         assertTrue(confirmedResult.shouldSaveAddressBook());
+        assertEquals(CommandResult.DetailsPanelAction.CLEAR_IF_SHOWING,
+                confirmedResult.getDetailsPanelAction());
+        assertEquals(personToDelete, confirmedResult.getPersonToClearFromView().orElseThrow());
+    }
+
+    @Test
+    public void confirmation_personWithoutEmail_omitsEmailFromResponse() throws Exception {
+        Person personWithoutEmail = new PersonBuilder().withEmail("").build();
+        model = new ModelManager();
+        model.addPerson(personWithoutEmail);
+        CommandResult requestResult = new DeleteCommand(INDEX_FIRST_PERSON).execute(model);
+
+        CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond("y", model);
+
+        assertFalse(confirmedResult.getFeedbackToUser().contains("Email:"));
     }
 
     @Test

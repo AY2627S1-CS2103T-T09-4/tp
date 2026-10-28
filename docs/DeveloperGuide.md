@@ -586,6 +586,25 @@ and 20 October are displayed in that order.
 layered over the current `FilteredList`, so the displayed patients are reordered without replacing the stored
 patient list. A later operation that resets the filter also clears this display-only ordering.
 
+### Displaying visits as an agenda
+
+`agenda START_DATE [DAYS]` shows current visits in a consecutive range of calendar days. `AgendaCommandParser`
+requires a start date and accepts an optional duration from 1 to 365 days. A bare `agenda` command displays the
+usage message, while an omitted duration defaults to seven days.
+The constructor checks that the final included day is on or before 31 December 9999, so the exclusive end used for
+filtering can be calculated safely without showing dates in year 10000. The parser reports an invalid range before
+execution when this bound is exceeded.
+
+`AgendaCommand` constructs a `VisitDateWithinRangePredicate` using an inclusive start and exclusive end. The
+exclusive end keeps the predicate independent of visit times: a seven-day agenda starting on 27 October accepts
+every time from 27 October through 2 November and rejects every time on 3 November. The command replaces the current
+filter with this predicate and applies a chronological comparator to the existing `SortedList`.
+
+<puml src="diagrams/AgendaCommandActivityDiagram.puml" alt="How agenda filters and orders visits" width="500" />
+
+Filtering and sorting remain display-only. The address book retains its stored order, and the command returns a
+non-saving result. A later `list` restores the full list in stored order.
+
 ### Finding patients by field
 
 `find` filters the displayed patient list by name, phone number, address, tag, visit date, and notes. Each field has
@@ -1636,6 +1655,25 @@ displayed order, preserving the usual behavior of `list` and `find`.
    visits; expect all visits in ascending date-time order.
 1. Run `sort`, `sort name`, `sort date name`, `sort date 31/2/2026`, and `sort date 18/9/2026 extra`. Expect each
    command to show the required format and both examples without changing the displayed list.
+
+### Viewing the agenda
+
+1. Prepare patients with visits on 26 October 2026; 27 October at 0900 and 1800; 30 October; 2 November; and
+   3 November. Enter them in an order different from their visit dates.
+1. Run `agenda 27/10/2026`.<br>
+   Expected: Visits from 27 October through 2 November 2026 appear chronologically.
+1. Run `agenda 27/10/2026 1`.<br>
+   Expected: Only visits on 27 October appear, including visits at 0000 and 2359.
+1. Run `find` for a patient outside the agenda range, then run `agenda 27/10/2026 7`.<br>
+   Expected: The previous search is replaced with every visit in the agenda range.
+1. Run `list`.<br>
+   Expected: All patients reappear in stored order.
+1. Run `agenda`, `agenda 31/2/2026`, `agenda 27/10/2026 0`, `agenda 27/10/2026 366`, and
+   `agenda 27/10/2026 7 extra`.<br>
+   Expected: Each command shows the agenda usage message and leaves the displayed list unchanged.
+1. Run `agenda 31/12/9999 1`, then `agenda 31/12/9999 2`.<br>
+   Expected: The first shows visits on 31 December 9999; the second reports that the date range must end on or before
+   31/12/9999 and leaves the displayed list unchanged.
 
 ### Distinguishing past visits in the patient list
 

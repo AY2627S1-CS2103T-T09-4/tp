@@ -41,6 +41,6 @@ public class ClearCommand extends Command {
      */
     private CommandResult clearAddressBook(Model model) {
         model.setAddressBook(new AddressBook());
-        return new CommandResult(MESSAGE_SUCCESS);
+        return CommandResult.clearDetailsPanel(MESSAGE_SUCCESS);
     }
 }

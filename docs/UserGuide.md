@@ -92,9 +92,9 @@ Choose the command according to what you want to change:
 | Restore the latest previous datetime. | [prev](#restoring-the-previous-visit-prev) `INDEX` | Remove the latest previous datetime from the list and use it to replace the current datetime; discard the replaced datetime. |
 | Leave a final visit recorded without planning another. | No command needed. | Keep the current datetime, including after it becomes past. |
 
-Successful `edit`, `next`, and confirmed `prev` commands show the full patient list in stored order, clearing filtering and
-sorting. The details panel continues showing the last record viewed. Check the newly displayed index and run
-`view INDEX` to refresh the record and its calendar label. To return to search results, run `find` again.
+Successful `edit`, `next`, and `prev` commands show the full patient list in stored order, clearing filtering and
+sorting. The details panel automatically shows the updated patient and refreshes the record and its calendar label.
+To return to search results, run `find` again.
 
 When `next` moves an appointment to a different day that already has seven or more current appointments, Doc asks for
 confirmation. Patients hidden by filtering still count, but previous visit history does not. Moving the appointment to
@@ -193,7 +193,11 @@ Format: `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HIST
   Omitting `smk/` leaves the status unrecorded. Explicit `smk/unknown` records that the status is unknown;
   it is distinct from having no record. Blank values, unsupported statuses, and repeated `smk/` are rejected on add.
   The examples place `smk/` immediately after `alc/`; prefixes can still appear in any order.
-* On success, the app shows `Added patient NAME` and the new patient appears in the list.
+* On success, the app shows `Added patient` followed by the patient's name, phone number, email (if given), address,
+  and tags, with the visit date on the next line. The new patient appears in the list and its full record appears in
+  the patient details panel. For example:<br>
+  `Added patient John Tan; Phone: 91234567; Address: 123 Clementi Road; Tags: `<br>
+  `Visit date: 22/10/2026 1000`
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
 * A patient with the same normalized name and phone number as an existing patient is a duplicate and cannot be added.
 * If only the name matches an existing patient, the app shows the matching patient in the patient details panel and
@@ -267,6 +271,26 @@ Format: `list`
 Patients with a visit date before today are shown using darker backgrounds and muted text. This visual distinction
 also appears in patient lists produced by commands such as `find` and `sort date`. Past patients remain selectable,
 and their complete details remain readable in the details panel.
+
+### Viewing visits as an agenda: `agenda START_DATE [DAYS]`
+
+Shows patients whose current visits fall within a range of calendar days, ordered by visit date and time.
+
+Format: `agenda START_DATE [DAYS]`
+
+* `START_DATE` must use the format `d/M/yyyy`, e.g. `27/10/2026`.
+* `START_DATE` is required. Entering only `agenda` shows the command parameters and examples.
+* `DAYS` must be a whole number from 1 to 365.
+* If `DAYS` is omitted, the agenda covers seven calendar days starting from `START_DATE`.
+* Both the first and last calendar days are included, regardless of the visit time.
+* The last included day must be on or before 31/12/9999. A range extending beyond this date is rejected.
+* The command replaces any current `find` results and `sort` ordering with the agenda results.
+* The stored patient order and saved data are not changed. Run `list` to return to the full list in stored order.
+
+Examples:
+
+* `agenda 27/10/2026` shows visits from 27 October through 2 November 2026.
+* `agenda 27/10/2026 14` shows visits from 27 October through 9 November 2026.
 
 ### Sorting visits by date: `sort date [START_DATE]`
 
@@ -350,7 +374,7 @@ Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALC
 * Use `dob/DATE` to add or replace the date of birth, e.g. `edit 1 n/John Doe dob/15/6/1990`.
   The same date rules as `add` apply to nonempty values. Omitting `dob/` preserves the current value.
   Use an empty `dob/`, e.g. `edit 1 dob/`, to clear the date of birth. Whitespace-only values also clear it.
-  Clearing an already empty date of birth is allowed. Run `view INDEX` again to hide the date of birth row.
+  Clearing an already empty date of birth is allowed. The patient details panel refreshes automatically.
   Repeated `dob/` prefixes are rejected, including when one or both values are empty.
 * Use `bt/BLOOD_TYPE` to add or replace blood type, e.g. `edit 1 bt/O-`. The same valid values and normalization
   rules as `add` apply. Omitted `bt/` preserves the current blood type.
@@ -394,19 +418,20 @@ Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALC
 * Editing replaces the stored visit date and time; it does not append a visit-history entry.
   Use `edit ... vd/` to correct a missed or rescheduled appointment, or
   [next](#scheduling-the-next-visit-next) to schedule the following visit.
-* After editing, follow the [visit-record interaction rules](#visit-records) to find the patient and refresh details.
+* After editing, the patient details panel automatically shows the updated record.
 * When editing tags, all of the patient's existing tags are removed; adding tags is not cumulative.
 * To remove all of a patient's tags, enter `t/` without a tag after it.
 * An edit that would give a patient the same normalized name and phone number as another patient is rejected.
 * When an edit changes the patient's name to one already used by another patient with a different phone number, the
-  app asks `A patient named NAME already exists. Apply this edit anyway? Type y to confirm. Any other input cancels.`
+  app warns that the name is already used and asks
+  `Apply this edit to NAME anyway? Type y to confirm. Any other input cancels.`
 * Type `y` and press Enter to apply the edit. Surrounding spaces and letter case are ignored. Any other input cancels
   the edit and is not run as a command. Editing other details of a patient whose name is already shared does not ask
   for confirmation again. A confirmed name-duplicate edit rechecks that its requested visit slot is still available.
 * When an edit moves a patient's visit to a different day that already has 7 or more visits, the app asks, e.g.
-  `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Schedule Jane Tan on that day anyway? Type y to confirm.
-  Any other input cancels.` Changing only the time within the same day, or editing other fields, does not ask. If the
-  name also matches another patient, you are asked to confirm the name first and then the busy day.
+  `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Apply this edit to Jane Tan anyway? Type y to confirm.
+  Any other input cancels.` Changing only the time within the same day, or editing other fields, does not ask.
+  If the name also matches another patient, both warnings appear together and require only one confirmation.
 * The normalized-name comparison and duplicate-detection limitations described under `add` also apply to edits.
 * The visit-time conflict limitations described under `add` also apply to edits.
 
@@ -452,10 +477,10 @@ Format: `next INDEX DATETIME`
   A next visit later on the same day as the current visit does not ask, since that day's visit count does not grow.
 * Success appends the old current date and time to the previous dates, then sets the new current date and time.
   All other details, including empty optional fields, are preserved. Previous dates are saved in order in the
-  JSON data file and appear below the current visit date when you run `view INDEX`.
+  JSON data file and appear below the current visit date in the automatically refreshed patient details panel.
 * If no further visit is planned, leave the current date and time unchanged, even after it passes.
-* Success shows `Next visit scheduled for patient NAME: DATETIME` and saves the record. Follow the
-  [visit-record interaction rules](#visit-records) to find the patient and refresh details.
+* Success shows `Next visit scheduled for patient NAME: DATETIME`, saves the record, and automatically shows the
+  updated patient in the details panel.
 * Validation errors preserve data and the displayed list. A save failure reports a storage error; the in-memory
   appointment may already have changed.
 
@@ -503,10 +528,9 @@ Format: `prev INDEX`
   change records, filtering, sorting, or saved data.
 * Rollback also works after an intervening `edit`. It preserves the patient's latest name, contact details,
   address, allergies, alcohol history, smoking status, note, and tags; it restores only visit-date state.
-* After confirmation, success shows `Visit date restored for NAME: RESTORED_DATETIME` followed by
-  `Discarded visit date and time: DISCARDED_DATETIME` on the next line. Both values include the time. It saves the
-  record and restores the full list in stored order. Recheck the displayed index before a subsequent rollback, and
-  follow the [visit-record interaction rules](#visit-records) to find the patient and refresh details.
+* Success shows `Visit date restored for NAME: RESTORED_DATETIME` followed by
+  `Discarded visit date and time: DISCARDED_DATETIME` on the next line. Both values include the time.
+  It saves the record and automatically shows the updated patient in the details panel.
 * Repeating `prev` restores one earlier datetime each time. When none remain, it reports
   `Patient NAME has no previous visit dates to restore.` without changing data or the displayed list.
 * Missing, invalid, or additional arguments show usage. Oversized positive indices show `Index is too large.`
@@ -590,6 +614,8 @@ Format: `delete INDEX`
 * Any other input, including an empty response or another valid command, cancels the deletion and is not run as a
   command. The result display then shows `Deletion cancelled.`
 * Invalid `delete` commands continue to show the usual invalid-command response and do not ask for confirmation.
+* After a successful deletion, the details panel is cleared only if it was showing the deleted patient. Details for
+  another patient remain visible.
 
 Examples:
 * `list` followed by `delete 2`, then `y`, deletes the 2nd patient in Doc.
@@ -608,6 +634,7 @@ Format: `clear`
   a command. The result display then shows `Clear cancelled.`
 * If Doc has no patient records, no confirmation is requested and the result display shows
   `Address book is already empty.`
+* After a successful clear, the patient details panel is also cleared.
 
 Example: `clear` followed by `y` clears every entry.
 
@@ -680,6 +707,7 @@ Doc home folder.
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Add**    | `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
+**Agenda** | `agenda START_DATE [DAYS]`<br> e.g., `agenda 27/10/2026 7`
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
 **Edit**   | `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [p/PHONE_NUMBER] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`

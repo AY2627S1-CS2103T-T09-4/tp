@@ -171,6 +171,52 @@ public class PatientDetailsPanelTest {
     }
 
     @Test
+    public void clear_displayedPerson_hidesDetails() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel patientDetailsPanel = new PatientDetailsPanel(FIXED_CLOCK);
+            patientDetailsPanel.setPerson(new PersonBuilder().build());
+
+            patientDetailsPanel.clear();
+
+            VBox detailsContainer = getDetailsContainer(patientDetailsPanel);
+            assertFalse(detailsContainer.isManaged());
+            assertFalse(detailsContainer.isVisible());
+        });
+    }
+
+    @Test
+    public void clearIfShowing_matchingPerson_hidesDetails() {
+        runOnFxThread(() -> {
+            Person displayedPerson = new PersonBuilder().build();
+            PatientDetailsPanel patientDetailsPanel = new PatientDetailsPanel(FIXED_CLOCK);
+            patientDetailsPanel.setPerson(displayedPerson);
+
+            patientDetailsPanel.clearIfShowing(displayedPerson);
+
+            VBox detailsContainer = getDetailsContainer(patientDetailsPanel);
+            assertFalse(detailsContainer.isManaged());
+            assertFalse(detailsContainer.isVisible());
+        });
+    }
+
+    @Test
+    public void clearIfShowing_differentPerson_keepsDetails() {
+        runOnFxThread(() -> {
+            Person displayedPerson = new PersonBuilder().withName("Displayed Patient").build();
+            Person otherPerson = new PersonBuilder().withName("Other Patient").build();
+            PatientDetailsPanel patientDetailsPanel = new PatientDetailsPanel(FIXED_CLOCK);
+            patientDetailsPanel.setPerson(displayedPerson);
+
+            patientDetailsPanel.clearIfShowing(otherPerson);
+
+            VBox detailsContainer = getDetailsContainer(patientDetailsPanel);
+            assertTrue(detailsContainer.isManaged());
+            assertTrue(detailsContainer.isVisible());
+            assertEquals("Displayed Patient", getLabel(patientDetailsPanel, "name").getText());
+        });
+    }
+
+    @Test
     public void setPerson_validPerson_displaysAllDetails() {
         runOnFxThread(() -> {
             Person person = new PersonBuilder()
@@ -204,6 +250,34 @@ public class PatientDetailsPanelTest {
             VBox detailsContainer = getDetailsContainer(patientDetailsPanel);
             assertTrue(detailsContainer.isManaged());
             assertTrue(detailsContainer.isVisible());
+        });
+    }
+
+    @Test
+    public void setPerson_emailAndNote_hidesEmptyFieldsAndRestoresPopulatedFields() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel(FIXED_CLOCK);
+            Person firstRecorded = new PersonBuilder().withEmail("first@example.com")
+                    .withNote("First note").build();
+            Person empty = new PersonBuilder().withEmail("").withNote("").build();
+            Person secondRecorded = new PersonBuilder().withEmail("second@example.com")
+                    .withNote("Second note").build();
+
+            panel.setPerson(firstRecorded);
+            assertEquals("Email: first@example.com", getLabel(panel, "email").getText());
+            assertEquals("Note: First note", getLabel(panel, "note").getText());
+            assertFieldVisible(panel, "email", true);
+            assertFieldVisible(panel, "note", true);
+
+            panel.setPerson(empty);
+            assertFieldVisible(panel, "email", false);
+            assertFieldVisible(panel, "note", false);
+
+            panel.setPerson(secondRecorded);
+            assertEquals("Email: second@example.com", getLabel(panel, "email").getText());
+            assertEquals("Note: Second note", getLabel(panel, "note").getText());
+            assertFieldVisible(panel, "email", true);
+            assertFieldVisible(panel, "note", true);
         });
     }
 

@@ -2,6 +2,7 @@ package seedu.address.ui;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
@@ -153,6 +154,58 @@ public class MainWindowTest {
         });
     }
 
+    @Test
+    public void executeCommand_clearDetailsAction_hidesExistingDetails() {
+        runOnFxThread(() -> {
+            Person person = new PersonBuilder().withName("Existing Patient").build();
+            TestLogic logic = new TestLogic(person);
+            Stage stage = new Stage();
+
+            try {
+                MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH, url -> { });
+                mainWindow.fillInnerParts();
+                assertDoesNotThrow(() -> mainWindow.executeCommand("view 1"));
+
+                logic.setExecutionOutcome(ExecutionOutcome.CLEAR_DETAILS);
+                assertDoesNotThrow(() -> mainWindow.executeCommand("clear"));
+
+                VBox detailsContainer = getDetailsContainer(mainWindow);
+                assertFalse(detailsContainer.isManaged());
+                assertFalse(detailsContainer.isVisible());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    @Test
+    public void executeCommand_clearMatchingDetailsAction_hidesOnlyMatchingPerson() {
+        runOnFxThread(() -> {
+            Person person = new PersonBuilder().withName("Existing Patient").build();
+            TestLogic logic = new TestLogic(person);
+            Stage stage = new Stage();
+
+            try {
+                MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH, url -> { });
+                mainWindow.fillInnerParts();
+                assertDoesNotThrow(() -> mainWindow.executeCommand("view 1"));
+                VBox detailsContainer = getDetailsContainer(mainWindow);
+
+                logic.setExecutionOutcome(ExecutionOutcome.CLEAR_OTHER_PERSON);
+                assertDoesNotThrow(() -> mainWindow.executeCommand("delete 2"));
+                assertTrue(detailsContainer.isVisible());
+                assertEquals("Existing Patient", getLabelText(detailsContainer, "#name"));
+
+                logic.setExecutionOutcome(ExecutionOutcome.CLEAR_MATCHING_PERSON);
+                assertDoesNotThrow(() -> mainWindow.executeCommand("delete 1"));
+                assertFalse(detailsContainer.isManaged());
+                assertFalse(detailsContainer.isVisible());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     private static VBox getDetailsContainer(MainWindow mainWindow) {
         ScrollPane detailsPanel = (ScrollPane) mainWindow.getPatientDetailsPanel().getRoot();
         return (VBox) detailsPanel.getContent();
@@ -179,6 +232,9 @@ public class MainWindowTest {
     /** Outcomes that the test logic can return or throw. */
     private enum ExecutionOutcome {
         SUCCESS,
+        CLEAR_DETAILS,
+        CLEAR_MATCHING_PERSON,
+        CLEAR_OTHER_PERSON,
         COMMAND_ERROR_WITH_PREVIEW,
         COMMAND_ERROR,
         PARSE_ERROR
@@ -208,6 +264,11 @@ public class MainWindowTest {
             return switch (executionOutcome) {
                 case SUCCESS -> CommandResult.viewPerson(
                         "Viewing person: " + personToView.getName(), personToView);
+                case CLEAR_DETAILS -> CommandResult.clearDetailsPanel("Cleared all patients");
+                case CLEAR_MATCHING_PERSON -> CommandResult.clearPersonIfShowing(
+                        "Deleted patient", personToView);
+                case CLEAR_OTHER_PERSON -> CommandResult.clearPersonIfShowing(
+                        "Deleted another patient", new PersonBuilder().withName("Another Patient").build());
                 case COMMAND_ERROR_WITH_PREVIEW -> throw new CommandException(
                         "Duplicate patient", personToView);
                 case COMMAND_ERROR -> throw new CommandException("Command error");

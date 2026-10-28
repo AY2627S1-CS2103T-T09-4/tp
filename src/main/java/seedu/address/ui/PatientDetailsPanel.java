@@ -22,6 +22,7 @@ public class PatientDetailsPanel extends UiPart<Region> {
     private static final String FXML = "PatientDetailsPanel.fxml";
 
     private final Clock clock;
+    private Person displayedPerson;
 
     @FXML
     private VBox detailsContainer;
@@ -117,12 +118,18 @@ public class PatientDetailsPanel extends UiPart<Region> {
         smokingStatus.setVisible(hasSmokingStatus);
         smokingStatus.setManaged(hasSmokingStatus);
         phone.setText("Phone: " + person.getPhone().value);
-        email.setText("Email: " + person.getEmail().value);
+        boolean hasEmail = !person.getEmail().value.isEmpty();
+        email.setText(hasEmail ? "Email: " + person.getEmail().value : "");
+        email.setVisible(hasEmail);
+        email.setManaged(hasEmail);
         address.setText("Address: " + person.getAddress().value);
         visitDate.setText("Visit date: " + person.getVisitDate()
                 + " (" + getVisitDateLabel(person.getVisitDate()) + ")");
         previousVisitDates.setText(formatPreviousVisitDates(person));
-        note.setText("Note: " + person.getNote().value);
+        boolean hasNote = !person.getNote().value.isEmpty();
+        note.setText(hasNote ? "Note: " + person.getNote().value : "");
+        note.setVisible(hasNote);
+        note.setManaged(hasNote);
         emergencyContact.setText("Emergency Contact: " + person.getEmergencyContact().toDisplayString());
         boolean hasEmergencyContact = !person.getEmergencyContact().isEmpty();
         emergencyContact.setVisible(hasEmergencyContact);
@@ -136,6 +143,24 @@ public class PatientDetailsPanel extends UiPart<Region> {
 
         detailsContainer.setManaged(true);
         detailsContainer.setVisible(true);
+        displayedPerson = person;
+    }
+
+    /** Hides the displayed patient details. */
+    public void clear() {
+        displayedPerson = null;
+        detailsContainer.setManaged(false);
+        detailsContainer.setVisible(false);
+    }
+
+    /**
+     * Hides the details only when they belong to {@code person}.
+     */
+    public void clearIfShowing(Person person) {
+        requireNonNull(person);
+        if (person.equals(displayedPerson)) {
+            clear();
+        }
     }
 
     /**
