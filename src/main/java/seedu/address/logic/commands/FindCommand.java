@@ -1,6 +1,7 @@
 package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
+import static seedu.address.logic.Messages.DISPLAY_LOCALE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTE;
@@ -69,7 +70,7 @@ public class FindCommand extends Command {
         return switch (patientCount) {
             case 0 -> MESSAGE_NO_PATIENTS_FOUND;
             case 1 -> MESSAGE_ONE_PATIENT_FOUND;
-            default -> String.format(MESSAGE_PATIENTS_FOUND, patientCount);
+            default -> String.format(DISPLAY_LOCALE, MESSAGE_PATIENTS_FOUND, patientCount);
         };
     }
 

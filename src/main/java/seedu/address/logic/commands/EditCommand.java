@@ -1,6 +1,7 @@
 package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
+import static seedu.address.logic.Messages.DISPLAY_LOCALE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ALCOHOL_HISTORY;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ALLERGIES;
@@ -16,6 +17,7 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_VISIT_DATE;
 import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -92,15 +94,14 @@ public class EditCommand extends Command {
                     + "The patient is shown in the patient details panel. Choose a different date and time.";
     public static final String MESSAGE_VISIT_DATE_NOT_AFTER_PREVIOUS =
             "The current visit date and time must be later than the latest previous visit (%1$s).";
-    public static final String MESSAGE_CONFIRM_DUPLICATE_NAME =
-            "A patient named %1$s already exists. The matching patient is shown in the patient details panel. "
-                    + "Apply this edit anyway? Type y to confirm. Any other input cancels.";
-    public static final String MESSAGE_CONFIRM_DUPLICATE_NAMES =
+    public static final String MESSAGE_WARNING_DUPLICATE_NAME =
+            "A patient named %1$s already exists. The matching patient is shown in the patient details panel.";
+    public static final String MESSAGE_WARNING_DUPLICATE_NAMES =
             "%2$d patients named %1$s already exist. Only one matching patient is shown in the patient details "
-                    + "panel. Apply this edit anyway? Type y to confirm. Any other input cancels.";
-    public static final String MESSAGE_CONFIRM_FULL_DAY =
-            "Heads up: you already have %1$d visits on %2$s. Schedule %3$s on that day anyway? "
-                    + "Type y to confirm. Any other input cancels.";
+                    + "panel.";
+    public static final String MESSAGE_WARNING_FULL_DAY = "Heads up: you already have %1$d visits on %2$s.";
+    public static final String MESSAGE_CONFIRM_EDIT =
+            "Apply this edit to %1$s anyway? Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_EDIT_CANCELLED = "Edit cancelled.";
     public static final String MESSAGE_PERSON_NO_LONGER_EXISTS =
             "The person selected for editing no longer exists.";
@@ -142,62 +143,48 @@ public class EditCommand extends Command {
 
         validateNoConflicts(model, personToEdit, editedPerson);
 
-        boolean isNormalizedNameChanged = !personToEdit.hasSameName(editedPerson);
-        if (isNormalizedNameChanged) {
-            List<Person> nameDuplicates =
-                    DuplicatePersonFinder.findNameDuplicates(model.getAddressBook(), editedPerson);
-            if (!nameDuplicates.isEmpty()) {
-                String prompt = formatDuplicateNamePrompt(editedPerson, nameDuplicates.size());
-                return requestConfirmation(prompt,
-                        confirmedModel -> editPersonAfterVisitDayCheck(confirmedModel, personToEdit, editedPerson),
-                        nameDuplicates.getFirst());
-            }
-        }
-
-        return editPersonAfterVisitDayCheck(model, personToEdit, editedPerson);
-    }
-
-    /**
-     * Replaces the person, first asking for confirmation if the visit moves to another day that already has
-     * {@value Model#MAX_VISITS_PER_DAY} or more visits. Edits that keep the visit on the same day never ask,
-     * since they do not add to that day's visits.
-     *
-     * @throws CommandException If the captured person no longer exists or the edit would create a conflict.
-     */
-    private CommandResult editPersonAfterVisitDayCheck(Model model, Person personToEdit, Person editedPerson)
-            throws CommandException {
-        boolean isVisitDayChanged = !personToEdit.getVisitDate().isSameDay(editedPerson.getVisitDate());
-        if (!isVisitDayChanged) {
+        List<Person> nameDuplicates = personToEdit.hasSameName(editedPerson)
+                ? List.of()
+                : DuplicatePersonFinder.findNameDuplicates(model.getAddressBook(), editedPerson);
+        List<String> warnings = collectWarnings(model, personToEdit, editedPerson, nameDuplicates);
+        if (warnings.isEmpty()) {
             return editPerson(model, personToEdit, editedPerson);
         }
 
-        int visitsOnNewDay = model.countPersonsWithSameVisitDay(editedPerson);
-        if (visitsOnNewDay >= Model.MAX_VISITS_PER_DAY) {
-            String prompt = String.format(MESSAGE_CONFIRM_FULL_DAY, visitsOnNewDay,
-                    editedPerson.getVisitDate().toDayString(), editedPerson.getName());
-            return requestConfirmation(prompt,
-                    confirmedModel -> editPerson(confirmedModel, personToEdit, editedPerson));
+        String prompt = String.join(" ", warnings) + " "
+                + String.format(MESSAGE_CONFIRM_EDIT, editedPerson.getName());
+        CommandInputRequest inputRequest = createConfirmationRequest(prompt,
+                confirmedModel -> editPerson(confirmedModel, personToEdit, editedPerson));
+        return nameDuplicates.isEmpty()
+                ? CommandResult.requestInput(inputRequest)
+                : CommandResult.requestInput(inputRequest, nameDuplicates.getFirst());
+    }
+
+    /**
+     * Returns every warning the user must accept before the edit is applied, in the order they are shown.
+     * An empty list means the person can be edited without confirmation.
+     */
+    private List<String> collectWarnings(Model model, Person personToEdit, Person editedPerson,
+            List<Person> nameDuplicates) {
+        List<String> warnings = new ArrayList<>();
+        if (!nameDuplicates.isEmpty()) {
+            warnings.add(formatDuplicateNameWarning(editedPerson, nameDuplicates.size()));
         }
 
-        return editPerson(model, personToEdit, editedPerson);
-    }
+        boolean isVisitDayChanged = !personToEdit.getVisitDate().isSameDay(editedPerson.getVisitDate());
+        if (isVisitDayChanged) {
+            int visitsOnNewDay = model.countPersonsWithSameVisitDay(editedPerson);
+            if (visitsOnNewDay >= Model.MAX_VISITS_PER_DAY) {
+                warnings.add(String.format(DISPLAY_LOCALE, MESSAGE_WARNING_FULL_DAY, visitsOnNewDay,
+                        editedPerson.getVisitDate().toDayString()));
+            }
+        }
 
-    /**
-     * Returns a result asking the user to confirm with {@code y} before running {@code confirmedAction}.
-     */
-    private static CommandResult requestConfirmation(String prompt,
-            CommandInputRequest.ConfirmedAction confirmedAction) {
-        CommandInputRequest inputRequest = createConfirmationRequest(prompt, confirmedAction);
-        return CommandResult.requestInput(inputRequest);
-    }
-
-    /**
-     * Returns a result that also displays one matching patient while requesting confirmation.
-     */
-    private static CommandResult requestConfirmation(String prompt,
-            CommandInputRequest.ConfirmedAction confirmedAction, Person personToView) {
-        CommandInputRequest inputRequest = createConfirmationRequest(prompt, confirmedAction);
-        return CommandResult.requestInput(inputRequest, personToView);
+        if (warnings.size() > 1) {
+            logger.info("Combining " + warnings.size() + " edit warnings into one confirmation for "
+                    + editedPerson.getName());
+        }
+        return warnings;
     }
 
     /**
@@ -223,7 +210,8 @@ public class EditCommand extends Command {
         model.setPerson(personToEdit, editedPerson);
         logOptionalFieldUpdates();
         model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
-        return new CommandResult(String.format(MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)));
+        return CommandResult.showUpdatedPerson(
+                String.format(MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), editedPerson);
     }
 
     /**
@@ -269,14 +257,15 @@ public class EditCommand extends Command {
     }
 
     /**
-     * Returns a grammatically correct confirmation prompt for the duplicate-name matches.
+     * Returns a grammatically correct warning for the duplicate-name matches.
      */
-    private static String formatDuplicateNamePrompt(Person editedPerson, int duplicateCount) {
+    private static String formatDuplicateNameWarning(Person editedPerson, int duplicateCount) {
         assert duplicateCount > 0;
 
         return (duplicateCount == 1)
-                ? String.format(MESSAGE_CONFIRM_DUPLICATE_NAME, editedPerson.getName())
-                : String.format(MESSAGE_CONFIRM_DUPLICATE_NAMES, editedPerson.getName(), duplicateCount);
+                ? String.format(MESSAGE_WARNING_DUPLICATE_NAME, editedPerson.getName())
+                : String.format(DISPLAY_LOCALE, MESSAGE_WARNING_DUPLICATE_NAMES, editedPerson.getName(),
+                        duplicateCount);
     }
 
     /**

@@ -50,6 +50,12 @@ public class CommandResultTest {
         assertFalse(CommandResult.withoutSaving("feedback").equals(CommandResult.viewPerson("feedback", ALICE)));
         assertFalse(CommandResult.viewPerson("feedback", ALICE)
                 .equals(CommandResult.viewPerson("feedback", BENSON)));
+
+        // different details-panel action -> returns false
+        assertFalse(CommandResult.showUpdatedPerson("feedback", ALICE)
+                .equals(CommandResult.clearPersonIfShowing("feedback", ALICE)));
+        assertFalse(CommandResult.clearDetailsPanel("feedback")
+                .equals(CommandResult.clearPersonIfShowing("feedback", ALICE)));
     }
 
     @Test
@@ -126,6 +132,35 @@ public class CommandResultTest {
     }
 
     @Test
+    public void showUpdatedPerson_validPerson_returnsSavingResultWithPerson() {
+        CommandResult result = CommandResult.showUpdatedPerson("feedback", ALICE);
+
+        assertTrue(result.shouldSaveAddressBook());
+        assertEquals(CommandResult.DetailsPanelAction.SHOW, result.getDetailsPanelAction());
+        assertEquals(ALICE, result.getPersonToView().orElseThrow());
+    }
+
+    @Test
+    public void clearPersonIfShowing_validPerson_returnsConditionalClearResult() {
+        CommandResult result = CommandResult.clearPersonIfShowing("feedback", ALICE);
+
+        assertTrue(result.shouldSaveAddressBook());
+        assertEquals(CommandResult.DetailsPanelAction.CLEAR_IF_SHOWING, result.getDetailsPanelAction());
+        assertEquals(ALICE, result.getPersonToClearFromView().orElseThrow());
+        assertTrue(result.getPersonToView().isEmpty());
+    }
+
+    @Test
+    public void clearDetailsPanel_validFeedback_returnsClearResult() {
+        CommandResult result = CommandResult.clearDetailsPanel("feedback");
+
+        assertTrue(result.shouldSaveAddressBook());
+        assertEquals(CommandResult.DetailsPanelAction.CLEAR, result.getDetailsPanelAction());
+        assertTrue(result.getPersonToView().isEmpty());
+        assertTrue(result.getPersonToClearFromView().isEmpty());
+    }
+
+    @Test
     public void inputRequest_respondsWithArbitraryInputAndCanContinue() throws Exception {
         CommandInputRequest secondRequest = new CommandInputRequest(
                 "Second value", (input, model) -> CommandResult.withoutSaving(input));
@@ -146,7 +181,8 @@ public class CommandResultTest {
         String expected = CommandResult.class.getCanonicalName() + "{feedbackToUser="
                 + commandResult.getFeedbackToUser() + ", showHelp=" + commandResult.isShowHelp()
                 + ", exit=" + commandResult.isExit() + ", saveAddressBook="
-                + commandResult.shouldSaveAddressBook() + ", inputRequested=false, personToView=null}";
+                + commandResult.shouldSaveAddressBook()
+                + ", inputRequested=false, detailsPanelAction=KEEP, detailsPerson=null}";
         assertEquals(expected, commandResult.toString());
     }
 }

@@ -22,6 +22,7 @@ public class PatientDetailsPanel extends UiPart<Region> {
     private static final String FXML = "PatientDetailsPanel.fxml";
 
     private final Clock clock;
+    private Person displayedPerson;
 
     @FXML
     private VBox detailsContainer;
@@ -37,6 +38,9 @@ public class PatientDetailsPanel extends UiPart<Region> {
 
     @FXML
     private Label allergies;
+
+    @FXML
+    private Label medicalPlaceholder;
 
     @FXML
     private Label alcoholHistory;
@@ -116,6 +120,10 @@ public class PatientDetailsPanel extends UiPart<Region> {
         smokingStatus.setText(hasSmokingStatus ? "Smoking status: " + person.getSmokingStatus() : "");
         smokingStatus.setVisible(hasSmokingStatus);
         smokingStatus.setManaged(hasSmokingStatus);
+        boolean hasMedicalInformation = hasDateOfBirth || hasBloodType || hasAllergies
+                || hasAlcoholHistory || hasSmokingStatus;
+        medicalPlaceholder.setVisible(!hasMedicalInformation);
+        medicalPlaceholder.setManaged(!hasMedicalInformation);
         phone.setText("Phone: " + person.getPhone().value);
         boolean hasEmail = !person.getEmail().value.isEmpty();
         email.setText(hasEmail ? "Email: " + person.getEmail().value : "");
@@ -135,13 +143,31 @@ public class PatientDetailsPanel extends UiPart<Region> {
         emergencyContact.setManaged(hasEmergencyContact);
 
         String tagNames = person.getTags().stream()
-                .sorted(Comparator.comparing(tag -> tag.tagName))
+                .sorted(Comparator.comparing(tag -> tag.tagName, String.CASE_INSENSITIVE_ORDER))
                 .map(tag -> tag.tagName)
                 .collect(Collectors.joining(", "));
         tags.setText("Tags: " + tagNames);
 
         detailsContainer.setManaged(true);
         detailsContainer.setVisible(true);
+        displayedPerson = person;
+    }
+
+    /** Hides the displayed patient details. */
+    public void clear() {
+        displayedPerson = null;
+        detailsContainer.setManaged(false);
+        detailsContainer.setVisible(false);
+    }
+
+    /**
+     * Hides the details only when they belong to {@code person}.
+     */
+    public void clearIfShowing(Person person) {
+        requireNonNull(person);
+        if (person.equals(displayedPerson)) {
+            clear();
+        }
     }
 
     /**

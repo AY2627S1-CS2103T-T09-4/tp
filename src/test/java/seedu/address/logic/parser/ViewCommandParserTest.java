@@ -5,6 +5,8 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailur
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.commands.ViewCommand;
@@ -22,12 +24,27 @@ public class ViewCommandParserTest {
     }
 
     @Test
-    public void parse_invalidIndex_throwsParseException() {
+    public void parse_missingIndex_showsInvalidFormat() {
         String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, ViewCommand.MESSAGE_USAGE);
 
         assertParseFailure(parser, "", expectedMessage);
-        assertParseFailure(parser, "0", expectedMessage);
-        assertParseFailure(parser, "abc", expectedMessage);
-        assertParseFailure(parser, "1 abc", expectedMessage);
+        assertParseFailure(parser, " \t ", expectedMessage);
+    }
+
+    @Test
+    public void parse_invalidIndex_showsReasonAndViewUsage() {
+        String expectedMessage = ParserUtil.MESSAGE_INVALID_INDEX + "\n" + ViewCommand.MESSAGE_USAGE;
+
+        for (String index : List.of("0", "-1", "+1", "abc", "1.5", "1 abc")) {
+            assertParseFailure(parser, index, expectedMessage);
+        }
+    }
+
+    @Test
+    public void parse_oversizedIndex_showsReasonAndViewUsage() {
+        String expectedMessage = ParserUtil.MESSAGE_INDEX_TOO_LARGE + "\n" + ViewCommand.MESSAGE_USAGE;
+
+        assertParseFailure(parser, "2147483648", expectedMessage);
+        assertParseFailure(parser, "99999999999", expectedMessage);
     }
 }

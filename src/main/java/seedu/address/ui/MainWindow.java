@@ -202,7 +202,7 @@ public class MainWindow extends UiPart<Stage> {
             CommandResult commandResult = logic.execute(commandText);
             logger.info("Result: " + commandResult.getFeedbackToUser());
             resultDisplay.setFeedbackToUser(commandResult.getFeedbackToUser());
-            commandResult.getPersonToView().ifPresent(patientDetailsPanel::setPerson);
+            updatePatientDetailsPanel(commandResult);
 
             if (commandResult.isShowHelp()) {
                 handleHelp();
@@ -224,6 +224,25 @@ public class MainWindow extends UiPart<Stage> {
             logger.info("An error occurred while parsing command: " + commandText);
             resultDisplay.setFeedbackToUser(e.getMessage());
             throw e;
+        }
+    }
+
+    /** Applies the details-panel action carried by a successful command result. */
+    private void updatePatientDetailsPanel(CommandResult commandResult) {
+        switch (commandResult.getDetailsPanelAction()) {
+            case KEEP:
+                break;
+            case SHOW:
+                patientDetailsPanel.setPerson(commandResult.getPersonToView().orElseThrow());
+                break;
+            case CLEAR:
+                patientDetailsPanel.clear();
+                break;
+            case CLEAR_IF_SHOWING:
+                commandResult.getPersonToClearFromView().ifPresent(patientDetailsPanel::clearIfShowing);
+                break;
+            default:
+                throw new AssertionError("Unknown details-panel action: " + commandResult.getDetailsPanelAction());
         }
     }
 }

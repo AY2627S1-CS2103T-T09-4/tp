@@ -1,6 +1,7 @@
 package seedu.address.logic.parser;
 
 import static java.util.Objects.requireNonNull;
+import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -45,10 +46,35 @@ public class ParserUtil {
     }
 
     /**
+     * Parses {@code oneBasedIndex} for a command, explaining why a supplied index is rejected.
+     * A missing index is reported as an invalid command format. A supplied index that is not a positive
+     * integer, or is too large to represent, is reported with that specific reason followed by the usage.
+     *
+     * @param oneBasedIndex Index text, which may have leading and trailing whitespace.
+     * @param commandUsage Usage message of the command being parsed.
+     * @return The parsed index.
+     * @throws ParseException If the index is missing or invalid.
+     */
+    public static Index parseIndex(String oneBasedIndex, String commandUsage) throws ParseException {
+        String trimmedIndex = oneBasedIndex.trim();
+        if (trimmedIndex.isEmpty()) {
+            throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT, commandUsage));
+        }
+
+        try {
+            return parseIndex(trimmedIndex);
+        } catch (ParseException pe) {
+            // A positive integer rejected by parseIndex exceeds the supported index range.
+            String reason = isPositiveInteger(trimmedIndex) ? MESSAGE_INDEX_TOO_LARGE : MESSAGE_INVALID_INDEX;
+            throw new ParseException(reason + "\n" + commandUsage, pe);
+        }
+    }
+
+    /**
      * Returns whether the input is a positive decimal integer, regardless of its size.
      * Uses the same digit interpretation as Integer.parseInt without converting the numeric value.
      */
-    static boolean isPositiveInteger(String argument) {
+    private static boolean isPositiveInteger(String argument) {
         return argument.chars().allMatch(character -> Character.digit(character, 10) >= 0)
                 && argument.chars().anyMatch(character -> Character.digit(character, 10) > 0);
     }
@@ -193,17 +219,19 @@ public class ParserUtil {
 
     /**
      * Parses a {@code String visitDate} into a {@code VisitDate}.
-     * Leading and trailing whitespaces will be trimmed.
+     * Leading and trailing whitespaces will be trimmed, and repeated whitespace between the date and time is
+     * treated as a single space.
      *
      * @throws ParseException if the given {@code visitDate} is invalid.
      */
     public static VisitDate parseVisitDate(String visitDate) throws ParseException {
         requireNonNull(visitDate);
-        String trimmedVisitDate = visitDate.trim();
-        if (!VisitDate.isValidVisitDate(trimmedVisitDate)) {
+        // Any run of spaces or tabs between the date and time counts as one separator, as next already allows
+        String normalizedVisitDate = visitDate.trim().replaceAll("\\s+", " ");
+        if (!VisitDate.isValidVisitDate(normalizedVisitDate)) {
             throw new ParseException(VisitDate.MESSAGE_CONSTRAINTS);
         }
-        return new VisitDate(trimmedVisitDate);
+        return new VisitDate(normalizedVisitDate);
     }
 
     /**
@@ -237,11 +265,13 @@ public class ParserUtil {
 
     /**
      * Parses {@code Collection<String> tags} into a {@code Set<Tag>}.
+     * Tags that differ only in letter case are kept once, using the first spelling given.
      */
     public static Set<Tag> parseTags(Collection<String> tags) throws ParseException {
         requireNonNull(tags);
         final Set<Tag> tagSet = new HashSet<>();
         for (String tagName : tags) {
+            // Set#add keeps the existing element, so the first spelling of a case-variant tag is retained
             tagSet.add(parseTag(tagName));
         }
         return tagSet;

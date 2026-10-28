@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 public class ArgumentTokenizerTest {
 
     private final Prefix unknownPrefix = new Prefix("--u");
+    private final Prefix nSlash = new Prefix("n/");
     private final Prefix pSlash = new Prefix("p/");
     private final Prefix dashT = new Prefix("-t");
     private final Prefix hatQ = new Prefix("^Q");
@@ -77,6 +78,18 @@ public class ArgumentTokenizerTest {
         assertPreambleEmpty(argMultimap);
         assertArgumentPresent(argMultimap, pSlash, "Argument value");
 
+    }
+
+    @Test
+    public void tokenize_prefixesAtStartAndAfterWhitespace() {
+        Prefix aSlash = new Prefix("a/");
+        String argsString = "n/ Alice\tp/ 91234567\na/ 123 Main Street";
+        ArgumentMultimap argMultimap = ArgumentTokenizer.tokenize(argsString, nSlash, pSlash, aSlash);
+
+        assertPreambleEmpty(argMultimap);
+        assertArgumentPresent(argMultimap, nSlash, "Alice");
+        assertArgumentPresent(argMultimap, pSlash, "91234567");
+        assertArgumentPresent(argMultimap, aSlash, "123 Main Street");
     }
 
     @Test

@@ -1,7 +1,6 @@
 package seedu.address.logic.parser;
 
 import static java.util.Objects.requireNonNull;
-import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 
 import seedu.address.logic.commands.PrevCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
@@ -20,13 +19,6 @@ public class PrevCommandParser implements Parser<PrevCommand> {
     @Override
     public PrevCommand parse(String args) throws ParseException {
         requireNonNull(args);
-        try {
-            return new PrevCommand(ParserUtil.parseIndex(args));
-        } catch (ParseException pe) {
-            if (ParserUtil.isPositiveInteger(args.trim())) {
-                throw new ParseException(ParserUtil.MESSAGE_INDEX_TOO_LARGE + "\n" + PrevCommand.MESSAGE_USAGE, pe);
-            }
-            throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT, PrevCommand.MESSAGE_USAGE), pe);
-        }
+        return new PrevCommand(ParserUtil.parseIndex(args, PrevCommand.MESSAGE_USAGE));
     }
 }

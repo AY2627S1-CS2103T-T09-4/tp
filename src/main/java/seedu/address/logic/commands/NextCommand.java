@@ -2,6 +2,7 @@ package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
+import static seedu.address.logic.Messages.DISPLAY_LOCALE;
 import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 
 import java.time.Clock;
@@ -125,7 +126,7 @@ public class NextCommand extends Command {
 
         logger.info("Requesting confirmation to schedule a visit on " + visitDate.toDayString()
                 + ", which already has " + visitsOnNewDay + " visits");
-        String prompt = String.format(MESSAGE_CONFIRM_FULL_DAY, visitsOnNewDay,
+        String prompt = String.format(DISPLAY_LOCALE, MESSAGE_CONFIRM_FULL_DAY, visitsOnNewDay,
                 visitDate.toDayString(), updatedPerson.getName());
         CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(prompt, MESSAGE_NEXT_CANCELLED,
                 confirmedModel -> scheduleConfirmedVisit(confirmedModel, personToUpdate, updatedPerson));
@@ -160,7 +161,8 @@ public class NextCommand extends Command {
         model.setPerson(personToUpdate, updatedPerson);
         model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
         logger.fine("Scheduled next visit for " + updatedPerson.getName() + " at " + visitDate);
-        return new CommandResult(String.format(MESSAGE_SUCCESS, updatedPerson.getName(), visitDate));
+        return CommandResult.showUpdatedPerson(
+                String.format(MESSAGE_SUCCESS, updatedPerson.getName(), visitDate), updatedPerson);
     }
 
     /**
