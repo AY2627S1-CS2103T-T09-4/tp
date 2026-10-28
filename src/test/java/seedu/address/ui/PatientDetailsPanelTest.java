@@ -141,6 +141,27 @@ public class PatientDetailsPanelTest {
     }
 
     @Test
+    public void setPerson_noMedicalInformation_showsPlaceholder() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            Label placeholder = getLabel(panel, "medicalPlaceholder");
+
+            panel.setPerson(new PersonBuilder().build());
+            assertEquals("No medical information recorded", placeholder.getText());
+            assertTrue(placeholder.isVisible());
+            assertTrue(placeholder.isManaged());
+
+            panel.setPerson(new PersonBuilder().withBloodType("A+").build());
+            assertFalse(placeholder.isVisible());
+            assertFalse(placeholder.isManaged());
+
+            panel.setPerson(new PersonBuilder().build());
+            assertTrue(placeholder.isVisible());
+            assertTrue(placeholder.isManaged());
+        });
+    }
+
+    @Test
     public void setPerson_dateOfBirth_displaysAgeInMedicalProfileAndHidesWhenAbsent() {
         runOnFxThread(() -> {
             PatientDetailsPanel panel = new PatientDetailsPanel();

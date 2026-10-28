@@ -39,6 +39,9 @@ public class PatientDetailsPanel extends UiPart<Region> {
     private Label allergies;
 
     @FXML
+    private Label medicalPlaceholder;
+
+    @FXML
     private Label alcoholHistory;
 
     @FXML
@@ -116,6 +119,10 @@ public class PatientDetailsPanel extends UiPart<Region> {
         smokingStatus.setText(hasSmokingStatus ? "Smoking status: " + person.getSmokingStatus() : "");
         smokingStatus.setVisible(hasSmokingStatus);
         smokingStatus.setManaged(hasSmokingStatus);
+        boolean hasMedicalInformation = hasDateOfBirth || hasBloodType || hasAllergies
+                || hasAlcoholHistory || hasSmokingStatus;
+        medicalPlaceholder.setVisible(!hasMedicalInformation);
+        medicalPlaceholder.setManaged(!hasMedicalInformation);
         phone.setText("Phone: " + person.getPhone().value);
         boolean hasEmail = !person.getEmail().value.isEmpty();
         email.setText(hasEmail ? "Email: " + person.getEmail().value : "");

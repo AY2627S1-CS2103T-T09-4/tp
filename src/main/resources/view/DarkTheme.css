@@ -65,6 +65,13 @@
     -fx-text-fill: white;
 }
 
+.patient-details-placeholder {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 13px;
+    -fx-font-style: italic;
+    -fx-text-fill: #c8cbcd;
+}
+
 .text-field {
     -fx-font-size: 12pt;
     -fx-font-family: "Segoe UI Semibold";

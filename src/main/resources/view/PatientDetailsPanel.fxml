@@ -30,6 +30,10 @@
 
       <VBox id="medicalSection" spacing="8" styleClass="patient-details-section">
         <Label text="Medical profile" maxWidth="Infinity" styleClass="patient-details-section-heading" />
+        <Label id="medicalPlaceholder" fx:id="medicalPlaceholder" text="No medical information recorded"
+               maxWidth="Infinity" styleClass="patient-details-placeholder" wrapText="true">
+          <minHeight><Region fx:constant="USE_PREF_SIZE" /></minHeight>
+        </Label>
         <Label id="allergies" fx:id="allergies" maxWidth="Infinity" styleClass="patient-details-value"
                wrapText="true">
           <minHeight><Region fx:constant="USE_PREF_SIZE" /></minHeight>
