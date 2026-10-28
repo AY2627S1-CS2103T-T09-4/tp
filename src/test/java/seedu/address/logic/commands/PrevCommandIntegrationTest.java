@@ -183,12 +183,103 @@ public class PrevCommandIntegrationTest {
         String errorFormat = failure instanceof AccessDeniedException
                 ? LogicManager.FILE_OPS_PERMISSION_ERROR_FORMAT : LogicManager.FILE_OPS_ERROR_FORMAT;
 
-        assertThrows(CommandException.class, String.format(errorFormat, failure.getMessage()), () ->
-                logic.execute("prev 1"));
+        CommandResult requestResult = logic.execute("prev 1");
+        assertFalse(requestResult.shouldSaveAddressBook());
+        assertEquals(0, fixture.getSaveCount());
+        String expectedErrorMessage = String.format(errorFormat, failure.getMessage());
+        assertThrows(CommandException.class, expectedErrorMessage, () -> logic.execute("y"));
 
         assertEquals(savedData, Files.readString(fixture.getAddressBookStorage().getAddressBookFilePath()));
         assertEquals(addressBookBefore, model.getAddressBook());
         assertEquals(displayedPersonsBefore, model.getFilteredPersonList());
+        assertFalse(logic.isInputRequestPending());
+    }
+
+    @Test
+    public void execute_cancelledResponse_preservesStateAndConsumesCommandText() throws Exception {
+        String savedData = Files.readString(fixture.getAddressBookStorage().getAddressBookFilePath());
+        CommandResult requestResult = logic.execute("prev 1");
+
+        CommandResult cancelledResult = logic.execute("list");
+
+        assertEquals(PrevCommand.MESSAGE_PREV_CANCELLED, cancelledResult.getFeedbackToUser());
+        assertFalse(cancelledResult.shouldSaveAddressBook());
+        assertFalse(logic.isInputRequestPending());
+        assertEquals(AMY, model.getAddressBook().getPersonList().getFirst());
+        assertEquals(savedData, Files.readString(fixture.getAddressBookStorage().getAddressBookFilePath()));
+        assertEquals(0, fixture.getSaveCount());
+        assertTrue(requestResult.getInputRequest().isPresent());
+
+        assertEquals(ListCommand.MESSAGE_SUCCESS, logic.execute("list").getFeedbackToUser());
+    }
+
+    @Test
+    public void execute_confirmationAfterPatientEdit_rejectsStaleRequest() throws Exception {
+        logic.execute("prev 1");
+        Person replacementPerson = new PersonBuilder(AMY).withName("Amy Updated").build();
+        model.setPerson(AMY, replacementPerson);
+
+        assertThrows(CommandException.class, PrevCommand.MESSAGE_PERSON_NO_LONGER_EXISTS, () -> logic.execute("y"));
+
+        assertEquals(replacementPerson, model.getAddressBook().getPersonList().getFirst());
+        assertFalse(logic.isInputRequestPending());
+        assertEquals(0, fixture.getSaveCount());
+    }
+
+    @Test
+    public void execute_sharedNameDifferentPhones_targetsDisplayedPatient() throws Exception {
+        Person otherPatient = new PersonBuilder(AMY).withPhone("91234567").withVisitDate("5/11/2026 1000")
+                .withPreviousVisitDates("4/11/2026 1000").build();
+        model.addPerson(otherPatient);
+        model.updateFilteredPersonList(person -> person.getPhone().equals(otherPatient.getPhone()));
+
+        CommandResult requestResult = logic.execute("prev 1");
+
+        assertEquals(String.format(PrevCommand.MESSAGE_CONFIRM_PREV, otherPatient.getName(), otherPatient.getPhone(),
+                "4/11/2026 1000", otherPatient.getVisitDate()), requestResult.getFeedbackToUser());
+        CommandResult result = logic.execute("y");
+        Person expectedPatient = new PersonBuilder(otherPatient).withVisitDate("4/11/2026 1000")
+                .withPreviousVisitDates().build();
+
+        assertEquals(String.format(PrevCommand.MESSAGE_SUCCESS, expectedPatient.getName(),
+                expectedPatient.getVisitDate(), otherPatient.getVisitDate()), result.getFeedbackToUser());
+        fixture.assertPersistedPatients(AMY, expectedPatient);
+    }
+
+    @Test
+    public void execute_filteredSortedIndex_capturesPatientBeforeConfirmation() throws Exception {
+        Person earlierPatient = new PersonBuilder().withName("Benson Meier").withPhone("91234567")
+                .withVisitDate("1/10/2026 1000").withPreviousVisitDates("1/9/2026 1000").build();
+        model.addPerson(earlierPatient);
+        model.updateFilteredPersonList(person -> true);
+        model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
+
+        CommandResult requestResult = logic.execute("prev 2");
+        model.updateFilteredPersonList(person -> true);
+        CommandResult result = logic.execute("y");
+        Person expectedAmy = new PersonBuilder(AMY).withVisitDate("20/10/2026 1000")
+                .withPreviousVisitDates("10/10/2026 1000").build();
+
+        assertEquals(String.format(PrevCommand.MESSAGE_SUCCESS, expectedAmy.getName(), expectedAmy.getVisitDate(),
+                AMY.getVisitDate()), result.getFeedbackToUser());
+        assertEquals(List.of(expectedAmy, earlierPatient), model.getAddressBook().getPersonList());
+        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
+        assertTrue(result.shouldSaveAddressBook());
+        assertTrue(requestResult.getInputRequest().isPresent());
+    }
+
+    @Test
+    public void execute_confirmationThenNormalCommand_parsesNewCommand() throws Exception {
+        executeConfirmedPrev("prev 1");
+
+        assertEquals(ListCommand.MESSAGE_SUCCESS, logic.execute("list").getFeedbackToUser());
+    }
+
+    private CommandResult executeConfirmedPrev(String commandText) throws Exception {
+        CommandResult requestResult = logic.execute(commandText);
+        assertTrue(requestResult.getInputRequest().isPresent());
+        assertFalse(requestResult.shouldSaveAddressBook());
+        return logic.execute("  y  ");
     }
 
 }
