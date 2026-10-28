@@ -101,6 +101,20 @@ public class ModelManagerTest {
     }
 
     @Test
+    public void restoreStateSnapshot_nullSnapshot_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> modelManager.restoreStateSnapshot(null));
+    }
+
+    @Test
+    public void restoreStateSnapshot_incompatibleSnapshot_throwsIllegalArgumentException() {
+        Model.ModelState incompatibleSnapshot = new Model.ModelState() {
+        };
+
+        assertThrows(IllegalArgumentException.class,
+                () -> modelManager.restoreStateSnapshot(incompatibleSnapshot));
+    }
+
+    @Test
     public void hasPerson_nullPerson_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> modelManager.hasPerson(null));
     }
