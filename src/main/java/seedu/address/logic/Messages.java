@@ -1,5 +1,6 @@
 package seedu.address.logic;
 
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -11,6 +12,12 @@ import seedu.address.model.person.Person;
  * Container for user visible messages.
  */
 public class Messages {
+
+    /**
+     * Locale for numbers in user-visible messages. The interface is in English, so counts are always shown with
+     * the digits 0 to 9, whatever the computer's language setting.
+     */
+    public static final Locale DISPLAY_LOCALE = Locale.ENGLISH;
 
     public static final String MESSAGE_UNKNOWN_COMMAND = "Unknown command.";
     public static final String MESSAGE_INVALID_COMMAND_FORMAT = "Invalid command format!\n%1$s";

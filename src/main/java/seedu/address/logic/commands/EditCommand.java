@@ -1,6 +1,7 @@
 package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
+import static seedu.address.logic.Messages.DISPLAY_LOCALE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ALCOHOL_HISTORY;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ALLERGIES;
@@ -174,7 +175,7 @@ public class EditCommand extends Command {
         if (isVisitDayChanged) {
             int visitsOnNewDay = model.countPersonsWithSameVisitDay(editedPerson);
             if (visitsOnNewDay >= Model.MAX_VISITS_PER_DAY) {
-                warnings.add(String.format(MESSAGE_WARNING_FULL_DAY, visitsOnNewDay,
+                warnings.add(String.format(DISPLAY_LOCALE, MESSAGE_WARNING_FULL_DAY, visitsOnNewDay,
                         editedPerson.getVisitDate().toDayString()));
             }
         }
@@ -263,7 +264,8 @@ public class EditCommand extends Command {
 
         return (duplicateCount == 1)
                 ? String.format(MESSAGE_WARNING_DUPLICATE_NAME, editedPerson.getName())
-                : String.format(MESSAGE_WARNING_DUPLICATE_NAMES, editedPerson.getName(), duplicateCount);
+                : String.format(DISPLAY_LOCALE, MESSAGE_WARNING_DUPLICATE_NAMES, editedPerson.getName(),
+                        duplicateCount);
     }
 
     /**
