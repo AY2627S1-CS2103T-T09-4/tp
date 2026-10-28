@@ -65,6 +65,10 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 * Prefixed fields can be in any order after any required positional arguments.<br>
   For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
 
+* Prefixes are recognized at the start of the arguments or after whitespace, including spaces, tabs, and line breaks.
+  A prefix-looking token separated by whitespace starts a new field; there is no quoting or escaping for literal
+  prefix text inside a field value.
+
 * Positional arguments must follow the command's documented order.<br>
   For example, `edit INDEX ...` starts with the index, and `next INDEX DATETIME` requires the index before the date
   and time.
@@ -428,10 +432,10 @@ Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALC
 * Omitted fields, including email and existing notes, keep their values. Use an empty `e/` to clear email.
 * Use `note/NOTES` to replace the entire stored note. Use an empty `note/` to clear it; notes can be edited
   without `vd/`. An explicitly empty note counts as a supplied field, even when the note is already empty.
-* Leading and trailing spaces and tabs in notes are trimmed; internal spaces are preserved. An empty value
-  after trimming clears the note. A recognized prefix preceded by a literal space starts another field,
-  even inside notes (e.g., `note/Review medication e/new@example.com` edits both notes and email).
-  There is no escaping for literal prefix text.
+* Leading and trailing whitespace in notes is trimmed; internal whitespace is preserved. An empty value after
+  trimming clears the note. A recognized prefix preceded by whitespace starts another field, even inside notes
+  (e.g., `note/Review medication e/new@example.com` edits both notes and email). There is no quoting or escaping
+  for literal prefix text, so prefix-looking text separated by whitespace cannot be stored as part of a note.
 * Prefixes can appear in any order. Repeated single-valued prefixes, including `note/`, are rejected,
   even when their values are identical or empty. Multiple `t/TAG` prefixes are allowed.
 * Editing replaces the stored visit date and time; it does not append a visit-history entry.

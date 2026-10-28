@@ -338,13 +338,15 @@ public class EditCommandParserTest {
     }
 
     @Test
-    public void parse_notePrefixDelimiter_preservesExistingGrammar() {
+    public void parse_notePrefixAfterWhitespace_startsNewField() {
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
                 .withNote("Review medication").withEmail(VALID_EMAIL_AMY).build();
         assertParseSuccess(parser, "1 note/Review medication" + EMAIL_DESC_AMY,
                 new EditCommand(INDEX_FIRST_PERSON, descriptor));
-        EditPersonDescriptor literalNote = new EditPersonDescriptorBuilder().withNote("Review\te/literal").build();
-        assertParseSuccess(parser, "1 note/Review\te/literal", new EditCommand(INDEX_FIRST_PERSON, literalNote));
+        EditPersonDescriptor noteAndEmail = new EditPersonDescriptorBuilder()
+                .withNote("Review").withEmail("literal@example.com").build();
+        assertParseSuccess(parser, "1 note/Review\te/literal@example.com",
+                new EditCommand(INDEX_FIRST_PERSON, noteAndEmail));
     }
 
     @Test
