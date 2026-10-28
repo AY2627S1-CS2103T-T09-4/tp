@@ -1954,7 +1954,8 @@ the rollback; enter any other response to cancel. A cancellation response is con
 command.
 
 1. Run `find n/Nextalpha`, then `view 1`. Try `prev`, `prev 0`, `prev 2147483648`, `prev 1 extra`, and `prev 2`.<br>
-   Expect usage for malformed arguments, `Index is too large.` with guidance and usage for `prev 2147483648`,
+   Expect `Invalid command format!` with usage for `prev`, `Index must be a positive integer.` with usage for
+   `prev 0` and `prev 1 extra`, `Index is too large.` with guidance and usage for `prev 2147483648`,
    and the invalid-index error for `prev 2`. Verify that patient data, the saved JSON, filtered list, and
    displayed details remain unchanged.
 1. Run `edit 1 vd/30/10/2026 0900 p/84567890 e/updated@example.com a/30 Updated Road all/Penicillin; latex alc/Does not drink smk/former note/Updated before rollback t/followup dob/15/6/1990 bt/A+ ec/Mary Tan, 91234567`,
@@ -2008,6 +2009,8 @@ command.
    close Doc. Expect both the saved dates and their order to remain unchanged.
 1. Run `view 999`. Expect an invalid-index error, no change to the displayed list, and no changes to stored patient
    data.
+1. Run `view 0`, `view -1`, `view abc`, and `view 99999999999`. Expect `Index must be a positive integer.` with
+   usage for the first three and `Index is too large.` with guidance and usage for the last one.
 1. Close and reopen the application. Expect all patient data to remain unchanged.
 
 ### Calendar labels for current visits
@@ -2109,10 +2112,10 @@ when midnight passes; another `view` recalculates it.
       Expected: No patient is deleted. The result display shows `Deletion cancelled.`
 
    1. Test case: `delete 0`<br>
-      Expected: No patient is deleted. The status message shows error details.
+      Expected: No patient is deleted. The status message shows `Index must be a positive integer.` with usage.
 
    1. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
-      Expected: The existing invalid-command response is shown and no confirmation is requested.
+      Expected: The matching index error is shown and no confirmation is requested.
 
 ### Clearing all patient records
 
