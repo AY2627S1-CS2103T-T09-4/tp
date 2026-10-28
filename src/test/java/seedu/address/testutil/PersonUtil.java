@@ -6,6 +6,7 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_ALLERGIES;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_BLOOD_TYPE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_DATE_OF_BIRTH;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_EMERGENCY_CONTACT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
@@ -54,6 +55,9 @@ public class PersonUtil {
             sb.append(PREFIX_SMOKING_STATUS).append(person.getSmokingStatus()).append(" ");
         }
         sb.append(PREFIX_PHONE + person.getPhone().value + " ");
+        if (!person.getEmergencyContact().isEmpty()) {
+            sb.append(PREFIX_EMERGENCY_CONTACT).append(person.getEmergencyContact()).append(" ");
+        }
         sb.append(PREFIX_EMAIL + person.getEmail().value + " ");
         sb.append(PREFIX_ADDRESS + person.getAddress().value + " ");
         sb.append(PREFIX_VISIT_DATE + person.getVisitDate().toString() + " ");
@@ -80,6 +84,8 @@ public class PersonUtil {
         descriptor.getSmokingStatus().ifPresent(smokingStatus ->
                 sb.append(PREFIX_SMOKING_STATUS).append(smokingStatus).append(" "));
         descriptor.getPhone().ifPresent(phone -> sb.append(PREFIX_PHONE).append(phone.value).append(" "));
+        descriptor.getEmergencyContact().ifPresent(emergencyContact ->
+                sb.append(PREFIX_EMERGENCY_CONTACT).append(emergencyContact).append(" "));
         descriptor.getAddress().ifPresent(address -> sb.append(PREFIX_ADDRESS).append(address.value).append(" "));
         descriptor.getVisitDate().ifPresent(visitDate ->
                 sb.append(PREFIX_VISIT_DATE).append(visitDate).append(" "));
