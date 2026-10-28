@@ -17,9 +17,8 @@ skinparam Note {
 
 box Logic LOGIC_COLOR_T1
 participant ":LogicManager" as LogicManager LOGIC_COLOR
-participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
-participant ":PrevCommandParser" as PrevCommandParser LOGIC_COLOR
 participant "p:PrevCommand" as PrevCommand LOGIC_COLOR
+participant "request:\nCommandInputRequest" as InputRequest LOGIC_COLOR
 end box
 
 box Model MODEL_COLOR_T1
@@ -30,70 +29,51 @@ box Storage STORAGE_COLOR_T1
 participant ":Storage" as Storage STORAGE_COLOR
 end box
 
-[-> LogicManager : execute(commandText)
+[-> LogicManager : execute("prev 1")
 activate LogicManager
-
-LogicManager -> AddressBookParser : parseCommand(commandText)
-activate AddressBookParser
-
-create PrevCommandParser
-AddressBookParser -> PrevCommandParser : PrevCommandParser()
-activate PrevCommandParser
-PrevCommandParser --> AddressBookParser
-deactivate PrevCommandParser
-
-AddressBookParser -> PrevCommandParser : parse(arguments)
-activate PrevCommandParser
-
-create PrevCommand
-PrevCommandParser -> PrevCommand : PrevCommand(...)
-activate PrevCommand
-
-PrevCommand --> PrevCommandParser
-deactivate PrevCommand
-
-PrevCommandParser --> AddressBookParser : p
-deactivate PrevCommandParser
-
-' Hidden arrow to position the destroy marker below the end of the activation bar.
-PrevCommandParser -[hidden]-> AddressBookParser
-destroy PrevCommandParser
-
-AddressBookParser --> LogicManager : p
-deactivate AddressBookParser
 
 LogicManager -> PrevCommand : execute(m)
 activate PrevCommand
-
 PrevCommand -> Model : getFilteredPersonList()
 activate Model
 Model --> PrevCommand : displayedPersons
 deactivate Model
 
-PrevCommand -> PrevCommand : createUpdatedPerson(...)
-activate PrevCommand
 note right of PrevCommand
-  Replacement patient:
-  Remove the latest history entry
-  and use it as current.
-  Discard the original current datetime.
-  Preserve all other patient fields.
+  Capture the displayed patient.
+  Return a result containing
+  its confirmation request.
+  No mutation or saving.
 end note
-PrevCommand --> PrevCommand : updatedPerson
-deactivate PrevCommand
 
-PrevCommand -> Model : setPerson(...)
+PrevCommand --> LogicManager : promptResult
+deactivate PrevCommand
+[<--LogicManager : promptResult
+deactivate LogicManager
+
+[-> LogicManager : execute("y")
+activate LogicManager
+LogicManager -> InputRequest : respond("y", m)
+activate InputRequest
+InputRequest -> PrevCommand : restorePreviousVisit(m,\ncapturedPatient)
+activate PrevCommand
+
+note right of PrevCommand
+  Require captured record unchanged.
+  Restore latest previous datetime.
+end note
+PrevCommand -> Model : setPerson(capturedPatient,\nupdatedPerson)
 activate Model
 Model --> PrevCommand
 deactivate Model
-
 PrevCommand -> Model : updateFilteredPersonList(...)
 activate Model
 Model --> PrevCommand
 deactivate Model
-
-PrevCommand --> LogicManager : result
+PrevCommand --> InputRequest : result
 deactivate PrevCommand
+InputRequest --> LogicManager : result
+deactivate InputRequest
 
 LogicManager -> LogicManager : saveAddressBook()
 activate LogicManager
@@ -101,12 +81,10 @@ LogicManager -> Model : getAddressBook()
 activate Model
 Model --> LogicManager : addressBook
 deactivate Model
-
 LogicManager -> Storage : saveAddressBook(addressBook)
 activate Storage
 Storage --> LogicManager
 deactivate Storage
-
 LogicManager --> LogicManager
 deactivate LogicManager
 

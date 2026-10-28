@@ -17,8 +17,6 @@ skinparam Note {
 
 box Logic LOGIC_COLOR_T1
 participant ":LogicManager" as LogicManager LOGIC_COLOR
-participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
-participant ":NextCommandParser" as NextCommandParser LOGIC_COLOR
 participant "n:NextCommand" as NextCommand LOGIC_COLOR
 end box
 
@@ -33,25 +31,6 @@ end box
 [-> LogicManager : execute(commandText)
 activate LogicManager
 
-LogicManager -> AddressBookParser : parseCommand(commandText)
-activate AddressBookParser
-
-AddressBookParser -> NextCommandParser : parse(arguments)
-activate NextCommandParser
-
-create NextCommand
-NextCommandParser -> NextCommand : NextCommand(...)
-activate NextCommand
-
-NextCommand --> NextCommandParser
-deactivate NextCommand
-
-NextCommandParser --> AddressBookParser : n
-deactivate NextCommandParser
-
-AddressBookParser --> LogicManager : n
-deactivate AddressBookParser
-
 LogicManager -> NextCommand : execute(m)
 activate NextCommand
 
@@ -60,19 +39,13 @@ activate Model
 Model --> NextCommand : displayedPersons
 deactivate Model
 
-NextCommand -> NextCommand : createUpdatedPerson(...)
-activate NextCommand
 note right of NextCommand
-  Replacement patient:
-  Append original current datetime
-  to visit history.
+  Append current datetime to history.
   Set requested datetime as current.
   Preserve all other patient fields.
 end note
-NextCommand --> NextCommand : updatedPerson
-deactivate NextCommand
 
-NextCommand -> Model : setPerson(...)
+NextCommand -> Model : setPerson(personToUpdate,\nupdatedPerson)
 activate Model
 Model --> NextCommand
 deactivate Model

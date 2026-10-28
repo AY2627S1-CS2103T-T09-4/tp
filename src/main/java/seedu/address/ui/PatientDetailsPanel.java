@@ -22,6 +22,7 @@ public class PatientDetailsPanel extends UiPart<Region> {
     private static final String FXML = "PatientDetailsPanel.fxml";
 
     private final Clock clock;
+    private Person displayedPerson;
 
     @FXML
     private VBox detailsContainer;
@@ -142,6 +143,24 @@ public class PatientDetailsPanel extends UiPart<Region> {
 
         detailsContainer.setManaged(true);
         detailsContainer.setVisible(true);
+        displayedPerson = person;
+    }
+
+    /** Hides the displayed patient details. */
+    public void clear() {
+        displayedPerson = null;
+        detailsContainer.setManaged(false);
+        detailsContainer.setVisible(false);
+    }
+
+    /**
+     * Hides the details only when they belong to {@code person}.
+     */
+    public void clearIfShowing(Person person) {
+        requireNonNull(person);
+        if (person.equals(displayedPerson)) {
+            clear();
+        }
     }
 
     /**

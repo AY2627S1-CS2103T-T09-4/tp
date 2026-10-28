@@ -363,6 +363,7 @@ public class NextCommandTest {
                 confirmedResult.getFeedbackToUser());
         assertTrue(confirmedResult.shouldSaveAddressBook());
         Person updatedAmy = model.getAddressBook().getPersonList().getFirst();
+        assertEquals(updatedAmy, confirmedResult.getPersonToView().orElseThrow());
         assertEquals(new VisitDate(FULL_DAY_VISIT_DATE), updatedAmy.getVisitDate());
         assertEquals(List.of(AMY.getVisitDate()), updatedAmy.getPreviousVisitDates());
         assertEquals(Model.MAX_VISITS_PER_DAY + 1, model.countPersonsWithSameVisitDay(updatedAmy));
@@ -529,7 +530,7 @@ public class NextCommandTest {
         assertEquals(expectedAddressBook.getPersonList(), model.getFilteredPersonList());
         assertTrue(result.shouldSaveAddressBook());
         assertTrue(result.getInputRequest().isEmpty());
-        assertTrue(result.getPersonToView().isEmpty());
+        assertEquals(expectedPerson, result.getPersonToView().orElseThrow());
     }
 
     private CommandException assertScheduleFailure(Index index, VisitDate visitDate, Clock clock,
