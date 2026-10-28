@@ -156,6 +156,7 @@ Adds a patient record to Doc.
 Format: `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]... `
 
 * `VISIT_DATE` must be a date and time in the format `d/M/yyyy HHmm`, e.g. `18/9/2026 1000`. Past dates are allowed.
+  Extra spaces or tabs between the date and the time are accepted, e.g. `vd/18/9/2026   1000`.
 * Each current or previous visit date and time must be unique across patients. If another patient's visit record
   already uses the supplied date and time, including a patient hidden by filtering, the addition is rejected,
   the existing patient is shown in the patient details panel, and the app asks you to choose a different slot.
@@ -407,7 +408,8 @@ Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALC
   Use an empty `ec/` to clear the contact, e.g. `edit 1 ec/`. Whitespace-only values also clear it.
   Clearing an already-empty contact succeeds; repeated `ec/` prefixes are rejected.
 * To update the visit date and time, use `vd/` with the format `d/M/yyyy HHmm`
-  (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted.
+  (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted. As with `add` and `next`, extra spaces
+  or tabs between the date and the time are accepted.
 * The visit date and time can be edited by itself. Omitting `vd/` preserves the existing visit date and time.
 * Editing preserves any previous visit dates. The current datetime must remain strictly later than the latest
   previous datetime, when one exists.
