@@ -43,7 +43,7 @@ public class PatientDetailsPanelTest {
     }
 
     @Test
-    public void setPerson_allergies_displaysBeforeAlcoholAndSmokingAndClearsStaleText() {
+    public void setPerson_allergies_displaysInMedicalProfileAndClearsStaleText() {
         runOnFxThread(() -> {
             PatientDetailsPanel panel = new PatientDetailsPanel();
             Person recorded = new PersonBuilder().withBloodType("A+").withAllergies("Penicillin; latex")
@@ -53,11 +53,14 @@ public class PatientDetailsPanelTest {
             assertEquals("Allergies: Penicillin; latex", allergies.getText());
             assertFieldVisible(panel, "allergies", true);
             assertTrue(allergies.isWrapText());
-            VBox container = getDetailsContainer(panel);
-            int allergyIndex = container.getChildren().indexOf(allergies);
-            assertEquals(container.getChildren().indexOf(getLabel(panel, "bloodType")) + 1, allergyIndex);
-            assertEquals(allergyIndex + 1, container.getChildren().indexOf(getLabel(panel, "alcoholHistory")));
-            assertEquals(allergyIndex + 2, container.getChildren().indexOf(getLabel(panel, "smokingStatus")));
+            VBox medicalSection = getSection(panel, "medicalSection");
+            int allergyIndex = medicalSection.getChildren().indexOf(allergies);
+            assertEquals(allergyIndex + 1,
+                    medicalSection.getChildren().indexOf(getLabel(panel, "bloodType")));
+            assertEquals(allergyIndex + 3,
+                    medicalSection.getChildren().indexOf(getLabel(panel, "smokingStatus")));
+            assertEquals(allergyIndex + 4,
+                    medicalSection.getChildren().indexOf(getLabel(panel, "alcoholHistory")));
 
             panel.setPerson(new PersonBuilder(recorded).withAllergies("").build());
             assertFieldVisible(panel, "allergies", false);
@@ -79,7 +82,7 @@ public class PatientDetailsPanelTest {
     }
 
     @Test
-    public void setPerson_smokingStatus_displaysAfterAlcoholHistoryAndHidesWhenCleared() {
+    public void setPerson_smokingStatus_displaysInMedicalProfileAndHidesWhenCleared() {
         runOnFxThread(() -> {
             PatientDetailsPanel panel = new PatientDetailsPanel();
             Person recorded = new PersonBuilder().withAlcoholHistory("Does not drink")
@@ -89,9 +92,9 @@ public class PatientDetailsPanelTest {
             assertEquals("Smoking status: former", status.getText());
             assertFieldVisible(panel, "smokingStatus", true);
             assertTrue(status.isWrapText());
-            VBox container = getDetailsContainer(panel);
-            assertEquals(container.getChildren().indexOf(getLabel(panel, "alcoholHistory")) + 1,
-                    container.getChildren().indexOf(status));
+            VBox medicalSection = getSection(panel, "medicalSection");
+            assertEquals(medicalSection.getChildren().indexOf(getLabel(panel, "dateOfBirth")) + 1,
+                    medicalSection.getChildren().indexOf(status));
 
             panel.setPerson(new PersonBuilder(recorded).withSmokingStatus("").build());
             assertFieldVisible(panel, "smokingStatus", false);
@@ -104,7 +107,7 @@ public class PatientDetailsPanelTest {
     }
 
     @Test
-    public void setPerson_alcoholHistory_displaysAfterAllergiesAndClearsStaleText() {
+    public void setPerson_alcoholHistory_displaysInMedicalProfileAndClearsStaleText() {
         runOnFxThread(() -> {
             PatientDetailsPanel panel = new PatientDetailsPanel();
             Person recorded = new PersonBuilder().withBloodType("A+").withAllergies("Penicillin")
@@ -114,9 +117,9 @@ public class PatientDetailsPanelTest {
             assertEquals("Alcohol history: Occasional drinking", history.getText());
             assertFieldVisible(panel, "alcoholHistory", true);
             assertTrue(history.isWrapText());
-            VBox container = getDetailsContainer(panel);
-            assertEquals(container.getChildren().indexOf(getLabel(panel, "allergies")) + 1,
-                    container.getChildren().indexOf(history));
+            VBox medicalSection = getSection(panel, "medicalSection");
+            assertEquals(medicalSection.getChildren().indexOf(getLabel(panel, "smokingStatus")) + 1,
+                    medicalSection.getChildren().indexOf(history));
 
             panel.setPerson(new PersonBuilder(recorded).withAlcoholHistory("").build());
             assertFieldVisible(panel, "alcoholHistory", false);
@@ -138,7 +141,28 @@ public class PatientDetailsPanelTest {
     }
 
     @Test
-    public void setPerson_dateOfBirth_displaysAgeBelowNameAndHidesWhenAbsent() {
+    public void setPerson_noMedicalInformation_showsPlaceholder() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel();
+            Label placeholder = getLabel(panel, "medicalPlaceholder");
+
+            panel.setPerson(new PersonBuilder().build());
+            assertEquals("No medical information recorded", placeholder.getText());
+            assertTrue(placeholder.isVisible());
+            assertTrue(placeholder.isManaged());
+
+            panel.setPerson(new PersonBuilder().withBloodType("A+").build());
+            assertFalse(placeholder.isVisible());
+            assertFalse(placeholder.isManaged());
+
+            panel.setPerson(new PersonBuilder().build());
+            assertTrue(placeholder.isVisible());
+            assertTrue(placeholder.isManaged());
+        });
+    }
+
+    @Test
+    public void setPerson_dateOfBirth_displaysAgeInMedicalProfileAndHidesWhenAbsent() {
         runOnFxThread(() -> {
             PatientDetailsPanel panel = new PatientDetailsPanel();
             panel.setPerson(new PersonBuilder().withDateOfBirth("15/6/1990").build());
@@ -147,9 +171,9 @@ public class PatientDetailsPanelTest {
             assertEquals("Date of birth: 15/6/1990 (" + age + " years old)", birthDate.getText());
             assertFieldVisible(panel, "dateOfBirth", true);
             assertTrue(birthDate.isWrapText());
-            VBox container = getDetailsContainer(panel);
-            assertEquals(container.getChildren().indexOf(getLabel(panel, "name")) + 1,
-                    container.getChildren().indexOf(birthDate));
+            VBox medicalSection = getSection(panel, "medicalSection");
+            assertEquals(medicalSection.getChildren().indexOf(getLabel(panel, "bloodType")) + 1,
+                    medicalSection.getChildren().indexOf(birthDate));
 
             panel.setPerson(new PersonBuilder().build());
             assertFieldVisible(panel, "dateOfBirth", false);
@@ -241,7 +265,7 @@ public class PatientDetailsPanelTest {
                     getLabel(patientDetailsPanel, "visitDate").getText());
             assertEquals("Note: Monitor blood pressure before the next visit",
                     getLabel(patientDetailsPanel, "note").getText());
-            assertEquals("Previous visit dates:", getLabel(patientDetailsPanel, "previousVisitDatesHeader").getText());
+            assertEquals("Previous visit dates", getLabel(patientDetailsPanel, "previousVisitDatesHeader").getText());
             assertEquals("No previous visit dates", getLabel(patientDetailsPanel, "previousVisitDates").getText());
             assertEquals("Tags: family, friend", getLabel(patientDetailsPanel, "tags").getText());
             assertTrue(getLabel(patientDetailsPanel, "address").isWrapText());
@@ -250,6 +274,28 @@ public class PatientDetailsPanelTest {
             VBox detailsContainer = getDetailsContainer(patientDetailsPanel);
             assertTrue(detailsContainer.isManaged());
             assertTrue(detailsContainer.isVisible());
+        });
+    }
+
+    @Test
+    public void constructor_sections_followClinicalScanningOrder() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel(FIXED_CLOCK);
+            VBox detailsContainer = getDetailsContainer(panel);
+
+            assertEquals(List.of(
+                    getLabel(panel, "name"),
+                    getSection(panel, "visitOverviewSection"),
+                    getSection(panel, "medicalSection"),
+                    getSection(panel, "contactSection"),
+                    getSection(panel, "additionalNotesSection"),
+                    getSection(panel, "visitHistorySection")),
+                    detailsContainer.getChildren());
+            assertEquals("Visit details", getSectionHeading(panel, "visitOverviewSection").getText());
+            assertEquals("Medical profile", getSectionHeading(panel, "medicalSection").getText());
+            assertEquals("Contact information", getSectionHeading(panel, "contactSection").getText());
+            assertEquals("Additional notes", getSectionHeading(panel, "additionalNotesSection").getText());
+            assertEquals("Visit history", getSectionHeading(panel, "visitHistorySection").getText());
         });
     }
 
@@ -282,7 +328,7 @@ public class PatientDetailsPanelTest {
     }
 
     @Test
-    public void setPerson_bloodType_displaysBelowDateOfBirthAndHidesWhenAbsent() {
+    public void setPerson_bloodType_displaysInMedicalProfileAndHidesWhenAbsent() {
         runOnFxThread(() -> {
             PatientDetailsPanel panel = new PatientDetailsPanel();
             panel.setPerson(new PersonBuilder().withDateOfBirth("15/6/1990").withBloodType("A+").build());
@@ -290,9 +336,9 @@ public class PatientDetailsPanelTest {
             assertEquals("Blood type: A+", bloodTypeLabel.getText());
             assertFieldVisible(panel, "bloodType", true);
             assertTrue(bloodTypeLabel.isWrapText());
-            VBox container = getDetailsContainer(panel);
-            assertEquals(container.getChildren().indexOf(getLabel(panel, "dateOfBirth")) + 1,
-                    container.getChildren().indexOf(bloodTypeLabel));
+            VBox medicalSection = getSection(panel, "medicalSection");
+            assertEquals(medicalSection.getChildren().indexOf(getLabel(panel, "allergies")) + 1,
+                    medicalSection.getChildren().indexOf(bloodTypeLabel));
 
             panel.setPerson(new PersonBuilder().build());
             assertFieldVisible(panel, "bloodType", false);
@@ -322,9 +368,9 @@ public class PatientDetailsPanelTest {
             assertTrue(contact.isVisible());
             assertTrue(contact.isManaged());
             assertTrue(contact.isWrapText());
-            VBox container = getDetailsContainer(panel);
-            assertEquals(container.getChildren().indexOf(getLabel(panel, "phone")) + 1,
-                    container.getChildren().indexOf(contact));
+            VBox contactSection = getSection(panel, "contactSection");
+            assertEquals(contactSection.getChildren().indexOf(getLabel(panel, "phone")) + 1,
+                    contactSection.getChildren().indexOf(contact));
 
             panel.setPerson(new PersonBuilder(patient).withEmergencyContact("98765432").build());
             assertEquals("Emergency Contact: 98765432", contact.getText());
@@ -356,11 +402,11 @@ public class PatientDetailsPanelTest {
             assertEquals("Visit date: 18/9/2026 1000 (Past)", getLabel(patientDetailsPanel, "visitDate").getText());
             assertEquals(originalPerson, person);
 
-            List<Node> details = getDetailsContainer(patientDetailsPanel).getChildren();
-            int visitDateIndex = details.indexOf(getLabel(patientDetailsPanel, "visitDate"));
-            assertEquals(getLabel(patientDetailsPanel, "previousVisitDatesHeader"), details.get(visitDateIndex + 1));
-            assertEquals(getLabel(patientDetailsPanel, "previousVisitDates"), details.get(visitDateIndex + 2));
-            assertEquals(getLabel(patientDetailsPanel, "note"), details.get(visitDateIndex + 3));
+            List<Node> historyDetails = getSection(patientDetailsPanel, "visitHistorySection").getChildren();
+            int historyHeaderIndex = historyDetails.indexOf(
+                    getLabel(patientDetailsPanel, "previousVisitDatesHeader"));
+            assertEquals(getLabel(patientDetailsPanel, "previousVisitDates"),
+                    historyDetails.get(historyHeaderIndex + 1));
         });
     }
 
@@ -521,10 +567,9 @@ public class PatientDetailsPanelTest {
         Node viewport = scrollPane.lookup(".viewport");
         assertNotNull(viewport);
         Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
-        Label tags = getLabel(patientDetailsPanel, "tags");
-        Bounds tagsBounds = tags.localToScene(tags.getBoundsInLocal());
-        assertTrue(tagsBounds.getMaxY() <= viewportBounds.getMaxY());
-        assertTrue(tagsBounds.getMinY() >= viewportBounds.getMinY());
+        Bounds previousVisitDatesBounds = previousVisitDates.localToScene(previousVisitDates.getBoundsInLocal());
+        assertTrue(previousVisitDatesBounds.getMaxY() <= viewportBounds.getMaxY());
+        assertTrue(previousVisitDatesBounds.getMaxY() > viewportBounds.getMinY());
     }
 
     private static VBox getDetailsContainer(PatientDetailsPanel patientDetailsPanel) {
@@ -532,6 +577,16 @@ public class PatientDetailsPanelTest {
         VBox detailsContainer = (VBox) scrollPane.getContent();
         assertNotNull(detailsContainer);
         return detailsContainer;
+    }
+
+    private static VBox getSection(PatientDetailsPanel patientDetailsPanel, String sectionId) {
+        VBox section = (VBox) getDetailsContainer(patientDetailsPanel).lookup("#" + sectionId);
+        assertNotNull(section);
+        return section;
+    }
+
+    private static Label getSectionHeading(PatientDetailsPanel patientDetailsPanel, String sectionId) {
+        return (Label) getSection(patientDetailsPanel, sectionId).getChildren().getFirst();
     }
 
     private static Label getLabel(PatientDetailsPanel patientDetailsPanel, String labelId) {
