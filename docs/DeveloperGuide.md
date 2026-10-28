@@ -1902,7 +1902,7 @@ remain unchanged after each `prev`, including after restarting Doc.
 
 1. Run `list`, followed by `view 1`. Expect the full list to remain on the left and the first patient's complete
    details to appear on the right.
-1. Run `list`, followed by `find n/Alex`, and then `view 1`. Expect the search results to remain on the left and the
+1. Run `list`, followed by `find n/George`, and then `view 1`. Expect the search results to remain on the left and the
    first patient's complete details to appear on the right.
 1. Run `sort date`, followed by `view 1`. Expect the sorted list to remain on the left and the first patient's complete
    details to appear on the right.
@@ -1961,32 +1961,32 @@ when midnight passes; another `view` recalculates it.
 
 1. Recalling submitted commands
 
-   1. Restart the application. Enter `list`, then enter `find n/Alex`.<br>
+   1. Restart the application. Enter `list`, then enter `find n/George`.<br>
       Expected: Both commands run normally.
 
    1. Press the Up arrow key once, then again.<br>
-      Expected: The command box shows `find n/Alex`, then `list`. The caret is after the recalled text. Further Up arrow
+      Expected: The command box shows `find n/George`, then `list`. The caret is after the recalled text. Further Up arrow
       presses leave `list` displayed.
 
    1. Press the Down arrow key twice.<br>
-      Expected: The command box shows `find n/Alex`, then becomes empty. Further Down arrow presses leave it empty.
+      Expected: The command box shows `find n/George`, then becomes empty. Further Down arrow presses leave it empty.
 
 1. Restoring unfinished text
 
-   1. Type `find n/Be` without pressing Enter, press the Up arrow key, then press the Down arrow key.<br>
-      Expected: A previous command is recalled, then the unfinished text `find n/Be` is restored exactly.
+   1. Type `find n/Geo` without pressing Enter, press the Up arrow key, then press the Down arrow key.<br>
+      Expected: A previous command is recalled, then the unfinished text `find n/Geo` is restored exactly.
 
 1. Recording command text
 
    1. Submit an invalid command containing leading or trailing spaces, then press the Up arrow key.<br>
       Expected: The invalid command is recalled with its original spaces.
 
-   1. Restart the application. Submit `list`, then submit `find n/Alex` twice. Press the Up arrow key twice.<br>
-      Expected: The command box shows `find n/Alex`, then `list`. The consecutive duplicate occupies one history
+   1. Restart the application. Submit `list`, then submit `find n/George` twice. Press the Up arrow key twice.<br>
+      Expected: The command box shows `find n/George`, then `list`. The consecutive duplicate occupies one history
       position.
 
-   1. Restart the application. Submit `list`, `find n/Alex`, then `list`. Press the Up arrow key three times.<br>
-      Expected: The command box shows `list`, `find n/Alex`, then `list`. Identical commands separated by another
+   1. Restart the application. Submit `list`, `find n/George`, then `list`. Press the Up arrow key three times.<br>
+      Expected: The command box shows `list`, `find n/George`, then `list`. Identical commands separated by another
       command occupy separate history positions.
 
 1. Excluding follow-up responses
