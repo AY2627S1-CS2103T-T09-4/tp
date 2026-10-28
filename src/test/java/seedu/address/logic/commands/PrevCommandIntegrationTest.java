@@ -64,7 +64,18 @@ public class PrevCommandIntegrationTest {
 
     @Test
     public void execute_prev_persistsRestoredDateAndSurvivesReload() throws Exception {
-        CommandResult result = logic.execute("prev\t1");
+        String savedDataBeforePrompt = Files.readString(fixture.getAddressBookStorage().getAddressBookFilePath());
+        CommandResult requestResult = logic.execute("prev\t1");
+        assertEquals(String.format(PrevCommand.MESSAGE_CONFIRM_PREV, AMY.getName(), AMY.getPhone(),
+                "20/10/2026 1000", AMY.getVisitDate()), requestResult.getFeedbackToUser());
+        assertFalse(requestResult.shouldSaveAddressBook());
+        assertTrue(logic.isInputRequestPending());
+        assertEquals(AMY, model.getAddressBook().getPersonList().getFirst());
+        assertEquals(savedDataBeforePrompt,
+                Files.readString(fixture.getAddressBookStorage().getAddressBookFilePath()));
+        assertEquals(0, fixture.getSaveCount());
+
+        CommandResult result = logic.execute("Y");
         Person expectedPerson = new PersonBuilder(AMY).withVisitDate("20/10/2026 1000")
                 .withPreviousVisitDates("10/10/2026 1000").build();
 
@@ -73,7 +84,7 @@ public class PrevCommandIntegrationTest {
         fixture.assertPersistedPatients(expectedPerson);
         assertEquals(1, fixture.getSaveCount());
         assertTrue(result.shouldSaveAddressBook());
-        assertTrue(result.getPersonToView().isEmpty());
+        assertEquals(expectedPerson, result.getPersonToView().orElseThrow());
         assertFalse(logic.isInputRequestPending());
         Model reloadedModel = new ModelManager(fixture.getAddressBookStorage().readAddressBook().orElseThrow(),
                 new UserPrefs());
@@ -82,8 +93,8 @@ public class PrevCommandIntegrationTest {
 
     @Test
     public void execute_repeatedRollbackUntilEmpty_rejectsFurtherRollbackWithoutSaving() throws Exception {
-        logic.execute("prev 1");
-        CommandResult result = logic.execute("prev 1");
+        executeConfirmedPrev("prev 1");
+        CommandResult result = executeConfirmedPrev("prev 1");
 
         Person expectedPerson = new PersonBuilder(AMY).withVisitDate("10/10/2026 1000")
                 .withPreviousVisitDates().build();
@@ -100,7 +111,7 @@ public class PrevCommandIntegrationTest {
         logic.execute("edit 1 n/Amy Updated vd/2/11/2026 1000 p/92345678 e/updated@example.com"
                 + " a/20 New Road note/Updated note t/followup dob/20/7/1985 bt/O- ec/David Tan, 87654321"
                 + " all/No known allergies alc/Occasional drinking smk/current");
-        CommandResult result = logic.execute("prev 1");
+        CommandResult result = executeConfirmedPrev("prev 1");
 
         Person expectedPerson = new PersonBuilder(AMY).withVisitDate("20/10/2026 1000")
                 .withPreviousVisitDates("10/10/2026 1000").withName("Amy Updated").withPhone("92345678")
@@ -123,7 +134,7 @@ public class PrevCommandIntegrationTest {
                 .withAllergies("").withAlcoholHistory("").withSmokingStatus("").build();
         fixture.assertPersistedPatients(clearedPerson);
 
-        logic.execute("prev 1");
+        executeConfirmedPrev("prev 1");
 
         Person expectedPerson = new PersonBuilder(clearedPerson).withVisitDate("20/10/2026 1000")
                 .withPreviousVisitDates("10/10/2026 1000").build();
@@ -136,7 +147,7 @@ public class PrevCommandIntegrationTest {
 
     @Test
     public void execute_rollbackThenNext_usesRestoredStateAndFreesDiscardedDate() throws Exception {
-        logic.execute("prev 1");
+        executeConfirmedPrev("prev 1");
         logic.execute("next 1 1/11/2026 1000");
 
         Person expectedPerson = new PersonBuilder(AMY).withVisitDate("1/11/2026 1000").build();

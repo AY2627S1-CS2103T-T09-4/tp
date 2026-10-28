@@ -1,0 +1,17 @@
+@startuml
+!include style.puml
+
+start
+:User executes `agenda START_DATE [DAYS]`;
+:Use supplied start date;
+if (Duration supplied?) then (yes)
+  :Use supplied number of days;
+else (no)
+  :Use seven days;
+endif
+:Filter current visits into the date range;
+:Sort matching patients by visit date and time;
+:Display the agenda without saving data;
+stop
+
+@enduml
