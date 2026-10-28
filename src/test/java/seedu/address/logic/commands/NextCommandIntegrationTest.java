@@ -187,7 +187,7 @@ public class NextCommandIntegrationTest {
     }
 
     @Test
-    public void execute_saveFailure_reportsExistingErrorWithoutRollback() throws Exception {
+    public void execute_saveFailure_reportsExistingErrorAndRollsBack() throws Exception {
         IOException failure = new IOException("test save failure");
         assertSaveFailure(failure, String.format(LogicManager.FILE_OPS_ERROR_FORMAT, failure.getMessage()));
     }
@@ -333,15 +333,17 @@ public class NextCommandIntegrationTest {
 
     private void assertSaveFailure(IOException failure, String expectedMessage) throws Exception {
         String savedData = Files.readString(fixture.getAddressBookStorage().getAddressBookFilePath());
+        model.updateFilteredPersonList(person -> person.equals(amy));
+        model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
+        AddressBook addressBookBefore = new AddressBook(model.getAddressBook());
+        List<Person> displayedPersonsBefore = List.copyOf(model.getFilteredPersonList());
         fixture.useFailingStorage(failure);
         logic = fixture.getLogic();
 
         assertThrows(CommandException.class, expectedMessage, () -> logic.execute("next 1 " + NEW_VISIT_DATE));
 
         assertEquals(savedData, Files.readString(fixture.getAddressBookStorage().getAddressBookFilePath()));
-        assertEquals(new VisitDate(NEW_VISIT_DATE), model.getAddressBook().getPersonList().getFirst().getVisitDate());
-        assertEquals(List.of(new VisitDate("1/10/2026 1000"), new VisitDate("2/10/2026 1000"), amy.getVisitDate()),
-                model.getAddressBook().getPersonList().getFirst().getPreviousVisitDates());
-        assertTrue(model.getAddressBook().getPersonList().contains(benson));
+        assertEquals(addressBookBefore, model.getAddressBook());
+        assertEquals(displayedPersonsBefore, model.getFilteredPersonList());
     }
 }

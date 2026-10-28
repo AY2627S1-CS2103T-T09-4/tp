@@ -555,8 +555,9 @@ displayed index to refresh the record and calendar label. `view` supplies the pa
 Validation errors and cancelled confirmations leave patient data, saved data, and list context unchanged.
 Duplicate-related errors and name-confirmation prompts can display an existing patient in the details panel;
 other rejected inputs do not change that panel.
-A storage I/O failure occurs after the in-memory update; the existing error handling reports it without rolling
-back the record or list.
+If storage reports an I/O or permission failure, `LogicManager` restores the patient data, active filter, and sort
+captured before command execution. The command reports the save error, while the data file and displayed model remain
+consistent with the last successful save.
 
 ### Sorting displayed visits by date
 

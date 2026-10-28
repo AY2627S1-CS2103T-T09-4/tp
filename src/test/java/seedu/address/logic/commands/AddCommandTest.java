@@ -153,6 +153,16 @@ public class AddCommandTest {
         }
 
         @Override
+        public ModelState createStateSnapshot() {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
+        public void restoreStateSnapshot(ModelState modelState) {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
         public void addPerson(Person person) {
             throw new AssertionError("This method should not be called.");
         }
