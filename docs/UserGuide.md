@@ -721,6 +721,10 @@ Doc home folder.
 ## Known issues
 
 1. **When using multiple screens**, if you move the application to a secondary screen, and later switch to using only the primary screen, the GUI will open off-screen. The remedy is to delete the `preferences.json` file created by the application before running the application again.
+1. **Computers set to a language with other digits**, such as Arabic: Doc's interface is in English. Counts in
+   messages, such as `3 patients found.` or `Clear 7 entries?`, always use the digits 0 to 9, whatever the
+   computer's language setting. Other numeral systems are not supported for input: type indices, phone numbers,
+   dates, and times with the digits 0 to 9, in the formats shown in this guide.
 
 --------------------------------------------------------------------------------------------------------------------
 

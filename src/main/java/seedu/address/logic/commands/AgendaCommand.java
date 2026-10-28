@@ -2,6 +2,7 @@ package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.AppUtil.checkArgument;
+import static seedu.address.logic.Messages.DISPLAY_LOCALE;
 
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -77,7 +78,7 @@ public class AgendaCommand extends Command {
         return switch (visitCount) {
             case 0 -> String.format(MESSAGE_NO_VISITS, startDate, endDate);
             case 1 -> String.format(MESSAGE_ONE_VISIT, startDate, endDate);
-            default -> String.format(MESSAGE_MULTIPLE_VISITS, visitCount, startDate, endDate);
+            default -> String.format(DISPLAY_LOCALE, MESSAGE_MULTIPLE_VISITS, visitCount, startDate, endDate);
         };
     }
 

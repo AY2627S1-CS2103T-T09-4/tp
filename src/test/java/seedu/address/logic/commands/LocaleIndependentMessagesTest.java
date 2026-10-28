@@ -8,6 +8,7 @@ import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Locale;
 
@@ -65,6 +66,13 @@ public class LocaleIndependentMessagesTest {
         CommandResult result = new FindCommand(person -> true).execute(model);
 
         assertEquals("7 patients found.", result.getFeedbackToUser());
+    }
+
+    @Test
+    public void agenda_visitCount_usesWesternDigits() {
+        CommandResult result = new AgendaCommand(LocalDate.of(2026, 1, 1)).execute(model);
+
+        assertTrue(result.getFeedbackToUser().startsWith("Showing 7 visits from"), result.getFeedbackToUser());
     }
 
     @Test
