@@ -6,8 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_BLOOD_TYPE;
 import static seedu.address.testutil.Assert.assertThrows;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.List;
 import java.util.Locale;
 
@@ -25,8 +27,7 @@ import seedu.address.model.ModelManager;
 import seedu.address.model.person.BloodType;
 import seedu.address.model.person.Person;
 import seedu.address.storage.JsonAddressBookStorage;
-import seedu.address.storage.JsonUserPrefsStorage;
-import seedu.address.storage.StorageManager;
+import seedu.address.testutil.LogicManagerIntegrationFixture;
 import seedu.address.testutil.PersonBuilder;
 
 public class BloodTypeCommandIntegrationTest {
@@ -39,30 +40,31 @@ public class BloodTypeCommandIntegrationTest {
 
     private Model model;
     private LogicManager logic;
+    private LogicManagerIntegrationFixture fixture;
     private JsonAddressBookStorage storage;
 
     @BeforeEach
-    public void setUp() {
+    public void setUp() throws IOException {
         model = new ModelManager();
-        storage = new JsonAddressBookStorage(testFolder.resolve("patients.json"));
-        logic = new LogicManager(model, new StorageManager(storage,
-                new JsonUserPrefsStorage(testFolder.resolve("preferences.json"))));
+        fixture = new LogicManagerIntegrationFixture(model, testFolder, Clock.systemDefaultZone());
+        logic = fixture.getLogic();
+        storage = fixture.getAddressBookStorage();
     }
 
     @Test
     public void execute_addEditViewAndNext_preservesBloodTypeInStorage() throws Exception {
         logic.execute(ADD_PATIENT);
-        assertStoredPatient(new PersonBuilder().withBloodType("A+").build());
+        fixture.assertPersistedPatients(new PersonBuilder().withBloodType("A+").build());
 
         logic.execute("edit 1 n/Amy Tan bt/O-");
         Person edited = new PersonBuilder().withName("Amy Tan").withBloodType("O-").build();
-        assertStoredPatient(edited);
+        fixture.assertPersistedPatients(edited);
         logic.execute("view 1");
         assertEquals(edited, model.getFilteredPersonList().getFirst());
 
         logic.execute("edit 1 note/Review medication");
         logic.execute("next 1 1/1/2099 1000");
-        assertStoredPatient(new PersonBuilder(edited).withNote("Review medication")
+        fixture.assertPersistedPatients(new PersonBuilder(edited).withNote("Review medication")
                 .withVisitDate("1/1/2099 1000").withPreviousVisitDates(edited.getVisitDate().toString()).build());
     }
 
@@ -70,40 +72,40 @@ public class BloodTypeCommandIntegrationTest {
     public void execute_bloodTypeContactAndHistory_preservesCombinedRecord() throws Exception {
         logic.execute(ADD_PATIENT + " ec/91234567");
         Person original = new PersonBuilder().withBloodType("A+").withEmergencyContact("91234567").build();
-        assertStoredPatient(original);
+        fixture.assertPersistedPatients(original);
 
         logic.execute("next 1 1/1/2099 1000");
         Person scheduled = new PersonBuilder(original).withVisitDate("1/1/2099 1000")
                 .withPreviousVisitDates(original.getVisitDate().toString()).build();
-        assertStoredPatient(scheduled);
+        fixture.assertPersistedPatients(scheduled);
 
         logic.execute("edit 1 bt/O- ec/Mary Tan, 98765432");
         Person edited = new PersonBuilder(scheduled).withBloodType("O-")
                 .withEmergencyContact("Mary Tan, 98765432").build();
-        assertStoredPatient(edited);
+        fixture.assertPersistedPatients(edited);
         assertEquals(edited, logic.execute("view 1").getPersonToView().orElseThrow());
 
         logic.execute("edit 1 bt/");
         Person withoutBloodType = new PersonBuilder(edited).withBloodType("").build();
-        assertStoredPatient(withoutBloodType);
+        fixture.assertPersistedPatients(withoutBloodType);
         logic.execute("edit 1 ec/");
-        assertStoredPatient(new PersonBuilder(withoutBloodType).withEmergencyContact("").build());
+        fixture.assertPersistedPatients(new PersonBuilder(withoutBloodType).withEmergencyContact("").build());
     }
 
     @Test
     public void execute_reorderedPrefixesAndWhitespace_acceptsBloodType() throws Exception {
         logic.execute(ADD_PATIENT.replace(" bt/A+", "") + " bt/  a+  ");
-        assertStoredPatient(new PersonBuilder().withBloodType("A+").build());
+        fixture.assertPersistedPatients(new PersonBuilder().withBloodType("A+").build());
         logic.execute("edit 1 bt/ o- n/Amy Tan");
-        assertStoredPatient(new PersonBuilder().withName("Amy Tan").withBloodType("O-").build());
+        fixture.assertPersistedPatients(new PersonBuilder().withName("Amy Tan").withBloodType("O-").build());
     }
 
     @Test
     public void execute_omittedBloodType_supportsExistingCommandsAndRecords() throws Exception {
         logic.execute(ADD_PATIENT.replace(" bt/A+", ""));
-        assertStoredPatient(new PersonBuilder().build());
+        fixture.assertPersistedPatients(new PersonBuilder().build());
         logic.execute("edit 1 bt/A+");
-        assertStoredPatient(new PersonBuilder().withBloodType("A+").build());
+        fixture.assertPersistedPatients(new PersonBuilder().withBloodType("A+").build());
 
         // Emulate a saved file from before blood type was introduced.
         String json = Files.readString(storage.getAddressBookFilePath());
@@ -120,51 +122,46 @@ public class BloodTypeCommandIntegrationTest {
         for (String emptyValue : List.of("", "   ", "  \t  ")) {
             logic.execute("edit 1 bt/A+");
             logic.execute("edit 1 bt/" + emptyValue);
-            assertStoredPatient(cleared);
+            fixture.assertPersistedPatients(cleared);
             logic.execute("view 1");
             assertTrue(model.getFilteredPersonList().getFirst().getBloodType().isEmpty());
         }
         logic.execute("edit 1 bt/");
-        assertStoredPatient(cleared);
+        fixture.assertPersistedPatients(cleared);
         logic.execute("edit 1 bt/AB+");
-        assertStoredPatient(new PersonBuilder().withBloodType("AB+").build());
+        fixture.assertPersistedPatients(new PersonBuilder().withBloodType("AB+").build());
     }
 
     @Test
     public void execute_clearBloodTypeWithOtherFields_updatesBothFields() throws Exception {
         logic.execute(ADD_PATIENT);
         logic.execute("edit 1 bt/ note/Review medication");
-        assertStoredPatient(new PersonBuilder().withNote("Review medication").build());
+        fixture.assertPersistedPatients(new PersonBuilder().withNote("Review medication").build());
         logic.execute("edit 1 bt/A+");
         logic.execute("edit 1 note/Keep this note bt/");
-        assertStoredPatient(new PersonBuilder().withNote("Keep this note").build());
+        fixture.assertPersistedPatients(new PersonBuilder().withNote("Keep this note").build());
     }
 
     @Test
     public void execute_invalidOrRepeatedBloodType_leavesPatientAndFileUnchanged() throws Exception {
         logic.execute(ADD_PATIENT);
-        String originalJson = Files.readString(storage.getAddressBookFilePath());
         Person originalPerson = model.getFilteredPersonList().getFirst();
         for (String invalidBloodType : List.of("C+", "A", "A_POSITIVE", "UNKNOWN", "A +")) {
-            assertThrows(ParseException.class, BloodType.MESSAGE_CONSTRAINTS, () ->
-                    logic.execute("edit 1 bt/" + invalidBloodType));
-            assertThrows(ParseException.class,
-                    String.format(AddCommand.MESSAGE_NOT_ADDED, BloodType.MESSAGE_CONSTRAINTS), () ->
-                    logic.execute(ADD_PATIENT.replace("bt/A+", "bt/" + invalidBloodType)));
+            fixture.assertRejectedCommand("edit 1 bt/" + invalidBloodType, ParseException.class,
+                    BloodType.MESSAGE_CONSTRAINTS);
+            fixture.assertRejectedCommand(ADD_PATIENT.replace("bt/A+", "bt/" + invalidBloodType), ParseException.class,
+                    String.format(AddCommand.MESSAGE_NOT_ADDED, BloodType.MESSAGE_CONSTRAINTS));
         }
-        assertThrows(ParseException.class,
-                String.format(AddCommand.MESSAGE_NOT_ADDED, BloodType.MESSAGE_CONSTRAINTS), () ->
-                logic.execute(ADD_PATIENT.replace("bt/A+", "bt/")));
+        fixture.assertRejectedCommand(ADD_PATIENT.replace("bt/A+", "bt/"), ParseException.class,
+                String.format(AddCommand.MESSAGE_NOT_ADDED, BloodType.MESSAGE_CONSTRAINTS));
         String duplicateMessage = Messages.getErrorMessageForDuplicatePrefixes(PREFIX_BLOOD_TYPE);
         for (String repeated : List.of("bt/ bt/", "bt/ bt/A+", "bt/A+ bt/")) {
-            assertThrows(ParseException.class, duplicateMessage, () -> logic.execute("edit 1 " + repeated));
+            fixture.assertRejectedCommand("edit 1 " + repeated, ParseException.class, duplicateMessage);
         }
-        assertThrows(ParseException.class, duplicateMessage, () ->
-                logic.execute("edit 1 bt/A+ bt/A+"));
-        assertThrows(ParseException.class, String.format(AddCommand.MESSAGE_NOT_ADDED, duplicateMessage), () ->
-                logic.execute(ADD_PATIENT + " bt/AB+"));
+        fixture.assertRejectedCommand("edit 1 bt/A+ bt/A+", ParseException.class, duplicateMessage);
+        fixture.assertRejectedCommand(ADD_PATIENT + " bt/AB+", ParseException.class,
+                String.format(AddCommand.MESSAGE_NOT_ADDED, duplicateMessage));
         assertEquals(List.of(originalPerson), model.getAddressBook().getPersonList());
-        assertEquals(originalJson, Files.readString(storage.getAddressBookFilePath()));
     }
 
     @Test
@@ -179,7 +176,7 @@ public class BloodTypeCommandIntegrationTest {
         logic.execute(ADD_PATIENT);
         for (String bloodType : List.of("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-")) {
             logic.execute("edit 1 bt/ " + bloodType.toLowerCase(Locale.ROOT) + "  ");
-            assertStoredPatient(new PersonBuilder().withBloodType(bloodType).build());
+            fixture.assertPersistedPatients(new PersonBuilder().withBloodType(bloodType).build());
             assertTrue(Files.readString(storage.getAddressBookFilePath()).contains(
                     "\"bloodType\" : \"" + bloodType + "\""));
         }
@@ -196,10 +193,5 @@ public class BloodTypeCommandIntegrationTest {
         descriptor.setBloodType(BloodType.AB_POSITIVE);
         assertFalse(descriptor.equals(copy));
         assertEquals(BloodType.A_POSITIVE, copy.getBloodType().orElseThrow());
-    }
-
-    private void assertStoredPatient(Person expected) throws Exception {
-        assertEquals(List.of(expected), model.getAddressBook().getPersonList());
-        assertEquals(List.of(expected), storage.readAddressBook().orElseThrow().getPersonList());
     }
 }

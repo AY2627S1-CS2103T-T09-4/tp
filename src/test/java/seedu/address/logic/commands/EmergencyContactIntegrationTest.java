@@ -2,12 +2,12 @@ package seedu.address.logic.commands;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMERGENCY_CONTACT;
 
-import java.nio.file.Files;
+import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -19,14 +19,12 @@ import seedu.address.logic.Messages;
 import seedu.address.logic.commands.EditCommand.EditPersonDescriptor;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.logic.parser.exceptions.ParseException;
-import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.person.EmergencyContact;
 import seedu.address.model.person.Person;
 import seedu.address.storage.JsonAddressBookStorage;
-import seedu.address.storage.JsonUserPrefsStorage;
-import seedu.address.storage.StorageManager;
+import seedu.address.testutil.LogicManagerIntegrationFixture;
 import seedu.address.testutil.PersonBuilder;
 
 /**
@@ -44,14 +42,15 @@ public class EmergencyContactIntegrationTest {
 
     private Model model;
     private LogicManager logic;
+    private LogicManagerIntegrationFixture fixture;
     private JsonAddressBookStorage storage;
 
     @BeforeEach
-    public void setUp() {
+    public void setUp() throws IOException {
         model = new ModelManager();
-        storage = new JsonAddressBookStorage(testFolder.resolve("patients.json"));
-        logic = new LogicManager(model, new StorageManager(storage,
-                new JsonUserPrefsStorage(testFolder.resolve("preferences.json"))));
+        fixture = new LogicManagerIntegrationFixture(model, testFolder, Clock.systemDefaultZone());
+        logic = fixture.getLogic();
+        storage = fixture.getAddressBookStorage();
     }
 
     @Test
@@ -60,7 +59,7 @@ public class EmergencyContactIntegrationTest {
         Person expected = new PersonBuilder().withName("John Tan").withPhone("91234567")
                 .withEmail("").withAddress("123 Clementi Road").withVisitDate("22/10/2026 1000")
                 .withEmergencyContact(CONTACT).build();
-        assertStoredPerson(expected);
+        fixture.assertPersistedPatients(expected);
 
         CommandResult result = logic.execute("view 1");
         assertEquals(expected, result.getPersonToView().orElseThrow());
@@ -72,7 +71,7 @@ public class EmergencyContactIntegrationTest {
         logic.execute(ADD_COMMAND);
         Person patient = model.getFilteredPersonList().getFirst();
         assertTrue(patient.getEmergencyContact().isEmpty());
-        assertStoredPerson(patient);
+        fixture.assertPersistedPatients(patient);
     }
 
     @Test
@@ -80,12 +79,12 @@ public class EmergencyContactIntegrationTest {
         logic.execute(ADD_COMMAND + " ec/  98765432  note/Follow up");
         Person original = model.getFilteredPersonList().getFirst();
         assertEquals("98765432", original.getEmergencyContact().toString());
-        assertStoredPerson(original);
+        fixture.assertPersistedPatients(original);
         assertEquals(original, logic.execute("view 1").getPersonToView().orElseThrow());
 
         for (String contact : List.of(CONTACT, "87654321", "")) {
             logic.execute("edit 1 ec/" + contact);
-            assertStoredPerson(new PersonBuilder(original).withEmergencyContact(contact).build());
+            fixture.assertPersistedPatients(new PersonBuilder(original).withEmergencyContact(contact).build());
         }
     }
 
@@ -96,7 +95,7 @@ public class EmergencyContactIntegrationTest {
         Person patient = model.getFilteredPersonList().getFirst();
         assertEquals(CONTACT, patient.getEmergencyContact().toString());
         assertEquals("Follow up", patient.getNote().toString());
-        assertStoredPerson(patient);
+        fixture.assertPersistedPatients(patient);
     }
 
     @Test
@@ -105,10 +104,10 @@ public class EmergencyContactIntegrationTest {
         Person original = model.getFilteredPersonList().getFirst();
 
         logic.execute("edit 1 ec/" + CONTACT);
-        assertStoredPerson(new PersonBuilder(original).withEmergencyContact(CONTACT).build());
+        fixture.assertPersistedPatients(new PersonBuilder(original).withEmergencyContact(CONTACT).build());
 
         logic.execute("edit 1 ec/" + REPLACEMENT_CONTACT);
-        assertStoredPerson(new PersonBuilder(original).withEmergencyContact(REPLACEMENT_CONTACT).build());
+        fixture.assertPersistedPatients(new PersonBuilder(original).withEmergencyContact(REPLACEMENT_CONTACT).build());
     }
 
     @Test
@@ -121,7 +120,7 @@ public class EmergencyContactIntegrationTest {
             logic.execute("edit 1 ec/" + CONTACT);
             logic.execute("edit 1 ec/" + emptyContact);
 
-            assertStoredPerson(expected);
+            fixture.assertPersistedPatients(expected);
             CommandResult result = logic.execute("view 1");
             assertTrue(result.getPersonToView().orElseThrow().getEmergencyContact().isEmpty());
         }
@@ -134,17 +133,19 @@ public class EmergencyContactIntegrationTest {
                 .withEmergencyContact("").withNote("Review medication").build();
 
         logic.execute("edit 1 ec/ note/Review medication");
-        assertStoredPerson(expected);
+        fixture.assertPersistedPatients(expected);
 
         logic.execute("edit 1 ec/");
-        assertStoredPerson(expected);
+        fixture.assertPersistedPatients(expected);
     }
 
     @Test
     public void execute_emptyContactAdd_rejectsWithoutChangingData() throws Exception {
         logic.execute(ADD_COMMAND);
         for (String emptyContact : List.of("", "   ", " \t ")) {
-            assertRejectedCommand("add n/Jane Tan p/82345678 a/Other Road vd/23/10/2026 1000 ec/" + emptyContact,
+            fixture.assertRejectedCommand(
+                    "add n/Jane Tan p/82345678 a/Other Road vd/23/10/2026 1000 ec/" + emptyContact,
+                    ParseException.class,
                     String.format(AddCommand.MESSAGE_NOT_ADDED, EmergencyContact.MESSAGE_CONSTRAINTS));
         }
     }
@@ -155,10 +156,10 @@ public class EmergencyContactIntegrationTest {
         Person original = model.getFilteredPersonList().getFirst();
         logic.execute("edit 1 note/Review medication");
         Person edited = new PersonBuilder(original).withNote("Review medication").build();
-        assertStoredPerson(edited);
+        fixture.assertPersistedPatients(edited);
 
         logic.execute("next 1 1/1/2099 1000");
-        assertStoredPerson(new PersonBuilder(edited).withVisitDate("1/1/2099 1000")
+        fixture.assertPersistedPatients(new PersonBuilder(edited).withVisitDate("1/1/2099 1000")
                 .withPreviousVisitDates(original.getVisitDate().toString()).build());
     }
 
@@ -170,10 +171,10 @@ public class EmergencyContactIntegrationTest {
         model.addPerson(original);
 
         logic.execute("edit 1 ec/" + REPLACEMENT_CONTACT);
-        assertStoredPerson(new PersonBuilder(original).withEmergencyContact(REPLACEMENT_CONTACT).build());
+        fixture.assertPersistedPatients(new PersonBuilder(original).withEmergencyContact(REPLACEMENT_CONTACT).build());
 
         logic.execute("edit 1 ec/");
-        assertStoredPerson(new PersonBuilder(original).withEmergencyContact("").build());
+        fixture.assertPersistedPatients(new PersonBuilder(original).withEmergencyContact("").build());
     }
 
     @Test
@@ -183,7 +184,7 @@ public class EmergencyContactIntegrationTest {
         for (String command : List.of("find n/John", "sort date", "list")) {
             logic.execute(command);
             assertEquals(List.of(original), model.getFilteredPersonList());
-            assertStoredPerson(original);
+            fixture.assertPersistedPatients(original);
         }
     }
 
@@ -193,8 +194,10 @@ public class EmergencyContactIntegrationTest {
         for (String invalid : List.of("12", "abc", "Mary Tan", "Mary Tan 98765432", "Mary Tan,",
                 ",98765432", "Mary Tan, 12", "Mary Tan, abc", "Mary@Tan, 98765432",
                 "Mary Tan, 98765432, 87654321")) {
-            assertRejectedCommand("edit 1 ec/" + invalid, EmergencyContact.MESSAGE_CONSTRAINTS);
-            assertRejectedCommand("add n/Jane Tan p/82345678 a/Other Road vd/23/10/2026 1000 ec/" + invalid,
+            fixture.assertRejectedCommand("edit 1 ec/" + invalid, ParseException.class,
+                    EmergencyContact.MESSAGE_CONSTRAINTS);
+            fixture.assertRejectedCommand("add n/Jane Tan p/82345678 a/Other Road vd/23/10/2026 1000 ec/" + invalid,
+                    ParseException.class,
                     String.format(AddCommand.MESSAGE_NOT_ADDED, EmergencyContact.MESSAGE_CONSTRAINTS));
         }
     }
@@ -203,29 +206,29 @@ public class EmergencyContactIntegrationTest {
     public void execute_repeatedContact_rejectsDuplicatePrefixes() throws Exception {
         logic.execute(ADD_COMMAND + " ec/" + CONTACT);
         String reason = Messages.getErrorMessageForDuplicatePrefixes(PREFIX_EMERGENCY_CONTACT);
-        assertRejectedCommand("edit 1 ec/" + CONTACT + " ec/" + REPLACEMENT_CONTACT, reason);
-        assertRejectedCommand("edit 1 ec/ ec/", reason);
-        assertRejectedCommand("edit 1 ec/" + CONTACT + " ec/", reason);
-        assertRejectedCommand("edit 1 ec/ ec/" + CONTACT, reason);
-        assertRejectedCommand(ADD_COMMAND + " ec/invalid ec/" + CONTACT,
+        fixture.assertRejectedCommand("edit 1 ec/" + CONTACT + " ec/" + REPLACEMENT_CONTACT, ParseException.class,
+                reason);
+        fixture.assertRejectedCommand("edit 1 ec/ ec/", ParseException.class, reason);
+        fixture.assertRejectedCommand("edit 1 ec/" + CONTACT + " ec/", ParseException.class, reason);
+        fixture.assertRejectedCommand("edit 1 ec/ ec/" + CONTACT, ParseException.class, reason);
+        fixture.assertRejectedCommand(ADD_COMMAND + " ec/invalid ec/" + CONTACT, ParseException.class,
                 String.format(AddCommand.MESSAGE_NOT_ADDED, reason));
     }
 
     @Test
     public void execute_invalidIndex_preservesContactAndFile() throws Exception {
         logic.execute(ADD_COMMAND + " ec/" + CONTACT);
-        AddressBook before = new AddressBook(model.getAddressBook());
-        String saved = Files.readString(storage.getAddressBookFilePath());
-        assertThrows(CommandException.class, () -> logic.execute("edit 2 ec/" + REPLACEMENT_CONTACT));
-        assertThrows(CommandException.class, () -> logic.execute("edit 2 ec/"));
-        assertEquals(before, model.getAddressBook());
-        assertEquals(saved, Files.readString(storage.getAddressBookFilePath()));
+        fixture.assertRejectedCommand("edit 2 ec/" + REPLACEMENT_CONTACT, CommandException.class,
+                Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
+        fixture.assertRejectedCommand("edit 2 ec/", CommandException.class,
+                Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
     }
 
     @Test
     public void execute_duplicatePatientWithDifferentContact_rejectsDuplicateIdentity() throws Exception {
         logic.execute(ADD_COMMAND + " ec/" + CONTACT);
-        assertThrows(CommandException.class, () -> logic.execute(ADD_COMMAND + " ec/" + REPLACEMENT_CONTACT));
+        fixture.assertRejectedCommand(ADD_COMMAND + " ec/" + REPLACEMENT_CONTACT, CommandException.class,
+                String.format(AddCommand.MESSAGE_NOT_ADDED, AddCommand.MESSAGE_DUPLICATE_PERSON));
         assertEquals(CONTACT, model.getFilteredPersonList().getFirst().getEmergencyContact().toString());
     }
 
@@ -258,19 +261,5 @@ public class EmergencyContactIntegrationTest {
         descriptor.setEmergencyContact(new EmergencyContact(REPLACEMENT_CONTACT));
         assertFalse(descriptor.equals(copy));
         assertEquals(CONTACT, copy.getEmergencyContact().orElseThrow().toString());
-    }
-
-    private void assertStoredPerson(Person expected) throws Exception {
-        assertEquals(List.of(expected), model.getAddressBook().getPersonList());
-        assertEquals(model.getAddressBook(), new AddressBook(storage.readAddressBook().orElseThrow()));
-    }
-
-    private void assertRejectedCommand(String command, String expectedMessage) throws Exception {
-        AddressBook before = new AddressBook(model.getAddressBook());
-        String saved = Files.readString(storage.getAddressBookFilePath());
-        ParseException exception = assertThrows(ParseException.class, () -> logic.execute(command));
-        assertEquals(expectedMessage, exception.getMessage());
-        assertEquals(before, model.getAddressBook());
-        assertEquals(saved, Files.readString(storage.getAddressBookFilePath()));
     }
 }
