@@ -45,7 +45,7 @@ public class AddCommandIntegrationTest {
 
         assertCommandSuccess(new AddCommand(validPerson), model,
                 CommandResult.showUpdatedPerson(
-                        String.format(AddCommand.MESSAGE_SUCCESS, validPerson.getName()), validPerson),
+                        AddCommand.formatSuccessMessage(validPerson), validPerson),
                 expectedModel);
     }
 
@@ -59,7 +59,7 @@ public class AddCommandIntegrationTest {
 
         assertCommandSuccess(new AddCommand(samePhoneDifferentName), model,
                 CommandResult.showUpdatedPerson(
-                        String.format(AddCommand.MESSAGE_SUCCESS, samePhoneDifferentName.getName()),
+                        AddCommand.formatSuccessMessage(samePhoneDifferentName),
                         samePhoneDifferentName), expectedModel);
     }
 
@@ -183,7 +183,7 @@ public class AddCommandIntegrationTest {
 
         CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond(" y ", model);
 
-        assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, sameNameDifferentPhone.getName()),
+        assertEquals(AddCommand.formatSuccessMessage(sameNameDifferentPhone),
                 confirmedResult.getFeedbackToUser());
         assertEquals(sameNameDifferentPhone, confirmedResult.getPersonToView().orElseThrow());
         assertTrue(confirmedResult.shouldSaveAddressBook());
@@ -215,7 +215,7 @@ public class AddCommandIntegrationTest {
 
         assertCommandSuccess(new AddCommand(seventhVisitOnDay), model,
                 CommandResult.showUpdatedPerson(
-                        String.format(AddCommand.MESSAGE_SUCCESS, seventhVisitOnDay.getName()), seventhVisitOnDay),
+                        AddCommand.formatSuccessMessage(seventhVisitOnDay), seventhVisitOnDay),
                 expectedModel);
     }
 
@@ -239,7 +239,7 @@ public class AddCommandIntegrationTest {
 
         CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond("y", model);
 
-        assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, eighthVisitOnDay.getName()),
+        assertEquals(AddCommand.formatSuccessMessage(eighthVisitOnDay),
                 confirmedResult.getFeedbackToUser());
         assertEquals(eighthVisitOnDay, confirmedResult.getPersonToView().orElseThrow());
         assertTrue(confirmedResult.shouldSaveAddressBook());
@@ -296,7 +296,7 @@ public class AddCommandIntegrationTest {
 
         CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond("y", model);
 
-        assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, thirdSameName.getName()),
+        assertEquals(AddCommand.formatSuccessMessage(thirdSameName),
                 confirmedResult.getFeedbackToUser());
         assertEquals(thirdSameName, confirmedResult.getPersonToView().orElseThrow());
         assertTrue(confirmedResult.getInputRequest().isEmpty());
@@ -312,7 +312,7 @@ public class AddCommandIntegrationTest {
 
         CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond("y", model);
 
-        assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, sameNameOnFullDay.getName()),
+        assertEquals(AddCommand.formatSuccessMessage(sameNameOnFullDay),
                 confirmedResult.getFeedbackToUser());
         assertEquals(sameNameOnFullDay, confirmedResult.getPersonToView().orElseThrow());
         assertTrue(confirmedResult.getInputRequest().isEmpty());

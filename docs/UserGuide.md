@@ -193,8 +193,11 @@ Format: `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HIST
   Omitting `smk/` leaves the status unrecorded. Explicit `smk/unknown` records that the status is unknown;
   it is distinct from having no record. Blank values, unsupported statuses, and repeated `smk/` are rejected on add.
   The examples place `smk/` immediately after `alc/`; prefixes can still appear in any order.
-* On success, the app shows `Added patient NAME`; the new patient appears in the list and its full record appears in
-  the patient details panel.
+* On success, the app shows `Added patient` followed by the patient's name, phone number, email (if given), address,
+  and tags, with the visit date on the next line. The new patient appears in the list and its full record appears in
+  the patient details panel. For example:<br>
+  `Added patient John Tan; Phone: 91234567; Address: 123 Clementi Road; Tags: `<br>
+  `Visit date: 22/10/2026 1000`
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
 * A patient with the same normalized name and phone number as an existing patient is a duplicate and cannot be added.
 * If only the name matches an existing patient, the app shows the matching patient in the patient details panel and
@@ -268,6 +271,26 @@ Format: `list`
 Patients with a visit date before today are shown using darker backgrounds and muted text. This visual distinction
 also appears in patient lists produced by commands such as `find` and `sort date`. Past patients remain selectable,
 and their complete details remain readable in the details panel.
+
+### Viewing visits as an agenda: `agenda START_DATE [DAYS]`
+
+Shows patients whose current visits fall within a range of calendar days, ordered by visit date and time.
+
+Format: `agenda START_DATE [DAYS]`
+
+* `START_DATE` must use the format `d/M/yyyy`, e.g. `27/10/2026`.
+* `START_DATE` is required. Entering only `agenda` shows the command parameters and examples.
+* `DAYS` must be a whole number from 1 to 365.
+* If `DAYS` is omitted, the agenda covers seven calendar days starting from `START_DATE`.
+* Both the first and last calendar days are included, regardless of the visit time.
+* The last included day must be on or before 31/12/9999. A range extending beyond this date is rejected.
+* The command replaces any current `find` results and `sort` ordering with the agenda results.
+* The stored patient order and saved data are not changed. Run `list` to return to the full list in stored order.
+
+Examples:
+
+* `agenda 27/10/2026` shows visits from 27 October through 2 November 2026.
+* `agenda 27/10/2026 14` shows visits from 27 October through 9 November 2026.
 
 ### Sorting visits by date: `sort date [START_DATE]`
 
@@ -400,14 +423,15 @@ Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALC
 * To remove all of a patient's tags, enter `t/` without a tag after it.
 * An edit that would give a patient the same normalized name and phone number as another patient is rejected.
 * When an edit changes the patient's name to one already used by another patient with a different phone number, the
-  app asks `A patient named NAME already exists. Apply this edit anyway? Type y to confirm. Any other input cancels.`
+  app warns that the name is already used and asks
+  `Apply this edit to NAME anyway? Type y to confirm. Any other input cancels.`
 * Type `y` and press Enter to apply the edit. Surrounding spaces and letter case are ignored. Any other input cancels
   the edit and is not run as a command. Editing other details of a patient whose name is already shared does not ask
   for confirmation again. A confirmed name-duplicate edit rechecks that its requested visit slot is still available.
 * When an edit moves a patient's visit to a different day that already has 7 or more visits, the app asks, e.g.
-  `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Schedule Jane Tan on that day anyway? Type y to confirm.
-  Any other input cancels.` Changing only the time within the same day, or editing other fields, does not ask. If the
-  name also matches another patient, you are asked to confirm the name first and then the busy day.
+  `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Apply this edit to Jane Tan anyway? Type y to confirm.
+  Any other input cancels.` Changing only the time within the same day, or editing other fields, does not ask.
+  If the name also matches another patient, both warnings appear together and require only one confirmation.
 * The normalized-name comparison and duplicate-detection limitations described under `add` also apply to edits.
 * The visit-time conflict limitations described under `add` also apply to edits.
 
@@ -672,6 +696,7 @@ Doc home folder.
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 **Add**    | `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
+**Agenda** | `agenda START_DATE [DAYS]`<br> e.g., `agenda 27/10/2026 7`
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
 **Edit**   | `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [p/PHONE_NUMBER] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`

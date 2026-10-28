@@ -107,35 +107,34 @@ public class LogicManagerTest {
     }
 
     @Test
-    public void execute_cancelVisitRecordEditAtEitherConfirmation_preservesSavedData() throws Exception {
-        for (boolean shouldConfirmName : List.of(false, true)) {
-            model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
-            Person original = new PersonBuilder().withName("Other Patient").withVisitDate("2/1/2026 1000")
-                    .withPreviousVisitDates("1/1/2024 1000").build();
-            model.addPerson(original);
-            logic = createLogic(model);
-            logic.execute("list");
-            Path savedFile = temporaryFolder.resolve("addressBook.json");
-            String savedBefore = Files.readString(savedFile);
-            List<Person> recordsBefore = List.copyOf(model.getAddressBook().getPersonList());
-            String duplicateName = recordsBefore.getFirst().getName().fullName;
-            int targetPosition = model.getFilteredPersonList().indexOf(original);
-            assertTrue(targetPosition >= 0);
-            int displayedIndex = targetPosition + 1;
+    public void execute_cancelCombinedVisitRecordEdit_preservesSavedData() throws Exception {
+        model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
+        Person original = new PersonBuilder().withName("Other Patient").withVisitDate("2/1/2026 1000")
+                .withPreviousVisitDates("1/1/2024 1000").build();
+        model.addPerson(original);
+        logic = createLogic(model);
+        logic.execute("list");
+        Path savedFile = temporaryFolder.resolve("addressBook.json");
+        String savedBefore = Files.readString(savedFile);
+        List<Person> recordsBefore = List.copyOf(model.getAddressBook().getPersonList());
+        String duplicateName = recordsBefore.getFirst().getName().fullName;
+        int targetPosition = model.getFilteredPersonList().indexOf(original);
+        assertTrue(targetPosition >= 0);
+        int displayedIndex = targetPosition + 1;
 
-            logic.execute("edit " + displayedIndex + " n/" + duplicateName + " vd/1/1/2026 1500");
-            if (shouldConfirmName) {
-                logic.execute("y");
-                assertTrue(logic.isInputRequestPending());
-            }
-            CommandResult result = logic.execute("n");
+        CommandResult requestResult =
+                logic.execute("edit " + displayedIndex + " n/" + duplicateName + " vd/1/1/2026 1500");
+        assertTrue(logic.isInputRequestPending());
+        CommandResult result = logic.execute("n");
 
-            assertEquals(EditCommand.MESSAGE_EDIT_CANCELLED, result.getFeedbackToUser());
-            assertEquals(1, addressBookSaveCount);
-            assertEquals(savedBefore, Files.readString(savedFile));
-            assertEquals(recordsBefore, model.getAddressBook().getPersonList());
-            assertEquals(recordsBefore, model.getFilteredPersonList());
-        }
+        assertTrue(requestResult.getFeedbackToUser().contains("already exists"));
+        assertTrue(requestResult.getFeedbackToUser().contains("already have 7 visits"));
+        assertEquals(EditCommand.MESSAGE_EDIT_CANCELLED, result.getFeedbackToUser());
+        assertFalse(logic.isInputRequestPending());
+        assertEquals(1, addressBookSaveCount);
+        assertEquals(savedBefore, Files.readString(savedFile));
+        assertEquals(recordsBefore, model.getAddressBook().getPersonList());
+        assertEquals(recordsBefore, model.getFilteredPersonList());
     }
 
     /**
@@ -217,7 +216,7 @@ public class LogicManagerTest {
 
         CommandResult confirmedResult = logic.execute("y");
 
-        assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, personToAdd.getName()),
+        assertEquals(AddCommand.formatSuccessMessage(personToAdd),
                 confirmedResult.getFeedbackToUser());
         assertFalse(logic.isInputRequestPending());
         assertTrue(model.getAddressBook().getPersonList().contains(personToAdd));
@@ -234,8 +233,9 @@ public class LogicManagerTest {
 
         CommandResult requestResult = logic.execute("edit 2 n/" + firstPerson.getName());
 
-        assertEquals(String.format(EditCommand.MESSAGE_CONFIRM_DUPLICATE_NAME, editedPerson.getName()),
-                requestResult.getFeedbackToUser());
+        String expectedPrompt = String.format(EditCommand.MESSAGE_WARNING_DUPLICATE_NAME, editedPerson.getName())
+                + " " + String.format(EditCommand.MESSAGE_CONFIRM_EDIT, editedPerson.getName());
+        assertEquals(expectedPrompt, requestResult.getFeedbackToUser());
         assertEquals(firstPerson, requestResult.getPersonToView().orElseThrow());
         assertTrue(logic.isInputRequestPending());
         assertTrue(model.getAddressBook().getPersonList().contains(secondPerson));

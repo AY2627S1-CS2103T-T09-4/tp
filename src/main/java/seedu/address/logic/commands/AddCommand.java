@@ -22,6 +22,7 @@ import java.util.logging.Logger;
 
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.util.ToStringBuilder;
+import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.person.Person;
@@ -61,7 +62,7 @@ public class AddCommand extends Command {
             + PREFIX_VISIT_DATE + "18/9/2026 1000 "
             + PREFIX_TAG + "followup ";
 
-    public static final String MESSAGE_SUCCESS = "Added patient %1$s";
+    public static final String MESSAGE_SUCCESS = "Added patient %1$s\nVisit date: %2$s";
     public static final String MESSAGE_DUPLICATE_PERSON =
             "A patient with the same name and phone number already exists in the address book. "
                     + "The existing patient is shown in the patient details panel.";
@@ -152,7 +153,16 @@ public class AddCommand extends Command {
                 + ", alcoholHistory=" + !toAdd.getAlcoholHistory().isEmpty()
                 + ", smokingStatus=" + !toAdd.getSmokingStatus().isEmpty()
                 + ", emergencyContact=" + !toAdd.getEmergencyContact().isEmpty());
-        return CommandResult.showUpdatedPerson(String.format(MESSAGE_SUCCESS, toAdd.getName()), toAdd);
+        return CommandResult.showUpdatedPerson(formatSuccessMessage(toAdd), toAdd);
+    }
+
+    /**
+     * Returns the message shown after {@code person} is added, listing their contact details, tags, and visit date
+     * so that the doctor can check what was recorded.
+     */
+    public static String formatSuccessMessage(Person person) {
+        requireNonNull(person);
+        return String.format(MESSAGE_SUCCESS, Messages.format(person), person.getVisitDate());
     }
 
     /**
