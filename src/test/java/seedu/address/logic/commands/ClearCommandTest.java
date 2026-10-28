@@ -61,6 +61,7 @@ public class ClearCommandTest {
         assertEquals(ClearCommand.MESSAGE_SUCCESS, confirmedResult.getFeedbackToUser());
         assertEquals(new AddressBook(), model.getAddressBook());
         assertTrue(confirmedResult.shouldSaveAddressBook());
+        assertEquals(CommandResult.DetailsPanelAction.CLEAR, confirmedResult.getDetailsPanelAction());
     }
 
     @Test

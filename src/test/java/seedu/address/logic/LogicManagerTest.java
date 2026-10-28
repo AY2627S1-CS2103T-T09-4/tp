@@ -72,7 +72,7 @@ public class LogicManagerTest {
         CommandResult result = logic.execute("edit 1 vd/2/10/2026 1000");
 
         assertTrue(result.shouldSaveAddressBook());
-        assertTrue(result.getPersonToView().isEmpty());
+        assertEquals(expected, result.getPersonToView().orElseThrow());
         assertEquals(1, addressBookSaveCount);
         ReadOnlyAddressBook reloaded = new JsonAddressBookStorage(temporaryFolder.resolve("addressBook.json"))
                 .readAddressBook().orElseThrow();

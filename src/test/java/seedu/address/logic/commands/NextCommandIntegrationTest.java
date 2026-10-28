@@ -83,7 +83,7 @@ public class NextCommandIntegrationTest {
         fixture.assertPersistedPatients(expectedPerson, benson);
         assertEquals(1, fixture.getSaveCount());
         assertTrue(result.shouldSaveAddressBook());
-        assertTrue(result.getPersonToView().isEmpty());
+        assertEquals(expectedPerson, result.getPersonToView().orElseThrow());
         assertFalse(logic.isInputRequestPending());
         Model reloadedModel = new ModelManager(fixture.getAddressBookStorage().readAddressBook().orElseThrow(),
                 new UserPrefs());
@@ -237,7 +237,7 @@ public class NextCommandIntegrationTest {
         assertTrue(confirmedResult.shouldSaveAddressBook());
         assertFalse(logic.isInputRequestPending());
         assertTrue(confirmedResult.getInputRequest().isEmpty());
-        assertTrue(confirmedResult.getPersonToView().isEmpty());
+        assertEquals(expectedAmy, confirmedResult.getPersonToView().orElseThrow());
         fixture.assertPersistedPatients(expectedAddressBook.getPersonList().toArray(Person[]::new));
         assertEquals(beforeRequest.saveCount() + 1, fixture.getSaveCount());
         Model reloadedModel = new ModelManager(fixture.getAddressBookStorage().readAddressBook().orElseThrow(),
