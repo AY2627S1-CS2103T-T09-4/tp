@@ -42,11 +42,11 @@ public class FileUtilTest {
         Path file = testFolder.resolve("addressBook.json");
         Files.writeString(file, "original data");
 
-        assertThrows(IOException.class, () -> FileUtil.writeToFile(file, "replacement data",
-                (temporaryFile, contents) -> {
-                    Files.write(temporaryFile, Arrays.copyOf(contents, 7));
-                    throw new IOException("Simulated write failure");
-                }));
+        FileUtil.ContentWriter failingWriter = (temporaryFile, contents) -> {
+            Files.write(temporaryFile, Arrays.copyOf(contents, 7));
+            throw new IOException("Simulated write failure");
+        };
+        assertThrows(IOException.class, () -> FileUtil.writeToFile(file, "replacement data", failingWriter));
 
         assertEquals("original data", Files.readString(file));
         try (Stream<Path> files = Files.list(testFolder)) {
