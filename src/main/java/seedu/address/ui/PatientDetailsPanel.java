@@ -100,53 +100,10 @@ public class PatientDetailsPanel extends UiPart<Region> {
     public void setPerson(Person person) {
         requireNonNull(person);
         name.setText(person.getName().fullName);
-        boolean hasDateOfBirth = !person.getDateOfBirth().isEmpty();
-        dateOfBirth.setText(hasDateOfBirth ? "Date of birth: " + person.getDateOfBirth().toDisplayString() : "");
-        dateOfBirth.setVisible(hasDateOfBirth);
-        dateOfBirth.setManaged(hasDateOfBirth);
-        boolean hasBloodType = !person.getBloodType().isEmpty();
-        bloodType.setText(hasBloodType ? "Blood type: " + person.getBloodType().toString() : "");
-        bloodType.setVisible(hasBloodType);
-        bloodType.setManaged(hasBloodType);
-        boolean hasAllergies = !person.getAllergies().isEmpty();
-        allergies.setText(hasAllergies ? "Allergies: " + person.getAllergies() : "");
-        allergies.setVisible(hasAllergies);
-        allergies.setManaged(hasAllergies);
-        boolean hasAlcoholHistory = !person.getAlcoholHistory().isEmpty();
-        alcoholHistory.setText(hasAlcoholHistory ? "Alcohol history: " + person.getAlcoholHistory() : "");
-        alcoholHistory.setVisible(hasAlcoholHistory);
-        alcoholHistory.setManaged(hasAlcoholHistory);
-        boolean hasSmokingStatus = !person.getSmokingStatus().isEmpty();
-        smokingStatus.setText(hasSmokingStatus ? "Smoking status: " + person.getSmokingStatus() : "");
-        smokingStatus.setVisible(hasSmokingStatus);
-        smokingStatus.setManaged(hasSmokingStatus);
-        boolean hasMedicalInformation = hasDateOfBirth || hasBloodType || hasAllergies
-                || hasAlcoholHistory || hasSmokingStatus;
-        medicalPlaceholder.setVisible(!hasMedicalInformation);
-        medicalPlaceholder.setManaged(!hasMedicalInformation);
-        phone.setText("Phone: " + person.getPhone().value);
-        boolean hasEmail = !person.getEmail().value.isEmpty();
-        email.setText(hasEmail ? "Email: " + person.getEmail().value : "");
-        email.setVisible(hasEmail);
-        email.setManaged(hasEmail);
-        address.setText("Address: " + person.getAddress().value);
-        visitDate.setText("Visit date: " + person.getVisitDate()
-                + " (" + getVisitDateLabel(person.getVisitDate()) + ")");
-        previousVisitDates.setText(formatPreviousVisitDates(person));
-        boolean hasNote = !person.getNote().value.isEmpty();
-        note.setText(hasNote ? "Note: " + person.getNote().value : "");
-        note.setVisible(hasNote);
-        note.setManaged(hasNote);
-        emergencyContact.setText("Emergency Contact: " + person.getEmergencyContact().toDisplayString());
-        boolean hasEmergencyContact = !person.getEmergencyContact().isEmpty();
-        emergencyContact.setVisible(hasEmergencyContact);
-        emergencyContact.setManaged(hasEmergencyContact);
-
-        String tagNames = person.getTags().stream()
-                .sorted(Comparator.comparing(tag -> tag.tagName, String.CASE_INSENSITIVE_ORDER))
-                .map(tag -> tag.tagName)
-                .collect(Collectors.joining(", "));
-        tags.setText("Tags: " + tagNames);
+        setMedicalDetails(person);
+        setContactDetails(person);
+        setVisitDetails(person);
+        setAdditionalDetails(person);
 
         detailsContainer.setManaged(true);
         detailsContainer.setVisible(true);
@@ -168,6 +125,76 @@ public class PatientDetailsPanel extends UiPart<Region> {
         if (person.equals(displayedPerson)) {
             clear();
         }
+    }
+
+    /**
+     * Displays recorded medical fields or the empty medical profile placeholder.
+     */
+    private void setMedicalDetails(Person person) {
+        boolean hasDateOfBirth = !person.getDateOfBirth().isEmpty();
+        setOptionalLabel(dateOfBirth,
+                hasDateOfBirth ? "Date of birth: " + person.getDateOfBirth().toDisplayString() : "",
+                hasDateOfBirth);
+        boolean hasBloodType = !person.getBloodType().isEmpty();
+        setOptionalLabel(bloodType, hasBloodType ? "Blood type: " + person.getBloodType().toString() : "",
+                hasBloodType);
+        boolean hasAllergies = !person.getAllergies().isEmpty();
+        setOptionalLabel(allergies, hasAllergies ? "Allergies: " + person.getAllergies() : "", hasAllergies);
+        boolean hasAlcoholHistory = !person.getAlcoholHistory().isEmpty();
+        setOptionalLabel(alcoholHistory, hasAlcoholHistory ? "Alcohol history: " + person.getAlcoholHistory() : "",
+                hasAlcoholHistory);
+        boolean hasSmokingStatus = !person.getSmokingStatus().isEmpty();
+        setOptionalLabel(smokingStatus, hasSmokingStatus ? "Smoking status: " + person.getSmokingStatus() : "",
+                hasSmokingStatus);
+        boolean hasMedicalInformation = hasDateOfBirth || hasBloodType || hasAllergies
+                || hasAlcoholHistory || hasSmokingStatus;
+        medicalPlaceholder.setVisible(!hasMedicalInformation);
+        medicalPlaceholder.setManaged(!hasMedicalInformation);
+    }
+
+    /**
+     * Displays contact information, hiding optional fields when absent.
+     */
+    private void setContactDetails(Person person) {
+        phone.setText("Phone: " + person.getPhone().value);
+        boolean hasEmail = !person.getEmail().value.isEmpty();
+        setOptionalLabel(email, hasEmail ? "Email: " + person.getEmail().value : "", hasEmail);
+        address.setText("Address: " + person.getAddress().value);
+        boolean hasEmergencyContact = !person.getEmergencyContact().isEmpty();
+        setOptionalLabel(emergencyContact, "Emergency Contact: " + person.getEmergencyContact().toDisplayString(),
+                hasEmergencyContact);
+    }
+
+    /**
+     * Displays the current visit and previous visit history.
+     */
+    private void setVisitDetails(Person person) {
+        visitDate.setText("Visit date: " + person.getVisitDate()
+                + " (" + getVisitDateLabel(person.getVisitDate()) + ")");
+        previousVisitDates.setText(formatPreviousVisitDates(person));
+    }
+
+    /**
+     * Displays the optional note and sorted tags.
+     */
+    private void setAdditionalDetails(Person person) {
+        boolean hasNote = !person.getNote().value.isEmpty();
+        setOptionalLabel(note, hasNote ? "Note: " + person.getNote().value : "", hasNote);
+
+        String tagNames = person.getTags().stream()
+                .sorted(Comparator.comparing(tag -> tag.tagName, String.CASE_INSENSITIVE_ORDER))
+                .map(tag -> tag.tagName)
+                .collect(Collectors.joining(", "));
+        tags.setText("Tags: " + tagNames);
+    }
+
+    /**
+     * Sets an optional label's text and keeps its visibility and layout participation in sync.
+     */
+    private void setOptionalLabel(Label label, String text, boolean hasValue) {
+        label.setText(text);
+        label.setVisible(hasValue);
+        label.setManaged(hasValue);
     }
 
     /**

@@ -386,6 +386,11 @@ public class PatientDetailsPanelTest {
             assertFalse(contact.isVisible());
             assertFalse(contact.isManaged());
             assertFalse(contact.getText().contains("Mary Tan"));
+
+            panel.setPerson(patient);
+            assertEquals("Emergency Contact: 91234567 (Mary Tan)", contact.getText());
+            assertTrue(contact.isVisible());
+            assertTrue(contact.isManaged());
         });
     }
 
