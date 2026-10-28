@@ -56,7 +56,8 @@ public class HelpWindowTest {
                     "[n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] "
                             + "[vd/DATE...] [note/NOTE_KEYWORD...]"),
             List.of("view — Show a patient's details.", "view INDEX"),
-            List.of("sort — Sort displayed patients by visit date.", "sort date [START_DATE]"));
+            List.of("sort — Sort displayed patients by visit date.", "sort date [START_DATE]"),
+            List.of("agenda — Show visits chronologically for a date range.", "agenda START_DATE [DAYS]"));
 
     private static final List<List<String>> EXPECTED_APPLICATION_ENTRIES = List.of(
             List.of("help — Open this help window.", "help"),
@@ -202,7 +203,7 @@ public class HelpWindowTest {
                 List<FlowPane> continuationPanes = root.lookupAll(".helpCommandContinuation").stream()
                         .map(FlowPane.class::cast)
                         .toList();
-                assertEquals(12, syntaxLabels.size());
+                assertEquals(13, syntaxLabels.size());
                 assertEquals(3, continuationPanes.size());
                 assertTrue(syntaxLabels.stream().allMatch(Label::isWrapText));
                 assertTrue(continuationPanes.stream().allMatch(pane -> pane.getChildren().stream()

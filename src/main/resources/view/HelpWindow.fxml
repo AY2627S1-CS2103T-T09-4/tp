@@ -226,6 +226,18 @@
                           <Label styleClass="helpCommandSyntax" text="sort date [START_DATE]" wrapText="true" />
                         </children>
                       </VBox>
+                      <VBox styleClass="helpCommand" fillWidth="true" spacing="2.0">
+                        <children>
+                          <TextFlow styleClass="helpCommandDescription">
+                            <children>
+                              <Text styleClass="helpCommandName" text="agenda" />
+                              <Text styleClass="helpCommandDescriptionText"
+                                    text=" — Show visits chronologically for a date range." />
+                            </children>
+                          </TextFlow>
+                          <Label styleClass="helpCommandSyntax" text="agenda START_DATE [DAYS]" wrapText="true" />
+                        </children>
+                      </VBox>
                     </children>
                   </VBox>
                   <VBox fx:id="applicationCommands" fillWidth="true" spacing="2.0">

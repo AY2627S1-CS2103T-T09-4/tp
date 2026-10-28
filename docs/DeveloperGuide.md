@@ -193,7 +193,7 @@ and selection. F1 and the menu call the UI directly; unlike typed `help`, they d
 
 `HelpWindow.fxml` places the command groups in one column inside a `ScrollPane`, in the centre of a `BorderPane`.
 The groups are **Manage patients and visits** (`add`, `edit`, `next`, `prev`, `delete`, `clear`),
-**Find and view patients** (`list`, `find`, `view`, `sort`), and **Application controls** (`help`, `exit`).
+**Find and view patients** (`list`, `find`, `view`, `sort`, `agenda`), and **Application controls** (`help`, `exit`).
 Each command entry contains its description, a syntax template, and any optional-field continuation row. The
 default window may require vertical scrolling as the templates make the directory longer. A fixed footer holds
 the URL, buttons, and feedback so these controls remain accessible while the command list scrolls.
