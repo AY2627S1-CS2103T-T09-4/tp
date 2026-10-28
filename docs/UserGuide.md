@@ -69,6 +69,13 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
   For example, `edit INDEX ...` starts with the index, and `next INDEX DATETIME` requires the index before the date
   and time.
 
+* Commands that take an `INDEX` (`view`, `edit`, `delete`, `next`, and `prev`) explain an invalid index the same way.
+  These messages are followed by the command's usage: `Invalid command format!` for a missing index,
+  `Index must be a positive integer.` for an index that is zero, negative, or not a whole number, and
+  `Index is too large.` for an index too large to represent. An index beyond the displayed list shows
+  `The patient index provided is invalid.` The last two messages also ask you to enter an index shown in the
+  displayed patient list.
+
 * Extraneous parameters for commands that take no parameters, such as `help`, `list`, `exit`, and `clear`, are ignored.<br>
   For example, `help 123` is interpreted as `help`.
 
@@ -521,9 +528,8 @@ Format: `prev INDEX`
   It saves the record. Follow the [visit-record interaction rules](#visit-records) to find the patient and refresh details.
 * Repeating `prev` restores one earlier datetime each time. When none remain, it reports
   `Patient NAME has no previous visit dates to restore.` without changing data or the displayed list.
-* Missing, invalid, or additional arguments show usage. Oversized positive indices show `Index is too large.`
-  followed by guidance and usage. An index within the supported range but outside the displayed list shows
-  the invalid-index error. Rejected commands do not save changes.
+* A missing index shows usage. Invalid indices, including additional arguments, show the shared
+  [index errors](#features) followed by usage. Rejected commands do not save changes.
 * A later `next` uses the restored state and still requires the current visit to have arrived or passed and the
   requested datetime to be in the future. A save failure reports a storage error; the in-memory record may
   already have changed.
@@ -601,7 +607,7 @@ Format: `delete INDEX`
 * Type `y` and press Enter to confirm. Surrounding spaces and letter case are ignored.
 * Any other input, including an empty response or another valid command, cancels the deletion and is not run as a
   command. The result display then shows `Deletion cancelled.`
-* Invalid `delete` commands continue to show the usual invalid-command response and do not ask for confirmation.
+* Invalid `delete` commands show the shared index errors and do not ask for confirmation.
 
 Examples:
 * `list` followed by `delete 2`, then `y`, deletes the 2nd patient in Doc.

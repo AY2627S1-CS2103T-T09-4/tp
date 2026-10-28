@@ -31,11 +31,17 @@ public class PrevCommandParserTest {
     }
 
     @Test
-    public void parse_invalidArgs_throwsParseException() {
+    public void parse_missingArgs_showsInvalidFormat() {
+        // EP: Missing and whitespace-only input.
         String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, PrevCommand.MESSAGE_USAGE);
+        assertParseFailure(parser, "", expectedMessage);
+        assertParseFailure(parser, " ", expectedMessage);
+    }
+
+    @Test
+    public void parse_invalidArgs_showsReasonAndPrevUsage() {
+        String expectedMessage = ParserUtil.MESSAGE_INVALID_INDEX + "\n" + PrevCommand.MESSAGE_USAGE;
         String[] invalidArguments = {
-            // EP: Missing and whitespace-only input.
-            "", " ",
             // Boundary: Zero is immediately below the smallest valid displayed index, one.
             "0",
             // EP: A negative signed index is a representative non-positive input.

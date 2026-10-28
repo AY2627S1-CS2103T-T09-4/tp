@@ -64,21 +64,9 @@ public class NextCommandParser implements Parser<NextCommand> {
             throw createUsageError(MESSAGE_EXTRA_ARGUMENTS);
         }
 
-        Index index = parseIndex(arguments[0]);
+        Index index = ParserUtil.parseIndex(arguments[0], NextCommand.MESSAGE_USAGE);
         VisitDate visitDate = ParserUtil.parseVisitDate(arguments[1] + " " + arguments[2]);
         return new NextCommand(index, visitDate, clock);
-    }
-
-    private static Index parseIndex(String argument) throws ParseException {
-        try {
-            return ParserUtil.parseIndex(argument);
-        } catch (ParseException exception) {
-            // A positive integer rejected by the shared parser exceeds the supported index range.
-            if (ParserUtil.isPositiveInteger(argument)) {
-                throw createUsageError(MESSAGE_INDEX_TOO_LARGE);
-            }
-            throw createUsageError(exception.getMessage());
-        }
     }
 
     private static ParseException createUsageError(String reason) {
