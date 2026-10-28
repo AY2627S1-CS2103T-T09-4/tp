@@ -1,6 +1,7 @@
 package seedu.address.logic.commands;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_EMAIL_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_NOTE_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_VISIT_DATE_BOB;
@@ -145,8 +146,9 @@ public class EditCommandIntegrationTest {
     public void execute_emptyEmailAndNote_persistsClearedFields() throws Exception {
         Person expectedPerson = new PersonBuilder(originalPerson).withEmail("").withNote("").build();
 
-        logic.execute("edit 1 e/ note/");
+        CommandResult result = logic.execute("edit 1 e/ note/");
 
+        assertFalse(result.getFeedbackToUser().contains("Email:"));
         assertStoredPerson(expectedPerson);
     }
 

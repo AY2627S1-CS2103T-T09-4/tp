@@ -229,6 +229,30 @@ public class PatientDetailsPanelTest {
             assertEquals("Contact information", getSectionHeading(panel, "contactSection").getText());
             assertEquals("Additional notes", getSectionHeading(panel, "additionalNotesSection").getText());
             assertEquals("Visit history", getSectionHeading(panel, "visitHistorySection").getText());
+    public void setPerson_emailAndNote_hidesEmptyFieldsAndRestoresPopulatedFields() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel(FIXED_CLOCK);
+            Person firstRecorded = new PersonBuilder().withEmail("first@example.com")
+                    .withNote("First note").build();
+            Person empty = new PersonBuilder().withEmail("").withNote("").build();
+            Person secondRecorded = new PersonBuilder().withEmail("second@example.com")
+                    .withNote("Second note").build();
+
+            panel.setPerson(firstRecorded);
+            assertEquals("Email: first@example.com", getLabel(panel, "email").getText());
+            assertEquals("Note: First note", getLabel(panel, "note").getText());
+            assertFieldVisible(panel, "email", true);
+            assertFieldVisible(panel, "note", true);
+
+            panel.setPerson(empty);
+            assertFieldVisible(panel, "email", false);
+            assertFieldVisible(panel, "note", false);
+
+            panel.setPerson(secondRecorded);
+            assertEquals("Email: second@example.com", getLabel(panel, "email").getText());
+            assertEquals("Note: Second note", getLabel(panel, "note").getText());
+            assertFieldVisible(panel, "email", true);
+            assertFieldVisible(panel, "note", true);
         });
     }
 

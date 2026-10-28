@@ -193,7 +193,10 @@ Format: `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HIST
   Omitting `smk/` leaves the status unrecorded. Explicit `smk/unknown` records that the status is unknown;
   it is distinct from having no record. Blank values, unsupported statuses, and repeated `smk/` are rejected on add.
   The examples place `smk/` immediately after `alc/`; prefixes can still appear in any order.
-* On success, the app shows `Added patient NAME` and the new patient appears in the list.
+* On success, the app shows `Added patient` followed by the patient's name, phone number, email (if given), address,
+  and tags, with the visit date on the next line. The new patient appears in the list. For example:<br>
+  `Added patient John Tan; Phone: 91234567; Address: 123 Clementi Road; Tags: `<br>
+  `Visit date: 22/10/2026 1000`
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
 * A patient with the same normalized name and phone number as an existing patient is a duplicate and cannot be added.
 * If only the name matches an existing patient, the app shows the matching patient in the patient details panel and
