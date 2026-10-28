@@ -28,7 +28,11 @@ public class NameTest {
         assertFalse(Name.isValidName("")); // empty string
         assertFalse(Name.isValidName(" ")); // spaces only
         assertFalse(Name.isValidName("^")); // only non-alphanumeric characters
-        assertFalse(Name.isValidName("peter*")); // contains non-alphanumeric characters
+        assertFalse(Name.isValidName("peter*")); // contains unsupported punctuation
+        assertFalse(Name.isValidName("p/Smith")); // conflicts with the phone prefix
+        assertFalse(Name.isValidName("Mary--Ann")); // repeated punctuation
+        assertFalse(Name.isValidName("/Smith")); // punctuation at the start
+        assertFalse(Name.isValidName("Smith/")); // punctuation at the end
 
         // valid name
         assertTrue(Name.isValidName("peter jack")); // alphabets only
@@ -36,6 +40,12 @@ public class NameTest {
         assertTrue(Name.isValidName("peter the 2nd")); // alphanumeric characters
         assertTrue(Name.isValidName("Capital Tan")); // with capital letters
         assertTrue(Name.isValidName("David Roger Jackson Ray Jr 2nd")); // long names
+        assertTrue(Name.isValidName("s/o Rajan")); // slash in a name component
+        assertTrue(Name.isValidName("d/o Priya")); // slash in a name component
+        assertTrue(Name.isValidName("O'Brien")); // apostrophe in a name component
+        assertTrue(Name.isValidName("José")); // accented character
+        assertTrue(Name.isValidName("Mary-Ann")); // hyphen in a name component
+        assertTrue(Name.isValidName("Mr. Smith")); // title abbreviation
     }
 
     @Test
