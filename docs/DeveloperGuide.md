@@ -181,7 +181,8 @@ This section describes some noteworthy details on how certain features are imple
 
 ### Help window
 
-Help is an offline command directory with access to the full User Guide for syntax and examples.
+Help is an offline command directory with short descriptions and syntax templates for all supported commands,
+with access to the full User Guide for validation rules and examples.
 See [Viewing help](UserGuide.md#viewing-help-help) for user instructions.
 
 `MainWindow` retains one `HelpWindow` and reuses it for command, F1, and menu requests. The window is non-modal,
@@ -191,18 +192,30 @@ and selection. F1 and the menu call the UI directly; unlike typed `help`, they d
 #### Layout and content
 
 `HelpWindow.fxml` places the command groups in one column inside a `ScrollPane`, in the centre of a `BorderPane`.
-Compact rows keep the whole directory visible at the default size. A fixed footer holds the URL, buttons,
-and feedback so these controls remain accessible while a smaller window's command list scrolls.
+The groups are **Manage patients and visits** (`add`, `edit`, `next`, `prev`, `delete`, `clear`),
+**Find and view patients** (`list`, `find`, `view`, `sort`, `agenda`), and **Application controls** (`help`, `exit`).
+Each command entry contains its description, a syntax template, and any optional-field continuation row. The
+default window may require vertical scrolling as the templates make the directory longer. A fixed footer holds
+the URL, buttons, and feedback so these controls remain accessible while the command list scrolls.
 `HelpWindow.css` supplies the presentation styles.
 
-`HelpWindow.show()` focuses the command list, which is a Tab stop so users can return from the guide buttons.
-A muted keyboard hint introduces scrolling, focus navigation, and dismissal. It belongs to the scrolling content,
-not the fixed footer, to preserve command space in small windows.
+The complete user-facing syntax reference is maintained in the [User Guide command summary](UserGuide.md#command-summary).
+This section focuses on the Help window's implementation boundary instead of duplicating every command template. The
+`edit` and `find` descriptions state that at least one field is required. The legend is
+`UPPERCASE: replace with your values · [ ]: optional · ...: repeatable`. `INDEX` uses the displayed patient
+list number; date and emergency-contact meanings follow the detailed User Guide.
 
-Static labels keep the directory independent of changing parameter syntax; the User Guide remains the detailed
-reference. The trade-off is manual upkeep: when `AddressBookParser` gains, loses, or renames a command, update
-its FXML entry and the expected inventory in `HelpWindowTest`. That test also checks the hint, initial focus,
-default-size fit, and minimum-size command space with feedback shown.
+`HelpWindow.show()` focuses the command list, which is a Tab stop so users can return from the guide buttons.
+A muted keyboard hint and the notation legend `UPPERCASE: replace with your values · [ ]: optional · ...: repeatable`
+introduce scrolling and the syntax placeholders. They belong to the scrolling content, not the fixed footer, to
+preserve command space in small windows.
+
+Static labels keep the directory independent of parser implementation; the FXML entries must still be maintained
+when command syntax changes. When `AddressBookParser` gains, loses, or renames a command, or when a command's
+syntax changes, update its FXML entry, the expected inventory and templates in `HelpWindowTest`, and the command
+summary in the User Guide. That test is the executable inventory check: it verifies command order, descriptions,
+templates, notation, focus, wrapping, scrolling, final-command access, and minimum-size footer space with feedback
+shown.
 
 #### External guide actions
 
@@ -1483,8 +1496,13 @@ Use a disposable data file. Start with no patients and use available visit slots
    Expected: The command directory remains available, and no browser opens automatically.
 
 1. **Command directory:** Open Help at its default size.<br>
-   Expected: Each command appears once, with a short description, under patient management, visit planning,
-   or application controls. The directory and keyboard hint are visible without scrolling.
+   Expected: **Manage patients and visits**, **Find and view patients**, and **Application controls** each appear once
+   in the documented order. Every command has its short description, syntax template, optional-field rows where
+   applicable, and notation legend. The complete directory is reachable using the available navigation controls.
+
+1. **Navigation hint:** Inspect the hint at the top of the command list.<br>
+   Expected: The Up, Down, Tab, Shift, and Escape key labels are visible as non-interactive visual keycaps. They do
+   not receive focus or activate an action when clicked.
 
 1. **Small window:** Resize Help to its minimum size and scroll through the list. Repeat after a guide action
    shows feedback.<br>
@@ -1505,11 +1523,12 @@ Use a disposable data file. Start with no patients and use available visit slots
    Expected: Focus returns to the command box with the draft unsubmitted and its caret and selection restored.
 
 1. **Keyboard scrolling:** Focus the result display and press F1. Resize Help to its minimum size. Use Down and
-   End to scroll, then Home and Up to return towards the top.<br>
+   End to reach the later commands, then Home and Up to return towards the top.<br>
    Expected: Help opens with focus on the command list, and the keys allow every group to be reached.
 
-1. **Button navigation:** Open Help. Press Tab to reach **Open User Guide**, then Shift+Tab to return to the list.
-   Use Tab to reach **Close**, then press Space.<br>
+1. **Button navigation:** Open Help. Press Tab until **Open User Guide** is focused, then press Shift+Tab to return
+   to the command list. Press Tab through **Open User Guide** and **Copy URL** until **Close** is focused, then press
+   Space.<br>
    Expected: Focus moves between the list and buttons, focused buttons have a visible outline, and Space activates Close.
 
 1. **Help during confirmation:** Use disposable patient data with at least one patient.

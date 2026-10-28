@@ -119,18 +119,17 @@ The command box keeps commands submitted during the current application session 
 
 ### Viewing help: `help`
 
-Opens a separate help window listing **Available commands** in one column, grouped into patient management,
-visit planning, and application controls. Each command has a short description. The list works offline;
-syntax and examples are in the full User Guide.
+Opens a separate help window listing **Available commands** in one column. The offline reference provides
+short descriptions, syntax templates, optional fields, and a notation legend for quick lookup while entering
+commands. Detailed validation rules and examples remain in the command sections below.
 
 Format: `help`
 
 You can also press **F1** or choose **Help → Help**. Repeating a help request brings the existing
 window to the front, restoring it if minimized. You can resize Help and continue using the main window.
 
-* **Browse commands:** The command list receives keyboard focus when Help opens. Use **Up** and **Down** to scroll,
-  or **Home** and **End** to reach the top and bottom. At the default window size, the whole directory is visible;
-  smaller windows allow scrolling. The User Guide URL and buttons stay below the list.
+* **Browse commands:** The command list receives keyboard focus when Help opens. Use **Up** and **Down** to browse,
+  or **Home** and **End** to reach the top and bottom. The User Guide URL and buttons stay below the list.
 * **Read the full guide:** Choose **Open User Guide** to open it in your default browser. This requires
   an Internet connection. The launch message does not guarantee that the page loaded. If nothing opens,
   choose **Copy URL** and paste the address into your browser. If copying fails, retry or enter the displayed URL manually.
@@ -147,7 +146,7 @@ While a confirmation or follow-up prompt is pending, open Help with **F1** or **
 Typing `help` and pressing Enter answers that prompt instead of opening Help.
 </box>
 
-![Help window](images/helpMessage.png)
+![Help window](images/helpWindow.png)
 
 
 ### Adding a patient: `add`
@@ -707,3 +706,4 @@ Action     | Format, Examples
 **Sort**   | `sort date [START_DATE]`<br> e.g., `sort date 18/9/2026`
 **View**   | `view INDEX`<br> e.g., `view 1` (refreshes details and the calendar label)
 **Help**   | `help`
+**Exit**   | `exit`
