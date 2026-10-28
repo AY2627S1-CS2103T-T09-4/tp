@@ -22,7 +22,7 @@ public class PrevCommand extends Command {
 
     public static final String COMMAND_WORD = "prev";
     public static final String MESSAGE_USAGE = COMMAND_WORD
-            + ": Restores the latest previous visit for the patient identified by the displayed index.\n"
+            + ": Requests confirmation to restore the latest previous visit for the displayed patient index.\n"
             + "The visit date and time stored before rollback is discarded. There is no redo.\n"
             + "Parameters: INDEX (must be a positive integer)\n"
             + "Example: " + COMMAND_WORD + " 1";
@@ -30,6 +30,13 @@ public class PrevCommand extends Command {
             + "Discarded visit date and time: %3$s";
     public static final String MESSAGE_NO_PREVIOUS_VISIT_DATES =
             "Patient %1$s has no previous visit dates to restore.";
+    public static final String MESSAGE_CONFIRM_PREV = "Restore the previous visit for %1$s (phone: %2$s)? "
+            + "Type y to confirm. Any other input cancels.\n"
+            + "Restore: %3$s\n"
+            + "Discard permanently: %4$s";
+    public static final String MESSAGE_PREV_CANCELLED = "Visit restoration cancelled.";
+    public static final String MESSAGE_PERSON_NO_LONGER_EXISTS =
+            "The patient selected for rollback has changed or no longer exists. Run prev again.";
 
     private final Index index;
 
@@ -43,9 +50,8 @@ public class PrevCommand extends Command {
     }
 
     /**
-     * {@inheritDoc}
-     * Restores the latest previous datetime without clock restrictions, preserves all other patient fields,
-     * and resets the displayed list to stored order. The result requests persistence.
+     * Requests confirmation before restoring the latest previous datetime.
+     * The captured patient is restored only after confirmation, without clock restrictions.
      *
      * @throws CommandException If the displayed index is out of range or the patient has no previous dates.
      */
@@ -62,11 +68,30 @@ public class PrevCommand extends Command {
             throw new CommandException(String.format(MESSAGE_NO_PREVIOUS_VISIT_DATES, personToUpdate.getName()));
         }
 
+        VisitDate restoredVisitDate = personToUpdate.getPreviousVisitDates().getLast();
+        String prompt = String.format(MESSAGE_CONFIRM_PREV, personToUpdate.getName(), personToUpdate.getPhone(),
+                restoredVisitDate, personToUpdate.getVisitDate());
+        CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(
+                prompt, MESSAGE_PREV_CANCELLED,
+                confirmedModel -> restorePreviousVisit(confirmedModel, personToUpdate));
+        return CommandResult.requestInput(inputRequest);
+    }
+
+    /**
+     * Restores the previous visit for the patient captured when the command was first executed.
+     *
+     * @throws CommandException If the captured patient has changed or no longer exists.
+     */
+    private CommandResult restorePreviousVisit(Model model, Person personToUpdate) throws CommandException {
+        if (!model.getAddressBook().getPersonList().contains(personToUpdate)) {
+            throw new CommandException(MESSAGE_PERSON_NO_LONGER_EXISTS);
+        }
+
         Person updatedPerson = createUpdatedPerson(personToUpdate);
         model.setPerson(personToUpdate, updatedPerson);
         model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
-        return new CommandResult(String.format(MESSAGE_SUCCESS, updatedPerson.getName(),
-                updatedPerson.getVisitDate(), personToUpdate.getVisitDate()));
+        return CommandResult.showUpdatedPerson(String.format(MESSAGE_SUCCESS, updatedPerson.getName(),
+                updatedPerson.getVisitDate(), personToUpdate.getVisitDate()), updatedPerson);
     }
 
     /**

@@ -49,11 +49,8 @@ public class FindCommandParser implements Parser<FindCommand> {
      */
     public FindCommand parse(String args) throws ParseException {
         requireNonNull(args);
-        // The tokenizer only recognizes a prefix after a space. Keywords are split on whitespace anyway,
-        // so turning every whitespace run into one space loses nothing and lets tabs separate fields too.
-        String normalizedArgs = args.replaceAll("\\s+", " ");
         ArgumentMultimap argMultimap =
-                ArgumentTokenizer.tokenize(normalizedArgs, PREFIX_NAME, PREFIX_PHONE, PREFIX_ADDRESS, PREFIX_TAG,
+                ArgumentTokenizer.tokenize(args, PREFIX_NAME, PREFIX_PHONE, PREFIX_ADDRESS, PREFIX_TAG,
                         PREFIX_VISIT_DATE, PREFIX_NOTE);
 
         if (!argMultimap.getPreamble().isEmpty()) {
@@ -123,8 +120,13 @@ public class FindCommandParser implements Parser<FindCommand> {
         }
 
         List<LocalDate> days = new ArrayList<>();
-        for (String dayKeyword : dayKeywords.get()) {
-            days.add(parseVisitDay(dayKeyword));
+        try {
+            for (String dayKeyword : dayKeywords.get()) {
+                days.add(parseVisitDay(dayKeyword));
+            }
+        } catch (ParseException exception) {
+            String visitDays = String.join(" ", dayKeywords.get());
+            throw new ParseException(String.format(MESSAGE_INVALID_VISIT_DAY, visitDays), exception);
         }
         return Optional.of(days);
     }

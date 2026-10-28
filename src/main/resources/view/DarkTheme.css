@@ -24,6 +24,54 @@
     -fx-opacity: 1;
 }
 
+.patient-details-name {
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 24px;
+    -fx-text-fill: white;
+}
+
+.patient-details-section {
+    -fx-background-color: #303234;
+    -fx-background-radius: 6;
+    -fx-border-color: #484c4f;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-padding: 12;
+}
+
+.patient-details-visit-section {
+    -fx-border-color: transparent transparent transparent #3e7b91;
+    -fx-border-width: 0 0 0 4;
+}
+
+.patient-details-section-heading {
+    -fx-border-color: transparent transparent #484c4f transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 14px;
+    -fx-padding: 0 0 6 0;
+    -fx-text-fill: #8ecce0;
+}
+
+.patient-details-subheading {
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 12px;
+    -fx-text-fill: #c8cbcd;
+}
+
+.patient-details-value {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 13px;
+    -fx-text-fill: white;
+}
+
+.patient-details-placeholder {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 13px;
+    -fx-font-style: italic;
+    -fx-text-fill: #c8cbcd;
+}
+
 .text-field {
     -fx-font-size: 12pt;
     -fx-font-family: "Segoe UI Semibold";
