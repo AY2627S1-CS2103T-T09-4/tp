@@ -554,10 +554,11 @@ otherwise, the descriptor's note remains null. Notes-only replacement and cleari
 The descriptor copy preserves this distinction, and `createEditedPerson` uses the supplied note or preserves
 the patient's existing note. Supplying the same note again, or clearing an already-empty note, succeeds.
 
-The existing tokenizer uses `String#trim()` on outer whitespace, preserves internal spaces, and recognizes
-prefixes preceded by a literal space. A recognized prefix inside notes delimits another field; there is no
-escaping or extra note validation. Repeated `note/` prefixes are rejected before field validation, including identical or empty
-values. Repeated `t/TAG` prefixes retain their existing replacement and clearing behavior.
+The existing tokenizer uses `String#strip()` on outer whitespace, preserves internal spaces, and recognizes prefixes
+at the start of the arguments or after Java whitespace. A recognized prefix inside notes delimits another field;
+there is no quoting or escaping for literal prefix text, or extra note validation. Repeated `note/` prefixes are
+rejected before field validation, including identical or empty values.
+Repeated `t/TAG` prefixes retain their existing replacement and clearing behavior.
 
 Editing replaces the supplied fields without appending visit-history entries or per-visit notes. Saving and UI
 behavior follow the [shared visit-change flow](#saving-and-displaying-visit-changes) below.
@@ -656,10 +657,10 @@ evaluates the predicate for each stored patient whenever the displayed list is r
 
 `FindCommandParser#parse` handles the arguments in these steps:
 
-1. It replaces every run of whitespace, including tabs and line breaks, with one space. `ArgumentTokenizer` only
-   recognizes a prefix that follows a space, so without this step `n/alex<TAB>p/9123` would read `p/9123` as another
-   name keyword and silently drop the phone criterion. Keywords are split on whitespace anyway, so nothing is lost.
-1. It tokenizes the arguments, then rejects text before the first prefix with `MESSAGE_KEYWORDS_NEED_PREFIX` and
+1. It tokenizes the arguments. `ArgumentTokenizer` recognizes prefixes at the start of the arguments or after Java
+   whitespace, so spaces, tabs, and line breaks separate fields consistently. A prefix-looking token separated by
+   whitespace still starts a new field because the tokenizer has no quoting or escaping mechanism.
+1. It rejects text before the first prefix with `MESSAGE_KEYWORDS_NEED_PREFIX` and
    repeated prefixes with the shared duplicate-prefix error.
 1. For each prefix that is present, it splits the value into keywords and creates that field's predicate.
    An empty prefix such as `n/` is rejected. Phone keywords must be digits. Visit dates are parsed strictly with

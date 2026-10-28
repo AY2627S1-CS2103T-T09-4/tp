@@ -49,11 +49,8 @@ public class FindCommandParser implements Parser<FindCommand> {
      */
     public FindCommand parse(String args) throws ParseException {
         requireNonNull(args);
-        // The tokenizer only recognizes a prefix after a space. Keywords are split on whitespace anyway,
-        // so turning every whitespace run into one space loses nothing and lets tabs separate fields too.
-        String normalizedArgs = args.replaceAll("\\s+", " ");
         ArgumentMultimap argMultimap =
-                ArgumentTokenizer.tokenize(normalizedArgs, PREFIX_NAME, PREFIX_PHONE, PREFIX_ADDRESS, PREFIX_TAG,
+                ArgumentTokenizer.tokenize(args, PREFIX_NAME, PREFIX_PHONE, PREFIX_ADDRESS, PREFIX_TAG,
                         PREFIX_VISIT_DATE, PREFIX_NOTE);
 
         if (!argMultimap.getPreamble().isEmpty()) {
