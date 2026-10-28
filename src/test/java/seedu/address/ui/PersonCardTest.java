@@ -90,6 +90,41 @@ public class PersonCardTest {
     }
 
     @Test
+    public void constructor_emptyEmailAndNote_hidesRowsWithoutLeavingSpace() {
+        runOnFxThread(() -> {
+            Person patient = new PersonBuilder().withEmail("").withNote("").build();
+            PersonCard card = new PersonCard(patient, 1);
+            Label email = (Label) card.getRoot().lookup("#email");
+            Label note = (Label) card.getRoot().lookup("#note");
+
+            assertEquals("", email.getText());
+            assertFalse(email.isVisible());
+            assertFalse(email.isManaged());
+            assertEquals("", note.getText());
+            assertFalse(note.isVisible());
+            assertFalse(note.isManaged());
+        });
+    }
+
+    @Test
+    public void constructor_recordedEmailAndNote_displaysRows() {
+        runOnFxThread(() -> {
+            Person patient = new PersonBuilder().withEmail("amy@example.com")
+                    .withNote("Call before the next visit").build();
+            PersonCard card = new PersonCard(patient, 1);
+            Label email = (Label) card.getRoot().lookup("#email");
+            Label note = (Label) card.getRoot().lookup("#note");
+
+            assertEquals("amy@example.com", email.getText());
+            assertTrue(email.isVisible());
+            assertTrue(email.isManaged());
+            assertEquals("Call before the next visit", note.getText());
+            assertTrue(note.isVisible());
+            assertTrue(note.isManaged());
+        });
+    }
+
+    @Test
     public void publicConstructor_pastVisit_addsPastVisitStyle() {
         runOnFxThread(() -> {
             Person person = new PersonBuilder().withVisitDate("1/1/2000 1000").build();

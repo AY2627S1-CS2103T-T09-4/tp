@@ -217,7 +217,7 @@ public class LogicManagerTest {
 
         CommandResult confirmedResult = logic.execute("y");
 
-        assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, personToAdd.getName()),
+        assertEquals(AddCommand.formatSuccessMessage(personToAdd),
                 confirmedResult.getFeedbackToUser());
         assertFalse(logic.isInputRequestPending());
         assertTrue(model.getAddressBook().getPersonList().contains(personToAdd));
