@@ -127,8 +127,15 @@ Here are the other classes in `Logic` (omitted from the class diagram above) tha
 <puml src="diagrams/ParserClasses.puml" width="600"/>
 
 How the parsing works:
-* When called upon to parse a user command, the `AddressBookParser` class creates an `XYZCommandParser` (`XYZ` is a placeholder for the specific command name, e.g., `AddCommandParser`). The parser uses the other classes shown above to parse the user command and create an `XYZCommand` object (e.g., `AddCommand`). The `AddressBookParser` returns that object as a `Command` object.
+* When called upon to parse a user command, `AddressBookParser` creates or reuses the appropriate `XYZCommandParser`
+  (`XYZ` is a placeholder for the command name, e.g., `AddCommandParser`). That parser creates an `XYZCommand`
+  object (e.g., `AddCommand`), which `AddressBookParser` returns as a `Command`.
 * All `XYZCommandParser` classes, such as `AddCommandParser` and `DeleteCommandParser`, implement the `Parser` interface so they can be treated similarly where appropriate, for example during testing.
+
+`AddressBookParser` creates and retains one `NextCommandParser` when it is constructed, supplying a configurable
+`Clock`. Each `next` command uses that parser and receives the same clock. Other parsers, such as
+`PrevCommandParser`, are created on demand for each command. Reusing the next-command parser retains the clock
+dependency, not a startup timestamp: eligibility checks read the clock during command execution.
 
 ### Model component
 **API** : [`Model.java`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/java/seedu/address/model/Model.java)
@@ -557,10 +564,11 @@ behavior follow the [shared visit-change flow](#saving-and-displaying-visit-chan
 
 ### Saving and displaying visit changes
 
-`edit`, `next`, and `prev` validate the proposed change before replacing the patient. Successful commands follow
-the existing `add`/`edit` interaction pattern: clear filtering and sorting, show the full list in stored order,
-and return feedback with a `CommandResult` that requests saving. `LogicManager` saves through storage before
-returning the result to the UI.
+`edit`, `next`, and confirmed `prev` validate the proposed change before replacing the patient. A valid `prev` first
+returns a non-saving `CommandInputRequest`; only its confirmed callback replaces the captured patient. Successful
+commands follow the existing `add`/`edit` interaction pattern: clear filtering and sorting, show the full list in
+stored order, and return feedback with a `CommandResult` that requests saving. `LogicManager` saves through storage
+before returning the result to the UI.
 
 These results do not select a patient for the details panel. Users must run `view` with the patient's newly
 displayed index to refresh the record and calendar label. `view` supplies the patient without requesting a save.
@@ -710,9 +718,10 @@ A later visit on the same day does not ask, because it replaces that day's visit
 On confirmation, the command rechecks eligibility using a fresh clock reading, verifies that the original record
 still exists, and repeats the conflict check before replacing the patient.
 
-The following sequence diagram shows successful execution of `next` when no busy-day confirmation is required. It
-includes command creation, replacement-patient construction, model updates, and saving through `Storage`. Validation,
-conflict checking, and the optional confirmation branch are omitted.
+The following sequence diagram focuses on command execution, model updates, and saving through `Storage` for `next`
+when no busy-day confirmation is required. Command parsing and object construction are omitted; see the
+[Logic overview](#logic-component) for parser routing and lifecycles. Validation, conflict checking, and the optional
+confirmation branch are also omitted.
 
 <puml src="diagrams/NextSequenceDiagram.puml" alt="Successful execution of next when no busy-day confirmation is required" width="800" />
 
@@ -729,19 +738,32 @@ patient's latest record, preserving intervening edits.
 The [User Guide](UserGuide.md#restoring-the-previous-visit-prev) includes syntax, feedback, and a running example.
 
 There is no clock eligibility check: rollback must allow immediate correction of mistaken advancement, even while
-the current or restored datetime is still in the future. It does not request confirmation; success feedback names
-both the restored and discarded datetimes so the loss is visible.
+the current or restored datetime is still in the future. Every valid rollback first returns a
+`CommandInputRequest` containing the selected patient's current name and phone, the restored and discarded
+datetimes, and the confirmation instruction. The initial execution does not mutate, reset, refresh, or save anything.
+
+The shared [follow-up input handling](#follow-up-command-line-input-and-confirmation) trims the response and
+compares it to `y` case-insensitively; other responses are consumed as cancellation. The shared
+[visit-change persistence flow](#saving-and-displaying-visit-changes) describes when the confirmed mutation is
+saved. For this feature, the request captures the immutable selected `Person` and invokes a private rollback helper
+only after confirmation. The helper checks the stored person list with full `Person.equals` semantics before creating
+the replacement. If an intervening edit or deletion changed the record, it throws the stale-selection error without
+changing the replacement record or displayed list. Otherwise it calls `createUpdatedPerson`, replaces the captured
+patient, and restores the full list in stored order.
 
 Empty previous dates produce a `CommandException` before the private rollback helper runs. The helper's assertion
 documents that internal precondition, while user-input validation remains effective with assertions disabled.
 The replacement contains only dates from the original record, so it cannot introduce a new cross-patient datetime
 conflict. The model still enforces chronology and uniqueness on replacement.
 
-The following sequence diagram shows successful execution of `prev` when the selected patient has visit history. It
-includes command creation, replacement-patient construction, model updates, and saving through `Storage`. Validation
-and error paths are omitted.
+The following sequence diagram focuses on confirmation and successful execution of `prev` for a patient with visit
+history. The first command returns a confirmation request without changing or saving patient data. The second input,
+`y`, invokes the rollback on the same captured patient, then saves through `Storage`. Command parsing and object
+construction are omitted; see the [Logic overview](#logic-component) for parser routing and lifecycles. Error and
+cancellation paths are also omitted. `capturedPatient`
+denotes the selected `Person` retained by the request; `updatedPerson` is its replacement after rollback.
 
-<puml src="diagrams/PrevSequenceDiagram.puml" alt="Successful execution of prev when the selected patient has visit history" width="800" />
+<puml src="diagrams/PrevSequenceDiagram.puml" alt="Two-stage successful execution of prev with confirmation and persistence" width="800" />
 
 Manual checks for repeated rollback, subsequent advancement, and persistence appear under
 [Testing the prev command](#testing-the-prev-command).
@@ -768,9 +790,10 @@ to case. It runs the supplied action only for that response; every other respons
 message.
 
 For additions with a name duplicate or a full visit day, and for same-name edits, `AddCommand` and `EditCommand` use
-the same confirmation helper as destructive commands. The prompt does not mutate or save patient data. Confirmation performs the captured mutation and saves
-once; every other response cancels without saving. The proposed patient is captured before the prompt, and confirmed
-actions recheck both the true-duplicate and unique-visit-date invariants before modifying the model.
+the same confirmation helper as destructive commands. The prompt does not mutate or save patient data. Confirmation
+performs the captured mutation and saves once; every other response cancels without saving. The proposed patient is
+captured before the prompt, and confirmed actions recheck both the true-duplicate and unique-visit-date invariants
+before modifying the model.
 
 For `delete INDEX`, `DeleteCommand` validates the index and captures the exact displayed `Person` before requesting
 confirmation. The prompt contains only that person's name because other fields can be absent. Confirmation deletes
@@ -1235,13 +1258,18 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * Only the selected patient's current and previous visit datetimes change; intervening edits to other fields remain.
 * The datetime stored as current before rollback is discarded, with no redo. Rollback does not verify attendance
   or completion.
-* Invalid selection or empty previous dates leave patient data, saved data, list context, and details unchanged.
+* Prompting and cancellation leave patient data, saved data, list context, and details unchanged. Invalid selection
+  or empty previous dates are rejected immediately without prompting.
+* A confirmed rollback saves once. A captured patient that changed or disappeared is not overwritten.
 
 **MSS**
 
 1.  Doctor requests rollback for a patient identified by their displayed index.
-2.  Doc makes the latest previous datetime current and removes it from the previous-date list.
-3.  Doc saves the changed record, reports the restored and discarded datetimes, and shows the full caseload in
+2.  Doc displays the selected patient's name, phone, restored datetime, discarded datetime, and permanent-discard warning,
+    then asks for confirmation.
+3.  Doctor enters `y`, ignoring surrounding whitespace and letter case.
+4.  Doc makes the latest previous datetime current and removes it from the previous-date list.
+5.  Doc saves the changed record, reports the restored and discarded datetimes, and shows the full caseload in
     stored order.
 
     Use case ends.
@@ -1257,6 +1285,18 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * 1b. The selected patient has no previous datetime to restore.
 
     * 1b1. Doc explains that no previous visit dates remain.
+
+      Use case ends.
+
+* 3a. Doctor enters any response other than trimmed, case-insensitive `y`, including blank input or valid command text.
+
+    * 3a1. Doc reports `Visit restoration cancelled.` without changing or saving the record. The response is consumed.
+
+      Use case ends.
+
+* 4a. The captured patient changed or no longer exists before confirmation.
+
+    * 4a1. Doc reports the stale-selection error without changing the replacement record or displayed list.
 
       Use case ends.
 
@@ -1908,14 +1948,18 @@ table. Choose another globally unused future datetime for `F4`.
 Find the patient again after each successful mutation, since success restores the full list in stored order.
 Record `all/Penicillin; latex alc/Does not drink smk/former` before rollback and check that all three fields
 remain unchanged after each `prev`, including after restarting Doc.
+For every valid `prev`, verify that the first command only shows the confirmation prompt and leaves the record,
+saved JSON, displayed context, and details panel unchanged. Enter `y` (or `Y` with surrounding spaces) to complete
+the rollback; enter any other response to cancel. A cancellation response is consumed and must not execute as a
+command.
 
 1. Run `find n/Nextalpha`, then `view 1`. Try `prev`, `prev 0`, `prev 2147483648`, `prev 1 extra`, and `prev 2`.<br>
    Expect usage for malformed arguments, `Index is too large.` with guidance and usage for `prev 2147483648`,
    and the invalid-index error for `prev 2`. Verify that patient data, the saved JSON, filtered list, and
    displayed details remain unchanged.
 1. Run `edit 1 vd/30/10/2026 0900 p/84567890 e/updated@example.com a/30 Updated Road all/Penicillin; latex alc/Does not drink smk/former note/Updated before rollback t/followup dob/15/6/1990 bt/A+ ec/Mary Tan, 91234567`,
-   then `find n/Nextalpha` and `prev 1`.<br>
-   Expect success even though the replacement datetime is in the future. Verify that feedback identifies `P2` as restored and the replacement datetime
+   then `find n/Nextalpha`, `prev 1`, and `y`.<br>
+   Expect the prompt before confirmation and success even though the replacement datetime is in the future. Verify that feedback identifies `P2` as restored and the replacement datetime
    as discarded, including the time for both. Find and view the patient again: current is `P2`, previous
    dates are `[P1]`, and the updated phone, email, address, note, tags, date of birth, blood type, and emergency
    contact remain. The replaced current datetime `F4` is discarded rather than restored or appended to previous dates.
@@ -1923,15 +1967,21 @@ remain unchanged after each `prev`, including after restarting Doc.
 1. Run `find n/Nextalpha`, then `next 1 28/10/2026 0900` (the illustration's `F2`).<br>
    Expect current `F2` and previous dates `[P1, P2]`. Rollback did not retain either discarded future datetime.
 1. Run `find n/Nextalpha Nextbeta`, then `sort date 1/1/2000`.<br>
-   Expect Nextbeta at `F1` to be index 1 and Nextalpha at `F2` to be index 2. Run `view 2`, then `prev 2`.
-   Expect Nextalpha to change and the full list to return in stored order. The right-hand details remain as last
+   Expect Nextbeta at `F1` to be index 1 and Nextalpha at `F2` to be index 2. Run `view 2`, then `prev 2`, and `y`.
+   Expect the prompt to identify Nextalpha and then the patient to change with the full list returning in stored order. The right-hand details remain as last
    viewed until another `view`. Find and view Nextalpha again: current is `P2`, previous dates are `[P1]`.
    Find and view Nextbeta separately: its record remains unchanged at `F1` with previous dates `[P3]`.
    Run `find n/Nextalpha` and `view 1` before continuing.
-1. Run `prev 1` while only Nextalpha is displayed.<br>
+1. With Nextalpha at `P2` and previous dates `[P1]`, run `find n/Nextalpha`, then start a fresh `prev 1` request
+   and respond separately with `n`, an empty response, and `yes` in independent repetitions.<br>
+   Expect `Visit restoration cancelled.` each time, with no model, saved-file, filter, sort, or details change. The
+   response is consumed and must not execute as a command.
+1. Repeat the cancellation case with `prev 1` followed by `list`. The `list` response is consumed; submit `list`
+   again to execute it normally, then re-find and view Nextalpha before continuing.
+1. Run `prev 1` while only Nextalpha is displayed, then enter `y`.<br>
    Find and view it again: current is `P1`, previous dates are empty, and the note remains updated. Close and reopen
    Doc and verify that this state persists.
-1. Run `find n/Nextalpha Nextbeta`, then `sort date`, then `view 2` and `prev 2`.<br>
+1. Run `find n/Nextalpha Nextbeta`, then `sort date`, then `view 2` and `prev 2`.
    Expect future Nextbeta first and past Nextalpha second before the rejected rollback.
    Expect `Patient Nextalpha Patient has no previous visit dates to restore.` Verify that the record, saved file,
    filtered list, sorted order, and details are unchanged. There is no redo command.

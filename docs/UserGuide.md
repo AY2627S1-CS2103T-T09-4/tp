@@ -513,7 +513,18 @@ Format: `prev INDEX`
 * The current datetime is discarded and replaced with the latest previous datetime.
   The restored datetime is removed from the previous-date list. There is no redo.
 * Rollback is allowed even when the current or restored datetime is in the future. It does not apply `next`'s
-  clock restrictions and does not ask for confirmation.
+  clock restrictions. Every valid rollback displays the patient's name, phone number, restored datetime, and discarded
+  datetime, then asks for confirmation:
+
+  ```text
+  Restore the previous visit for NAME (phone: PHONE)? Type y to confirm. Any other input cancels.
+  Restore: RESTORED_DATETIME
+  Discard permanently: CURRENT_DATETIME
+  ```
+
+  Enter `y`, with optional surrounding whitespace and any letter case, to confirm. Every other response cancels and
+  is consumed as the confirmation response, even if it is valid command text. Prompting and cancellation do not
+  change records, filtering, sorting, or saved data.
 * Rollback also works after an intervening `edit`. It preserves the patient's latest name, contact details,
   address, allergies, alcohol history, smoking status, note, and tags; it restores only visit-date state.
 * Success shows `Visit date restored for NAME: RESTORED_DATETIME` followed by
@@ -536,9 +547,9 @@ currently displayed `INDEX` for each command. Each row continues from the previo
 | Initial sample record | `5/10/2026 1530` | `[]` |
 | `next INDEX 30/10/2026 1000` | `30/10/2026 1000` | `[5/10/2026 1530]` |
 | `edit INDEX vd/1/11/2026 0930 note/Review medication` | `1/11/2026 0930` | `[5/10/2026 1530]` |
-| `prev INDEX` | `5/10/2026 1530` | `[]` |
+| `prev INDEX`, then `y` | `5/10/2026 1530` | `[]` |
 | `next INDEX 2/11/2026 0930` | `2/11/2026 0930` | `[5/10/2026 1530]` |
-| `prev INDEX` | `5/10/2026 1530` | `[]` |
+| `prev INDEX`, then `y` | `5/10/2026 1530` | `[]` |
 | `prev INDEX` again | Unchanged; no previous dates to restore. | `[]` |
 
 After the edit, the note remains `Review medication` through all later steps. The first rollback discards
@@ -634,7 +645,7 @@ Format: `exit`
 
 ### Saving the data
 
-Doc automatically saves completed changes, including successful `add`, `edit`, `next`, and `prev` commands.
+Doc automatically saves completed changes, including successful `add`, `edit`, `next`, and confirmed `prev` commands.
 `view` displays details without saving patient data. Confirmation prompts, cancelled operations, and
 `clear` when there are no patient records do not write a file because they do not change stored data. You do not need
 to save manually.
@@ -702,7 +713,7 @@ Action     | Format, Examples
 **Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`<br> e.g., `find n/George a/maple`, `find vd/15/10/2026`, `find note/mobility`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (current visit must have arrived; choose an available future appointment)
-**Prev**   | `prev INDEX`<br> e.g., `prev 1` (requires a previous datetime; replaces and discards the current datetime; no redo)
+**Prev**   | `prev INDEX`<br> e.g., `prev 1` (requires a previous datetime and `y` confirmation; replaces and discards the current datetime; no redo)
 **Sort**   | `sort date [START_DATE]`<br> e.g., `sort date 18/9/2026`
 **View**   | `view INDEX`<br> e.g., `view 1` (refreshes details and the calendar label)
 **Help**   | `help`
