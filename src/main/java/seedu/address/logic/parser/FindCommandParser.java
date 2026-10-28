@@ -123,8 +123,13 @@ public class FindCommandParser implements Parser<FindCommand> {
         }
 
         List<LocalDate> days = new ArrayList<>();
-        for (String dayKeyword : dayKeywords.get()) {
-            days.add(parseVisitDay(dayKeyword));
+        try {
+            for (String dayKeyword : dayKeywords.get()) {
+                days.add(parseVisitDay(dayKeyword));
+            }
+        } catch (ParseException exception) {
+            String visitDays = String.join(" ", dayKeywords.get());
+            throw new ParseException(String.format(MESSAGE_INVALID_VISIT_DAY, visitDays), exception);
         }
         return Optional.of(days);
     }

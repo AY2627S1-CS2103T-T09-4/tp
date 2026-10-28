@@ -134,7 +134,9 @@ public class FindCommandParserTest {
         assertParseFailure(parser, " vd/2026-09-18", String.format(FindCommandParser.MESSAGE_INVALID_VISIT_DAY,
                 "2026-09-18"));
         assertParseFailure(parser, " vd/18/9/2026 1000", String.format(FindCommandParser.MESSAGE_INVALID_VISIT_DAY,
-                "1000"));
+                "18/9/2026 1000"));
+        assertParseFailure(parser, " vd/10/10/1010 x/", String.format(FindCommandParser.MESSAGE_INVALID_VISIT_DAY,
+                "10/10/1010 x/"));
     }
 
     @Test
