@@ -229,10 +229,13 @@ public class PatientDetailsPanelTest {
             assertEquals("Contact information", getSectionHeading(panel, "contactSection").getText());
             assertEquals("Additional notes", getSectionHeading(panel, "additionalNotesSection").getText());
             assertEquals("Visit history", getSectionHeading(panel, "visitHistorySection").getText());
+<<<<<<< HEAD
         });
     }
 
     @Test
+=======
+>>>>>>> 984f509c0ccd1e8db069bf6b9066fd0060457289
     public void setPerson_emailAndNote_hidesEmptyFieldsAndRestoresPopulatedFields() {
         runOnFxThread(() -> {
             PatientDetailsPanel panel = new PatientDetailsPanel(FIXED_CLOCK);
