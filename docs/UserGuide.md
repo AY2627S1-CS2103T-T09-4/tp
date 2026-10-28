@@ -207,11 +207,10 @@ Format: `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HIST
   Omitting `smk/` leaves the status unrecorded. Explicit `smk/unknown` records that the status is unknown;
   it is distinct from having no record. Blank values, unsupported statuses, and repeated `smk/` are rejected on add.
   The examples place `smk/` immediately after `alc/`; prefixes can still appear in any order.
-* On success, the app shows `Added patient` followed by the patient's name, phone number, email (if given), address,
-  and tags, with the visit date on the next line. The new patient appears in the list and its full record appears in
-  the patient details panel. For example:<br>
-  `Added patient John Tan; Phone: 91234567; Address: 123 Clementi Road; Tags: `<br>
-  `Visit date: 22/10/2026 1000`
+* On success, the app shows `Added patient` followed by the patient's recorded details: name, phone number, email,
+  address, visit date, any recorded health details and note, and tags. Details that were not given are left out.
+  The new patient appears in the list and its full record appears in the patient details panel. For example:<br>
+  `Added patient John Tan; Phone: 91234567; Address: 123 Clementi Road; Visit date: 22/10/2026 1000; Emergency contact: 98765432 (Mary Tan)`
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
 * A patient with the same normalized name and phone number as an existing patient is a duplicate and cannot be added.
 * If only the name matches an existing patient, the app shows the matching patient in the patient details panel and
@@ -441,6 +440,8 @@ Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALC
 * Editing replaces the stored visit date and time; it does not append a visit-history entry.
   Use `edit ... vd/` to correct a missed or rescheduled appointment, or
   [next](#scheduling-the-next-visit-next) to schedule the following visit.
+* On success, the app shows `Edited person:` followed by the patient's updated details in the same form as `add`,
+  including the visit date and any recorded health details, so you can check the change.
 * After editing, the patient details panel automatically shows the updated record.
 * When editing tags, all of the patient's existing tags are removed; adding tags is not cumulative.
 * To remove all of a patient's tags, enter `t/` without a tag after it.
@@ -632,6 +633,7 @@ Format: `delete INDEX`
 * The index refers to the index number shown in the displayed patient list.
 * The index **must be a positive integer** 1, 2, 3, ...
 * A valid command displays `Delete NAME? Type y to confirm. Any other input cancels.` without deleting the patient.
+  After `y`, the app shows `Deleted person:` followed by the deleted patient's details in the same form as `add`.
 * Type `y` and press Enter to confirm. Surrounding spaces and letter case are ignored.
 * Any other input, including an empty response or another valid command, cancels the deletion and is not run as a
   command. The result display then shows `Deletion cancelled.`
