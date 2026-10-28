@@ -100,8 +100,8 @@ Choose the command according to what you want to change:
 | Leave a final visit recorded without planning another. | No command needed. | Keep the current datetime, including after it becomes past. |
 
 Successful `edit`, `next`, and `prev` commands show the full patient list in stored order, clearing filtering and
-sorting. The details panel continues showing the last record viewed. Check the newly displayed index and run
-`view INDEX` to refresh the record and its calendar label. To return to search results, run `find` again.
+sorting. The details panel automatically shows the updated patient and refreshes the record and its calendar label.
+To return to search results, run `find` again.
 
 When `next` moves an appointment to a different day that already has seven or more current appointments, Doc asks for
 confirmation. Patients hidden by filtering still count, but previous visit history does not. Moving the appointment to
@@ -201,7 +201,8 @@ Format: `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HIST
   it is distinct from having no record. Blank values, unsupported statuses, and repeated `smk/` are rejected on add.
   The examples place `smk/` immediately after `alc/`; prefixes can still appear in any order.
 * On success, the app shows `Added patient` followed by the patient's name, phone number, email (if given), address,
-  and tags, with the visit date on the next line. The new patient appears in the list. For example:<br>
+  and tags, with the visit date on the next line. The new patient appears in the list and its full record appears in
+  the patient details panel. For example:<br>
   `Added patient John Tan; Phone: 91234567; Address: 123 Clementi Road; Tags: `<br>
   `Visit date: 22/10/2026 1000`
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
@@ -380,7 +381,7 @@ Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALC
 * Use `dob/DATE` to add or replace the date of birth, e.g. `edit 1 n/John Doe dob/15/6/1990`.
   The same date rules as `add` apply to nonempty values. Omitting `dob/` preserves the current value.
   Use an empty `dob/`, e.g. `edit 1 dob/`, to clear the date of birth. Whitespace-only values also clear it.
-  Clearing an already empty date of birth is allowed. Run `view INDEX` again to hide the date of birth row.
+  Clearing an already empty date of birth is allowed. The patient details panel refreshes automatically.
   Repeated `dob/` prefixes are rejected, including when one or both values are empty.
 * Use `bt/BLOOD_TYPE` to add or replace blood type, e.g. `edit 1 bt/O-`. The same valid values and normalization
   rules as `add` apply. Omitted `bt/` preserves the current blood type.
@@ -424,7 +425,7 @@ Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALC
 * Editing replaces the stored visit date and time; it does not append a visit-history entry.
   Use `edit ... vd/` to correct a missed or rescheduled appointment, or
   [next](#scheduling-the-next-visit-next) to schedule the following visit.
-* After editing, follow the [visit-record interaction rules](#visit-records) to find the patient and refresh details.
+* After editing, the patient details panel automatically shows the updated record.
 * When editing tags, all of the patient's existing tags are removed; adding tags is not cumulative.
 * To remove all of a patient's tags, enter `t/` without a tag after it.
 * An edit that would give a patient the same normalized name and phone number as another patient is rejected.
@@ -483,10 +484,10 @@ Format: `next INDEX DATETIME`
   A next visit later on the same day as the current visit does not ask, since that day's visit count does not grow.
 * Success appends the old current date and time to the previous dates, then sets the new current date and time.
   All other details, including empty optional fields, are preserved. Previous dates are saved in order in the
-  JSON data file and appear below the current visit date when you run `view INDEX`.
+  JSON data file and appear below the current visit date in the automatically refreshed patient details panel.
 * If no further visit is planned, leave the current date and time unchanged, even after it passes.
-* Success shows `Next visit scheduled for patient NAME: DATETIME` and saves the record. Follow the
-  [visit-record interaction rules](#visit-records) to find the patient and refresh details.
+* Success shows `Next visit scheduled for patient NAME: DATETIME`, saves the record, and automatically shows the
+  updated patient in the details panel.
 * Validation errors preserve data and the displayed list. A save failure reports a storage error; the in-memory
   appointment may already have changed.
 
@@ -525,7 +526,7 @@ Format: `prev INDEX`
   address, allergies, alcohol history, smoking status, note, and tags; it restores only visit-date state.
 * Success shows `Visit date restored for NAME: RESTORED_DATETIME` followed by
   `Discarded visit date and time: DISCARDED_DATETIME` on the next line. Both values include the time.
-  It saves the record. Follow the [visit-record interaction rules](#visit-records) to find the patient and refresh details.
+  It saves the record and automatically shows the updated patient in the details panel.
 * Repeating `prev` restores one earlier datetime each time. When none remain, it reports
   `Patient NAME has no previous visit dates to restore.` without changing data or the displayed list.
 * A missing index shows usage. Invalid indices, including additional arguments, show the shared
@@ -608,6 +609,8 @@ Format: `delete INDEX`
 * Any other input, including an empty response or another valid command, cancels the deletion and is not run as a
   command. The result display then shows `Deletion cancelled.`
 * Invalid `delete` commands show the shared index errors and do not ask for confirmation.
+* After a successful deletion, the details panel is cleared only if it was showing the deleted patient. Details for
+  another patient remain visible.
 
 Examples:
 * `list` followed by `delete 2`, then `y`, deletes the 2nd patient in Doc.
@@ -626,6 +629,7 @@ Format: `clear`
   a command. The result display then shows `Clear cancelled.`
 * If Doc has no patient records, no confirmation is requested and the result display shows
   `Address book is already empty.`
+* After a successful clear, the patient details panel is also cleared.
 
 Example: `clear` followed by `y` clears every entry.
 

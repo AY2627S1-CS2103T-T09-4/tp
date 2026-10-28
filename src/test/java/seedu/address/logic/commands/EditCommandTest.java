@@ -103,7 +103,8 @@ public class EditCommandTest {
         Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
         expectedModel.setPerson(model.getFilteredPersonList().get(0), editedPerson);
 
-        assertCommandSuccess(editCommand, model, expectedMessage, expectedModel);
+        assertCommandSuccess(editCommand, model,
+                CommandResult.showUpdatedPerson(expectedMessage, editedPerson), expectedModel);
     }
 
     @Test
@@ -124,7 +125,8 @@ public class EditCommandTest {
         Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
         expectedModel.setPerson(lastPerson, editedPerson);
 
-        assertCommandSuccess(editCommand, model, expectedMessage, expectedModel);
+        assertCommandSuccess(editCommand, model,
+                CommandResult.showUpdatedPerson(expectedMessage, editedPerson), expectedModel);
     }
 
     @Test
@@ -139,7 +141,10 @@ public class EditCommandTest {
         expectedModel.setPerson(firstPerson, editedPerson);
 
         assertCommandSuccess(new EditCommand(INDEX_FIRST_PERSON, descriptor), model,
-                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), expectedModel);
+                CommandResult.showUpdatedPerson(
+                        String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
+                        editedPerson),
+                expectedModel);
     }
 
     @Test
@@ -154,6 +159,7 @@ public class EditCommandTest {
 
         assertEquals(String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
                 result.getFeedbackToUser());
+        assertEquals(editedPerson, result.getPersonToView().orElseThrow());
         assertTrue(result.getInputRequest().isEmpty());
         assertTrue(model.getAddressBook().getPersonList().contains(editedPerson));
     }
@@ -167,7 +173,8 @@ public class EditCommandTest {
 
         Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
 
-        assertCommandSuccess(editCommand, model, expectedMessage, expectedModel);
+        assertCommandSuccess(editCommand, model,
+                CommandResult.showUpdatedPerson(expectedMessage, editedPerson), expectedModel);
     }
 
     @Test
@@ -184,7 +191,8 @@ public class EditCommandTest {
         Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
         expectedModel.setPerson(model.getFilteredPersonList().get(0), editedPerson);
 
-        assertCommandSuccess(editCommand, model, expectedMessage, expectedModel);
+        assertCommandSuccess(editCommand, model,
+                CommandResult.showUpdatedPerson(expectedMessage, editedPerson), expectedModel);
     }
 
     @Test
@@ -255,7 +263,10 @@ public class EditCommandTest {
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
         expectedModel.setPerson(personWithNotes, editedPerson);
         assertCommandSuccess(command, model,
-                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), expectedModel);
+                CommandResult.showUpdatedPerson(
+                        String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
+                        editedPerson),
+                expectedModel);
     }
 
     @Test
@@ -330,7 +341,9 @@ public class EditCommandTest {
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
 
         assertCommandSuccess(command, model,
-                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(original)), expectedModel);
+                CommandResult.showUpdatedPerson(
+                        String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(original)), original),
+                expectedModel);
     }
 
     @Test
@@ -362,7 +375,10 @@ public class EditCommandTest {
         expectedModel.setPerson(original, editedPerson);
 
         assertCommandSuccess(command, model,
-                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), expectedModel);
+                CommandResult.showUpdatedPerson(
+                        String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
+                        editedPerson),
+                expectedModel);
     }
 
     @Test
@@ -380,7 +396,10 @@ public class EditCommandTest {
                 new EditPersonDescriptorBuilder().withVisitDate(VALID_VISIT_DATE_AMY).build());
 
         assertCommandSuccess(command, model,
-                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), expectedModel);
+                CommandResult.showUpdatedPerson(
+                        String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
+                        editedPerson),
+                expectedModel);
         assertEquals(editedPerson, model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased()));
     }
 
@@ -395,7 +414,10 @@ public class EditCommandTest {
         expectedModel.setPerson(original, editedPerson);
 
         assertCommandSuccess(command, model,
-                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), expectedModel);
+                CommandResult.showUpdatedPerson(
+                        String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
+                        editedPerson),
+                expectedModel);
     }
 
     @Test
@@ -584,6 +606,7 @@ public class EditCommandTest {
 
         assertEquals(String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
                 confirmedResult.getFeedbackToUser());
+        assertEquals(editedPerson, confirmedResult.getPersonToView().orElseThrow());
         assertTrue(confirmedResult.shouldSaveAddressBook());
         assertTrue(model.getAddressBook().getPersonList().contains(editedPerson));
         assertFalse(model.getAddressBook().getPersonList().contains(secondPerson));
@@ -717,6 +740,7 @@ public class EditCommandTest {
 
         assertEquals(String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
                 confirmedResult.getFeedbackToUser());
+        assertEquals(editedPerson, confirmedResult.getPersonToView().orElseThrow());
         assertTrue(confirmedResult.shouldSaveAddressBook());
         assertTrue(model.getAddressBook().getPersonList().contains(editedPerson));
         assertFalse(model.getAddressBook().getPersonList().contains(otherDayPerson));
@@ -782,6 +806,7 @@ public class EditCommandTest {
 
         assertEquals(String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
                 confirmedResult.getFeedbackToUser());
+        assertEquals(editedPerson, confirmedResult.getPersonToView().orElseThrow());
         assertTrue(confirmedResult.getInputRequest().isEmpty());
         assertTrue(model.getAddressBook().getPersonList().contains(editedPerson));
     }
@@ -823,7 +848,10 @@ public class EditCommandTest {
         expectedModel.setPerson(original, editedPerson);
 
         assertCommandSuccess(command, model,
-                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), expectedModel);
+                CommandResult.showUpdatedPerson(
+                        String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
+                        editedPerson),
+                expectedModel);
     }
 
     @Test
@@ -890,6 +918,9 @@ public class EditCommandTest {
         EditCommand command = new EditCommand(displayedIndex, descriptor);
 
         assertCommandSuccess(command, model,
-                String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), expectedModel);
+                CommandResult.showUpdatedPerson(
+                        String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
+                        editedPerson),
+                expectedModel);
     }
 }
