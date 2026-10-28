@@ -110,8 +110,7 @@ public class ModelManagerTest {
         Model.ModelState incompatibleSnapshot = new Model.ModelState() {
         };
 
-        assertThrows(IllegalArgumentException.class,
-                () -> modelManager.restoreStateSnapshot(incompatibleSnapshot));
+        assertThrows(IllegalArgumentException.class, () -> modelManager.restoreStateSnapshot(incompatibleSnapshot));
     }
 
     @Test
