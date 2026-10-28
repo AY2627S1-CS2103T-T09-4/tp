@@ -211,7 +211,6 @@ public class PatientDetailsPanelTest {
     }
 
     @Test
-<<<<<<< HEAD
     public void constructor_sections_followClinicalScanningOrder() {
         runOnFxThread(() -> {
             PatientDetailsPanel panel = new PatientDetailsPanel(FIXED_CLOCK);
@@ -230,7 +229,10 @@ public class PatientDetailsPanelTest {
             assertEquals("Contact information", getSectionHeading(panel, "contactSection").getText());
             assertEquals("Additional notes", getSectionHeading(panel, "additionalNotesSection").getText());
             assertEquals("Visit history", getSectionHeading(panel, "visitHistorySection").getText());
-=======
+        });
+    }
+
+    @Test
     public void setPerson_emailAndNote_hidesEmptyFieldsAndRestoresPopulatedFields() {
         runOnFxThread(() -> {
             PatientDetailsPanel panel = new PatientDetailsPanel(FIXED_CLOCK);
@@ -255,16 +257,11 @@ public class PatientDetailsPanelTest {
             assertEquals("Note: Second note", getLabel(panel, "note").getText());
             assertFieldVisible(panel, "email", true);
             assertFieldVisible(panel, "note", true);
->>>>>>> master
         });
     }
 
     @Test
-<<<<<<< HEAD
     public void setPerson_bloodType_displaysInMedicalProfileAndHidesWhenAbsent() {
-=======
-    public void setPerson_bloodType_displaysBelowDateOfBirthAndHidesWhenAbsent() {
->>>>>>> master
         runOnFxThread(() -> {
             PatientDetailsPanel panel = new PatientDetailsPanel();
             panel.setPerson(new PersonBuilder().withDateOfBirth("15/6/1990").withBloodType("A+").build());
