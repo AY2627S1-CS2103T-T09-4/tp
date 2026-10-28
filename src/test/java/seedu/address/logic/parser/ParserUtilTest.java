@@ -231,4 +231,12 @@ public class ParserUtilTest {
 
         assertEquals(expectedTagSet, actualTagSet);
     }
+
+    @Test
+    public void parseTags_caseVariants_keepsFirstSpellingOnce() throws Exception {
+        Set<Tag> actualTagSet = ParserUtil.parseTags(List.of("FollowUp", "followup", "FOLLOWUP"));
+
+        assertEquals(1, actualTagSet.size());
+        assertEquals("FollowUp", actualTagSet.iterator().next().tagName);
+    }
 }

@@ -269,6 +269,11 @@ public class PatientDetailsPanelTest {
             assertEquals("No previous visit dates", getLabel(patientDetailsPanel, "previousVisitDates").getText());
             assertEquals("Tags: family, friend", getLabel(patientDetailsPanel, "tags").getText());
             assertTrue(getLabel(patientDetailsPanel, "address").isWrapText());
+
+            // tags are listed alphabetically regardless of letter case
+            patientDetailsPanel.setPerson(new PersonBuilder(person).withTags("Zeta", "alpha", "Beta").build());
+            assertEquals("Tags: alpha, Beta, Zeta", getLabel(patientDetailsPanel, "tags").getText());
+            patientDetailsPanel.setPerson(person);
             assertTrue(getLabel(patientDetailsPanel, "note").isWrapText());
 
             VBox detailsContainer = getDetailsContainer(patientDetailsPanel);

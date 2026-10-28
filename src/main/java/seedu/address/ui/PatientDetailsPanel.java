@@ -143,7 +143,7 @@ public class PatientDetailsPanel extends UiPart<Region> {
         emergencyContact.setManaged(hasEmergencyContact);
 
         String tagNames = person.getTags().stream()
-                .sorted(Comparator.comparing(tag -> tag.tagName))
+                .sorted(Comparator.comparing(tag -> tag.tagName, String.CASE_INSENSITIVE_ORDER))
                 .map(tag -> tag.tagName)
                 .collect(Collectors.joining(", "));
         tags.setText("Tags: " + tagNames);

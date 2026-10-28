@@ -86,7 +86,7 @@ public class PersonCard extends UiPart<Region> {
         note.setVisible(hasNote);
         note.setManaged(hasNote);
         person.getTags().stream()
-                .sorted(Comparator.comparing(tag -> tag.tagName))
+                .sorted(Comparator.comparing(tag -> tag.tagName, String.CASE_INSENSITIVE_ORDER))
                 .forEach(tag -> tags.getChildren().add(new Label(tag.tagName)));
 
         if (person.getVisitDate().value.toLocalDate().isBefore(currentDate)) {
