@@ -297,8 +297,10 @@ Displays the selected patient's full record in the details panel on the right.
 
 Format: `view INDEX`
 
-* If recorded, the date of birth appears immediately below the name in both the left-hand patient list
-  and the right-hand details panel as
+* The right-hand panel groups the record into `Visit details`, `Medical profile`, `Contact information`,
+  `Additional notes`, and `Visit history`. The patient's name and current appointment appear first for quick
+  reference.
+* If recorded, the date of birth appears in `Medical profile` and in the left-hand patient list as
   `Date of birth: 15/6/1990 (N years old)`. Age is calculated in completed years using the computer's local
   date when the record is viewed. For a February 29 birthday, age increases on March 1 in non-leap years.
   The row is hidden when no date of birth is recorded.
@@ -307,8 +309,9 @@ Format: `view INDEX`
 * The index **must be a positive integer** 1, 2, 3, ...
 * The command works on lists produced by commands such as `find` and `sort date`.
 * The currently displayed patient list remains visible on the left.
-* The current visit date and time remain visible as `Visit date`. The `Previous visit dates:` section immediately
-  below it lists retained datetimes in `d/M/yyyy HHmm` format, newest first and oldest last. The note follows.
+* The current visit date and time remain visible as `Visit date` in `Visit details`. `Visit history` lists retained
+  datetimes in `d/M/yyyy HHmm` format, newest first and oldest last. Keeping history last prevents a long record from
+  pushing current medical and care information out of view.
 * A label beside the current datetime compares its calendar date with your computer's local date:
   `Past` means before today, `Today` means today (including earlier or later times today), and `Upcoming` means
   after today. For example, `Visit date: 21/10/2026 0900 (Today)` when viewed on 21 October 2026.
@@ -318,17 +321,18 @@ Format: `view INDEX`
 * A patient with no previous dates shows `No previous visit dates`. Scroll the details panel to read long records;
   all previous dates are included.
 * Viewing a patient does not change their stored details.
-* Recorded blood type appears below the date of birth (or directly below the name when DOB is absent) as
-  `Blood type: A+` in both the left-hand patient list and the right-hand details panel. The row is hidden without reserving space when blood type is unrecorded.
-* Recorded allergies appear immediately below blood type and before alcohol history and smoking status in the
-  right-hand details panel as `Allergies: Penicillin; latex`. The row is hidden when allergy information is unrecorded.
+* Recorded allergies appear first in `Medical profile` as `Allergies: Penicillin; latex`, so safety-critical
+  information is easy to find. The row is hidden when allergy information is unrecorded.
   An explicit `No known allergies` entry remains visible.
-* Recorded alcohol history appears below allergies in the right-hand details panel as
-  `Alcohol history: Occasional drinking`. If allergies are absent, it follows the preceding visible field.
+* Recorded blood type appears after allergies as `Blood type: A+` in both the left-hand patient list and the
+  right-hand details panel. The row is hidden without reserving space when blood type is unrecorded.
+* Recorded smoking status and alcohol history appear after date of birth in `Medical profile`.
+  Smoking status is displayed as `Smoking status: former`; an explicit `unknown` status remains visible.
+* Alcohol history is displayed as `Alcohol history: Occasional drinking`.
   The alcohol history row is hidden without reserving space when unrecorded; the left-hand patient cards stay compact.
-* Recorded smoking status appears immediately below alcohol history in the right-hand details panel as
-  `Smoking status: former`. If alcohol history is absent, it follows the preceding visible field.
-  An explicit `unknown` status is displayed; the row is hidden without reserving space when unrecorded.
+  The smoking status row is also hidden without reserving space when unrecorded.
+* `Contact information` groups the phone number, emergency contact, email, and address. `Additional notes` keeps the
+  patient's note and tags together before the potentially long visit history.
 * After editing a patient, run `view INDEX` again to refresh the selected patient's details.
 
 * If an emergency contact is recorded, it appears directly below the patient's phone number as

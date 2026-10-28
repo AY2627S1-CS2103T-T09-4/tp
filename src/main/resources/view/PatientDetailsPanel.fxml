@@ -3,34 +3,91 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="pane-with-border"
             style="-fx-background-color: transparent; -fx-background: transparent;"
             xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
   <content>
-    <VBox fx:id="detailsContainer" fillWidth="true" managed="false" spacing="10" visible="false">
+    <VBox fx:id="detailsContainer" fillWidth="true" managed="false" spacing="18" visible="false">
       <padding>
-        <Insets top="15" right="15" bottom="15" left="15" />
+        <Insets top="20" right="20" bottom="20" left="20" />
       </padding>
-      <Label id="name" fx:id="name" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
-      <Label id="dateOfBirth" fx:id="dateOfBirth" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
-      <Label id="bloodType" fx:id="bloodType" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
-      <Label id="allergies" fx:id="allergies" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
-      <Label id="alcoholHistory" fx:id="alcoholHistory" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
-      <Label id="smokingStatus" fx:id="smokingStatus" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
-      <Label id="phone" fx:id="phone" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
-      <Label id="emergencyContact" fx:id="emergencyContact" maxWidth="Infinity"
-             styleClass="label-bright" wrapText="true" />
-      <Label id="email" fx:id="email" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
-      <Label id="address" fx:id="address" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
-      <Label id="visitDate" fx:id="visitDate" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
-      <Label id="previousVisitDatesHeader" text="Previous visit dates:" maxWidth="Infinity"
-             styleClass="label-bright" wrapText="true" />
-      <Label id="previousVisitDates" fx:id="previousVisitDates" maxWidth="Infinity" minHeight="-Infinity"
-             styleClass="label-bright" wrapText="true" />
-      <Label id="note" fx:id="note" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
-      <Label id="tags" fx:id="tags" maxWidth="Infinity" styleClass="label-bright" wrapText="true" />
+
+      <Label id="name" fx:id="name" maxWidth="Infinity" styleClass="patient-details-name" wrapText="true">
+        <minHeight><Region fx:constant="USE_PREF_SIZE" /></minHeight>
+      </Label>
+
+      <VBox id="visitOverviewSection" spacing="8"
+            styleClass="patient-details-section, patient-details-visit-section">
+        <Label text="Visit details" maxWidth="Infinity" styleClass="patient-details-section-heading" />
+        <Label id="visitDate" fx:id="visitDate" maxWidth="Infinity" styleClass="patient-details-value"
+               wrapText="true">
+          <minHeight><Region fx:constant="USE_PREF_SIZE" /></minHeight>
+        </Label>
+      </VBox>
+
+      <VBox id="medicalSection" spacing="8" styleClass="patient-details-section">
+        <Label text="Medical profile" maxWidth="Infinity" styleClass="patient-details-section-heading" />
+        <Label id="allergies" fx:id="allergies" maxWidth="Infinity" styleClass="patient-details-value"
+               wrapText="true">
+          <minHeight><Region fx:constant="USE_PREF_SIZE" /></minHeight>
+        </Label>
+        <Label id="bloodType" fx:id="bloodType" maxWidth="Infinity" styleClass="patient-details-value"
+               wrapText="true">
+          <minHeight><Region fx:constant="USE_PREF_SIZE" /></minHeight>
+        </Label>
+        <Label id="dateOfBirth" fx:id="dateOfBirth" maxWidth="Infinity" styleClass="patient-details-value"
+               wrapText="true">
+          <minHeight><Region fx:constant="USE_PREF_SIZE" /></minHeight>
+        </Label>
+        <Label id="smokingStatus" fx:id="smokingStatus" maxWidth="Infinity" styleClass="patient-details-value"
+               wrapText="true">
+          <minHeight><Region fx:constant="USE_PREF_SIZE" /></minHeight>
+        </Label>
+        <Label id="alcoholHistory" fx:id="alcoholHistory" maxWidth="Infinity" styleClass="patient-details-value"
+               wrapText="true">
+          <minHeight><Region fx:constant="USE_PREF_SIZE" /></minHeight>
+        </Label>
+      </VBox>
+
+      <VBox id="contactSection" spacing="8" styleClass="patient-details-section">
+        <Label text="Contact information" maxWidth="Infinity" styleClass="patient-details-section-heading" />
+        <Label id="phone" fx:id="phone" maxWidth="Infinity" styleClass="patient-details-value" wrapText="true">
+          <minHeight><Region fx:constant="USE_PREF_SIZE" /></minHeight>
+        </Label>
+        <Label id="emergencyContact" fx:id="emergencyContact" maxWidth="Infinity"
+               styleClass="patient-details-value" wrapText="true">
+          <minHeight><Region fx:constant="USE_PREF_SIZE" /></minHeight>
+        </Label>
+        <Label id="email" fx:id="email" maxWidth="Infinity" styleClass="patient-details-value" wrapText="true">
+          <minHeight><Region fx:constant="USE_PREF_SIZE" /></minHeight>
+        </Label>
+        <Label id="address" fx:id="address" maxWidth="Infinity" styleClass="patient-details-value" wrapText="true">
+          <minHeight><Region fx:constant="USE_PREF_SIZE" /></minHeight>
+        </Label>
+      </VBox>
+
+      <VBox id="additionalNotesSection" spacing="8" styleClass="patient-details-section">
+        <Label text="Additional notes" maxWidth="Infinity" styleClass="patient-details-section-heading" />
+        <Label id="note" fx:id="note" maxWidth="Infinity" styleClass="patient-details-value" wrapText="true">
+          <minHeight><Region fx:constant="USE_PREF_SIZE" /></minHeight>
+        </Label>
+        <Label id="tags" fx:id="tags" maxWidth="Infinity" styleClass="patient-details-value" wrapText="true">
+          <minHeight><Region fx:constant="USE_PREF_SIZE" /></minHeight>
+        </Label>
+      </VBox>
+
+      <VBox id="visitHistorySection" spacing="8" styleClass="patient-details-section">
+        <Label text="Visit history" maxWidth="Infinity" styleClass="patient-details-section-heading" />
+        <Label id="previousVisitDatesHeader" text="Previous visit dates" maxWidth="Infinity"
+               styleClass="patient-details-subheading" wrapText="true" />
+        <Label id="previousVisitDates" fx:id="previousVisitDates" maxWidth="Infinity" minHeight="-Infinity"
+               styleClass="patient-details-value" wrapText="true">
+          <minHeight><Region fx:constant="USE_PREF_SIZE" /></minHeight>
+        </Label>
+      </VBox>
     </VBox>
   </content>
 </ScrollPane>
