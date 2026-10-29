@@ -1,10 +1,12 @@
 package seedu.address;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import javafx.application.Application;
@@ -41,10 +43,13 @@ public class MainApp extends Application {
             + "is lost. To recover it, close Doc, fix the problem in the copy, and use it to replace %2$s.";
     static final String MESSAGE_BACKUP_FAILED = "The file could not be backed up (%1$s). To avoid losing it, close "
             + "Doc now without entering any command, and copy %2$s somewhere safe.";
+    static final String MESSAGE_DATA_FILE_MIGRATION_FAILED = "Doc could not rename the existing patient data file "
+            + "from %1$s to %2$s, so this run will continue using %1$s.\nReason: %3$s";
 
     private static final Logger logger = LogsCenter.getLogger(MainApp.class);
     private static final Path USER_PREFS_FILE_PATH = Paths.get("preferences.json");
-    private static final Path ADDRESS_BOOK_FILE_PATH = Paths.get("data", "addressbook.json");
+    private static final Path PATIENT_DATA_FILE_PATH = Paths.get("data", "doc.json");
+    private static final Path LEGACY_PATIENT_DATA_FILE_PATH = Paths.get("data", "addressbook.json");
     /** Longest load-failure reason shown to the user; the full details are in the log. */
     private static final int MAX_REASON_LENGTH = 200;
 
@@ -53,7 +58,7 @@ public class MainApp extends Application {
     protected Storage storage;
     protected Model model;
 
-    /** Warning to show once the main window is open, if the patient data file could not be loaded. */
+    /** Warning to show once the main window is open if patient data startup requires the user's attention. */
     private Optional<String> startupWarning = Optional.empty();
 
     @Override
@@ -62,15 +67,63 @@ public class MainApp extends Application {
         super.init();
 
         JsonUserPrefsStorage userPrefsStorage = new JsonUserPrefsStorage(USER_PREFS_FILE_PATH);
+        initializeComponents(userPrefsStorage, PATIENT_DATA_FILE_PATH, LEGACY_PATIENT_DATA_FILE_PATH,
+                getHostServices()::showDocument);
+    }
+
+    /** Initializes the application components using the supplied storage paths and browser-opening action. */
+    void initializeComponents(JsonUserPrefsStorage userPrefsStorage, Path preferredDataFilePath,
+            Path legacyDataFilePath, Consumer<String> openDocument) {
         UserPrefs userPrefs = initPrefs(userPrefsStorage);
-        JsonAddressBookStorage addressBookStorage = new JsonAddressBookStorage(ADDRESS_BOOK_FILE_PATH);
+        DataFileResolution dataFileResolution = resolveDataFilePath(
+                preferredDataFilePath, legacyDataFilePath);
+        JsonAddressBookStorage addressBookStorage = new JsonAddressBookStorage(dataFileResolution.dataFilePath());
         storage = new StorageManager(addressBookStorage, userPrefsStorage);
 
         model = initModelManager(storage, userPrefs);
+        startupWarning = combineWarnings(dataFileResolution.warning(), startupWarning);
 
         logic = new LogicManager(model, storage);
 
-        ui = new UiManager(logic, storage.getAddressBookFilePath(), getHostServices()::showDocument);
+        ui = new UiManager(logic, storage.getAddressBookFilePath(), openDocument);
+    }
+
+    /**
+     * Returns the patient data file to use, moving a legacy file to the preferred path when needed.
+     * If migration fails, the legacy file remains active and the result carries a warning for the user.
+     */
+    static DataFileResolution resolveDataFilePath(Path preferredDataFilePath, Path legacyDataFilePath) {
+        if (Files.exists(preferredDataFilePath)) {
+            if (Files.exists(legacyDataFilePath)) {
+                logger.warning("Both patient data files exist; using " + preferredDataFilePath
+                        + " and leaving " + legacyDataFilePath + " unchanged.");
+            }
+            return new DataFileResolution(preferredDataFilePath, Optional.empty());
+        }
+
+        if (Files.notExists(legacyDataFilePath)) {
+            return new DataFileResolution(preferredDataFilePath, Optional.empty());
+        }
+
+        try {
+            Files.move(legacyDataFilePath, preferredDataFilePath);
+            logger.info("Renamed patient data file from " + legacyDataFilePath + " to " + preferredDataFilePath);
+            return new DataFileResolution(preferredDataFilePath, Optional.empty());
+        } catch (IOException e) {
+            logger.warning("Patient data file could not be renamed from " + legacyDataFilePath
+                    + " to " + preferredDataFilePath + ": " + e);
+            String warning = String.format(MESSAGE_DATA_FILE_MIGRATION_FAILED, legacyDataFilePath,
+                    preferredDataFilePath, String.valueOf(e.getMessage()));
+            return new DataFileResolution(legacyDataFilePath, Optional.of(warning));
+        }
+    }
+
+    /** Combines startup warnings in display order. */
+    static Optional<String> combineWarnings(Optional<String> firstWarning, Optional<String> secondWarning) {
+        if (firstWarning.isPresent() && secondWarning.isPresent()) {
+            return Optional.of(firstWarning.get() + "\n\n" + secondWarning.get());
+        }
+        return firstWarning.or(() -> secondWarning);
     }
 
     /**
@@ -144,6 +197,9 @@ public class MainApp extends Application {
      * Holds the patient data to start with and, if the data file could not be loaded, a warning for the user.
      */
     record InitialData(ReadOnlyAddressBook addressBook, Optional<String> warning) {}
+
+    /** Holds the active patient data path and an optional migration warning. */
+    record DataFileResolution(Path dataFilePath, Optional<String> warning) {}
 
     /**
      * Returns a {@code UserPrefs} using the file at {@code storage}'s user prefs file path,

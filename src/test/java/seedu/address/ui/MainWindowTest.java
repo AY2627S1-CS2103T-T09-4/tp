@@ -31,6 +31,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -64,6 +65,21 @@ public class MainWindowTest {
     @BeforeAll
     public static void setUpJavaFx() throws InterruptedException {
         startJavaFx();
+    }
+
+    @Test
+    public void mainWindow_title_isDoc() {
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+
+            try {
+                new MainWindow(stage, new TestLogic(new PersonBuilder().build()),
+                        TEST_DATA_FILE_PATH, url -> { });
+                assertEquals("Doc", stage.getTitle());
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     @Test
@@ -122,6 +138,55 @@ public class MainWindowTest {
                 assertEquals(140, responsePanel.getMaxHeight());
                 assertEquals(140, responsePanel.getHeight(), LAYOUT_TOLERANCE);
                 assertTrue(resultDisplay.isWrapText());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    @Test
+    public void responsePanel_arrowKeys_scrollImmediatelyWithoutMovingCaret() {
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+
+            try {
+                MainWindow mainWindow = new MainWindow(stage, new TestLogic(new PersonBuilder().build()),
+                        TEST_DATA_FILE_PATH, url -> { });
+                mainWindow.fillInnerParts();
+                mainWindow.show();
+                Scene scene = stage.getScene();
+                TextArea resultDisplay = (TextArea) scene.lookup("#resultDisplay");
+                assertNotNull(resultDisplay);
+
+                resultDisplay.setText("Response line\n".repeat(30));
+                resultDisplay.positionCaret(0);
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+                resultDisplay.setScrollTop(0);
+
+                ScrollBar verticalScrollBar = (ScrollBar) resultDisplay.lookup(".scroll-bar:vertical");
+                assertNotNull(verticalScrollBar);
+                assertTrue(verticalScrollBar.getMax() > verticalScrollBar.getMin());
+                assertTrue(verticalScrollBar.getUnitIncrement() > 0);
+
+                fireKeyPressed(resultDisplay, KeyCode.DOWN);
+                assertEquals(verticalScrollBar.getMin() + verticalScrollBar.getUnitIncrement(),
+                        verticalScrollBar.getValue(), LAYOUT_TOLERANCE);
+                assertEquals(0, resultDisplay.getCaretPosition());
+
+                fireKeyPressed(resultDisplay, KeyCode.UP);
+                assertEquals(verticalScrollBar.getMin(), verticalScrollBar.getValue(), LAYOUT_TOLERANCE);
+                assertEquals(0, resultDisplay.getCaretPosition());
+
+                for (int i = 0; i < 100; i++) {
+                    fireKeyPressed(resultDisplay, KeyCode.DOWN);
+                }
+                assertEquals(verticalScrollBar.getMax(), verticalScrollBar.getValue(), LAYOUT_TOLERANCE);
+
+                fireKeyPressed(resultDisplay, KeyCode.UP);
+                assertEquals(verticalScrollBar.getMax() - verticalScrollBar.getUnitIncrement(),
+                        verticalScrollBar.getValue(), LAYOUT_TOLERANCE);
+                assertEquals(0, resultDisplay.getCaretPosition());
             } finally {
                 stage.close();
             }

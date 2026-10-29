@@ -131,7 +131,7 @@ visible.
 
 The response panel has a fixed height, so resizing the application window does not change the space allocated to
 feedback. Long success and error messages wrap within the panel. If a message is taller than the panel, use its
-vertical scroll bar to read the remaining text.
+vertical scroll bar or focus the panel and press <kbd>Up</kbd> and <kbd>Down</kbd> to read the remaining text.
 
 After every successful `view INDEX`, the patient-details panel returns to the top, including when viewing another
 patient or viewing the same patient again. Entering `view INDEX` in the command box leaves the cursor in the command box.
@@ -731,8 +731,13 @@ data files without emergency contacts still load; their patients initially have 
 
 ### Editing the data file
 
-Doc's patient data is saved automatically as a JSON file at `[JAR file location]/data/addressbook.json`. Advanced
+Doc's patient data is saved automatically as a JSON file at `[JAR file location]/data/doc.json`. Advanced
 users may update the data directly by editing that file.
+
+When upgrading from a version that used `data/addressbook.json`, Doc automatically renames that file to `data/doc.json`
+if the new file does not already exist. If both files exist, Doc uses `doc.json` and leaves `addressbook.json`
+unchanged. If the rename fails, Doc warns you and continues using `addressbook.json` for that run so the existing
+patient data remains available.
 
 Each patient has a required `visitDate` and a `previousVisitDates` array of datetime strings in `d/M/yyyy HHmm`
 format, with years from `1900` to `2099`. Previous dates must be strictly increasing, oldest first, and earlier than
@@ -745,9 +750,9 @@ deduplicating, or dropping entries.
 **Caution:**
 If your changes make the data file invalid, Doc starts with an empty patient list at the next run and shows a
 warning explaining why. Before starting, it saves a copy of the invalid file in the same folder, named like
-`addressbook-invalid-20261029-153005.json` (the date and time it was found), so no patient data is lost even though
-the next change you make overwrites `addressbook.json`. To recover, close Doc, fix the problem in the copy, and use it
-to replace `addressbook.json`. Still, we recommend backing up the file before editing it.<br>
+`doc-invalid-20261029-153005.json` (the date and time it was found), so no patient data is lost even though
+the next change you make overwrites `doc.json`. To recover, close Doc, fix the problem in the copy, and use it
+to replace `doc.json`. Still, we recommend backing up the file before editing it.<br>
 Furthermore, certain edits can cause Doc to behave in unexpected ways (e.g., if a value entered is outside the
 acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 Files created by older versions can also be invalid if two patient records use the same visit date and time. Assign a
