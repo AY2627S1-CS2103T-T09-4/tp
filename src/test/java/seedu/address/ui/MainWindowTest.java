@@ -68,6 +68,21 @@ public class MainWindowTest {
     }
 
     @Test
+    public void mainWindow_title_isDoc() {
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+
+            try {
+                new MainWindow(stage, new TestLogic(new PersonBuilder().build()),
+                        TEST_DATA_FILE_PATH, url -> { });
+                assertEquals("Doc", stage.getTitle());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    @Test
     public void executeCommand_viewCommand_displaysPersonInDetailsPanel() {
         runOnFxThread(() -> {
             Person person = new PersonBuilder().withName("Alex Yeoh").build();
