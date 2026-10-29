@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -204,5 +205,51 @@ public class JsonAddressBookStorageTest {
     @Test
     public void saveAddressBook_nullFilePath_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> saveAddressBook(new AddressBook(), null));
+    }
+
+    @Test
+    public void backupAddressBook_existingFile_copiesToTimestampedFile() throws Exception {
+        Path dataFile = testFolder.resolve("addressbook.json");
+        Files.copy(TEST_DATA_FOLDER.resolve("invalidPersonAddressBook.json"), dataFile);
+        byte[] originalBytes = Files.readAllBytes(dataFile);
+
+        Path backupPath = new JsonAddressBookStorage(dataFile)
+                .backupAddressBook(LocalDateTime.of(2026, 10, 29, 15, 30, 5));
+
+        assertEquals(testFolder.resolve("addressbook-invalid-20261029-153005.json"), backupPath);
+        assertArrayEquals(originalBytes, Files.readAllBytes(backupPath));
+        assertArrayEquals(originalBytes, Files.readAllBytes(dataFile));
+    }
+
+    @Test
+    public void backupAddressBook_fileWithoutJsonExtension_appendsJsonExtension() throws Exception {
+        Path dataFile = testFolder.resolve("patients");
+        Files.writeString(dataFile, "{}");
+
+        Path backupPath = new JsonAddressBookStorage(dataFile)
+                .backupAddressBook(LocalDateTime.of(2026, 1, 2, 3, 4, 5));
+
+        assertEquals(testFolder.resolve("patients-invalid-20260102-030405.json"), backupPath);
+    }
+
+    @Test
+    public void backupAddressBook_backupAlreadyExists_keepsExistingBackup() throws Exception {
+        Path dataFile = testFolder.resolve("addressbook.json");
+        Files.writeString(dataFile, "first");
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(dataFile);
+        LocalDateTime backupTime = LocalDateTime.of(2026, 10, 29, 15, 30, 5);
+        Path backupPath = storage.backupAddressBook(backupTime);
+        Files.writeString(dataFile, "second");
+
+        assertThrows(IOException.class, () -> storage.backupAddressBook(backupTime));
+        assertEquals("first", Files.readString(backupPath));
+    }
+
+    @Test
+    public void backupAddressBook_missingFile_throwsIoException() {
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(testFolder.resolve("missing.json"));
+
+        assertThrows(IOException.class, () -> storage.backupAddressBook(LocalDateTime.of(2026, 10, 29, 15, 30)));
+        assertThrows(NullPointerException.class, () -> storage.backupAddressBook(null));
     }
 }
