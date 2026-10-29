@@ -24,16 +24,15 @@ import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.geometry.Bounds;
-import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
-import javafx.scene.control.ScrollBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Border;
@@ -54,6 +53,8 @@ public class MainWindowTest {
 
     private static final Path TEST_DATA_FILE_PATH = Path.of("data", "test-addressbook.json");
     private static final double FOCUS_BORDER_WIDTH = 2.0;
+    /** Allows pixel snapping at the edge of the actual content viewport. */
+    private static final double LAYOUT_TOLERANCE = 1.0;
     private static final Color FOCUS_BORDER_COLOR = Color.web("#909090");
     private static final PseudoClass KEYBOARD_FOCUSED_PSEUDO_CLASS =
             PseudoClass.getPseudoClass("keyboard-focused");
@@ -203,46 +204,45 @@ public class MainWindowTest {
         persons.add(new PersonBuilder().withName("Patient 1").build());
         for (int i = 2; i <= 4; i++) {
             persons.add(new PersonBuilder().withName("Patient " + i)
-                    .withNote("A long note that makes this patient card tall. ".repeat(10)).build());
+                    .withDateOfBirth("1/1/1990").withBloodType("A+").withTags("followup").build());
         }
-        Stage[] stageHolder = new Stage[1];
-        ListView<?>[] personListViewHolder = new ListView<?>[1];
+        for (int windowHeight : List.of(600, 720)) {
+            PatientListFixture fixture = callOnFxThread(() -> new PatientListFixture(persons, windowHeight));
+            try {
+                waitForNextPulse();
+                for (int i = 1; i < persons.size(); i++) {
+                    navigatePatientList(fixture.personListView, KeyCode.DOWN, i);
+                }
+                navigatePatientList(fixture.personListView, KeyCode.DOWN, persons.size() - 1);
+                for (int i = persons.size() - 2; i >= 0; i--) {
+                    navigatePatientList(fixture.personListView, KeyCode.UP, i);
+                }
+                navigatePatientList(fixture.personListView, KeyCode.UP, 0);
+            } finally {
+                runOnFxThread(fixture.stage::close);
+            }
+        }
+    }
 
-        runOnFxThread(() -> {
-            TestLogic logic = new TestLogic(persons.get(0), persons);
-            Stage stage = new Stage();
-            stageHolder[0] = stage;
-            MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH, url -> { });
-            mainWindow.fillInnerParts();
-            mainWindow.show();
-            Scene scene = stage.getScene();
-            scene.getRoot().applyCss();
-            scene.getRoot().layout();
-
-            ListView<?> personListView = (ListView<?>) scene.lookup("#personListView");
-            personListViewHolder[0] = personListView;
-            personListView.getSelectionModel().select(0);
-            personListView.requestFocus();
-        });
-
-        for (int i = 0; i < persons.size() - 1; i++) {
-            runOnFxThread(() -> fireKeyPressed(personListViewHolder[0], KeyCode.DOWN));
+    @Test
+    public void patientList_selectionStyle_keepsCardHeightStable() {
+        ObservableList<Person> persons = FXCollections.observableArrayList(
+                new PersonBuilder().withName("Patient 1").build(),
+                new PersonBuilder().withName("Patient 2").withDateOfBirth("1/1/1990").build());
+        PatientListFixture fixture = callOnFxThread(() -> new PatientListFixture(persons, 600));
+        try {
             waitForNextPulse();
-            runOnFxThread(() -> assertSelectedPatientFullyVisible(personListViewHolder[0]));
+            double initialHeight = callOnFxThread(() -> getSelectedListCell(fixture.personListView).getHeight());
+            navigatePatientList(fixture.personListView, KeyCode.DOWN, 1);
+            runOnFxThread(() -> {
+                ListCell<?> unselectedCell = (ListCell<?>) getListFlow(fixture.personListView).getVisibleCell(0);
+                assertNotNull(unselectedCell);
+                assertEquals(initialHeight, unselectedCell.getHeight(),
+                        "Removing the selection border must not change a patient card's height");
+            });
+        } finally {
+            runOnFxThread(fixture.stage::close);
         }
-
-        double scrollValueAtLastPatient = callOnFxThread(() ->
-                getVerticalScrollBar(personListViewHolder[0]).getValue());
-        runOnFxThread(() -> fireKeyPressed(personListViewHolder[0], KeyCode.UP));
-        waitForNextPulse();
-        runOnFxThread(() -> {
-            ListView<?> personListView = personListViewHolder[0];
-            assertEquals(persons.size() - 2, personListView.getSelectionModel().getSelectedIndex());
-            assertSelectedPatientFullyVisible(personListView);
-            assertEquals(scrollValueAtLastPatient, getVerticalScrollBar(personListView).getValue(), 1.0e-6,
-                    "Selecting a fully visible patient should not move the list");
-            stageHolder[0].close();
-        });
     }
 
     @Test
@@ -462,11 +462,10 @@ public class MainWindowTest {
     }
 
     private static ListCell<?> getSelectedListCell(ListView<?> personListView) {
-        return personListView.lookupAll(".list-cell").stream()
-                .map(ListCell.class::cast)
-                .filter(ListCell::isSelected)
-                .findFirst()
-                .orElseThrow();
+        ListCell<?> selectedCell = (ListCell<?>) getListFlow(personListView)
+                .getVisibleCell(personListView.getSelectionModel().getSelectedIndex());
+        assertNotNull(selectedCell, "The selected patient should have a live list cell");
+        return selectedCell;
     }
 
     private static TextField getCommandTextField(Scene scene) {
@@ -491,19 +490,54 @@ public class MainWindowTest {
         ListCell<?> selectedCell = getSelectedListCell(personListView);
         Node selectedPatient = selectedCell.getGraphic();
         Bounds selectedBounds = selectedPatient.localToScene(selectedPatient.getBoundsInLocal());
-        Bounds viewportBounds = personListView.localToScene(personListView.getBoundsInLocal());
-        assertTrue(selectedBounds.getMinY() >= viewportBounds.getMinY(),
-                "The selected patient should start within the visible list viewport");
-        assertTrue(selectedBounds.getMaxY() <= viewportBounds.getMaxY(),
-                "The selected patient should be fully visible in the list viewport");
+        Bounds viewportBounds = getListViewportBounds(personListView);
+        String geometry = "Patient " + selectedCell.getIndex() + ": card=" + selectedBounds
+                + ", viewport=" + viewportBounds;
+        assertTrue(selectedBounds.getMinY() >= viewportBounds.getMinY() - LAYOUT_TOLERANCE,
+                "The selected patient should start within the visible list viewport. " + geometry);
+        assertTrue(selectedBounds.getMaxY() <= viewportBounds.getMaxY() + LAYOUT_TOLERANCE,
+                "The selected patient should be fully visible in the list viewport. " + geometry);
     }
 
-    private static ScrollBar getVerticalScrollBar(ListView<?> personListView) {
-        return personListView.lookupAll(".scroll-bar").stream()
-                .map(ScrollBar.class::cast)
-                .filter(scrollBar -> scrollBar.getOrientation() == Orientation.VERTICAL)
-                .findFirst()
-                .orElseThrow();
+    private static Bounds getListViewportBounds(ListView<?> personListView) {
+        Node viewport = getListFlow(personListView).lookup(".clipped-container");
+        assertNotNull(viewport);
+        return viewport.localToScene(viewport.getLayoutBounds());
+    }
+
+    private static void navigatePatientList(ListView<?> personListView, KeyCode keyCode, int expectedIndex) {
+        Bounds previousBounds = callOnFxThread(() -> {
+            Node cell = getListFlow(personListView).getVisibleCell(expectedIndex);
+            return cell == null ? null : cell.localToScene(cell.getLayoutBounds());
+        });
+        Bounds viewportBounds = callOnFxThread(() -> getListViewportBounds(personListView));
+        runOnFxThread(() -> fireKeyPressed(personListView, keyCode));
+        waitForNextPulse();
+        runOnFxThread(() -> {
+            assertEquals(expectedIndex, personListView.getSelectionModel().getSelectedIndex());
+            assertSelectedPatientFullyVisible(personListView);
+            ListCell<?> selectedCell = getSelectedListCell(personListView);
+            Bounds selectedBounds = selectedCell.localToScene(selectedCell.getLayoutBounds());
+            boolean wasFullyVisible = previousBounds != null
+                    && previousBounds.getMinY() >= viewportBounds.getMinY()
+                    && previousBounds.getMaxY() <= viewportBounds.getMaxY();
+            if (wasFullyVisible) {
+                assertEquals(previousBounds.getMinY(), selectedBounds.getMinY(), LAYOUT_TOLERANCE,
+                        "Selecting a fully visible patient should not move the list");
+            } else if (keyCode == KeyCode.DOWN) {
+                assertEquals(viewportBounds.getMaxY(), selectedBounds.getMaxY(), LAYOUT_TOLERANCE,
+                        "A clipped downward selection should settle at the content viewport bottom");
+            } else if (keyCode == KeyCode.UP) {
+                assertEquals(viewportBounds.getMinY(), selectedBounds.getMinY(), LAYOUT_TOLERANCE,
+                        "A clipped upward selection should settle at the content viewport top");
+            }
+        });
+    }
+
+    private static VirtualFlow<?> getListFlow(ListView<?> personListView) {
+        VirtualFlow<?> flow = (VirtualFlow<?>) personListView.lookup(".virtual-flow");
+        assertNotNull(flow);
+        return flow;
     }
 
     private static void submitCommand(TextField commandTextField, String commandText) {
@@ -538,6 +572,26 @@ public class MainWindowTest {
         COMMAND_ERROR_WITH_PREVIEW,
         COMMAND_ERROR,
         PARSE_ERROR
+    }
+
+    /** Provides a styled, displayed patient list for keyboard-scrolling tests. */
+    private static final class PatientListFixture {
+        private final Stage stage;
+        private final ListView<?> personListView;
+
+        private PatientListFixture(ObservableList<Person> persons, double windowHeight) {
+            stage = new Stage();
+            MainWindow mainWindow = new MainWindow(stage, new TestLogic(persons.get(0), persons),
+                    TEST_DATA_FILE_PATH, url -> { });
+            mainWindow.fillInnerParts();
+            stage.setHeight(windowHeight);
+            mainWindow.show();
+            stage.getScene().getRoot().applyCss();
+            stage.getScene().getRoot().layout();
+            personListView = (ListView<?>) stage.getScene().lookup("#personListView");
+            personListView.getSelectionModel().select(0);
+            personListView.requestFocus();
+        }
     }
 
     /** Provides a displayed main window and command-entry actions for view tests. */

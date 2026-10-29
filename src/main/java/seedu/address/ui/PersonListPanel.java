@@ -5,12 +5,10 @@ import java.util.logging.Logger;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.geometry.Bounds;
-import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
-import javafx.scene.control.ScrollBar;
+import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.layout.Region;
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.model.person.Person;
@@ -20,8 +18,6 @@ import seedu.address.model.person.Person;
  */
 public class PersonListPanel extends UiPart<Region> {
     private static final String FXML = "PersonListPanel.fxml";
-    private static final int MAX_SCROLL_ADJUSTMENT_ATTEMPTS = 3;
-    private static final double SCROLL_EPSILON = 0.5;
     private final Logger logger = LogsCenter.getLogger(PersonListPanel.class);
 
     @FXML
@@ -44,94 +40,22 @@ public class PersonListPanel extends UiPart<Region> {
             return;
         }
 
-        Platform.runLater(() -> keepSelectedPatientVisible(selectedIndex, false, 0));
+        Platform.runLater(() -> keepSelectedPatientVisible(selectedIndex));
     }
 
     /** Adjusts the list only when the selected patient card is clipped by the viewport. */
-    private void keepSelectedPatientVisible(int selectedIndex, boolean isAligningBottom, int adjustmentAttempt) {
+    private void keepSelectedPatientVisible(int selectedIndex) {
         if (personListView.getScene() == null
                 || personListView.getSelectionModel().getSelectedIndex() != selectedIndex) {
             return;
         }
 
+        personListView.applyCss();
         personListView.layout();
-        ListCell<?> selectedCell = findSelectedCell(selectedIndex);
-        if (selectedCell == null) {
-            personListView.scrollTo(selectedIndex);
-            Platform.runLater(() -> keepSelectedPatientVisible(selectedIndex, isAligningBottom, adjustmentAttempt));
-            return;
+        if (personListView.lookup(".virtual-flow") instanceof VirtualFlow<?> flow) {
+            // Unlike ListView.scrollTo, this keeps fully visible cells in their current position.
+            flow.scrollTo(selectedIndex);
         }
-
-        Node selectedContent = selectedCell.getGraphic() == null ? selectedCell : selectedCell.getGraphic();
-        Bounds viewportBounds = personListView.localToScene(personListView.getBoundsInLocal());
-        Bounds selectedBounds = selectedContent.localToScene(selectedContent.getBoundsInLocal());
-        boolean isSelectedCardBelowViewport = selectedBounds.getMaxY() > viewportBounds.getMaxY();
-        boolean shouldAlignBottom = isAligningBottom || isSelectedCardBelowViewport;
-        double requiredScrollPixels = getRequiredScrollPixels(selectedBounds, viewportBounds, shouldAlignBottom);
-        if (Math.abs(requiredScrollPixels) <= SCROLL_EPSILON) {
-            return;
-        }
-
-        ScrollBar verticalScrollBar = findVerticalScrollBar();
-        if (verticalScrollBar == null) {
-            personListView.scrollTo(selectedIndex);
-            return;
-        }
-
-        double valueRange = verticalScrollBar.getMax() - verticalScrollBar.getMin();
-        double visibleAmount = verticalScrollBar.getVisibleAmount();
-        if (valueRange <= 0 || visibleAmount <= 0 || visibleAmount >= valueRange) {
-            return;
-        }
-
-        // The scrollbar's visible amount uses the same normalized range as its value.
-        double scrollableHeight = personListView.getLayoutBounds().getHeight()
-                * (valueRange / visibleAmount - 1);
-        if (scrollableHeight <= 0) {
-            return;
-        }
-        double targetValue = verticalScrollBar.getValue()
-                + requiredScrollPixels / scrollableHeight * valueRange;
-        verticalScrollBar.setValue(Math.max(verticalScrollBar.getMin(),
-                Math.min(verticalScrollBar.getMax(), targetValue)));
-
-        if (shouldAlignBottom && adjustmentAttempt < MAX_SCROLL_ADJUSTMENT_ATTEMPTS) {
-            Platform.runLater(() -> keepSelectedPatientVisible(selectedIndex, true, adjustmentAttempt + 1));
-        }
-    }
-
-    /** Returns the number of pixels by which the selected card lies outside the viewport. */
-    private double getRequiredScrollPixels(Bounds selectedBounds, Bounds viewportBounds, boolean isAligningBottom) {
-        if (isAligningBottom) {
-            return selectedBounds.getMaxY() - viewportBounds.getMaxY();
-        }
-        if (selectedBounds.getMaxY() > viewportBounds.getMaxY()) {
-            return selectedBounds.getMaxY() - viewportBounds.getMaxY();
-        }
-        if (selectedBounds.getMinY() < viewportBounds.getMinY()) {
-            return selectedBounds.getMinY() - viewportBounds.getMinY();
-        }
-        return 0;
-    }
-
-    /** Finds the cell currently rendering the selected patient, if it is attached to the virtualized list. */
-    private ListCell<?> findSelectedCell(int selectedIndex) {
-        for (Node node : personListView.lookupAll(".list-cell")) {
-            if (node instanceof ListCell<?> cell && cell.getIndex() == selectedIndex) {
-                return cell;
-            }
-        }
-        return null;
-    }
-
-    /** Returns the vertical scrollbar used by the list view, if it is currently available. */
-    private ScrollBar findVerticalScrollBar() {
-        for (Node node : personListView.lookupAll(".scroll-bar")) {
-            if (node instanceof ScrollBar scrollBar && scrollBar.getOrientation() == Orientation.VERTICAL) {
-                return scrollBar;
-            }
-        }
-        return null;
     }
 
     /** Returns the list view used as the patient-list focus stop. */
