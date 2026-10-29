@@ -43,16 +43,29 @@ public class AgendaCommandParserTest {
     }
 
     @Test
-    public void parse_invalidDate_throwsParseException() {
-        assertParseFailure(parser, "31/2/2026", EXPECTED_ERROR);
-        assertParseFailure(parser, "29/2/2025", EXPECTED_ERROR);
-        assertParseFailure(parser, "2026-10-27", EXPECTED_ERROR);
-        assertParseFailure(parser, "27/10/26", EXPECTED_ERROR);
+    public void parse_invalidDate_namesTheInvalidDate() {
+        for (String date : new String[] {"31/2/2026", "29/2/2025", "2026-10-27", "27/10/26", "today", "7"}) {
+            assertParseFailure(parser, date, usageError(
+                    String.format(AgendaCommandParser.MESSAGE_INVALID_START_DATE_FORMAT, date)));
+        }
+    }
+
+    @Test
+    public void parse_startBeforeFirstSupportedDate_throwsParseException() {
+        String expectedError = usageError(AgendaCommand.MESSAGE_INVALID_START_DATE);
+
+        assertParseFailure(parser, "31/12/1899", expectedError);
+        assertParseFailure(parser, "1/1/1800 365", expectedError);
+    }
+
+    @Test
+    public void parse_startOnFirstSupportedDate_returnsAgenda() throws Exception {
+        assertEquals(new AgendaCommand(LocalDate.of(1900, 1, 1)), parser.parse("1/1/1900"));
     }
 
     @Test
     public void parse_overflowingDateRange_throwsParseException() {
-        String expectedError = AgendaCommand.MESSAGE_INVALID_DATE_RANGE + "\n" + AgendaCommand.MESSAGE_USAGE;
+        String expectedError = usageError(AgendaCommand.MESSAGE_INVALID_DATE_RANGE);
 
         assertParseFailure(parser, "2/1/2099 365", expectedError);
         assertParseFailure(parser, "26/12/2099", expectedError);
@@ -69,18 +82,20 @@ public class AgendaCommandParserTest {
     }
 
     @Test
-    public void parse_invalidDays_throwsParseException() {
-        assertParseFailure(parser, "27/10/2026 0", EXPECTED_ERROR);
-        assertParseFailure(parser, "27/10/2026 -1", EXPECTED_ERROR);
-        assertParseFailure(parser, "27/10/2026 1.5", EXPECTED_ERROR);
-        assertParseFailure(parser, "27/10/2026 seven", EXPECTED_ERROR);
-        assertParseFailure(parser, "27/10/2026 " + (AgendaCommand.MAX_DAYS + 1), EXPECTED_ERROR);
-        assertParseFailure(parser, "27/10/2026 999999999999999999", EXPECTED_ERROR);
+    public void parse_invalidDays_explainsAllowedRange() {
+        String expectedError = usageError(AgendaCommand.MESSAGE_INVALID_DAYS);
+        for (String days : new String[] {"0", "-1", "1.5", "seven", String.valueOf(AgendaCommand.MAX_DAYS + 1),
+            "999999999999999999"}) {
+            assertParseFailure(parser, "27/10/2026 " + days, expectedError);
+        }
     }
 
     @Test
     public void parse_additionalArguments_throwsParseException() {
-        assertParseFailure(parser, "27/10/2026 7 extra", EXPECTED_ERROR);
-        assertParseFailure(parser, "7", EXPECTED_ERROR);
+        assertParseFailure(parser, "27/10/2026 7 extra", usageError(AgendaCommandParser.MESSAGE_EXTRA_ARGUMENTS));
+    }
+
+    private static String usageError(String reason) {
+        return reason + "\n" + AgendaCommand.MESSAGE_USAGE;
     }
 }
