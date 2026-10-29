@@ -64,8 +64,8 @@ public class BloodTypeCommandIntegrationTest {
         logic.execute("edit 1 n/Amy Tan bt/O-");
         Person edited = new PersonBuilder().withName("Amy Tan").withBloodType("O-").build();
         fixture.assertPersistedPatients(edited);
-        logic.execute("view 1");
-        assertEquals(edited, model.getFilteredPersonList().getFirst());
+        CommandResult viewResult = logic.execute("view 1");
+        assertEquals(edited, viewResult.getPersonToView().orElseThrow());
 
         logic.execute("edit 1 note/Review medication");
         logic.execute("next 1 1/1/2099 1000");
@@ -128,8 +128,8 @@ public class BloodTypeCommandIntegrationTest {
             logic.execute("edit 1 bt/A+");
             logic.execute("edit 1 bt/" + emptyValue);
             fixture.assertPersistedPatients(cleared);
-            logic.execute("view 1");
-            assertTrue(model.getFilteredPersonList().getFirst().getBloodType().isEmpty());
+            CommandResult viewResult = logic.execute("view 1");
+            assertEquals(cleared, viewResult.getPersonToView().orElseThrow());
         }
         logic.execute("edit 1 bt/");
         fixture.assertPersistedPatients(cleared);
