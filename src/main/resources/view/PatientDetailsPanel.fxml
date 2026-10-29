@@ -6,11 +6,13 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="pane-with-border"
+<ScrollPane fx:id="scrollPane" fitToWidth="true" focusTraversable="true" hbarPolicy="NEVER" vbarPolicy="NEVER"
+            styleClass="pane-with-border"
             style="-fx-background-color: transparent; -fx-background: transparent;"
             xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
   <content>
-    <VBox fx:id="detailsContainer" fillWidth="true" managed="false" spacing="18" visible="false">
+    <VBox fx:id="detailsContainer" fillWidth="true" focusTraversable="false" managed="false" spacing="18"
+          visible="false">
       <padding>
         <Insets top="20" right="20" bottom="20" left="20" />
       </padding>

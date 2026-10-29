@@ -111,6 +111,25 @@ When `next` moves an appointment to a different day that already has seven or mo
 confirmation. Patients hidden by filtering still count, but previous visit history does not. Moving the appointment to
 a later time on the same day does not trigger this warning.
 
+### Navigating the main window by keyboard
+
+When the main window is active, press <kbd>Tab</kbd> to move through the four main sections in this order: command box,
+response panel, patient list, and patient-details panel. Press <kbd>Shift</kbd>+<kbd>Tab</kbd> to move in reverse order. Both directions
+wrap around. A visible light-gray outline surrounds the section that currently contains keyboard focus: command box,
+response panel, patient list, or patient-details panel. The outline remains visible for empty sections; labels and the
+patient-details scrollbar are not separate Tab destinations.
+
+With the patient-details panel focused, use <kbd>Up</kbd> and <kbd>Down</kbd> to scroll by a small increment,
+<kbd>Page Up</kbd> and <kbd>Page Down</kbd> to scroll by approximately one viewport, and <kbd>Home</kbd> and
+<kbd>End</kbd> to move to the top and bottom. These scrolling keys have no effect when the panel is empty or all
+details already fit. <kbd>Up</kbd> and <kbd>Down</kbd> keep their existing command-history behavior in the command box
+and patient-list navigation behavior in the patient list.
+In the patient list, Up and Down move the selection and scroll only as needed to keep the selected patient card fully
+visible.
+
+After every successful `view INDEX`, the patient-details panel returns to the top, including when viewing another
+patient or viewing the same patient again. Entering `view INDEX` in the command box leaves the cursor in the command box.
+
 ### Navigating command history
 
 The command box keeps commands submitted during the current application session so that you can reuse or edit them.
@@ -358,7 +377,8 @@ Format: `view INDEX`
   They update when you run `view`; run it again after midnight or a date change to refresh the details.
   A visit later today shows `Today`; `next` still rejects it while its datetime is in the future.
 * A patient with no previous dates shows `No previous visit dates`. Scroll the details panel to read long records;
-  all previous dates are included.
+  all previous dates are included. See [Navigating the main window by keyboard](#navigating-the-main-window-by-keyboard)
+  for keyboard scrolling and focus navigation.
 * Viewing a patient does not change their stored details.
 * Recorded allergies appear first in `Medical profile` as `Allergies: Penicillin; latex`, so safety-critical
   information is easy to find. The row is hidden when allergy information is unrecorded.

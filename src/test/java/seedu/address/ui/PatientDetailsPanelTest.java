@@ -5,8 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.ui.JavaFxTestUtil.callOnFxThread;
 import static seedu.address.ui.JavaFxTestUtil.runOnFxThread;
 import static seedu.address.ui.JavaFxTestUtil.startJavaFx;
+import static seedu.address.ui.JavaFxTestUtil.waitForNextPulse;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -15,6 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -26,7 +29,10 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.VisitDate;
 import seedu.address.testutil.CountingClock;
@@ -36,6 +42,13 @@ public class PatientDetailsPanelTest {
 
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-21T04:00:00Z"),
             ZoneId.of("Asia/Singapore"));
+    private static final int LONG_RECORD_DATE_COUNT = 400;
+    private static final String LONG_RECORD_NOTE =
+            "A long note that wraps within the patient details panel. ".repeat(20);
+    private static final double MINIMUM_PAGE_SCROLL_RATIO = 0.75;
+    private static final double MAXIMUM_PAGE_SCROLL_RATIO = 1.1;
+    private static final double MINIMUM_PAGE_TO_ARROW_RATIO = 2.0;
+    private static final List<String> LONG_RECORD_PREVIOUS_DATES = createLongRecordPreviousDates();
 
     @BeforeAll
     public static void setUpJavaFx() throws InterruptedException {
@@ -440,23 +453,197 @@ public class PatientDetailsPanelTest {
     public void setPerson_longRecord_displaysEveryDateWithScrolling() {
         // Stress sample: 400 dates exercise scrolling and wrapping, not a specified maximum history length.
         runOnFxThread(() -> {
-            LocalDateTime firstVisit = LocalDateTime.of(2025, 1, 1, 9, 30);
-            String[] previousDates = IntStream.range(0, 400)
-                    .mapToObj(day -> firstVisit.plusDays(day).format(VisitDate.FORMATTER))
-                    .toArray(String[]::new);
-            Person person = new PersonBuilder().withPreviousVisitDates(previousDates)
-                    .withNote("A long note that wraps within the patient details panel. ".repeat(20)).build();
+            Person person = createLongRecord();
             Person originalPerson = new PersonBuilder(person).build();
             PatientDetailsPanel patientDetailsPanel = new PatientDetailsPanel(FIXED_CLOCK);
 
             patientDetailsPanel.setPerson(person);
 
             Label previousVisitDates = getLabel(patientDetailsPanel, "previousVisitDates");
-            assertEquals(List.of(previousDates).reversed(), previousVisitDates.getText().lines().toList());
+            assertEquals(LONG_RECORD_PREVIOUS_DATES.reversed(), previousVisitDates.getText().lines().toList());
             assertTrue(previousVisitDates.isWrapText());
             assertRecordCanScrollToBottom(patientDetailsPanel);
             assertEquals(originalPerson, person);
         });
+    }
+
+    @Test
+    public void keyboardScrolling_overflowingDetails_handlesAllKeysAndBounds() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel(FIXED_CLOCK);
+            panel.setPerson(createLongRecord());
+            ScrollPane scrollPane = getScrollPane(panel);
+            Scene scene = new Scene(scrollPane, 320, 240);
+            scene.getStylesheets().add(PatientDetailsPanel.class.getResource("/view/DarkTheme.css").toExternalForm());
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            assertTrue(getDetailsContainer(panel).getHeight() > scrollPane.getViewportBounds().getHeight());
+            double top = scrollPane.getVmin();
+            double bottom = scrollPane.getVmax();
+
+            fireKeyPressed(scrollPane, KeyCode.UP);
+            assertEquals(top, scrollPane.getVvalue());
+            fireKeyPressed(scrollPane, KeyCode.DOWN);
+            double arrowMovement = getScrollPositionPixels(scrollPane);
+            assertTrue(arrowMovement > 0);
+            fireKeyPressed(scrollPane, KeyCode.UP);
+            assertEquals(top, scrollPane.getVvalue());
+
+            fireKeyPressed(scrollPane, KeyCode.PAGE_DOWN);
+            double pageDownMovement = getScrollPositionPixels(scrollPane);
+            assertPageMovementIsApproximatelyOneViewport(scrollPane, pageDownMovement);
+            assertTrue(pageDownMovement >= arrowMovement * MINIMUM_PAGE_TO_ARROW_RATIO);
+            fireKeyPressed(scrollPane, KeyCode.PAGE_UP);
+            assertEquals(0, getScrollPositionPixels(scrollPane), 0.001);
+
+            fireKeyPressed(scrollPane, KeyCode.END);
+            assertEquals(bottom, scrollPane.getVvalue());
+            double bottomPosition = getScrollPositionPixels(scrollPane);
+            fireKeyPressed(scrollPane, KeyCode.PAGE_UP);
+            double pageUpMovement = bottomPosition - getScrollPositionPixels(scrollPane);
+            assertPageMovementIsApproximatelyOneViewport(scrollPane, pageUpMovement);
+            fireKeyPressed(scrollPane, KeyCode.DOWN);
+            assertTrue(scrollPane.getVvalue() < bottom);
+            fireKeyPressed(scrollPane, KeyCode.END);
+            fireKeyPressed(scrollPane, KeyCode.DOWN);
+            assertEquals(bottom, scrollPane.getVvalue());
+            fireKeyPressed(scrollPane, KeyCode.HOME);
+            assertEquals(top, scrollPane.getVvalue());
+        });
+    }
+
+    @Test
+    public void keyboardScrolling_emptyOrFittingDetails_isSafe() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel(FIXED_CLOCK);
+            ScrollPane scrollPane = getScrollPane(panel);
+            Scene scene = new Scene(scrollPane, 320, 240);
+            scene.getStylesheets().add(PatientDetailsPanel.class.getResource("/view/DarkTheme.css").toExternalForm());
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            assertScrollingKeysHaveNoEffect(scrollPane);
+
+            PatientDetailsPanel fittingPanel = new PatientDetailsPanel(FIXED_CLOCK);
+            ScrollPane fittingScrollPane = getScrollPane(fittingPanel);
+            Scene fittingScene = new Scene(fittingScrollPane, 320, 2_000);
+            fittingScene.getStylesheets().add(
+                    PatientDetailsPanel.class.getResource("/view/DarkTheme.css").toExternalForm());
+            fittingPanel.setPerson(new PersonBuilder().build());
+            fittingScene.getRoot().applyCss();
+            fittingScene.getRoot().layout();
+            assertTrue(getDetailsContainer(fittingPanel).getHeight()
+                    <= fittingScrollPane.getViewportBounds().getHeight());
+
+            assertScrollingKeysHaveNoEffect(fittingScrollPane);
+        });
+    }
+
+    @Test
+    public void keyboardScrolling_unhandledKeys_reachOtherHandlersWithoutScrolling() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel(FIXED_CLOCK);
+            panel.setPerson(createLongRecord());
+            ScrollPane scrollPane = getScrollPane(panel);
+            Scene scene = new Scene(scrollPane, 320, 240);
+            scene.getStylesheets().add(PatientDetailsPanel.class.getResource("/view/DarkTheme.css").toExternalForm());
+            scrollPane.applyCss();
+            scrollPane.layout();
+            fireKeyPressed(scrollPane, KeyCode.DOWN);
+            double initialValue = scrollPane.getVvalue();
+            assertTrue(initialValue > scrollPane.getVmin());
+            List<KeyCode> unhandledKeys = new ArrayList<>();
+            scrollPane.addEventHandler(KeyEvent.KEY_PRESSED, event -> unhandledKeys.add(event.getCode()));
+
+            for (KeyCode keyCode : List.of(KeyCode.A, KeyCode.ENTER, KeyCode.F1)) {
+                fireKeyPressed(scrollPane, keyCode);
+                assertEquals(initialValue, scrollPane.getVvalue());
+            }
+            assertEquals(List.of(KeyCode.A, KeyCode.ENTER, KeyCode.F1), unhandledKeys);
+        });
+    }
+
+    @Test
+    public void keyboardScrolling_hiddenDetailsOrFixedRange_keepsScrollPosition() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel(FIXED_CLOCK);
+            panel.setPerson(createLongRecord());
+            ScrollPane scrollPane = getScrollPane(panel);
+            Scene scene = new Scene(scrollPane, 320, 240);
+            scene.getStylesheets().add(PatientDetailsPanel.class.getResource("/view/DarkTheme.css").toExternalForm());
+            scrollPane.applyCss();
+            scrollPane.layout();
+            assertTrue(getScrollableHeight(scrollPane) > 0);
+
+            getDetailsContainer(panel).setVisible(false);
+            assertScrollingKeysHaveNoEffect(scrollPane);
+
+            getDetailsContainer(panel).setVisible(true);
+            scrollPane.setVmax(scrollPane.getVmin());
+            assertScrollingKeysHaveNoEffect(scrollPane);
+        });
+    }
+
+    @Test
+    public void scrollBar_emptyDetails_isHiddenUntilPatientViewed() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel(FIXED_CLOCK);
+            ScrollPane scrollPane = getScrollPane(panel);
+
+            assertEquals(ScrollPane.ScrollBarPolicy.NEVER, scrollPane.getVbarPolicy());
+            panel.setPerson(new PersonBuilder().build());
+            assertEquals(ScrollPane.ScrollBarPolicy.AS_NEEDED, scrollPane.getVbarPolicy());
+            panel.clear();
+            assertEquals(ScrollPane.ScrollBarPolicy.NEVER, scrollPane.getVbarPolicy());
+        });
+    }
+
+    @Test
+    public void setPerson_differentPatient_resetsScrollAfterLayout() {
+        PatientDetailsPanelFixture fixture = callOnFxThread(PatientDetailsPanelFixture::new);
+        try {
+            Person shortRecord = new PersonBuilder().withName("Short Record").build();
+            runOnFxThread(() -> fixture.setPerson(createLongRecord()));
+            waitForNextPulse();
+            callOnFxThread(() -> {
+                fixture.scrollToBottom();
+                assertTrue(fixture.isScrolledAwayFromTop());
+                fixture.setPerson(shortRecord);
+                return null;
+            });
+            waitForNextPulse();
+            callOnFxThread(() -> {
+                fixture.assertAtTop();
+                return null;
+            });
+        } finally {
+            runOnFxThread(fixture::close);
+        }
+    }
+
+    @Test
+    public void setPerson_samePatient_resetsScrollAfterLayout() {
+        PatientDetailsPanelFixture fixture = callOnFxThread(PatientDetailsPanelFixture::new);
+        Person longRecord = createLongRecord();
+        try {
+            runOnFxThread(() -> fixture.setPerson(longRecord));
+            waitForNextPulse();
+            callOnFxThread(() -> {
+                fixture.scrollToBottom();
+                assertTrue(fixture.isScrolledAwayFromTop());
+                return null;
+            });
+
+            runOnFxThread(() -> fixture.setPerson(longRecord));
+            waitForNextPulse();
+            callOnFxThread(() -> {
+                fixture.assertAtTop();
+                return null;
+            });
+        } finally {
+            runOnFxThread(fixture::close);
+        }
     }
 
     @Test
@@ -555,7 +742,7 @@ public class PatientDetailsPanelTest {
     }
 
     private static void assertRecordCanScrollToBottom(PatientDetailsPanel patientDetailsPanel) {
-        ScrollPane scrollPane = (ScrollPane) patientDetailsPanel.getRoot();
+        ScrollPane scrollPane = getScrollPane(patientDetailsPanel);
         Scene scene = new Scene(scrollPane, 320, 240);
         scene.getStylesheets().add(PatientDetailsPanel.class.getResource("/view/DarkTheme.css").toExternalForm());
         scrollPane.applyCss();
@@ -575,6 +762,96 @@ public class PatientDetailsPanelTest {
         Bounds previousVisitDatesBounds = previousVisitDates.localToScene(previousVisitDates.getBoundsInLocal());
         assertTrue(previousVisitDatesBounds.getMaxY() <= viewportBounds.getMaxY());
         assertTrue(previousVisitDatesBounds.getMaxY() > viewportBounds.getMinY());
+    }
+
+    private static List<String> createLongRecordPreviousDates() {
+        LocalDateTime firstVisit = LocalDateTime.of(2025, 1, 1, 9, 30);
+        return IntStream.range(0, LONG_RECORD_DATE_COUNT)
+                .mapToObj(day -> firstVisit.plusDays(day).format(VisitDate.FORMATTER))
+                .toList();
+    }
+
+    private static Person createLongRecord() {
+        return new PersonBuilder().withPreviousVisitDates(LONG_RECORD_PREVIOUS_DATES.toArray(String[]::new))
+                .withNote(LONG_RECORD_NOTE).build();
+    }
+
+    private static void assertPageMovementIsApproximatelyOneViewport(ScrollPane scrollPane, double movement) {
+        double viewportHeight = scrollPane.getViewportBounds().getHeight();
+        assertTrue(movement >= viewportHeight * MINIMUM_PAGE_SCROLL_RATIO);
+        assertTrue(movement <= viewportHeight * MAXIMUM_PAGE_SCROLL_RATIO);
+    }
+
+    private static double getScrollPositionPixels(ScrollPane scrollPane) {
+        double scrollableHeight = getScrollableHeight(scrollPane);
+        double valueRange = scrollPane.getVmax() - scrollPane.getVmin();
+        if (scrollableHeight <= 0 || valueRange <= 0) {
+            return 0;
+        }
+        return (scrollPane.getVvalue() - scrollPane.getVmin()) / valueRange * scrollableHeight;
+    }
+
+    private static double getScrollableHeight(ScrollPane scrollPane) {
+        return scrollPane.getContent().getBoundsInLocal().getHeight()
+                - scrollPane.getViewportBounds().getHeight();
+    }
+
+    private static void assertScrollingKeysHaveNoEffect(ScrollPane scrollPane) {
+        for (KeyCode keyCode : List.of(KeyCode.UP, KeyCode.DOWN, KeyCode.PAGE_UP, KeyCode.PAGE_DOWN,
+                KeyCode.HOME, KeyCode.END)) {
+            double previousValue = scrollPane.getVvalue();
+            fireKeyPressed(scrollPane, keyCode);
+            assertEquals(previousValue, scrollPane.getVvalue(), 0.001, keyCode.toString());
+        }
+    }
+
+    private static void fireKeyPressed(Node target, KeyCode keyCode) {
+        target.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", keyCode,
+                false, false, false, false));
+    }
+
+    private static ScrollPane getScrollPane(PatientDetailsPanel patientDetailsPanel) {
+        return (ScrollPane) patientDetailsPanel.getRoot();
+    }
+
+    /** Provides a displayed details panel and its stage for reset tests. */
+    private static final class PatientDetailsPanelFixture {
+
+        private final Stage stage;
+        private final PatientDetailsPanel panel;
+        private final ScrollPane scrollPane;
+
+        private PatientDetailsPanelFixture() {
+            stage = new Stage();
+            panel = new PatientDetailsPanel(FIXED_CLOCK);
+            scrollPane = getScrollPane(panel);
+            stage.setScene(new Scene(scrollPane, 320, 240));
+            stage.getScene().getStylesheets().add(
+                    PatientDetailsPanel.class.getResource("/view/DarkTheme.css").toExternalForm());
+            stage.show();
+            stage.getScene().getRoot().applyCss();
+            stage.getScene().getRoot().layout();
+        }
+
+        private void setPerson(Person person) {
+            panel.setPerson(person);
+        }
+
+        private void scrollToBottom() {
+            scrollPane.setVvalue(scrollPane.getVmax());
+        }
+
+        private boolean isScrolledAwayFromTop() {
+            return scrollPane.getVvalue() > scrollPane.getVmin();
+        }
+
+        private void assertAtTop() {
+            assertEquals(scrollPane.getVmin(), scrollPane.getVvalue());
+        }
+
+        private void close() {
+            stage.close();
+        }
     }
 
     private static VBox getDetailsContainer(PatientDetailsPanel patientDetailsPanel) {
