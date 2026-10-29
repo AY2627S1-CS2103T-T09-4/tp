@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import javafx.application.Application;
@@ -66,9 +67,16 @@ public class MainApp extends Application {
         super.init();
 
         JsonUserPrefsStorage userPrefsStorage = new JsonUserPrefsStorage(USER_PREFS_FILE_PATH);
+        initializeComponents(userPrefsStorage, PATIENT_DATA_FILE_PATH, LEGACY_PATIENT_DATA_FILE_PATH,
+                getHostServices()::showDocument);
+    }
+
+    /** Initializes the application components using the supplied storage paths and browser-opening action. */
+    void initializeComponents(JsonUserPrefsStorage userPrefsStorage, Path preferredDataFilePath,
+            Path legacyDataFilePath, Consumer<String> openDocument) {
         UserPrefs userPrefs = initPrefs(userPrefsStorage);
         DataFileResolution dataFileResolution = resolveDataFilePath(
-                PATIENT_DATA_FILE_PATH, LEGACY_PATIENT_DATA_FILE_PATH);
+                preferredDataFilePath, legacyDataFilePath);
         JsonAddressBookStorage addressBookStorage = new JsonAddressBookStorage(dataFileResolution.dataFilePath());
         storage = new StorageManager(addressBookStorage, userPrefsStorage);
 
@@ -77,7 +85,7 @@ public class MainApp extends Application {
 
         logic = new LogicManager(model, storage);
 
-        ui = new UiManager(logic, storage.getAddressBookFilePath(), getHostServices()::showDocument);
+        ui = new UiManager(logic, storage.getAddressBookFilePath(), openDocument);
     }
 
     /**
@@ -111,7 +119,7 @@ public class MainApp extends Application {
     }
 
     /** Combines startup warnings in display order. */
-    private static Optional<String> combineWarnings(Optional<String> firstWarning, Optional<String> secondWarning) {
+    static Optional<String> combineWarnings(Optional<String> firstWarning, Optional<String> secondWarning) {
         if (firstWarning.isPresent() && secondWarning.isPresent()) {
             return Optional.of(firstWarning.get() + "\n\n" + secondWarning.get());
         }
