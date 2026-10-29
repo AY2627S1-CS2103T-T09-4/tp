@@ -251,7 +251,8 @@ Format: `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NU
 Duplicate detection has these limitations:
 
 * It does not recognize nicknames, reordered names, misspellings, transliterations, or equivalent accented forms.
-* Phone numbers are compared exactly, so different country-code forms of the same number are not recognized as equal.
+* Phone numbers are compared by their digits, so `8123 4567`, `8123-4567`, and `81234567` are the same number.
+  Forms with and without a country code, such as `+65 8123 4567` and `81234567`, are not recognized as equal.
 * Two different patients with the same normalized name and phone number cannot both be added. Include a distinguishing
   name component, such as a middle name or suffix, or use a different contact number.
 * Patients whose intentional name difference consists only of capitalization or spacing will trigger duplicate

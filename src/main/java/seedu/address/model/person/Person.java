@@ -274,7 +274,8 @@ public class Person {
     }
 
     /**
-     * Returns true if both persons have the same normalized name and phone number.
+     * Returns true if both persons have the same normalized name and phone number, comparing phone numbers by their
+     * digits so that formatting such as spaces or dashes does not hide a duplicate.
      * This defines a weaker notion of equality between two persons.
      */
     public boolean isSamePerson(Person otherPerson) {
@@ -284,7 +285,7 @@ public class Person {
 
         return otherPerson != null
                 && otherPerson.getName().isSameName(getName())
-                && otherPerson.getPhone().equals(getPhone());
+                && otherPerson.getPhone().isSameNumber(getPhone());
     }
 
     /**

@@ -40,6 +40,24 @@ public class Phone {
                 && digitOnlyPhone.length() >= MINIMUM_DIGIT_COUNT;
     }
 
+    /**
+     * Returns true if {@code other} is the same number written with the same digits, ignoring spaces, dashes, and
+     * '+', e.g. {@code 8123 4567} and {@code 8123-4567}. Numbers with and without a country code, such as
+     * {@code +65 8123 4567} and {@code 81234567}, have different digits and are not the same number.
+     * Unlike {@link #equals(Object)}, this ignores formatting, so it is used to identify the same patient.
+     */
+    public boolean isSameNumber(Phone other) {
+        requireNonNull(other);
+        return digitsOf(value).equals(digitsOf(other.value));
+    }
+
+    /**
+     * Returns {@code text} with every character except the digits 0 to 9 removed.
+     */
+    private static String digitsOf(String text) {
+        return text.replaceAll("[^0-9]", "");
+    }
+
     @Override
     public String toString() {
         return value;
