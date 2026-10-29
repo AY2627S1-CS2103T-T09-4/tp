@@ -77,7 +77,7 @@ public class MainApp extends Application {
      * Returns a {@code ModelManager} with the initial patient data from {@code storage} and {@code userPrefs},
      * keeping any warning about that data to show when the UI starts.
      */
-    private Model initModelManager(Storage storage, ReadOnlyUserPrefs userPrefs) {
+    Model initModelManager(Storage storage, ReadOnlyUserPrefs userPrefs) {
         InitialData initialData = loadInitialData(storage, LocalDateTime.now());
         startupWarning = initialData.warning();
         return new ModelManager(initialData.addressBook(), userPrefs);
@@ -130,10 +130,10 @@ public class MainApp extends Application {
     /**
      * Returns the first line of the reason the data file could not be loaded, shortened to
      * {@value #MAX_REASON_LENGTH} characters, since parser messages can include the file's contents.
+     * The cause's message is used because the exception's own message also names the cause's class.
      */
     private static String describeFailure(DataLoadingException loadingException) {
-        Throwable cause = (loadingException.getCause() != null) ? loadingException.getCause() : loadingException;
-        String message = String.valueOf(cause.getMessage());
+        String message = String.valueOf(loadingException.getCause().getMessage());
         String firstLine = message.lines().findFirst().orElse("").strip();
         return (firstLine.length() <= MAX_REASON_LENGTH)
                 ? firstLine
