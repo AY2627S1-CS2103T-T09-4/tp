@@ -33,6 +33,14 @@ public class PhoneTest {
         assertFalse(Phone.isValidPhone("---")); // formatting characters without digits
         assertFalse(Phone.isValidPhone("++ ")); // formatting characters without digits
         assertFalse(Phone.isValidPhone("1".repeat(31))); // exceeds the raw string length limit
+        assertFalse(Phone.isValidPhone("------123")); // separators before the first digit
+        assertFalse(Phone.isValidPhone("123+456")); // '+' after the start
+        assertFalse(Phone.isValidPhone("++65 91234567")); // more than one '+'
+        assertFalse(Phone.isValidPhone("9123  4567")); // two spaces in a row
+        assertFalse(Phone.isValidPhone("9123--4567")); // two dashes in a row
+        assertFalse(Phone.isValidPhone("9123 -4567")); // mixed separators in a row
+        assertFalse(Phone.isValidPhone("91234567-")); // trailing separator
+        assertFalse(Phone.isValidPhone("+ 6591234567")); // separator straight after '+'
 
         // valid phone numbers
         assertTrue(Phone.isValidPhone("911")); // exactly 3 numbers
@@ -41,6 +49,9 @@ public class PhoneTest {
         assertTrue(Phone.isValidPhone("+65 9312-1534")); // country code, spaces, and dashes
         assertTrue(Phone.isValidPhone("124293842033123")); // long phone numbers
         assertTrue(Phone.isValidPhone("1".repeat(30))); // exactly the raw string length limit
+        assertTrue(Phone.isValidPhone("+6591234567")); // country code without separators
+        assertTrue(Phone.isValidPhone("9123-4567")); // single dash
+        assertTrue(Phone.isValidPhone("1-2-3")); // three digits in single-digit groups
     }
 
     @Test
