@@ -371,7 +371,9 @@ accepted without confirmation. This preserves phone numbers shared by a househol
 phone together to identify a patient record.
 
 `Model#hasPerson` exposes the true-duplicate check, while `Model#hasPersonWithSameName` exposes the weaker warning
-check. Phone comparison continues to use exact `Phone` value equality.
+check. `Person#isSamePerson` compares phones with `Phone#isSameNumber`, which ignores everything except digits, so a
+number re-entered with spaces or dashes is still recognized as the same patient. `Phone#equals` stays an exact
+comparison, so changing only a number's formatting is still a real edit.
 
 Visit dates and times form a separate invariant across all current and previous dates.
 `Person#hasCommonVisitDate` compares the complete records using parsed `VisitDate` equality.
@@ -451,8 +453,8 @@ Duplicate detection is a heuristic because Doc does not assign a permanent patie
 * A returning patient with both a changed name and changed phone number is not detected as a possible duplicate.
 * Normalization does not understand nicknames, reordered names, misspellings, transliterations, or equivalent accented
   forms. It performs no fuzzy or culture-specific matching.
-* Phone numbers are compared exactly. Equivalent numbers entered with different country-code forms are not detected as
-  the same number.
+* Phone numbers are compared by their digits only. Equivalent numbers entered with and without a country code are not
+  detected as the same number.
 * Collapsing whitespace and ignoring case can warn about two distinct names whose intentional difference is only
   capitalization or spacing.
 

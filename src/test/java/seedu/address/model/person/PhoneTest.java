@@ -73,4 +73,24 @@ public class PhoneTest {
         // different values -> returns false
         assertFalse(phone.equals(new Phone("995")));
     }
+
+    @Test
+    public void isSameNumber() {
+        Phone phone = new Phone("81234567");
+
+        // same digits with different formatting -> same number
+        assertTrue(phone.isSameNumber(new Phone("81234567")));
+        assertTrue(phone.isSameNumber(new Phone("8123 4567")));
+        assertTrue(phone.isSameNumber(new Phone("8123-4567")));
+        assertTrue(new Phone("+65 8123 4567").isSameNumber(new Phone("+65-8123-4567")));
+
+        // different digits, including a country code -> different number
+        assertFalse(phone.isSameNumber(new Phone("81234568")));
+        assertFalse(phone.isSameNumber(new Phone("+65 8123 4567")));
+
+        // formatting still matters for equality, so a reformatted number is a real edit
+        assertFalse(phone.equals(new Phone("8123 4567")));
+
+        assertThrows(NullPointerException.class, () -> phone.isSameNumber(null));
+    }
 }
