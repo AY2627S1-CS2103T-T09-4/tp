@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -536,6 +537,51 @@ public class PatientDetailsPanelTest {
                     <= fittingScrollPane.getViewportBounds().getHeight());
 
             assertScrollingKeysHaveNoEffect(fittingScrollPane);
+        });
+    }
+
+    @Test
+    public void keyboardScrolling_unhandledKeys_reachOtherHandlersWithoutScrolling() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel(FIXED_CLOCK);
+            panel.setPerson(createLongRecord());
+            ScrollPane scrollPane = getScrollPane(panel);
+            Scene scene = new Scene(scrollPane, 320, 240);
+            scene.getStylesheets().add(PatientDetailsPanel.class.getResource("/view/DarkTheme.css").toExternalForm());
+            scrollPane.applyCss();
+            scrollPane.layout();
+            fireKeyPressed(scrollPane, KeyCode.DOWN);
+            double initialValue = scrollPane.getVvalue();
+            assertTrue(initialValue > scrollPane.getVmin());
+            List<KeyCode> unhandledKeys = new ArrayList<>();
+            scrollPane.addEventHandler(KeyEvent.KEY_PRESSED, event -> unhandledKeys.add(event.getCode()));
+
+            for (KeyCode keyCode : List.of(KeyCode.A, KeyCode.ENTER, KeyCode.F1)) {
+                fireKeyPressed(scrollPane, keyCode);
+                assertEquals(initialValue, scrollPane.getVvalue());
+            }
+            assertEquals(List.of(KeyCode.A, KeyCode.ENTER, KeyCode.F1), unhandledKeys);
+        });
+    }
+
+    @Test
+    public void keyboardScrolling_hiddenDetailsOrFixedRange_keepsScrollPosition() {
+        runOnFxThread(() -> {
+            PatientDetailsPanel panel = new PatientDetailsPanel(FIXED_CLOCK);
+            panel.setPerson(createLongRecord());
+            ScrollPane scrollPane = getScrollPane(panel);
+            Scene scene = new Scene(scrollPane, 320, 240);
+            scene.getStylesheets().add(PatientDetailsPanel.class.getResource("/view/DarkTheme.css").toExternalForm());
+            scrollPane.applyCss();
+            scrollPane.layout();
+            assertTrue(getScrollableHeight(scrollPane) > 0);
+
+            getDetailsContainer(panel).setVisible(false);
+            assertScrollingKeysHaveNoEffect(scrollPane);
+
+            getDetailsContainer(panel).setVisible(true);
+            scrollPane.setVmax(scrollPane.getVmin());
+            assertScrollingKeysHaveNoEffect(scrollPane);
         });
     }
 

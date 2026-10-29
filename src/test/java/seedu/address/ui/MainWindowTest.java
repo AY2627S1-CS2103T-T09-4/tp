@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
@@ -14,6 +15,7 @@ import static seedu.address.ui.JavaFxTestUtil.startJavaFx;
 import static seedu.address.ui.JavaFxTestUtil.waitForNextPulse;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -195,6 +197,79 @@ public class MainWindowTest {
             } finally {
                 stage.close();
             }
+        });
+    }
+
+    @Test
+    public void keyboardNavigation_focusOutsideSections_leavesTabForDefaultTraversal() {
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            try {
+                MainWindow mainWindow = new MainWindow(stage, new TestLogic(new PersonBuilder().build()),
+                        TEST_DATA_FILE_PATH, url -> { });
+                mainWindow.fillInnerParts();
+                Scene scene = stage.getScene();
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+                List<KeyCode> unhandledKeys = new ArrayList<>();
+                scene.getRoot().addEventHandler(KeyEvent.KEY_PRESSED, event -> unhandledKeys.add(event.getCode()));
+
+                assertNull(scene.getFocusOwner());
+                fireKeyPressed(scene.getRoot(), KeyCode.TAB);
+                assertEquals(List.of(KeyCode.TAB), unhandledKeys);
+                assertSame(getCommandTextField(scene), scene.getFocusOwner());
+
+                scene.getRoot().setFocusTraversable(true);
+                scene.getRoot().requestFocus();
+                assertSame(scene.getRoot(), scene.getFocusOwner());
+                assertFocusIndicator(scene, getFocusSections(scene), -1);
+                fireTab(scene, true);
+                assertEquals(List.of(KeyCode.TAB, KeyCode.TAB), unhandledKeys);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    @Test
+    public void patientList_selectionClearedBeforeScroll_keepsListAtTop() {
+        ObservableList<Person> persons = FXCollections.observableArrayList();
+        for (int i = 1; i <= 10; i++) {
+            persons.add(new PersonBuilder().withName("Patient " + i).build());
+        }
+        PatientListFixture fixture = callOnFxThread(() -> new PatientListFixture(persons, 600));
+        try {
+            waitForNextPulse();
+            runOnFxThread(() -> {
+                fixture.personListView.getSelectionModel().clearSelection();
+                fixture.personListView.getSelectionModel().select(persons.size() - 1);
+                fixture.personListView.getSelectionModel().clearSelection();
+            });
+            waitForNextPulse();
+            runOnFxThread(() -> {
+                assertEquals(-1, fixture.personListView.getSelectionModel().getSelectedIndex());
+                assertEquals(0, getListFlow(fixture.personListView).getPosition());
+                assertSame(fixture.personListView, fixture.stage.getScene().getFocusOwner());
+            });
+        } finally {
+            runOnFxThread(fixture.stage::close);
+        }
+    }
+
+    @Test
+    public void patientList_selectionWhileDetached_keepsSelectionUntilReattached() {
+        PersonListPanel panel = callOnFxThread(() ->
+                new PersonListPanel(FXCollections.observableArrayList(new PersonBuilder().build())));
+        ListView<?> personListView = (ListView<?>) panel.getFocusTarget();
+        runOnFxThread(() -> personListView.getSelectionModel().select(0));
+        waitForNextPulse();
+        runOnFxThread(() -> {
+            assertNull(personListView.getScene());
+            assertEquals(0, personListView.getSelectionModel().getSelectedIndex());
+            new Scene(panel.getRoot(), 340, 240);
+            panel.getRoot().applyCss();
+            panel.getRoot().layout();
+            assertSelectedPatientFullyVisible(personListView);
         });
     }
 
