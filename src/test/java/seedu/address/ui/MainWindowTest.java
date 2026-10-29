@@ -24,11 +24,13 @@ import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.geometry.Bounds;
+import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -196,7 +198,7 @@ public class MainWindowTest {
     }
 
     @Test
-    public void patientList_arrowNavigation_keepsSelectedPatientVisible() {
+    public void patientList_arrowNavigation_keepsSelectedPatientVisibleAndStable() {
         ObservableList<Person> persons = FXCollections.observableArrayList();
         persons.add(new PersonBuilder().withName("Patient 1").build());
         for (int i = 2; i <= 4; i++) {
@@ -226,13 +228,19 @@ public class MainWindowTest {
         for (int i = 0; i < persons.size() - 1; i++) {
             runOnFxThread(() -> fireKeyPressed(personListViewHolder[0], KeyCode.DOWN));
             waitForNextPulse();
-            int navigationStep = i;
-            runOnFxThread(() -> assertSelectedPatientFullyVisible(personListViewHolder[0], navigationStep >= 1));
+            runOnFxThread(() -> assertSelectedPatientFullyVisible(personListViewHolder[0]));
         }
 
+        double scrollValueAtLastPatient = callOnFxThread(() ->
+                getVerticalScrollBar(personListViewHolder[0]).getValue());
+        runOnFxThread(() -> fireKeyPressed(personListViewHolder[0], KeyCode.UP));
+        waitForNextPulse();
         runOnFxThread(() -> {
             ListView<?> personListView = personListViewHolder[0];
-            assertEquals(persons.size() - 1, personListView.getSelectionModel().getSelectedIndex());
+            assertEquals(persons.size() - 2, personListView.getSelectionModel().getSelectedIndex());
+            assertSelectedPatientFullyVisible(personListView);
+            assertEquals(scrollValueAtLastPatient, getVerticalScrollBar(personListView).getValue(), 1.0e-6,
+                    "Selecting a fully visible patient should not move the list");
             stageHolder[0].close();
         });
     }
@@ -479,7 +487,7 @@ public class MainWindowTest {
                 false, false, false, false));
     }
 
-    private static void assertSelectedPatientFullyVisible(ListView<?> personListView, boolean alignBottom) {
+    private static void assertSelectedPatientFullyVisible(ListView<?> personListView) {
         ListCell<?> selectedCell = getSelectedListCell(personListView);
         Node selectedPatient = selectedCell.getGraphic();
         Bounds selectedBounds = selectedPatient.localToScene(selectedPatient.getBoundsInLocal());
@@ -488,10 +496,14 @@ public class MainWindowTest {
                 "The selected patient should start within the visible list viewport");
         assertTrue(selectedBounds.getMaxY() <= viewportBounds.getMaxY(),
                 "The selected patient should be fully visible in the list viewport");
-        if (alignBottom) {
-            assertEquals(viewportBounds.getMaxY(), selectedBounds.getMaxY(), 3.0,
-                    "A clipped downward selection should settle at the viewport bottom");
-        }
+    }
+
+    private static ScrollBar getVerticalScrollBar(ListView<?> personListView) {
+        return personListView.lookupAll(".scroll-bar").stream()
+                .map(ScrollBar.class::cast)
+                .filter(scrollBar -> scrollBar.getOrientation() == Orientation.VERTICAL)
+                .findFirst()
+                .orElseThrow();
     }
 
     private static void submitCommand(TextField commandTextField, String commandText) {
