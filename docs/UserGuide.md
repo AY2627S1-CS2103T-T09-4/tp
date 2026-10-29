@@ -192,14 +192,16 @@ Format: `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NU
   already uses the supplied date and time, including a patient hidden by filtering, the addition is rejected,
   the existing patient is shown in the patient details panel, and the app asks you to choose a different slot.
 * Date of birth, blood type, allergies, alcohol history, smoking status, `EMAIL`, `NOTES`, and the emergency contact are optional.
-* Use `p/PHONE` to record the patient's phone number. It must contain at least 3 digits, be at most 30
-  characters long, and may include `+`, spaces, and dashes. Surrounding whitespace is trimmed.
+* Use `p/PHONE` to record the patient's phone number. It must contain at least 3 digits and be at most 30
+  characters long. It may start with `+` and may use single spaces or dashes between groups of digits, e.g.
+  `p/+65 9123-4567`. Values such as `------123` or `123+456` are rejected. Surrounding whitespace is trimmed.
 * Use `ec/[NAME, ]PHONE_NUMBER` to record one emergency contact, e.g. `ec/Mary Tan, 98765432`.
   The phone number is required; the name is optional. Use `ec/98765432` when the name is unknown.
   When supplying a name, include exactly one comma between the name and phone number.
   Names follow the patient-name rules (letters, numbers, spaces, and common name punctuation, not blank) and cannot
-  contain `p/`, which is reserved for the phone field. Phone numbers contain at least 3 digits, are at most 30
-  characters long, and may include `+`, spaces, and dashes. Surrounding whitespace is trimmed from both details.
+  contain `p/`, which is reserved for the phone field. Phone numbers contain at least 3 digits and are at most 30
+  characters long. They may start with `+` and may use single spaces or dashes between groups of digits, e.g.
+  `+65 9123-4567`; `------123` and `123+456` are rejected. Surrounding whitespace is trimmed from both details.
   An empty `ec/`, missing phone number, invalid detail, or repeated `ec/` is rejected.
 * Use `dob/DATE` to record the date of birth in `d/M/yyyy` format, e.g. `dob/15/6/1990`.
   The year must have four digits, from `0001` onwards. The date must exist and must not be in the future;

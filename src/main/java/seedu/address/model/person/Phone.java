@@ -9,11 +9,14 @@ import static seedu.address.commons.util.AppUtil.checkArgument;
  */
 public class Phone {
 
-
     public static final String MESSAGE_CONSTRAINTS =
-            "Phone numbers should contain at least 3 digits, be at most 30 characters long, and may include '+', "
-                    + "spaces, and dashes";
-    public static final String VALIDATION_REGEX = "[+\\d -]*";
+            "Phone numbers should contain at least 3 digits and be at most 30 characters long. They may start with "
+                    + "'+' and may use single spaces or dashes between groups of digits, e.g. +65 9123-4567";
+    /**
+     * An optional leading '+', then groups of digits joined by a single space or dash, so that formats such as
+     * {@code +65 9123-4567} are accepted while {@code ------123} or {@code 123+456} are not.
+     */
+    public static final String VALIDATION_REGEX = "\\+?\\d+([ -]\\d+)*";
 
     private static final int MINIMUM_DIGIT_COUNT = 3;
     private static final int MAX_PHONE_LENGTH = 30;
