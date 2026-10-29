@@ -206,7 +206,8 @@ public class EditCommandParserTest {
 
     @Test
     public void parse_invalidVisitDate_failure() {
-        String[] invalidDates = {"", "  ", "31/2/2026 1000", "8/10/2026 2500", "8/10/2026", "2026-10-08 1000"};
+        String[] invalidDates = {"", "  ", "31/2/2026 1000", "8/10/2026 2500", "8/10/2026", "2026-10-08 1000",
+            "8/10/0000 1000", "8/10/2100 1000"};
         for (String invalidDate : invalidDates) {
             assertParseFailure(parser, "1 vd/" + invalidDate, VisitDate.MESSAGE_CONSTRAINTS);
         }

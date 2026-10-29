@@ -259,6 +259,14 @@ public class AddCommandParserTest {
      * Asserts that parsing {@code userInput} fails with the add command's "not added" message
      * wrapping {@code expectedReason}.
      */
+    @Test
+    public void parse_visitDateYearOutOfRange_failure() {
+        for (String visitDate : new String[] {"1/1/0000 1000", "31/12/1899 1000", "1/1/2100 1000"}) {
+            assertAddFailure(NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB + ADDRESS_DESC_BOB
+                    + " " + PREFIX_VISIT_DATE + visitDate, VisitDate.MESSAGE_CONSTRAINTS);
+        }
+    }
+
     private void assertAddFailure(String userInput, String expectedReason) {
         assertParseFailure(parser, userInput, String.format(AddCommand.MESSAGE_NOT_ADDED, expectedReason));
     }

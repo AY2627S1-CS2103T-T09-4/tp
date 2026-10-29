@@ -186,6 +186,7 @@ Adds a patient record to Doc.
 Format: `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...`
 
 * `DATETIME` must be a date and time in the format `d/M/yyyy HHmm`, e.g. `18/9/2026 1000`. Past dates are allowed.
+  The year must be from `1900` to `2099`, so that a mistyped year such as `0026` or `2206` is caught.
   Extra spaces or tabs between the date and the time are accepted, e.g. `vd/18/9/2026   1000`.
 * Each current or previous visit date and time must be unique across patients. If another patient's visit record
   already uses the supplied date and time, including a patient hidden by filtering, the addition is rejected,
@@ -440,8 +441,8 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[
   Use an empty `ec/` to clear the contact, e.g. `edit 1 ec/`. Whitespace-only values also clear it.
   Clearing an already-empty contact succeeds; repeated `ec/` prefixes are rejected.
 * To update the visit date and time, use `vd/` with the format `d/M/yyyy HHmm`
-  (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted. As with `add` and `next`, extra spaces
-  or tabs between the date and the time are accepted.
+  (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted. The year must be from `1900` to `2099`,
+  as for `add`. As with `add` and `next`, extra spaces or tabs between the date and the time are accepted.
 * The visit date and time can be edited by itself. Omitting `vd/` preserves the existing visit date and time.
 * Editing preserves any previous visit dates. The current datetime must remain strictly later than the latest
   previous datetime, when one exists.
@@ -503,8 +504,9 @@ Format: `next INDEX DATETIME`
 
 * Use a positive `INDEX` from the currently displayed list, including results of `find` or `sort date`.
   `view` keeps that list and its indices unchanged.
-* Enter `DATETIME` as `d/M/yyyy HHmm`, with a four-digit 24-hour time. Spaces or tabs separate the arguments;
-  repeated and outer whitespace are accepted. Do not use `vd/`, quotation marks, or extra arguments.
+* Enter `DATETIME` as `d/M/yyyy HHmm`, with a four-digit 24-hour time and a year from `1900` to `2099`. Spaces or tabs
+  separate the arguments; repeated and outer whitespace are accepted. Do not use `vd/`, quotation marks, or extra
+  arguments.
 * The current visit must be at or before your computer's current local time at execution. If it is still in the
   future, use `edit ... vd/` to reschedule it.
 * The requested appointment must be strictly after that execution time; the current minute's start is rejected.
@@ -704,9 +706,10 @@ Doc's patient data is saved automatically as a JSON file at `[JAR file location]
 users may update the data directly by editing that file.
 
 Each patient has a required `visitDate` and a `previousVisitDates` array of datetime strings in `d/M/yyyy HHmm`
-format. Previous dates must be strictly increasing, oldest first, and earlier than the current date. All current
-and previous datetimes must be unique across patients. Missing or `null` previous-date arrays in older files load
-as empty arrays. Invalid records are rejected without sorting, deduplicating, or dropping entries.
+format, with years from `1900` to `2099`. Previous dates must be strictly increasing, oldest first, and earlier than
+the current date. All current and previous datetimes must be unique across patients. Missing or `null`
+previous-date arrays in older files load as empty arrays. Invalid records are rejected without sorting,
+deduplicating, or dropping entries.
 
 <box type="warning" seamless>
 

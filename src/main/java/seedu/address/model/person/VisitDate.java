@@ -15,8 +15,14 @@ import java.util.Locale;
  */
 public class VisitDate {
 
+    /** Earliest accepted visit year, so that mistyped years such as 0000 or 0026 are rejected. */
+    public static final int MIN_YEAR = 1900;
+    /** Latest accepted visit year, so that mistyped years such as 9999 or 2206 are rejected. */
+    public static final int MAX_YEAR = 2099;
+
     public static final String MESSAGE_CONSTRAINTS = "Visit dates should be a valid date and time "
-            + "in the format d/M/yyyy HHmm, e.g. 18/9/2026 1000";
+            + "in the format d/M/yyyy HHmm, e.g. 18/9/2026 1000, with a year from " + MIN_YEAR + " to " + MAX_YEAR
+            + ".";
 
     public static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("d/M/uuuu HHmm")
             .withResolverStyle(ResolverStyle.STRICT);
@@ -43,12 +49,13 @@ public class VisitDate {
     }
 
     /**
-     * Returns true if a given string is a valid visit date.
+     * Returns true if a given string is an existing date and time in {@link #FORMATTER}'s format with a year from
+     * {@value #MIN_YEAR} to {@value #MAX_YEAR}.
      */
     public static boolean isValidVisitDate(String test) {
         try {
-            LocalDateTime.parse(test, FORMATTER);
-            return true;
+            int year = LocalDateTime.parse(test, FORMATTER).getYear();
+            return year >= MIN_YEAR && year <= MAX_YEAR;
         } catch (DateTimeParseException e) {
             return false;
         }

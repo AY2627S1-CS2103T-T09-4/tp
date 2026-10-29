@@ -31,9 +31,10 @@ public class AgendaCommand extends Command {
     public static final String MESSAGE_ONE_VISIT = "Showing 1 visit from %1$s to %2$s.";
     public static final String MESSAGE_MULTIPLE_VISITS = "Showing %1$d visits from %2$s to %3$s.";
     public static final String MESSAGE_INVALID_DATE_RANGE =
-            "The agenda date range must end on or before 31/12/9999.";
+            "The agenda date range must end on or before 31/12/" + VisitDate.MAX_YEAR + ".";
 
-    private static final LocalDate LAST_SUPPORTED_DATE = LocalDate.of(9999, 12, 31);
+    /** Last day that can hold a visit, since visit dates are limited to {@link VisitDate#MAX_YEAR}. */
+    private static final LocalDate LAST_SUPPORTED_DATE = LocalDate.of(VisitDate.MAX_YEAR, 12, 31);
     private static final String MESSAGE_INVALID_DAYS = "Days must be between 1 and " + MAX_DAYS + ".";
 
     private final LocalDate startDate;
