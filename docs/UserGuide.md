@@ -614,7 +614,9 @@ Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t
   * `n/`: the start of any word in the name, first name or surname. For example, `n/m` matches `George Miller`,
     `Marcus Lim`, and `Mei Lin Tan`, but `n/ans` does not match `Hans`.
   * `p/`: any part of the phone number, so the last few digits are enough. For example, `p/8901` matches `85678901`.
-    Phone keywords may contain only digits.
+    Only digits are compared, so spaces, `+`, and `-` in either the saved number or the keyword are ignored:
+    `p/91234567` matches `9123 4567` and `+65 9123-4567`. Phone keywords may contain digits, `+`, and `-`, and must
+    include a digit. Type a number without spaces, since a space starts another keyword.
   * `a/`: the start of any word in the address. For example, `a/tamp` matches `46 Tampines Street 21, #08-03`.
   * `t/`: the start of any tag. For example, `t/morn` matches a patient tagged `morning`.
   * `vd/`: patients whose current visit is on that day, at any time. Give the date without a time in the format

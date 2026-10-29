@@ -24,7 +24,7 @@ public class FindCommand extends Command {
 
     public static final String MESSAGE_USAGE = COMMAND_WORD + ": Finds all patients matching every given field "
             + "and displays them as a list with index numbers. Name, address and note keywords match the start of "
-            + "any word, phone keywords match any part of the number, tag keywords match the start of a tag "
+            + "any word, phone keywords match any part of the number's digits, tag keywords match the start of a tag "
             + "(all case-insensitive), and visit dates (d/M/yyyy) match current visits on that day. "
             + "Several keywords for one field match any of them.\n"
             + "Parameters (at least one): "
