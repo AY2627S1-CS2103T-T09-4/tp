@@ -32,6 +32,7 @@ public class EmergencyContact {
             value = emergencyContact.trim();
         } else {
             String[] details = emergencyContact.split(",", -1);
+            assert details.length == 2 : "A validated named contact must contain a name and phone number";
             value = details[0].trim() + ", " + details[1].trim();
         }
     }
