@@ -8,6 +8,8 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_EMERGENCY_CONTACT;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +34,9 @@ import seedu.address.testutil.PersonBuilder;
  */
 public class EmergencyContactIntegrationTest {
 
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-21T04:00:00Z"),
+            ZoneId.of("Asia/Singapore"));
+
     private static final String CONTACT = "Mary Tan, 98765432";
     private static final String REPLACEMENT_CONTACT = "David Tan, 87654321";
     private static final String ADD_COMMAND =
@@ -48,7 +53,7 @@ public class EmergencyContactIntegrationTest {
     @BeforeEach
     public void setUp() throws IOException {
         model = new ModelManager();
-        fixture = new LogicManagerIntegrationFixture(model, testFolder, Clock.systemDefaultZone());
+        fixture = new LogicManagerIntegrationFixture(model, testFolder, FIXED_CLOCK);
         logic = fixture.getLogic();
         storage = fixture.getAddressBookStorage();
     }

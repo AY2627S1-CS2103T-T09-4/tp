@@ -10,7 +10,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +34,9 @@ import seedu.address.testutil.PersonBuilder;
 
 public class DateOfBirthCommandIntegrationTest {
 
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-21T04:00:00Z"),
+            ZoneId.of("Asia/Singapore"));
+
     private static final String ADD_PATIENT = "add n/Amy Bee dob/15/6/1990 p/85355255 "
             + "e/amy@gmail.com a/123, Jurong West Ave 6, #08-111 vd/18/9/2026 1000";
 
@@ -46,7 +51,7 @@ public class DateOfBirthCommandIntegrationTest {
     @BeforeEach
     public void setUp() throws IOException {
         model = new ModelManager();
-        fixture = new LogicManagerIntegrationFixture(model, testFolder, Clock.systemDefaultZone());
+        fixture = new LogicManagerIntegrationFixture(model, testFolder, FIXED_CLOCK);
         logic = fixture.getLogic();
         storage = fixture.getAddressBookStorage();
     }

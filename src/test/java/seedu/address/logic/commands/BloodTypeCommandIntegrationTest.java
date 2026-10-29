@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
 
@@ -32,6 +34,9 @@ import seedu.address.testutil.PersonBuilder;
 
 public class BloodTypeCommandIntegrationTest {
 
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-21T04:00:00Z"),
+            ZoneId.of("Asia/Singapore"));
+
     private static final String ADD_PATIENT = "add n/Amy Bee bt/A+ p/85355255 "
             + "e/amy@gmail.com a/123, Jurong West Ave 6, #08-111 vd/18/9/2026 1000";
 
@@ -46,7 +51,7 @@ public class BloodTypeCommandIntegrationTest {
     @BeforeEach
     public void setUp() throws IOException {
         model = new ModelManager();
-        fixture = new LogicManagerIntegrationFixture(model, testFolder, Clock.systemDefaultZone());
+        fixture = new LogicManagerIntegrationFixture(model, testFolder, FIXED_CLOCK);
         logic = fixture.getLogic();
         storage = fixture.getAddressBookStorage();
     }
