@@ -584,14 +584,17 @@ commands follow the existing `add`/`edit` interaction pattern: clear filtering a
 stored order, and return feedback with a `CommandResult` that requests saving. `LogicManager` saves through storage
 before returning the result to the UI.
 
-These results do not select a patient for the details panel. Users must run `view` with the patient's newly
-displayed index to refresh the record and calendar label. `view` supplies the patient without requesting a save.
+These results request that the details panel show the updated patient and refresh the record and calendar label.
+`view` also supplies the patient without requesting a save.
 
 Validation errors and cancelled confirmations leave patient data, saved data, and list context unchanged.
 Duplicate-related errors and name-confirmation prompts can display an existing patient in the details panel;
 other rejected inputs do not change that panel.
-A storage I/O failure occurs after the in-memory update; the existing error handling reports it without rolling
-back the record or list.
+A storage I/O failure occurs after the in-memory update. `LogicManager` throws a `CommandSaveException` containing
+the completed `CommandResult` and the storage exception. `MainWindow` displays the save error and still applies that
+result's details-panel action, so the record and list remain consistent with memory without rolling back the change.
+The same handling shows added patients, clears the displayed patient after deletion, and clears all details after
+`clear`, even if saving fails. Other command and parsing errors keep their existing details-panel behavior.
 
 ### Sorting displayed visits by date
 
@@ -1409,8 +1412,8 @@ labels, not executable command arguments.
 The continuous `next` route and the rollback route deliberately share the sentinel and Nextalpha/Nextbeta fixture. The
 JSON, capacity, calendar, and Help checks are independent cases; preserve other patients and omitted optional fields when a
 case does not say to reset them. After every successful `edit`, `next`, or `prev`, find the intended patient again
-before using an index, because the command restores the full list in stored order. A patient card may update as the
-list refreshes, but the details panel remains the last rendered record until `view` or a relevant conflict preview.
+before using an index, because the command restores the full list in stored order. The details panel automatically
+shows the updated patient, including when an in-memory change cannot be saved.
 
 ### Launch and shutdown
 
@@ -1430,6 +1433,26 @@ list refreshes, but the details panel remains the last rendered record until `vi
        Expected: The most recent window size and location are retained.
 
 1. _{ more test cases … }_
+
+### Save failures and patient details
+
+Use a disposable copy of Doc with disposable patient data. Do not modify the permissions of your working data file.
+
+1. Clear the disposable list with `clear`, then `y`. Add a patient with
+   `add n/Alpha p/90000001 a/1 Alpha Road vd/1/1/2000 0900`, then run `view 1`.
+1. While Doc stays open, make its `data/addressbook.json` read-only (on Windows, use the file's Properties dialog).
+   Run `next 1 1/1/2099 1000`, using a later supported future datetime if necessary.
+   Expected: A save error remains in the response panel. Both the patient card and details show the new appointment;
+   details also show `1/1/2000 0900` in history. The saved JSON still contains the original visit.
+1. Restore write access. Run `delete 1`, then `y`.
+   Expected: Deletion succeeds, both the list and details panel are empty, and the saved JSON has no patients.
+1. Repeat the setup, make the file read-only, then run `delete 1` and `y`.
+   Expected: A save error appears, but the deleted patient's details are cleared with the in-memory list. Restore
+   write access before continuing.
+
+`MainWindowSaveFailureTest` automates the command-entry, display, and persistence assertions with injected
+permission and I/O failures, including `add`, `edit`, confirmed `prev`, deletion, clearing, and unchanged details
+after `list`. It does not replace checking actual file permissions on each supported operating system.
 
 ### Main-window keyboard navigation and details scrolling
 

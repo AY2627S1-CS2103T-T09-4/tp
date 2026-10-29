@@ -697,6 +697,11 @@ Doc automatically saves completed changes, including successful `add`, `edit`, `
 `clear` when there are no patient records do not write a file because they do not change stored data. You do not need
 to save manually.
 
+If saving fails, Doc reports the save error, but the change may already have been applied in memory. The patient list
+and details panel reflect that in-memory state: added or updated patients are shown, deleted patients' details are
+cleared if displayed, and clearing all patients also clears the details panel. These display changes do not mean the
+data was saved. Restore write access before continuing; restarting before a successful save can lose unsaved changes.
+
 Emergency contacts are saved with the patient records and remain available after restarting Doc. Older valid
 data files without emergency contacts still load; their patients initially have no emergency contact.
 

@@ -14,6 +14,7 @@ import seedu.address.logic.commands.Command;
 import seedu.address.logic.commands.CommandInputRequest;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.exceptions.CommandException;
+import seedu.address.logic.commands.exceptions.CommandSaveException;
 import seedu.address.logic.parser.AddressBookParser;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.Model;
@@ -63,7 +64,7 @@ public class LogicManager implements Logic {
                 : executeParsedCommand(commandText);
 
         if (commandResult.shouldSaveAddressBook()) {
-            saveAddressBook();
+            saveAddressBook(commandResult);
         }
 
         pendingInputRequest = commandResult.getInputRequest().orElse(null);
@@ -100,17 +101,18 @@ public class LogicManager implements Logic {
     }
 
     /**
-     * Saves the current address book state and converts storage failures to command failures.
+     * Saves the current address book state, retaining the completed result if storage fails.
      */
-    private void saveAddressBook() throws CommandException {
+    private void saveAddressBook(CommandResult commandResult) throws CommandSaveException {
         try {
             storage.saveAddressBook(model.getAddressBook());
         } catch (AccessDeniedException e) {
             logger.log(Level.WARNING, "Patient data could not be saved: access denied", e);
-            throw new CommandException(String.format(FILE_OPS_PERMISSION_ERROR_FORMAT, e.getMessage()), e);
+            throw new CommandSaveException(String.format(FILE_OPS_PERMISSION_ERROR_FORMAT, e.getMessage()),
+                    e, commandResult);
         } catch (IOException ioe) {
             logger.log(Level.WARNING, "Patient data could not be saved: I/O failure", ioe);
-            throw new CommandException(String.format(FILE_OPS_ERROR_FORMAT, ioe.getMessage()), ioe);
+            throw new CommandSaveException(String.format(FILE_OPS_ERROR_FORMAT, ioe.getMessage()), ioe, commandResult);
         }
     }
 
