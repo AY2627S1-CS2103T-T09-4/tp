@@ -383,9 +383,7 @@ public class PatientDetailsPanelTest {
             assertTrue(contact.isManaged());
 
             panel.setPerson(new PersonBuilder().build());
-            assertFalse(contact.isVisible());
-            assertFalse(contact.isManaged());
-            assertFalse(contact.getText().contains("Mary Tan"));
+            assertFieldVisible(panel, "emergencyContact", false);
 
             panel.setPerson(patient);
             assertEquals("Emergency Contact: 91234567 (Mary Tan)", contact.getText());

@@ -161,7 +161,8 @@ public class PatientDetailsPanel extends UiPart<Region> {
         setOptionalLabel(email, hasEmail ? "Email: " + person.getEmail().value : "", hasEmail);
         address.setText("Address: " + person.getAddress().value);
         boolean hasEmergencyContact = !person.getEmergencyContact().isEmpty();
-        setOptionalLabel(emergencyContact, "Emergency Contact: " + person.getEmergencyContact().toDisplayString(),
+        setOptionalLabel(emergencyContact,
+                hasEmergencyContact ? "Emergency Contact: " + person.getEmergencyContact().toDisplayString() : "",
                 hasEmergencyContact);
     }
 
