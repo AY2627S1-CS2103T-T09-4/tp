@@ -1366,7 +1366,7 @@ it can be assessed.
 * **Visit record**: A patient's current and previous visit datetimes. These record scheduled times retained by the
   user and do not verify attendance or completion.
 
---------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------
 
 ## **Appendix: Instructions for manual testing**
 
