@@ -3,7 +3,6 @@ package seedu.address.logic.commands;
 import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 import static seedu.address.logic.Messages.DISPLAY_LOCALE;
-import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -146,7 +145,7 @@ public class NextCommand extends Command {
     }
 
     /**
-     * Replaces the patient captured when this command was first executed and restores the full list.
+     * Replaces the patient captured when this command was first executed while preserving the current list context.
      * Checks again for conflicts, since the address book may have changed while confirmation was pending.
      *
      * @throws CommandException If the captured patient no longer exists or the visit now conflicts.
@@ -159,7 +158,6 @@ public class NextCommand extends Command {
         validateNoConflicts(model, personToUpdate, updatedPerson);
 
         model.setPerson(personToUpdate, updatedPerson);
-        model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
         logger.fine("Scheduled next visit for " + updatedPerson.getName() + " at " + visitDate);
         return CommandResult.showUpdatedPerson(
                 String.format(MESSAGE_SUCCESS, updatedPerson.getName(), visitDate), updatedPerson);

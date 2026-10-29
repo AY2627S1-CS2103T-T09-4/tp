@@ -31,6 +31,7 @@ public class ParserUtil {
     public static final String MESSAGE_INVALID_INDEX = "Index must be a positive integer.";
     public static final String MESSAGE_INDEX_TOO_LARGE =
             "Index is too large. Enter an index shown in the displayed patient list.";
+    public static final String MESSAGE_EXTRA_INDEX_ARGUMENTS = "Unexpected arguments after the index.";
 
     /**
      * Parses {@code oneBasedIndex} into an {@code Index} and returns it. Leading and trailing whitespaces will be
@@ -47,13 +48,14 @@ public class ParserUtil {
 
     /**
      * Parses {@code oneBasedIndex} for a command, explaining why a supplied index is rejected.
-     * A missing index is reported as an invalid command format. A supplied index that is not a positive
-     * integer, or is too large to represent, is reported with that specific reason followed by the usage.
+     * A missing index is reported as an invalid command format. A first word that is not a positive integer, or is
+     * too large to represent, is reported with that specific reason followed by the usage. A valid index followed
+     * by more text, such as {@code 1 2}, is reported as unexpected arguments rather than as an invalid index.
      *
      * @param oneBasedIndex Index text, which may have leading and trailing whitespace.
      * @param commandUsage Usage message of the command being parsed.
      * @return The parsed index.
-     * @throws ParseException If the index is missing or invalid.
+     * @throws ParseException If the index is missing or invalid, or is followed by other arguments.
      */
     public static Index parseIndex(String oneBasedIndex, String commandUsage) throws ParseException {
         String trimmedIndex = oneBasedIndex.trim();
@@ -61,11 +63,23 @@ public class ParserUtil {
             throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT, commandUsage));
         }
 
+        String[] indexAndRest = trimmedIndex.split("\\s+", 2);
+        Index index = parseSingleIndex(indexAndRest[0], commandUsage);
+        if (indexAndRest.length > 1) {
+            throw new ParseException(MESSAGE_EXTRA_INDEX_ARGUMENTS + "\n" + commandUsage);
+        }
+        return index;
+    }
+
+    /**
+     * Parses one word as an index, explaining whether it is not a positive integer or too large.
+     */
+    private static Index parseSingleIndex(String indexWord, String commandUsage) throws ParseException {
         try {
-            return parseIndex(trimmedIndex);
+            return parseIndex(indexWord);
         } catch (ParseException pe) {
             // A positive integer rejected by parseIndex exceeds the supported index range.
-            String reason = isPositiveInteger(trimmedIndex) ? MESSAGE_INDEX_TOO_LARGE : MESSAGE_INVALID_INDEX;
+            String reason = isPositiveInteger(indexWord) ? MESSAGE_INDEX_TOO_LARGE : MESSAGE_INVALID_INDEX;
             throw new ParseException(reason + "\n" + commandUsage, pe);
         }
     }

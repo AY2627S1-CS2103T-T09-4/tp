@@ -114,36 +114,40 @@ public class NextCommandTest {
     }
 
     @Test
-    public void execute_filteredIndex_updatesDisplayedPatientAndRestoresFullList() throws Exception {
+    public void execute_filteredIndex_updatesDisplayedPatientAndPreservesFilter() throws Exception {
         new FindCommand(new NameContainsKeywordsPredicate(List.of("Meier"))).execute(model);
         assertEquals(List.of(BENSON), model.getFilteredPersonList());
 
-        assertScheduleSuccess(INDEX_FIRST_PERSON, BENSON, NEW_VISIT_DATE);
+        Person updatedPerson = assertScheduleSuccess(INDEX_FIRST_PERSON, BENSON, NEW_VISIT_DATE);
+        assertEquals(List.of(updatedPerson), model.getFilteredPersonList());
     }
 
     @Test
-    public void execute_sortedIndex_updatesDisplayedPatientAndClearsSort() throws Exception {
+    public void execute_sortedIndex_updatesDisplayedPatientAndPreservesSortOrder() throws Exception {
         model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
         assertEquals(CARL, model.getFilteredPersonList().getFirst());
 
-        assertScheduleSuccess(INDEX_FIRST_PERSON, CARL, NEW_VISIT_DATE);
+        Person updatedPerson = assertScheduleSuccess(INDEX_FIRST_PERSON, CARL, NEW_VISIT_DATE);
+        assertEquals(List.of(BENSON, AMY, updatedPerson), model.getFilteredPersonList());
     }
 
     @Test
-    public void execute_filteredSortedList_updatesDisplayedPatientAndResetsList() throws Exception {
+    public void execute_filteredSortedList_updatesDisplayedPatientAndPreservesListContext() throws Exception {
         model.updateFilteredPersonList(person -> !person.equals(CARL));
         model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
         assertEquals(List.of(BENSON, AMY), model.getFilteredPersonList());
 
-        assertScheduleSuccess(INDEX_FIRST_PERSON, BENSON, NEW_VISIT_DATE);
+        Person updatedPerson = assertScheduleSuccess(INDEX_FIRST_PERSON, BENSON, NEW_VISIT_DATE);
+        assertEquals(List.of(AMY, updatedPerson), model.getFilteredPersonList());
     }
 
     @Test
-    public void execute_afterView_restoresFullListInStoredOrder() throws Exception {
+    public void execute_afterViewNonMatchingUpdate_disappearsFromList() throws Exception {
         model.updateFilteredPersonList(person -> person.equals(BENSON));
         new ViewCommand(INDEX_FIRST_PERSON).execute(model);
 
         assertScheduleSuccess(INDEX_FIRST_PERSON, BENSON, NEW_VISIT_DATE);
+        assertTrue(model.getFilteredPersonList().isEmpty());
     }
 
     @Test
@@ -417,7 +421,7 @@ public class NextCommandTest {
         Person updatedAmy = model.getAddressBook().getPersonList().getFirst();
         assertEquals(List.of(original.getVisitDate()), updatedAmy.getPreviousVisitDates());
         assertEquals(Model.MAX_VISITS_PER_DAY + 1, model.countPersonsWithSameVisitDay(updatedAmy));
-        assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
+        assertEquals(List.of(BENSON), model.getFilteredPersonList());
     }
 
     @Test
@@ -507,11 +511,11 @@ public class NextCommandTest {
                 + ", visitDate=" + NEW_VISIT_DATE + "}", command.toString());
     }
 
-    private void assertScheduleSuccess(Index index, Person originalPerson, String dateTime) throws Exception {
-        assertScheduleSuccess(index, originalPerson, dateTime, FIXED_CLOCK);
+    private Person assertScheduleSuccess(Index index, Person originalPerson, String dateTime) throws Exception {
+        return assertScheduleSuccess(index, originalPerson, dateTime, FIXED_CLOCK);
     }
 
-    private void assertScheduleSuccess(Index index, Person originalPerson, String dateTime, Clock clock)
+    private Person assertScheduleSuccess(Index index, Person originalPerson, String dateTime, Clock clock)
             throws Exception {
         List<String> expectedPreviousVisitDates = new ArrayList<>(originalPerson.getPreviousVisitDates().stream()
                 .map(VisitDate::toString).toList());
@@ -527,10 +531,10 @@ public class NextCommandTest {
                 expectedPerson.getName(), expectedPerson.getVisitDate());
         assertEquals(expectedMessage, result.getFeedbackToUser());
         assertEquals(expectedAddressBook, model.getAddressBook());
-        assertEquals(expectedAddressBook.getPersonList(), model.getFilteredPersonList());
         assertTrue(result.shouldSaveAddressBook());
         assertTrue(result.getInputRequest().isEmpty());
         assertEquals(expectedPerson, result.getPersonToView().orElseThrow());
+        return expectedPerson;
     }
 
     private CommandException assertScheduleFailure(Index index, VisitDate visitDate, Clock clock,

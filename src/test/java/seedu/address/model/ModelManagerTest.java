@@ -79,6 +79,41 @@ public class ModelManagerTest {
     }
 
     @Test
+    public void restoreStateSnapshot_afterDataAndDisplayChanges_restoresCompleteState() {
+        AddressBook addressBook = new AddressBookBuilder().withPerson(ALICE).withPerson(BENSON).build();
+        modelManager = new ModelManager(addressBook, new UserPrefs());
+        Comparator<Person> reverseNameComparator = Comparator.comparing(
+                person -> person.getName().fullName, Comparator.reverseOrder());
+        modelManager.updateFilteredPersonList(person -> person.getName().fullName.contains("Alice"));
+        modelManager.sortFilteredPersonList(reverseNameComparator);
+        Model.ModelState snapshot = modelManager.createStateSnapshot();
+
+        modelManager.deletePerson(ALICE);
+        modelManager.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
+        modelManager.restoreStateSnapshot(snapshot);
+
+        assertEquals(List.of(ALICE, BENSON), modelManager.getAddressBook().getPersonList());
+        assertEquals(List.of(ALICE), modelManager.getFilteredPersonList());
+
+        Person renamedBenson = new PersonBuilder(BENSON).withName("Alice Benson").build();
+        modelManager.setPerson(BENSON, renamedBenson);
+        assertEquals(List.of(ALICE, renamedBenson), modelManager.getFilteredPersonList());
+    }
+
+    @Test
+    public void restoreStateSnapshot_nullSnapshot_throwsNullPointerException() {
+        assertThrows(NullPointerException.class, () -> modelManager.restoreStateSnapshot(null));
+    }
+
+    @Test
+    public void restoreStateSnapshot_incompatibleSnapshot_throwsIllegalArgumentException() {
+        Model.ModelState incompatibleSnapshot = new Model.ModelState() {
+        };
+
+        assertThrows(IllegalArgumentException.class, () -> modelManager.restoreStateSnapshot(incompatibleSnapshot));
+    }
+
+    @Test
     public void hasPerson_nullPerson_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> modelManager.hasPerson(null));
     }

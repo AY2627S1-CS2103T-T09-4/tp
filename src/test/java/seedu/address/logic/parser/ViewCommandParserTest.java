@@ -35,8 +35,17 @@ public class ViewCommandParserTest {
     public void parse_invalidIndex_showsReasonAndViewUsage() {
         String expectedMessage = ParserUtil.MESSAGE_INVALID_INDEX + "\n" + ViewCommand.MESSAGE_USAGE;
 
-        for (String index : List.of("0", "-1", "+1", "abc", "1.5", "1 abc")) {
+        for (String index : List.of("0", "-1", "+1", "abc", "1.5", "abc 1")) {
             assertParseFailure(parser, index, expectedMessage);
+        }
+    }
+
+    @Test
+    public void parse_validIndexWithExtraArguments_showsUnexpectedArguments() {
+        String expectedMessage = ParserUtil.MESSAGE_EXTRA_INDEX_ARGUMENTS + "\n" + ViewCommand.MESSAGE_USAGE;
+
+        for (String args : List.of("1 abc", "1 2", " 1   2 ", "1\t2")) {
+            assertParseFailure(parser, args, expectedMessage);
         }
     }
 

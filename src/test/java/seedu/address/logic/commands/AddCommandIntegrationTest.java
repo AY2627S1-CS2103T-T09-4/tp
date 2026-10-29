@@ -77,6 +77,22 @@ public class AddCommandIntegrationTest {
     }
 
     @Test
+    public void execute_samePhoneDigitsFormattedDifferently_rejectedAsDuplicate() {
+        Person personInList = model.getAddressBook().getPersonList().get(0);
+        String expectedMessage = String.format(AddCommand.MESSAGE_NOT_ADDED, AddCommand.MESSAGE_DUPLICATE_PERSON);
+
+        // the same patient re-entered with spaces or a dash in the phone number, at an unused time
+        for (String formattedPhone : List.of("9435 1253", "9435-1253")) {
+            Person reformattedDuplicate = new PersonBuilder(personInList).withPhone(formattedPhone)
+                    .withVisitDate(AVAILABLE_VISIT_DATE).build();
+            CommandException exception = assertThrows(CommandException.class, expectedMessage, () ->
+                    new AddCommand(reformattedDuplicate).execute(model));
+            assertEquals(personInList, exception.getPersonToView().orElseThrow());
+        }
+        assertEquals(getTypicalAddressBook(), model.getAddressBook());
+    }
+
+    @Test
     public void execute_duplicateVisitDate_throwsCommandException() {
         Person personInList = model.getAddressBook().getPersonList().get(0);
         Person personWithConflictingVisit = new PersonBuilder(personInList)

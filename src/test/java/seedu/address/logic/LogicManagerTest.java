@@ -2,7 +2,6 @@ package seedu.address.logic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX;
 import static seedu.address.logic.Messages.MESSAGE_UNKNOWN_COMMAND;
@@ -13,7 +12,6 @@ import static seedu.address.logic.commands.CommandTestUtil.PHONE_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_VISIT_DATE_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VISIT_DATE_DESC_AMY;
 import static seedu.address.testutil.Assert.assertThrows;
-import static seedu.address.testutil.TypicalPersons.AMY;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
 
 import java.io.IOException;
@@ -34,7 +32,6 @@ import seedu.address.logic.commands.DeleteCommand;
 import seedu.address.logic.commands.EditCommand;
 import seedu.address.logic.commands.ListCommand;
 import seedu.address.logic.commands.exceptions.CommandException;
-import seedu.address.logic.commands.exceptions.CommandSaveException;
 import seedu.address.logic.parser.ParserUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.Model;
@@ -342,6 +339,44 @@ public class LogicManagerTest {
     }
 
     @Test
+    public void execute_confirmedDeleteSaveFailure_restoresPatientDataAndDisplay() throws Exception {
+        model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
+        Person firstPerson = model.getAddressBook().getPersonList().getFirst();
+        Person secondPerson = model.getAddressBook().getPersonList().get(1);
+        model.updateFilteredPersonList(person -> person.equals(firstPerson) || person.equals(secondPerson));
+        model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getName().fullName).reversed());
+        List<Person> storedPersonsBefore = List.copyOf(model.getAddressBook().getPersonList());
+        List<Person> displayedPersonsBefore = List.copyOf(model.getFilteredPersonList());
+        logic = createLogicWithFailingStorage(DUMMY_IO_EXCEPTION);
+        logic.execute("delete 1");
+        String expectedMessage = String.format(
+                LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
+
+        assertThrows(CommandException.class, expectedMessage, () -> logic.execute("y"));
+
+        assertEquals(storedPersonsBefore, model.getAddressBook().getPersonList());
+        assertEquals(displayedPersonsBefore, model.getFilteredPersonList());
+        assertFalse(logic.isInputRequestPending());
+    }
+
+    @Test
+    public void execute_confirmedClearSaveFailure_restoresPatientDataAndDisplay() throws Exception {
+        model = new ModelManager(getTypicalAddressBook(), new UserPrefs());
+        List<Person> storedPersonsBefore = List.copyOf(model.getAddressBook().getPersonList());
+        List<Person> displayedPersonsBefore = List.copyOf(model.getFilteredPersonList());
+        logic = createLogicWithFailingStorage(DUMMY_IO_EXCEPTION);
+        logic.execute("clear");
+        String expectedMessage = String.format(
+                LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage());
+
+        assertThrows(CommandException.class, expectedMessage, () -> logic.execute("y"));
+
+        assertEquals(storedPersonsBefore, model.getAddressBook().getPersonList());
+        assertEquals(displayedPersonsBefore, model.getFilteredPersonList());
+        assertFalse(logic.isInputRequestPending());
+    }
+
+    @Test
     public void execute_storageThrowsIoException_throwsCommandException() {
         assertCommandFailureForExceptionFromStorage(DUMMY_IO_EXCEPTION, String.format(
                 LogicManager.FILE_OPS_ERROR_FORMAT, DUMMY_IO_EXCEPTION.getMessage()));
@@ -418,32 +453,29 @@ public class LogicManagerTest {
      * @param expectedMessage the message expected inside exception thrown by the Logic component
      */
     private void assertCommandFailureForExceptionFromStorage(IOException e, String expectedMessage) {
-        Path prefPath = temporaryFolder.resolve("ExceptionUserPrefs.json");
-
-        // Inject LogicManager with a JsonAddressBookStorage that throws the IOException e when saving
-        JsonAddressBookStorage addressBookStorage = new JsonAddressBookStorage(prefPath) {
-            @Override
-            public void saveAddressBook(ReadOnlyAddressBook addressBook) throws IOException {
-                throw e;
-            }
-        };
-
-        JsonUserPrefsStorage userPrefsStorage =
-                new JsonUserPrefsStorage(temporaryFolder.resolve("ExceptionUserPrefs.json"));
-        StorageManager storage = new StorageManager(addressBookStorage, userPrefsStorage);
-
-        logic = new LogicManager(model, storage);
+        logic = createLogicWithFailingStorage(e);
 
         // Triggers the saveAddressBook method by executing an add command
         String addCommand = AddCommand.COMMAND_WORD + NAME_DESC_AMY + PHONE_DESC_AMY
                 + EMAIL_DESC_AMY + ADDRESS_DESC_AMY + VISIT_DATE_DESC_AMY;
-        Person expectedPerson = new PersonBuilder(AMY).withTags().build();
         ModelManager expectedModel = new ModelManager();
-        expectedModel.addPerson(expectedPerson);
-        CommandSaveException exception = assertThrows(CommandSaveException.class, expectedMessage, () ->
-                logic.execute(addCommand));
-        assertSame(e, exception.getCause());
-        assertEquals(expectedModel, model);
-        assertEquals(expectedPerson, exception.getCommandResult().getPersonToView().orElseThrow());
+        assertCommandFailure(addCommand, CommandException.class, expectedMessage, expectedModel);
+    }
+
+    /**
+     * Creates a logic manager whose patient-data save always throws {@code exception}.
+     */
+    private Logic createLogicWithFailingStorage(IOException exception) {
+        JsonAddressBookStorage addressBookStorage =
+                new JsonAddressBookStorage(temporaryFolder.resolve("ExceptionAddressBook.json")) {
+                    @Override
+                    public void saveAddressBook(ReadOnlyAddressBook addressBook) throws IOException {
+                        throw exception;
+                    }
+                };
+        JsonUserPrefsStorage userPrefsStorage =
+                new JsonUserPrefsStorage(temporaryFolder.resolve("ExceptionUserPrefs.json"));
+        StorageManager storage = new StorageManager(addressBookStorage, userPrefsStorage);
+        return new LogicManager(model, storage);
     }
 }

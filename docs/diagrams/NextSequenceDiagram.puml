@@ -50,11 +50,6 @@ activate Model
 Model --> NextCommand
 deactivate Model
 
-NextCommand -> Model : updateFilteredPersonList(...)
-activate Model
-Model --> NextCommand
-deactivate Model
-
 NextCommand --> LogicManager : result
 deactivate NextCommand
 
