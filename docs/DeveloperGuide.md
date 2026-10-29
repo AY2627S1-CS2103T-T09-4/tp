@@ -185,6 +185,11 @@ The `Storage` component,
 * is implemented by `StorageManager`, which delegates the actual JSON file access to `JsonAddressBookStorage` and `JsonUserPrefsStorage` (one class per data file).
 * depends on some classes in the `Model` component (because the `Storage` component's job is to save/retrieve objects that belong to the `Model`)
 
+`MainApp` uses `data/doc.json` as the preferred patient data file. If that file is absent and the legacy
+`data/addressbook.json` exists, startup moves the legacy file to the preferred path before storage is initialized. If
+both files exist, the preferred file takes precedence and the legacy file is left unchanged. A failed move falls back
+to the legacy path for that run and contributes a warning shown after the main window opens.
+
 When the patient data file does not exist, `MainApp` initializes the model with the seven records returned by
 `SampleDataUtil#getSampleAddressBook`. The sample patients are George Miller, Priya Nair, Aisha Rahman, Marcus Lim,
 Mei Lin Tan, Daniel Wong, and Noor Aziz. If an existing data file can be loaded successfully, including one with no
@@ -193,7 +198,7 @@ because it is malformed or contains conflicting records—`MainApp` starts with 
 
 Because almost every command saves the address book, the next command would overwrite the unreadable file.
 `MainApp#loadInitialData` therefore first calls `Storage#backupAddressBook`, which copies the file to a sibling named
-`addressbook-invalid-<yyyyMMdd-HHmmss>.json` without overwriting any existing backup. It returns the empty address book
+`doc-invalid-<yyyyMMdd-HHmmss>.json` without overwriting any existing backup. It returns the empty address book
 together with a warning that gives the first line of the load error and the backup's location, or, if the backup
 fails, tells the user to copy the file before entering any command. `MainApp#start` passes the warning to
 `Ui#showStartupWarning`, which shows it in a dialog once the main window is open.
@@ -1460,7 +1465,7 @@ Use a disposable copy of Doc with disposable patient data. Do not modify the per
 
 1. Clear the disposable list with `clear`, then `y`. Add a patient with
    `add n/Alpha p/90000001 a/1 Alpha Road vd/1/1/2000 0900`, then run `view 1`.
-1. While Doc stays open, make its `data/addressbook.json` read-only (on Windows, use the file's Properties dialog).
+1. While Doc stays open, make its `data/doc.json` read-only (on Windows, use the file's Properties dialog).
    Run `next 1 1/1/2099 1000`, using a later supported future datetime if necessary.
    Expected: A save error remains in the response panel. The patient card and details continue to show the original
    appointment, and the saved JSON still contains the original visit.
@@ -2006,7 +2011,7 @@ full unused `d/M/yyyy HHmm` value that preserves `P0 < P1 < P2 < actual now < F1
    latter displayed above the former. Expect Nextbeta at `27/10/2026 0900` with previous dates
    `[25/10/2026 1100]` and every other field preserved. Check the previous-date section below the current datetime
    and the persisted JSON. Re-find the intended patient after every successful mutation. Close Doc, then copy this
-   scratch folder's `data/addressbook.json` into a separate backup folder as `rollback-start-addressbook.json`.
+   scratch folder's `data/doc.json` into a separate backup folder as `rollback-start-doc.json`.
    Keep this backup outside the active scratch folder as the rollback starting state before running the independent
    cases below.
 
@@ -2047,8 +2052,8 @@ Restore the preserved **rollback starting state** from the persistence checkpoin
 [Testing the next command](#testing-the-next-command) before testing `prev`:
 
 1. Close Doc if it is running.
-1. Copy the preserved `rollback-start-addressbook.json` over the disposable scratch folder's `data/addressbook.json`,
-   replacing the active file and retaining the filename `addressbook.json`.
+1. Copy the preserved `rollback-start-doc.json` over the disposable scratch folder's `data/doc.json`,
+   replacing the active file and retaining the filename `doc.json`.
 1. Relaunch Doc from the same scratch folder. Find and view Nextalpha and Nextbeta to verify the starting records.
 
 Do not continue from either independent capacity case. The restored state should have Nextalpha
@@ -2264,7 +2269,7 @@ when midnight passes; another `view` recalculates it.
 
 1. Dealing with missing/corrupted data files
 
-   1. Back up `data/addressbook.json`, then edit two otherwise valid patient records to use the same `visitDate`.
+   1. Back up `data/doc.json`, then edit two otherwise valid patient records to use the same `visitDate`.
 
    1. Relaunch Doc.<br>
       Expected: Doc reports that the data file contains duplicate visit dates and times, retains the invalid file, and
