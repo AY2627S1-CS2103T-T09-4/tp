@@ -82,7 +82,7 @@ public class MainWindowSaveFailureTest {
     }
 
     @Test
-    public void execute_addSaveFailure_showsAddedPatient() {
+    public void execute_addSaveFailure_restoresOriginalPatientsAndDetails() {
         runOnFxThread(() -> {
             Person added = new PersonBuilder().withName("Gamma").withPhone("90000003")
                     .withVisitDate("3/11/2026 0900").withPreviousVisitDates().build();
@@ -91,29 +91,28 @@ public class MainWindowSaveFailureTest {
             fixture.submit(PersonUtil.getAddCommand(added));
 
             fixture.assertSaveError();
-            assertEquals(List.of(ALPHA, BETA, added), fixture.model.getAddressBook().getPersonList());
-            fixture.assertDisplayedPerson(added);
+            assertEquals(List.of(ALPHA, BETA), fixture.model.getAddressBook().getPersonList());
+            fixture.assertDisplayedPerson(ALPHA);
             fixture.assertSavedPatients(ALPHA, BETA);
         });
     }
 
     @Test
-    public void execute_editSaveFailure_showsUpdatedPatient() {
+    public void execute_editSaveFailure_restoresOriginalPatientAndDetails() {
         runOnFxThread(() -> {
-            Person edited = new PersonBuilder(ALPHA).withName("Renamed Alpha").build();
             fixture.storage.failure = new IOException("Disk unavailable");
 
             fixture.submit("edit 1 n/Renamed Alpha");
 
             fixture.assertSaveError();
-            assertEquals(List.of(edited, BETA), fixture.model.getAddressBook().getPersonList());
-            fixture.assertDisplayedPerson(edited);
+            assertEquals(List.of(ALPHA, BETA), fixture.model.getAddressBook().getPersonList());
+            fixture.assertDisplayedPerson(ALPHA);
             fixture.assertSavedPatients(ALPHA, BETA);
         });
     }
 
     @Test
-    public void execute_prevSaveFailure_showsRestoredVisit() {
+    public void execute_prevSaveFailure_restoresAdvancedVisit() {
         runOnFxThread(() -> {
             fixture.submit("next 1 1/11/2026 1000");
             Person advanced = fixture.model.getAddressBook().getPersonList().getFirst();
@@ -123,21 +122,21 @@ public class MainWindowSaveFailureTest {
             fixture.submit("y");
 
             fixture.assertSaveError();
-            assertEquals(List.of(ALPHA, BETA), fixture.model.getAddressBook().getPersonList());
-            fixture.assertDisplayedPerson(ALPHA);
+            assertEquals(List.of(advanced, BETA), fixture.model.getAddressBook().getPersonList());
+            fixture.assertDisplayedPerson(advanced);
             fixture.assertSavedPatients(advanced, BETA);
         });
     }
 
     @Test
-    public void execute_deleteSaveFailure_clearsOnlyDeletedPatientDetails() {
+    public void execute_deleteSaveFailure_restoresPatientsAndDetails() {
         runOnFxThread(() -> {
             fixture.storage.failure = new IOException("Disk unavailable");
             fixture.submit("delete 2");
             fixture.submit("y");
 
             fixture.assertSaveError();
-            assertEquals(List.of(ALPHA), fixture.model.getAddressBook().getPersonList());
+            assertEquals(List.of(ALPHA, BETA), fixture.model.getAddressBook().getPersonList());
             fixture.assertDisplayedPerson(ALPHA);
             fixture.assertSavedPatients(ALPHA, BETA);
 
@@ -145,22 +144,22 @@ public class MainWindowSaveFailureTest {
             fixture.submit("y");
 
             fixture.assertSaveError();
-            assertTrue(fixture.model.getAddressBook().getPersonList().isEmpty());
-            fixture.assertDetailsCleared();
+            assertEquals(List.of(ALPHA, BETA), fixture.model.getAddressBook().getPersonList());
+            fixture.assertDisplayedPerson(ALPHA);
             fixture.assertSavedPatients(ALPHA, BETA);
         });
     }
 
     @Test
-    public void execute_clearSaveFailure_clearsDetails() {
+    public void execute_clearSaveFailure_restoresPatientsAndDetails() {
         runOnFxThread(() -> {
             fixture.storage.failure = new IOException("Disk unavailable");
             fixture.submit("clear");
             fixture.submit("y");
 
             fixture.assertSaveError();
-            assertTrue(fixture.model.getAddressBook().getPersonList().isEmpty());
-            fixture.assertDetailsCleared();
+            assertEquals(List.of(ALPHA, BETA), fixture.model.getAddressBook().getPersonList());
+            fixture.assertDisplayedPerson(ALPHA);
             fixture.assertSavedPatients(ALPHA, BETA);
         });
     }
@@ -183,15 +182,13 @@ public class MainWindowSaveFailureTest {
 
     private void assertNextFailureThenDelete(IOException failure) {
         runOnFxThread(() -> {
-            Person advanced = new PersonBuilder(ALPHA).withVisitDate("1/11/2026 1000")
-                    .withPreviousVisitDates("1/10/2026 0900").build();
             fixture.storage.failure = failure;
 
             fixture.submit("next 1 1/11/2026 1000");
 
             fixture.assertSaveError();
-            assertEquals(List.of(advanced, BETA), fixture.model.getAddressBook().getPersonList());
-            fixture.assertDisplayedPerson(advanced);
+            assertEquals(List.of(ALPHA, BETA), fixture.model.getAddressBook().getPersonList());
+            fixture.assertDisplayedPerson(ALPHA);
             fixture.assertSavedPatients(ALPHA, BETA);
 
             fixture.storage.failure = null;

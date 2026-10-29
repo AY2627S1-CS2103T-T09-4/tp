@@ -527,8 +527,8 @@ Format: `next INDEX DATETIME`
 * If no further visit is planned, leave the current date and time unchanged, even after it passes.
 * Success shows `Next visit scheduled for patient NAME: DATETIME`, saves the record, and automatically shows the
   updated patient in the details panel.
-* Validation errors preserve data and the displayed list. A save failure reports a storage error; the in-memory
-  appointment may already have changed.
+* Validation errors preserve data and the displayed list. A save failure reports a storage error and restores the
+  patient data and displayed list to their state before the command.
 
 Common errors:
 
@@ -582,8 +582,8 @@ Format: `prev INDEX`
 * A missing index shows usage. Invalid indices, including additional arguments, show the shared
   [index errors](#features) followed by usage. Rejected commands do not save changes.
 * A later `next` uses the restored state and still requires the current visit to have arrived or passed and the
-  requested datetime to be in the future. A save failure reports a storage error; the in-memory record may
-  already have changed.
+  requested datetime to be in the future. A save failure reports a storage error and restores the record to its
+  state before the command.
 
 Example: suppose the clock reads `21/10/2026 1200`. Use globally unused replacement datetimes and George Miller's
 currently displayed `INDEX` for each command. Each row continues from the previous row:
@@ -699,10 +699,9 @@ Doc automatically saves completed changes, including successful `add`, `edit`, `
 `clear` when there are no patient records do not write a file because they do not change stored data. You do not need
 to save manually.
 
-If saving fails, Doc reports the save error, but the change may already have been applied in memory. The patient list
-and details panel reflect that in-memory state: added or updated patients are shown, deleted patients' details are
-cleared if displayed, and clearing all patients also clears the details panel. These display changes do not mean the
-data was saved. Restore write access before continuing; restarting before a successful save can lose unsaved changes.
+If saving fails, Doc reports the save error and restores the patient data, active filter, and sorting to their state
+before the command. The data file remains consistent with the restored in-memory state. Restore write access before
+trying the command again.
 
 Emergency contacts are saved with the patient records and remain available after restarting Doc. Older valid
 data files without emergency contacts still load; their patients initially have no emergency contact.

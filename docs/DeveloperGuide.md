@@ -1411,7 +1411,7 @@ The continuous `next` route and the rollback route deliberately share the sentin
 JSON, capacity, calendar, and Help checks are independent cases; preserve other patients and omitted optional fields when a
 case does not say to reset them. After every successful `edit`, `next`, or `prev`, find the intended patient again
 before using an index, because the command restores the full list in stored order. The details panel automatically
-shows the updated patient, including when an in-memory change cannot be saved.
+shows the updated patient after a successful save. If saving fails, the patient data and displayed list are restored.
 
 ### Launch and shutdown
 
@@ -1440,13 +1440,13 @@ Use a disposable copy of Doc with disposable patient data. Do not modify the per
    `add n/Alpha p/90000001 a/1 Alpha Road vd/1/1/2000 0900`, then run `view 1`.
 1. While Doc stays open, make its `data/addressbook.json` read-only (on Windows, use the file's Properties dialog).
    Run `next 1 1/1/2099 1000`, using a later supported future datetime if necessary.
-   Expected: A save error remains in the response panel. Both the patient card and details show the new appointment;
-   details also show `1/1/2000 0900` in history. The saved JSON still contains the original visit.
+   Expected: A save error remains in the response panel. The patient card and details continue to show the original
+   appointment, and the saved JSON still contains the original visit.
 1. Restore write access. Run `delete 1`, then `y`.
    Expected: Deletion succeeds, both the list and details panel are empty, and the saved JSON has no patients.
 1. Repeat the setup, make the file read-only, then run `delete 1` and `y`.
-   Expected: A save error appears, but the deleted patient's details are cleared with the in-memory list. Restore
-   write access before continuing.
+   Expected: A save error appears, and the patient remains in both the list and details panel. Restore write access
+   before continuing.
 
 `MainWindowSaveFailureTest` automates the command-entry, display, and persistence assertions with injected
 permission and I/O failures, including `add`, `edit`, confirmed `prev`, deletion, clearing, and unchanged details
