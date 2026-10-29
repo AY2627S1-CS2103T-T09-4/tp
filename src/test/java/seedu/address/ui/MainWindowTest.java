@@ -129,6 +129,39 @@ public class MainWindowTest {
     }
 
     @Test
+    public void responsePanel_arrowKeys_scrollImmediatelyWithoutMovingCaret() {
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+
+            try {
+                MainWindow mainWindow = new MainWindow(stage, new TestLogic(new PersonBuilder().build()),
+                        TEST_DATA_FILE_PATH, url -> { });
+                mainWindow.fillInnerParts();
+                mainWindow.show();
+                Scene scene = stage.getScene();
+                TextArea resultDisplay = (TextArea) scene.lookup("#resultDisplay");
+                assertNotNull(resultDisplay);
+
+                resultDisplay.setText("Response line\n".repeat(30));
+                resultDisplay.positionCaret(0);
+                resultDisplay.setScrollTop(0);
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+
+                fireKeyPressed(resultDisplay, KeyCode.DOWN);
+                assertEquals(40, resultDisplay.getScrollTop(), LAYOUT_TOLERANCE);
+                assertEquals(0, resultDisplay.getCaretPosition());
+
+                fireKeyPressed(resultDisplay, KeyCode.UP);
+                assertEquals(0, resultDisplay.getScrollTop(), LAYOUT_TOLERANCE);
+                assertEquals(0, resultDisplay.getCaretPosition());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    @Test
     public void keyboardNavigation_emptyDetails_cyclesForwardAndReverse() {
         runOnFxThread(() -> {
             Person person = new PersonBuilder().withName("Keyboard Patient").build();

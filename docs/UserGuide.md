@@ -131,7 +131,7 @@ visible.
 
 The response panel has a fixed height, so resizing the application window does not change the space allocated to
 feedback. Long success and error messages wrap within the panel. If a message is taller than the panel, use its
-vertical scroll bar to read the remaining text.
+vertical scroll bar or focus the panel and press <kbd>Up</kbd> and <kbd>Down</kbd> to read the remaining text.
 
 After every successful `view INDEX`, the patient-details panel returns to the top, including when viewing another
 patient or viewing the same patient again. Entering `view INDEX` in the command box leaves the cursor in the command box.
