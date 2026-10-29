@@ -12,7 +12,7 @@ public class EmergencyContact {
     public static final String MESSAGE_CONSTRAINTS =
             "Emergency contacts must use ec/PHONE_NUMBER or ec/NAME, PHONE_NUMBER. "
                     + "The phone number is required; the name is optional. "
-                    + Name.MESSAGE_CONSTRAINTS + ". " + Phone.MESSAGE_CONSTRAINTS + ".";
+                    + Name.MESSAGE_CONSTRAINTS + " " + Phone.MESSAGE_CONSTRAINTS + ".";
 
     private final String value;
 

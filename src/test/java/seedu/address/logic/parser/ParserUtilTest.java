@@ -110,6 +110,10 @@ public class ParserUtilTest {
     @Test
     public void parseName_invalidValue_throwsParseException() {
         assertThrows(ParseException.class, () -> ParserUtil.parseName(INVALID_NAME));
+
+        // the phone prefix is mentioned only for a name that contains it
+        assertThrows(ParseException.class, Name.MESSAGE_CONSTRAINTS, () -> ParserUtil.parseName("!!!"));
+        assertThrows(ParseException.class, Name.MESSAGE_CONTAINS_PHONE_PREFIX, () -> ParserUtil.parseName("Ap/B"));
     }
 
     @Test
