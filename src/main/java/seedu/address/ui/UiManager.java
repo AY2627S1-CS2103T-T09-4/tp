@@ -63,6 +63,13 @@ public class UiManager implements Ui {
         return new Image(MainApp.class.getResourceAsStream(imagePath));
     }
 
+    @Override
+    public void showStartupWarning(String message) {
+        requireNonNull(message);
+        showAlertDialogAndWait(AlertType.WARNING, "Patient data not loaded",
+                "Doc started with an empty patient list", message);
+    }
+
     void showAlertDialogAndWait(Alert.AlertType type, String title, String headerText, String contentText) {
         showAlertDialogAndWait(mainWindow.getPrimaryStage(), type, title, headerText, contentText);
     }

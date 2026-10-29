@@ -184,6 +184,13 @@ Mei Lin Tan, Daniel Wong, and Noor Aziz. If an existing data file can be loaded 
 records, its contents take precedence over these samples. If an existing data file cannot be loaded—for example,
 because it is malformed or contains conflicting records—`MainApp` starts with an empty address book.
 
+Because almost every command saves the address book, the next command would overwrite the unreadable file.
+`MainApp#loadInitialData` therefore first calls `Storage#backupAddressBook`, which copies the file to a sibling named
+`addressbook-invalid-<yyyyMMdd-HHmmss>.json` without overwriting any existing backup. It returns the empty address book
+together with a warning that gives the first line of the load error and the backup's location, or, if the backup
+fails, tells the user to copy the file before entering any command. `MainApp#start` passes the warning to
+`Ui#showStartupWarning`, which shows it in a dialog once the main window is open.
+
 ### Common classes
 
 Classes used by multiple components are in the `seedu.address.commons` package.

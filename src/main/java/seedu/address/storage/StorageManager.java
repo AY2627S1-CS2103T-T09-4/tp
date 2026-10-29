@@ -2,6 +2,7 @@ package seedu.address.storage;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -63,6 +64,12 @@ public class StorageManager implements Storage {
     public void saveAddressBook(ReadOnlyAddressBook addressBook) throws IOException {
         logger.fine("Attempting to write to data file: " + addressBookStorage.getAddressBookFilePath());
         addressBookStorage.saveAddressBook(addressBook);
+    }
+
+    @Override
+    public Path backupAddressBook(LocalDateTime backupTime) throws IOException {
+        logger.fine("Attempting to back up data file: " + addressBookStorage.getAddressBookFilePath());
+        return addressBookStorage.backupAddressBook(backupTime);
     }
 
 }

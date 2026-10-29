@@ -714,9 +714,11 @@ deduplicating, or dropping entries.
 <box type="warning" seamless>
 
 **Caution:**
-If your changes make the data file invalid, Doc starts with an empty patient list at the next run. The invalid
-file remains on disk until you run a command that triggers saving, such as `list`. Still, we recommend backing up the
-file before editing it.<br>
+If your changes make the data file invalid, Doc starts with an empty patient list at the next run and shows a
+warning explaining why. Before starting, it saves a copy of the invalid file in the same folder, named like
+`addressbook-invalid-20261029-153005.json` (the date and time it was found), so no patient data is lost even though
+the next change you make overwrites `addressbook.json`. To recover, close Doc, fix the problem in the copy, and use it
+to replace `addressbook.json`. Still, we recommend backing up the file before editing it.<br>
 Furthermore, certain edits can cause Doc to behave in unexpected ways (e.g., if a value entered is outside the
 acceptable range). Therefore, edit the data file only if you are confident that you can update it correctly.
 Files created by older versions can also be invalid if two patient records use the same visit date and time. Assign a

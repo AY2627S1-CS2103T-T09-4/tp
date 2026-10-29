@@ -2,6 +2,7 @@ package seedu.address.storage;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import seedu.address.commons.exceptions.DataLoadingException;
@@ -53,5 +54,13 @@ public interface Storage {
      * @throws IOException if there was any problem writing to the file.
      */
     void saveAddressBook(ReadOnlyAddressBook addressBook) throws IOException;
+
+    /**
+     * Copies the address book data file to a new backup file in the same folder, named with {@code backupTime}.
+     *
+     * @return Path of the backup file.
+     * @throws IOException If the backup cannot be written.
+     */
+    Path backupAddressBook(LocalDateTime backupTime) throws IOException;
 
 }
