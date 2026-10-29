@@ -142,13 +142,7 @@ public class ModelManager implements Model {
     public void setPerson(Person target, Person editedPerson) {
         requireAllNonNull(target, editedPerson);
 
-        Comparator<? super Person> comparator = sortedPersons.getComparator();
         addressBook.setPerson(target, editedPerson);
-        if (comparator != null) {
-            // Reapply the active comparator because a replacement can retain its previous position in a SortedList.
-            sortedPersons.setComparator(null);
-            sortedPersons.setComparator(comparator);
-        }
     }
 
     //=========== Filtered Person List Accessors =============================================================

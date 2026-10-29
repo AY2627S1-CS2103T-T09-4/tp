@@ -383,7 +383,7 @@ public class EditCommandTest {
     }
 
     @Test
-    public void execute_sortedList_editsDisplayedPerson() {
+    public void execute_sortedList_preservesSortOrder() {
         Person storedSecondPerson = model.getAddressBook().getPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
         Person earlierPerson = new PersonBuilder(storedSecondPerson).withVisitDate(VALID_VISIT_DATE_BOB).build();
         model.setPerson(storedSecondPerson, earlierPerson);
@@ -403,7 +403,7 @@ public class EditCommandTest {
                         String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
                         editedPerson),
                 expectedModel);
-        assertEquals(editedPerson, model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased()));
+        assertEquals(editedPerson, model.getFilteredPersonList().getLast());
     }
 
     @Test
