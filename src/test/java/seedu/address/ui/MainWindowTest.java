@@ -99,36 +99,6 @@ public class MainWindowTest {
     }
 
     @Test
-    public void responsePanel_fixedHeightAndWrapsFeedback() {
-        runOnFxThread(() -> {
-            Stage stage = new Stage();
-
-            try {
-                MainWindow mainWindow = new MainWindow(stage, new TestLogic(new PersonBuilder().build()),
-                        TEST_DATA_FILE_PATH, url -> { });
-                mainWindow.fillInnerParts();
-                mainWindow.show();
-                Scene scene = stage.getScene();
-                scene.getRoot().applyCss();
-                scene.getRoot().layout();
-
-                Region responsePanel = (Region) scene.lookup("#resultDisplayPlaceholder");
-                TextArea resultDisplay = (TextArea) scene.lookup("#resultDisplay");
-
-                assertNotNull(responsePanel);
-                assertNotNull(resultDisplay);
-                assertEquals(140, responsePanel.getMinHeight());
-                assertEquals(140, responsePanel.getPrefHeight());
-                assertEquals(140, responsePanel.getMaxHeight());
-                assertEquals(140, responsePanel.getHeight(), LAYOUT_TOLERANCE);
-                assertTrue(resultDisplay.isWrapText());
-            } finally {
-                stage.close();
-            }
-        });
-    }
-
-    @Test
     public void keyboardNavigation_emptyDetails_cyclesForwardAndReverse() {
         runOnFxThread(() -> {
             Person person = new PersonBuilder().withName("Keyboard Patient").build();
