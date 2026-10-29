@@ -98,8 +98,10 @@ public class NextCommandIntegrationTest {
 
         logic.execute("next\t1 \t01/11/2026  0930");
 
-        fixture.assertPersistedPatients(amy, new PersonBuilder(benson).withVisitDate(NEW_VISIT_DATE)
-                .withPreviousVisitDates("12/10/2026 1000").build());
+        Person expectedBenson = new PersonBuilder(benson).withVisitDate(NEW_VISIT_DATE)
+                .withPreviousVisitDates("12/10/2026 1000").build();
+        fixture.assertPersistedPatients(amy, expectedBenson);
+        assertEquals(List.of(expectedBenson), model.getFilteredPersonList());
     }
 
     @Test
@@ -159,6 +161,7 @@ public class NextCommandIntegrationTest {
                 .withPreviousVisitDates("1/10/2026 1000", "2/10/2026 1000", "13/10/2026 1000", "14/10/2026 1000")
                 .build();
         fixture.assertPersistedPatients(expectedPerson, benson);
+        assertEquals(List.of(expectedPerson), model.getFilteredPersonList());
         assertEquals(4, fixture.getSaveCount());
         // Two next commands, find, and edit save; view and the rejected next do not.
     }
@@ -243,7 +246,7 @@ public class NextCommandIntegrationTest {
         Model reloadedModel = new ModelManager(fixture.getAddressBookStorage().readAddressBook().orElseThrow(),
                 new UserPrefs());
         assertEquals(model.getAddressBook(), reloadedModel.getAddressBook());
-        assertEquals(model.getFilteredPersonList(), reloadedModel.getFilteredPersonList());
+        assertEquals(List.of(benson), model.getFilteredPersonList());
     }
 
     @Test

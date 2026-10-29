@@ -256,6 +256,7 @@ public class PrevCommandIntegrationTest {
         assertEquals(String.format(PrevCommand.MESSAGE_SUCCESS, expectedPatient.getName(),
                 expectedPatient.getVisitDate(), otherPatient.getVisitDate()), result.getFeedbackToUser());
         fixture.assertPersistedPatients(AMY, expectedPatient);
+        assertEquals(List.of(expectedPatient), model.getFilteredPersonList());
     }
 
     @Test

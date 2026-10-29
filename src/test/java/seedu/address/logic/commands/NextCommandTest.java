@@ -142,7 +142,7 @@ public class NextCommandTest {
     }
 
     @Test
-    public void execute_afterView_updatedPatientNoLongerMatchesFilter_disappearsFromList() throws Exception {
+    public void execute_afterViewNonMatchingUpdate_disappearsFromList() throws Exception {
         model.updateFilteredPersonList(person -> person.equals(BENSON));
         new ViewCommand(INDEX_FIRST_PERSON).execute(model);
 
