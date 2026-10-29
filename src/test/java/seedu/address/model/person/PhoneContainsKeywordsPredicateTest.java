@@ -29,6 +29,26 @@ public class PhoneContainsKeywordsPredicateTest {
     }
 
     @Test
+    public void test_formattedPhoneOrKeyword_comparesDigitsOnly() {
+        // stored phone with spaces, a dash, and a country code
+        Person formattedPerson = new PersonBuilder().withPhone("+65 9123-4567").build();
+        assertTrue(new PhoneContainsKeywordsPredicate(List.of("91234567")).test(formattedPerson));
+        assertTrue(new PhoneContainsKeywordsPredicate(List.of("6591")).test(formattedPerson));
+
+        // keyword with a dash or a plus sign
+        assertTrue(new PhoneContainsKeywordsPredicate(List.of("9123-4567")).test(person));
+        assertTrue(new PhoneContainsKeywordsPredicate(List.of("+65")).test(formattedPerson));
+        assertFalse(new PhoneContainsKeywordsPredicate(List.of("+65")).test(person));
+    }
+
+    @Test
+    public void test_keywordWithoutDigits_returnsFalse() {
+        // a keyword without digits would otherwise match every phone number
+        assertFalse(new PhoneContainsKeywordsPredicate(List.of("+")).test(person));
+        assertFalse(new PhoneContainsKeywordsPredicate(List.of("--")).test(person));
+    }
+
+    @Test
     public void test_phoneDoesNotContainKeyword_returnsFalse() {
         // zero keywords
         assertFalse(new PhoneContainsKeywordsPredicate(List.of()).test(person));
