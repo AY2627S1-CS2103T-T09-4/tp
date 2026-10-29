@@ -1,6 +1,7 @@
 package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
+import static seedu.address.logic.Messages.DISPLAY_LOCALE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ALCOHOL_HISTORY;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ALLERGIES;
@@ -58,16 +59,16 @@ public class EditCommand extends Command {
             + "Existing values will be overwritten by the input values.\n"
             + "Parameters: INDEX (must be a positive integer) "
             + "[" + PREFIX_NAME + "NAME] "
+            + "[" + PREFIX_PHONE + "PHONE] "
+            + "[" + PREFIX_ADDRESS + "ADDRESS] "
+            + "[" + PREFIX_VISIT_DATE + "DATETIME] "
+            + "[" + PREFIX_EMAIL + "EMAIL] "
+            + "[" + PREFIX_EMERGENCY_CONTACT + "[NAME, ]PHONE_NUMBER] "
             + "[" + PREFIX_DATE_OF_BIRTH + "DATE] "
             + "[" + PREFIX_BLOOD_TYPE + "BLOOD_TYPE] "
             + "[" + PREFIX_ALLERGIES + "ALLERGIES] "
             + "[" + PREFIX_ALCOHOL_HISTORY + "ALCOHOL_HISTORY] "
             + "[" + PREFIX_SMOKING_STATUS + "STATUS] "
-            + "[" + PREFIX_PHONE + "PHONE] "
-            + "[" + PREFIX_EMERGENCY_CONTACT + "[NAME, ]PHONE_NUMBER] "
-            + "[" + PREFIX_ADDRESS + "ADDRESS] "
-            + "[" + PREFIX_VISIT_DATE + "DATE_TIME] "
-            + "[" + PREFIX_EMAIL + "EMAIL] "
             + "[" + PREFIX_NOTE + "NOTES] "
             + "[" + PREFIX_TAG + "TAG]...\n"
             + "Example: " + COMMAND_WORD + " 1 "
@@ -173,7 +174,7 @@ public class EditCommand extends Command {
         if (isVisitDayChanged) {
             int visitsOnNewDay = model.countPersonsWithSameVisitDay(editedPerson);
             if (visitsOnNewDay >= Model.MAX_VISITS_PER_DAY) {
-                warnings.add(String.format(MESSAGE_WARNING_FULL_DAY, visitsOnNewDay,
+                warnings.add(String.format(DISPLAY_LOCALE, MESSAGE_WARNING_FULL_DAY, visitsOnNewDay,
                         editedPerson.getVisitDate().toDayString()));
             }
         }
@@ -261,7 +262,8 @@ public class EditCommand extends Command {
 
         return (duplicateCount == 1)
                 ? String.format(MESSAGE_WARNING_DUPLICATE_NAME, editedPerson.getName())
-                : String.format(MESSAGE_WARNING_DUPLICATE_NAMES, editedPerson.getName(), duplicateCount);
+                : String.format(DISPLAY_LOCALE, MESSAGE_WARNING_DUPLICATE_NAMES, editedPerson.getName(),
+                        duplicateCount);
     }
 
     /**

@@ -34,11 +34,13 @@ import seedu.address.model.person.VisitDateOnDaysPredicate;
 public class FindCommandParser implements Parser<FindCommand> {
 
     public static final String MESSAGE_EMPTY_KEYWORDS = "Give at least one keyword after %1$s.";
-    public static final String MESSAGE_INVALID_PHONE_KEYWORD = "Phone keywords should only contain digits.";
+    public static final String MESSAGE_INVALID_PHONE_KEYWORD =
+            "Phone keywords may contain only digits, '+', and '-', and must include at least one digit.";
     public static final String MESSAGE_INVALID_VISIT_DAY = "\"%1$s\" is not a valid visit date. "
             + "Give dates without a time in the format d/M/yyyy, e.g. " + PREFIX_VISIT_DATE + "18/9/2026.";
 
-    private static final String PHONE_KEYWORD_REGEX = "\\d+";
+    /** Digits, '+', and '-', as phone numbers may contain, with at least one digit. */
+    private static final String PHONE_KEYWORD_REGEX = "[+\\d-]*\\d[+\\d-]*";
 
     /**
      * Parses the given {@code String} of arguments in the context of the FindCommand
@@ -95,7 +97,8 @@ public class FindCommandParser implements Parser<FindCommand> {
     /**
      * Returns the keywords given after the phone prefix, or an empty {@code Optional} if the prefix is absent.
      *
-     * @throws ParseException If the prefix is present without keywords or any keyword contains a non-digit.
+     * @throws ParseException If the prefix is present without keywords, or a keyword has no digit or a character
+     *     other than a digit, '+', or '-'.
      */
     private static Optional<List<String>> parsePhoneKeywords(ArgumentMultimap argMultimap) throws ParseException {
         Optional<List<String>> phoneKeywords = parseKeywords(argMultimap, PREFIX_PHONE);

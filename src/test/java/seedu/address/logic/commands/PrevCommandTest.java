@@ -68,10 +68,10 @@ public class PrevCommandTest {
     @Test
     public void execute_futureCurrentAndPreviousDates_allowsRollback() throws Exception {
         // EP: Rollback is independent of whether the retained or current visit is in the future.
-        Person original = new PersonBuilder(AMY).withVisitDate("30/10/9999 1000")
-                .withPreviousVisitDates("20/10/9999 1000").build();
+        Person original = new PersonBuilder(AMY).withVisitDate("30/10/2099 1000")
+                .withPreviousVisitDates("20/10/2099 1000").build();
         model.setPerson(AMY, original);
-        Person expectedPerson = new PersonBuilder(original).withVisitDate("20/10/9999 1000")
+        Person expectedPerson = new PersonBuilder(original).withVisitDate("20/10/2099 1000")
                 .withPreviousVisitDates().build();
 
         assertRollbackSuccess(INDEX_FIRST_PERSON, original, expectedPerson);

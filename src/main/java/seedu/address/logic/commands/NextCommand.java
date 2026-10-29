@@ -124,7 +124,7 @@ public class NextCommand extends Command {
 
         logger.info("Requesting confirmation to schedule a visit on " + visitDate.toDayString()
                 + ", which already has " + visitsOnNewDay + " visits");
-        String prompt = String.format(MESSAGE_CONFIRM_FULL_DAY, visitsOnNewDay,
+        String prompt = String.format(DISPLAY_LOCALE, MESSAGE_CONFIRM_FULL_DAY, visitsOnNewDay,
                 visitDate.toDayString(), updatedPerson.getName());
         CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(prompt, MESSAGE_NEXT_CANCELLED,
                 confirmedModel -> scheduleConfirmedVisit(confirmedModel, personToUpdate, updatedPerson));
