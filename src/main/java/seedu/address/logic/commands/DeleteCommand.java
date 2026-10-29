@@ -19,15 +19,15 @@ public class DeleteCommand extends Command {
     public static final String COMMAND_WORD = "delete";
 
     public static final String MESSAGE_USAGE = COMMAND_WORD
-            + ": Deletes the person identified by the index number used in the displayed person list.\n"
+            + ": Deletes the patient identified by the index number used in the displayed patient list.\n"
             + "Parameters: INDEX (must be a positive integer)\n"
             + "Example: " + COMMAND_WORD + " 1";
 
-    public static final String MESSAGE_DELETE_PERSON_SUCCESS = "Deleted person: %1$s";
+    public static final String MESSAGE_DELETE_PERSON_SUCCESS = "Deleted patient: %1$s";
     public static final String MESSAGE_CONFIRM_DELETE = "Delete %1$s? Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_DELETE_CANCELLED = "Deletion cancelled.";
     public static final String MESSAGE_PERSON_NO_LONGER_EXISTS =
-            "The person selected for deletion no longer exists.";
+            "The patient selected for deletion no longer exists.";
 
     private final Index targetIndex;
 

@@ -817,7 +817,7 @@ before modifying the model.
 For `delete INDEX`, `DeleteCommand` validates the index and captures the exact displayed `Person` before requesting
 confirmation. The prompt contains only that person's name because other fields can be absent. Confirmation deletes
 that captured object rather than resolving the index again. If the record changed or disappeared while confirmation
-was pending, the command reports that the selected person no longer exists and deletes nothing.
+was pending, the command reports that the selected patient no longer exists and deletes nothing.
 
 For `clear`, `ClearCommand` requests confirmation only when Doc contains patient records. Its prompt uses
 `entry` for one record and `entries` otherwise. Confirming clears the patient list; every other response cancels.
@@ -2212,7 +2212,7 @@ when midnight passes; another `view` recalculates it.
       `Clear COUNT entries? Type y to confirm. Any other input cancels.` with the current count.
 
    1. Test case: `Y` immediately after the previous test case<br>
-      Expected: All patient records are deleted and the result display shows `Address book has been cleared!`.
+      Expected: All patient records are deleted and the result display shows `Patient list has been cleared!`.
 
 1. Cancelling a clear operation
 
@@ -2227,7 +2227,7 @@ when midnight passes; another `view` recalculates it.
    1. Prerequisites: Doc contains no patient records.
 
    1. Test case: `clear`<br>
-      Expected: No confirmation is requested and the result display shows `Address book is already empty.`
+      Expected: No confirmation is requested and the result display shows `Patient list is already empty.`
 
 1. _{ more test cases … }_
 

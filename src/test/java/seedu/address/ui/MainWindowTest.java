@@ -754,7 +754,7 @@ public class MainWindowTest {
             lastCommandText = commandText;
             return switch (executionOutcome) {
                 case SUCCESS -> CommandResult.viewPerson(
-                        "Viewing person: " + personToView.getName(), personToView);
+                        "Viewing patient: " + personToView.getName(), personToView);
                 case CLEAR_DETAILS -> CommandResult.clearDetailsPanel("Cleared all patients");
                 case CLEAR_MATCHING_PERSON -> CommandResult.clearPersonIfShowing(
                         "Deleted patient", personToView);
