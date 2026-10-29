@@ -84,10 +84,6 @@ The `UI` component,
 * keeps a reference to the `Logic` component, because the `UI` relies on the `Logic` to execute commands.
 * depends on some classes in the `Model` component because it displays `Person` objects from the model.
 
-`ResultDisplay` is hosted in a fixed-height response panel. Its feedback text wraps within the available width, and the
-text area can be scrolled vertically when a message exceeds the panel height. The panel does not grow when the main
-window is resized; extra vertical space remains available to the patient list and patient-details panel instead.
-
 `CommandBox` owns a session-scoped `CommandHistory`. It records ordinary command submissions and uses it to replace
 the command box text when the user presses the Up or Down arrow key.
 

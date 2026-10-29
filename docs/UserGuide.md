@@ -127,12 +127,6 @@ and patient-list navigation behavior in the patient list.
 In the patient list, Up and Down move the selection and scroll only as needed to keep the selected patient card fully
 visible.
 
-### Reading command responses
-
-The response panel has a fixed height, so resizing the application window does not change the space allocated to
-feedback. Long success and error messages wrap within the panel. If a message is taller than the panel, use its
-vertical scroll bar to read the remaining text.
-
 After every successful `view INDEX`, the patient-details panel returns to the top, including when viewing another
 patient or viewing the same patient again. Entering `view INDEX` in the command box leaves the cursor in the command box.
 
