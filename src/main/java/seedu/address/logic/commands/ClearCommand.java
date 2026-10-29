@@ -12,8 +12,8 @@ import seedu.address.model.Model;
 public class ClearCommand extends Command {
 
     public static final String COMMAND_WORD = "clear";
-    public static final String MESSAGE_SUCCESS = "Address book has been cleared!";
-    public static final String MESSAGE_ALREADY_EMPTY = "Address book is already empty.";
+    public static final String MESSAGE_SUCCESS = "Patient list has been cleared!";
+    public static final String MESSAGE_ALREADY_EMPTY = "Patient list is already empty.";
     public static final String MESSAGE_CLEAR_CANCELLED = "Clear cancelled.";
     public static final String MESSAGE_CONFIRM_CLEAR_ONE =
             "Clear 1 entry? Type y to confirm. Any other input cancels.";

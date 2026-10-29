@@ -467,7 +467,7 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[
 * Editing replaces the stored visit date and time; it does not append a visit-history entry.
   Use `edit ... vd/` to correct a missed or rescheduled appointment, or
   [next](#scheduling-the-next-visit-next) to schedule the following visit.
-* On success, the app shows `Edited person:` followed by the patient's updated details in the same form as `add`,
+* On success, the app shows `Edited patient:` followed by the patient's updated details in the same form as `add`,
   including the visit date and any recorded health details, so you can check the change.
 * After editing, the patient details panel automatically shows the updated record.
 * When editing tags, all of the patient's existing tags are removed; adding tags is not cumulative.
@@ -674,7 +674,7 @@ Format: `delete INDEX`
 * The index refers to the index number shown in the displayed patient list.
 * The index **must be a positive integer** 1, 2, 3, ...
 * A valid command displays `Delete NAME? Type y to confirm. Any other input cancels.` without deleting the patient.
-  After `y`, the app shows `Deleted person:` followed by the deleted patient's details in the same form as `add`.
+  After `y`, the app shows `Deleted patient:` followed by the deleted patient's details in the same form as `add`.
 * Type `y` and press Enter to confirm. Surrounding spaces and letter case are ignored.
 * Any other input, including an empty response or another valid command, cancels the deletion and is not run as a
   command. The result display then shows `Deletion cancelled.`
@@ -698,7 +698,7 @@ Format: `clear`
 * Any other input, including an empty response or another valid command, cancels the clear operation and is not run as
   a command. The result display then shows `Clear cancelled.`
 * If Doc has no patient records, no confirmation is requested and the result display shows
-  `Address book is already empty.`
+  `Patient list is already empty.`
 * After a successful clear, the patient details panel is also cleared.
 
 Example: `clear` followed by `y` clears every entry.
