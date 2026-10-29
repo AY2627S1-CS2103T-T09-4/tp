@@ -97,7 +97,7 @@ public class NextCommand extends Command {
 
         Person updatedPerson = createUpdatedPerson(personToUpdate);
         validateNoConflicts(model, personToUpdate, updatedPerson);
-        return scheduleVisitAfterWarnings(model, personToUpdate, updatedPerson, now);
+        return scheduleVisitOrRequestConfirmation(model, personToUpdate, updatedPerson, now);
     }
 
     /**
@@ -120,7 +120,7 @@ public class NextCommand extends Command {
      *
      * @throws CommandException If the visit cannot be scheduled.
      */
-    private CommandResult scheduleVisitAfterWarnings(Model model, Person personToUpdate, Person updatedPerson,
+    private CommandResult scheduleVisitOrRequestConfirmation(Model model, Person personToUpdate, Person updatedPerson,
             LocalDateTime now) throws CommandException {
         boolean isVisitDayChanged = !personToUpdate.getVisitDate().isSameDay(visitDate);
         int visitsOnNewDay = model.countPersonsWithSameVisitDay(updatedPerson);
@@ -153,9 +153,10 @@ public class NextCommand extends Command {
             boolean wasNonFutureVisit) throws CommandException {
         LocalDateTime now = LocalDateTime.now(clock);
         validateVisitDate(personToUpdate, now);
-        if (!wasNonFutureVisit && !visitDate.value.isAfter(now)) {
+        boolean isNowNonFuture = !visitDate.value.isAfter(now);
+        if (!wasNonFutureVisit && isNowNonFuture) {
             validateReplacement(model, personToUpdate, updatedPerson);
-            return scheduleVisitAfterWarnings(model, personToUpdate, updatedPerson, now);
+            return scheduleVisitOrRequestConfirmation(model, personToUpdate, updatedPerson, now);
         }
         return scheduleVisit(model, personToUpdate, updatedPerson);
     }

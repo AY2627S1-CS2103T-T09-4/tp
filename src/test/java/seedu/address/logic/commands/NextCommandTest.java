@@ -659,7 +659,7 @@ public class NextCommandTest {
     }
 
     /** Checks that a past-visit prompt leaves both the complete record and displayed list unchanged. */
-    private CommandResult assertPastVisitRequest(String dateTime, Clock clock) throws Exception {
+    private CommandResult assertPastVisitRequest(String dateTime, Clock clock) throws CommandException {
         AddressBook before = new AddressBook(model.getAddressBook());
         List<Person> displayedPersons = List.copyOf(model.getFilteredPersonList());
         CommandResult result = new NextCommand(INDEX_FIRST_PERSON, new VisitDate(dateTime), clock).execute(model);
