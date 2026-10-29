@@ -1,6 +1,7 @@
 package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
+import static seedu.address.logic.Messages.DISPLAY_LOCALE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTE;
@@ -23,7 +24,7 @@ public class FindCommand extends Command {
 
     public static final String MESSAGE_USAGE = COMMAND_WORD + ": Finds all patients matching every given field "
             + "and displays them as a list with index numbers. Name, address and note keywords match the start of "
-            + "any word, phone keywords match any part of the number, tag keywords match the start of a tag "
+            + "any word, phone keywords match any part of the number's digits, tag keywords match the start of a tag "
             + "(all case-insensitive), and visit dates (d/M/yyyy) match current visits on that day. "
             + "Several keywords for one field match any of them.\n"
             + "Parameters (at least one): "
@@ -69,7 +70,7 @@ public class FindCommand extends Command {
         return switch (patientCount) {
             case 0 -> MESSAGE_NO_PATIENTS_FOUND;
             case 1 -> MESSAGE_ONE_PATIENT_FOUND;
-            default -> String.format(MESSAGE_PATIENTS_FOUND, patientCount);
+            default -> String.format(DISPLAY_LOCALE, MESSAGE_PATIENTS_FOUND, patientCount);
         };
     }
 

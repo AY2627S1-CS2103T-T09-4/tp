@@ -103,9 +103,18 @@ public class FindCommandParserTest {
     }
 
     @Test
-    public void parse_nonDigitPhoneKeyword_throwsParseException() {
+    public void parse_invalidPhoneKeyword_throwsParseException() {
+        // letters, other symbols, and keywords without a digit
         assertParseFailure(parser, " p/9123 abc", FindCommandParser.MESSAGE_INVALID_PHONE_KEYWORD);
-        assertParseFailure(parser, " p/+65", FindCommandParser.MESSAGE_INVALID_PHONE_KEYWORD);
+        assertParseFailure(parser, " p/9123#4567", FindCommandParser.MESSAGE_INVALID_PHONE_KEYWORD);
+        assertParseFailure(parser, " p/+", FindCommandParser.MESSAGE_INVALID_PHONE_KEYWORD);
+        assertParseFailure(parser, " p/--", FindCommandParser.MESSAGE_INVALID_PHONE_KEYWORD);
+    }
+
+    @Test
+    public void parse_phoneKeywordWithPlusOrDash_returnsFindCommand() {
+        assertParseSuccess(parser, " p/+65 9123-4567",
+                findCommandOf(new PhoneContainsKeywordsPredicate(List.of("+65", "9123-4567"))));
     }
 
     @Test
@@ -134,7 +143,9 @@ public class FindCommandParserTest {
         assertParseFailure(parser, " vd/2026-09-18", String.format(FindCommandParser.MESSAGE_INVALID_VISIT_DAY,
                 "2026-09-18"));
         assertParseFailure(parser, " vd/18/9/2026 1000", String.format(FindCommandParser.MESSAGE_INVALID_VISIT_DAY,
-                "1000"));
+                "18/9/2026 1000"));
+        assertParseFailure(parser, " vd/10/10/1010 x/", String.format(FindCommandParser.MESSAGE_INVALID_VISIT_DAY,
+                "10/10/1010 x/"));
     }
 
     @Test

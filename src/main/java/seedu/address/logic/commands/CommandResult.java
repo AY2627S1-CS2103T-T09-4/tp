@@ -119,7 +119,7 @@ public class CommandResult {
     }
 
     /**
-     * Creates a saving result that shows the added or updated patient after persistence succeeds.
+     * Creates a saving result that shows the added or updated patient, even if persistence fails.
      *
      * @param feedbackToUser Feedback to display.
      * @param personToView Added or updated patient to display.
@@ -132,7 +132,7 @@ public class CommandResult {
     }
 
     /**
-     * Creates a saving result that clears the details panel if it shows the deleted patient.
+     * Creates a saving result that clears the details panel if it shows the deleted patient, even if saving fails.
      *
      * @param feedbackToUser Feedback to display.
      * @param deletedPerson Deleted patient whose details should be cleared.
@@ -145,7 +145,7 @@ public class CommandResult {
     }
 
     /**
-     * Creates a saving result that clears the details panel after persistence succeeds.
+     * Creates a saving result that clears the details panel, even if persistence fails.
      *
      * @param feedbackToUser Feedback to display.
      * @return Saving result that clears the details panel.

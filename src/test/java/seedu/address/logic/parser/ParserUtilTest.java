@@ -2,6 +2,8 @@ package seedu.address.logic.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
+import static seedu.address.logic.parser.ParserUtil.MESSAGE_INDEX_TOO_LARGE;
 import static seedu.address.logic.parser.ParserUtil.MESSAGE_INVALID_INDEX;
 import static seedu.address.testutil.Assert.assertThrows;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
@@ -36,6 +38,7 @@ public class ParserUtilTest {
     private static final String VALID_TAG_2 = "neighbour";
 
     private static final String WHITESPACE = " \t\r\n";
+    private static final String COMMAND_USAGE = "command: Example usage";
 
     @Test
     public void parseIndex_invalidInput_throwsParseException() {
@@ -55,6 +58,36 @@ public class ParserUtilTest {
 
         // Leading and trailing whitespaces
         assertEquals(INDEX_FIRST_PERSON, ParserUtil.parseIndex("  1  "));
+    }
+
+    @Test
+    public void parseIndexWithUsage_validInput_success() throws Exception {
+        assertEquals(INDEX_FIRST_PERSON, ParserUtil.parseIndex(" 1 ", COMMAND_USAGE));
+    }
+
+    @Test
+    public void parseIndexWithUsage_missingIndex_throwsInvalidFormat() {
+        String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, COMMAND_USAGE);
+        for (String index : List.of("", WHITESPACE)) {
+            assertThrows(ParseException.class, expectedMessage, () -> ParserUtil.parseIndex(index, COMMAND_USAGE));
+        }
+    }
+
+    @Test
+    public void parseIndexWithUsage_nonPositiveOrNonNumericIndex_throwsInvalidIndex() {
+        String expectedMessage = MESSAGE_INVALID_INDEX + "\n" + COMMAND_USAGE;
+        for (String index : List.of("0", "-1", "+1", "abc", "1.5", "1 abc", "0".repeat(20))) {
+            assertThrows(ParseException.class, expectedMessage, () -> ParserUtil.parseIndex(index, COMMAND_USAGE));
+        }
+    }
+
+    @Test
+    public void parseIndexWithUsage_oversizedIndex_throwsIndexTooLarge() {
+        // Boundary: 2147483648 is the first value above Integer.MAX_VALUE.
+        String expectedMessage = MESSAGE_INDEX_TOO_LARGE + "\n" + COMMAND_USAGE;
+        for (String index : List.of("2147483648", "99999999999", "0002147483648")) {
+            assertThrows(ParseException.class, expectedMessage, () -> ParserUtil.parseIndex(index, COMMAND_USAGE));
+        }
     }
 
     @Test
@@ -173,6 +206,20 @@ public class ParserUtilTest {
     }
 
     @Test
+    public void parseVisitDate_repeatedWhitespaceBetweenDateAndTime_returnsVisitDate() throws Exception {
+        VisitDate expectedVisitDate = new VisitDate(VALID_VISIT_DATE);
+        for (String visitDate : new String[] {"18/9/2026  1000", "18/9/2026\t1000", " 18/9/2026 \t  1000 "}) {
+            assertEquals(expectedVisitDate, ParserUtil.parseVisitDate(visitDate));
+        }
+    }
+
+    @Test
+    public void parseVisitDate_whitespaceInsideDate_throwsParseException() {
+        assertThrows(ParseException.class, () -> ParserUtil.parseVisitDate("18/ 9/2026 1000"));
+        assertThrows(ParseException.class, () -> ParserUtil.parseVisitDate("18/9/2026 10 00"));
+    }
+
+    @Test
     public void parseTag_null_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> ParserUtil.parseTag(null));
     }
@@ -216,5 +263,13 @@ public class ParserUtilTest {
         Set<Tag> expectedTagSet = Set.of(new Tag(VALID_TAG_1), new Tag(VALID_TAG_2));
 
         assertEquals(expectedTagSet, actualTagSet);
+    }
+
+    @Test
+    public void parseTags_caseVariants_keepsFirstSpellingOnce() throws Exception {
+        Set<Tag> actualTagSet = ParserUtil.parseTags(List.of("FollowUp", "followup", "FOLLOWUP"));
+
+        assertEquals(1, actualTagSet.size());
+        assertEquals("FollowUp", actualTagSet.iterator().next().tagName);
     }
 }

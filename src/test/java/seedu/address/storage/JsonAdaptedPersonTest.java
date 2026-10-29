@@ -8,6 +8,7 @@ import static seedu.address.testutil.TypicalPersons.BENSON;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Assertions;
@@ -27,6 +28,7 @@ import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
 import seedu.address.model.person.SmokingStatus;
 import seedu.address.model.person.VisitDate;
+import seedu.address.model.tag.Tag;
 import seedu.address.testutil.PersonBuilder;
 
 public class JsonAdaptedPersonTest {
@@ -117,6 +119,18 @@ public class JsonAdaptedPersonTest {
         previousDates.clear();
 
         assertEquals(List.of(new VisitDate("1/1/2024 1000")), adapted.toModelType().getPreviousVisitDates());
+    }
+
+    @Test
+    public void toModelType_caseVariantTags_keepsFirstSpellingOnce() throws Exception {
+        List<JsonAdaptedTag> caseVariantTags = List.of(new JsonAdaptedTag("FollowUp"), new JsonAdaptedTag("followup"));
+        JsonAdaptedPerson person = new JsonAdaptedPerson(VALID_NAME, null, null, null, null, null,
+                VALID_PHONE, VALID_EMAIL, VALID_ADDRESS, VALID_VISIT_DATE, null, VALID_NOTE, null, caseVariantTags);
+
+        Set<Tag> tags = person.toModelType().getTags();
+
+        assertEquals(1, tags.size());
+        assertEquals("FollowUp", tags.iterator().next().tagName);
     }
 
     private JsonAdaptedPerson withPreviousVisitDates(List<String> previousDates) {
@@ -266,6 +280,18 @@ public class JsonAdaptedPersonTest {
                 null, VALID_NOTE, null, VALID_TAGS);
         String expectedMessage = VisitDate.MESSAGE_CONSTRAINTS;
         assertThrows(IllegalValueException.class, expectedMessage, person::toModelType);
+    }
+
+    @Test
+    public void toModelType_visitDateYearOutOfRange_throwsIllegalValueException() {
+        JsonAdaptedPerson person = new JsonAdaptedPerson(VALID_NAME, null, null, null, null, null,
+                VALID_PHONE, VALID_EMAIL, VALID_ADDRESS, "1/1/2100 1000",
+                null, VALID_NOTE, null, VALID_TAGS);
+        assertThrows(IllegalValueException.class, VisitDate.MESSAGE_CONSTRAINTS, person::toModelType);
+
+        JsonAdaptedPerson withOldPreviousDate = withPreviousVisitDates(List.of("1/1/1899 1000"));
+        assertThrows(IllegalValueException.class, "Invalid previous visit date. " + VisitDate.MESSAGE_CONSTRAINTS,
+                withOldPreviousDate::toModelType);
     }
 
     @Test

@@ -164,10 +164,11 @@ public class PrevCommandIntegrationTest {
         logic.execute("find n/Amy");
         model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
         logic.execute("view 1");
-        String formatError = String.format(Messages.MESSAGE_INVALID_COMMAND_FORMAT, PrevCommand.MESSAGE_USAGE);
-
-        for (String commandText : List.of("prev", "prev 0", "prev -1", "prev 1 extra")) {
-            fixture.assertRejectedCommand(commandText, ParseException.class, formatError);
+        fixture.assertRejectedCommand("prev", ParseException.class,
+                String.format(Messages.MESSAGE_INVALID_COMMAND_FORMAT, PrevCommand.MESSAGE_USAGE));
+        for (String commandText : List.of("prev 0", "prev -1", "prev 1 extra")) {
+            fixture.assertRejectedCommand(commandText, ParseException.class,
+                    ParserUtil.MESSAGE_INVALID_INDEX + "\n" + PrevCommand.MESSAGE_USAGE);
         }
         fixture.assertRejectedCommand("prev 2147483648", ParseException.class,
                 ParserUtil.MESSAGE_INDEX_TOO_LARGE + "\n" + PrevCommand.MESSAGE_USAGE);

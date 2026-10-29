@@ -87,6 +87,14 @@ The `UI` component,
 `CommandBox` owns a session-scoped `CommandHistory`. It records ordinary command submissions and uses it to replace
 the command box text when the user presses the Up or Down arrow key.
 
+`MainWindow` installs a scene-level key-event filter for Tab navigation. It treats the command box, result display,
+patient list, and patient-details `ScrollPane` as four focus sections, routing both Tab directions explicitly so that
+the empty details panel remains reachable and descendants such as details labels or scrollbar controls do not become
+additional stops. The currently focused section receives a light-gray, 2-pixel outline; every section reserves the same
+border space even when unfocused. The menu bar is not part of this cycle. The details panel handles its six scrolling
+keys locally, so command-history and patient-list arrow-key behavior remains scoped to those controls. The patient list
+scrolls only as needed to keep the selected patient card fully visible.
+
 `MainWindow` manages a separate `HelpWindow` for offline command discovery and access to the full User Guide.
 See [Help window](#help-window) for its layout, lifecycle, and external-action boundaries.
 
@@ -324,6 +332,11 @@ per line or `No previous visit dates` for an empty record. It reverses the dates
 visits first while preserving oldest-first storage. The existing `ScrollPane` accommodates long records without
 imposing a limit on the number of retained dates.
 
+The details `ScrollPane` resets its vertical value immediately when a record is rendered and once more after JavaFX
+lays out the updated content. This handles records of different lengths and repeated views of the same patient. Each
+main-window section reserves a fixed-width border whose color changes only for the focused section, keeping the panel
+geometry stable while making the focus stop visible.
+
 The current datetime includes a calendar-day label in parentheses: `Past`, `Today`, or `Upcoming`.
 `PatientDetailsPanel` uses an injected `Clock` (the system's local clock in production) and reads its current
 `LocalDate` once per `setPerson` call. It compares calendar dates, so both earlier and later times today receive
@@ -529,7 +542,7 @@ patient identity remain unchanged. Add/edit help places `[smk/STATUS]` after `[a
 ### Editing patient details
 
 `EditCommandParser` accepts optional replacement fields, including `vd/` and `note/`. The displayed format is
-`edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [p/PHONE] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`.
+`edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...`.
 It checks index syntax and duplicate single-valued prefixes before parsing field values, then rejects a
 descriptor with no supplied fields. When `vd/` is supplied, `ParserUtil#parseVisitDate` reuses the existing strict
 `VisitDate` validation
@@ -554,10 +567,11 @@ otherwise, the descriptor's note remains null. Notes-only replacement and cleari
 The descriptor copy preserves this distinction, and `createEditedPerson` uses the supplied note or preserves
 the patient's existing note. Supplying the same note again, or clearing an already-empty note, succeeds.
 
-The existing tokenizer uses `String#trim()` on outer whitespace, preserves internal spaces, and recognizes
-prefixes preceded by a literal space. A recognized prefix inside notes delimits another field; there is no
-escaping or extra note validation. Repeated `note/` prefixes are rejected before field validation, including identical or empty
-values. Repeated `t/TAG` prefixes retain their existing replacement and clearing behavior.
+The existing tokenizer uses `String#strip()` on outer whitespace, preserves internal spaces, and recognizes prefixes
+at the start of the arguments or after Java whitespace. A recognized prefix inside notes delimits another field;
+there is no quoting or escaping for literal prefix text, or extra note validation. Repeated `note/` prefixes are
+rejected before field validation, including identical or empty values.
+Repeated `t/TAG` prefixes retain their existing replacement and clearing behavior.
 
 Editing replaces the supplied fields without appending visit-history entries or per-visit notes. Saving and UI
 behavior follow the [shared visit-change flow](#saving-and-displaying-visit-changes) below.
@@ -570,8 +584,8 @@ commands follow the existing `add`/`edit` interaction pattern: clear filtering a
 stored order, and return feedback with a `CommandResult` that requests saving. `LogicManager` saves through storage
 before returning the result to the UI.
 
-These results do not select a patient for the details panel. Users must run `view` with the patient's newly
-displayed index to refresh the record and calendar label. `view` supplies the patient without requesting a save.
+These results request that the details panel show the updated patient and refresh the record and calendar label.
+`view` also supplies the patient without requesting a save.
 
 Validation errors and cancelled confirmations leave patient data, saved data, and list context unchanged.
 Duplicate-related errors and name-confirmation prompts can display an existing patient in the details panel;
@@ -605,9 +619,9 @@ patient list. A later operation that resets the filter also clears this display-
 `agenda START_DATE [DAYS]` shows current visits in a consecutive range of calendar days. `AgendaCommandParser`
 requires a start date and accepts an optional duration from 1 to 365 days. A bare `agenda` command displays the
 usage message, while an omitted duration defaults to seven days.
-The constructor checks that the final included day is on or before 31 December 9999, so the exclusive end used for
-filtering can be calculated safely without showing dates in year 10000. The parser reports an invalid range before
-execution when this bound is exceeded.
+The constructor checks that the final included day is on or before 31 December 2099, the last day a visit date can
+have (`VisitDate.MAX_YEAR`), so a range never extends past dates that can hold visits. The parser reports an invalid
+range before execution when this bound is exceeded.
 
 `AgendaCommand` constructs a `VisitDateWithinRangePredicate` using an inclusive start and exclusive end. The
 exclusive end keeps the predicate independent of visit times: a seven-day agenda starting on 27 October accepts
@@ -657,10 +671,10 @@ evaluates the predicate for each stored patient whenever the displayed list is r
 
 `FindCommandParser#parse` handles the arguments in these steps:
 
-1. It replaces every run of whitespace, including tabs and line breaks, with one space. `ArgumentTokenizer` only
-   recognizes a prefix that follows a space, so without this step `n/alex<TAB>p/9123` would read `p/9123` as another
-   name keyword and silently drop the phone criterion. Keywords are split on whitespace anyway, so nothing is lost.
-1. It tokenizes the arguments, then rejects text before the first prefix with `MESSAGE_KEYWORDS_NEED_PREFIX` and
+1. It tokenizes the arguments. `ArgumentTokenizer` recognizes prefixes at the start of the arguments or after Java
+   whitespace, so spaces, tabs, and line breaks separate fields consistently. A prefix-looking token separated by
+   whitespace still starts a new field because the tokenizer has no quoting or escaping mechanism.
+1. It rejects text before the first prefix with `MESSAGE_KEYWORDS_NEED_PREFIX` and
    repeated prefixes with the shared duplicate-prefix error.
 1. For each prefix that is present, it splits the value into keywords and creates that field's predicate.
    An empty prefix such as `n/` is rejected. Phone keywords must be digits. Visit dates are parsed strictly with
@@ -1396,8 +1410,8 @@ labels, not executable command arguments.
 The continuous `next` route and the rollback route deliberately share the sentinel and Nextalpha/Nextbeta fixture. The
 JSON, capacity, calendar, and Help checks are independent cases; preserve other patients and omitted optional fields when a
 case does not say to reset them. After every successful `edit`, `next`, or `prev`, find the intended patient again
-before using an index, because the command restores the full list in stored order. A patient card may update as the
-list refreshes, but the details panel remains the last rendered record until `view` or a relevant conflict preview.
+before using an index, because the command restores the full list in stored order. The details panel automatically
+shows the updated patient, including when an in-memory change cannot be saved.
 
 ### Launch and shutdown
 
@@ -1417,6 +1431,69 @@ list refreshes, but the details panel remains the last rendered record until `vi
        Expected: The most recent window size and location are retained.
 
 1. _{ more test cases … }_
+
+### Save failures and patient details
+
+Use a disposable copy of Doc with disposable patient data. Do not modify the permissions of your working data file.
+
+1. Clear the disposable list with `clear`, then `y`. Add a patient with
+   `add n/Alpha p/90000001 a/1 Alpha Road vd/1/1/2000 0900`, then run `view 1`.
+1. While Doc stays open, make its `data/addressbook.json` read-only (on Windows, use the file's Properties dialog).
+   Run `next 1 1/1/2099 1000`, using a later supported future datetime if necessary.
+   Expected: A save error remains in the response panel. Both the patient card and details show the new appointment;
+   details also show `1/1/2000 0900` in history. The saved JSON still contains the original visit.
+1. Restore write access. Run `delete 1`, then `y`.
+   Expected: Deletion succeeds, both the list and details panel are empty, and the saved JSON has no patients.
+1. Repeat the setup, make the file read-only, then run `delete 1` and `y`.
+   Expected: A save error appears, but the deleted patient's details are cleared with the in-memory list. Restore
+   write access before continuing.
+
+`MainWindowSaveFailureTest` automates the command-entry, display, and persistence assertions with injected
+permission and I/O failures, including `add`, `edit`, confirmed `prev`, deletion, clearing, and unchanged details
+after `list`. It does not replace checking actual file permissions on each supported operating system.
+
+### Main-window keyboard navigation and details scrolling
+
+Use a new writable folder containing only a copy of `doc.jar`, so no normal patient data is changed. Launch Doc there;
+the first launch loads the sample data. The route below deliberately clears it before adding two known records, so
+the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Patient` at index 2.
+
+1. **Reach an empty details panel:** Run `clear`, then submit `y` at the confirmation prompt.<br>
+   Expected: The patient list is empty and the patient-details panel is blank. Click the command box and press Tab four
+   times. Focus should move through command box, response panel, patient list, and patient details, then wrap to the
+   command box. From the command box, press Shift+Tab four times and confirm the reverse cycle. The empty details panel
+   remains reachable and has a visible outline.
+1. **Create repeatable records:** Submit these commands in order:
+
+   ```text
+   add n/Alpha Patient p/90000001 a/1 Alpha Road vd/1/12/2099 0900
+   add n/Beta Patient p/90000002 a/2 Beta Road vd/2/12/2099 0900 note/This deliberately long clinical note records medication tolerance, home blood-pressure observations, mobility changes, caregiver updates, hydration reminders, and follow-up instructions for the next house call. Repeat the details panel checks after viewing this record so the note extends beyond the visible viewport and requires vertical scrolling.
+   ```
+
+   Each successful `add` may display the newly added patient. Run `view 2` before the scrolling checks so the long
+   `Beta Patient` record is definitely displayed and the list indices are known.
+1. **Details scrolling and focus outline:** Use Tab or Shift+Tab to focus patient details. Confirm that the outline
+   surrounds the whole panel rather than an individual label or scrollbar. Press <kbd>Up</kbd>, <kbd>Down</kbd>,
+   <kbd>Page Up</kbd>, <kbd>Page Down</kbd>, <kbd>Home</kbd>, and <kbd>End</kbd> separately.<br>
+   Expected: Up and Down move a small amount, Page Up and Page Down move about one viewport, and Home and End reach the
+   top and bottom without overscrolling. Mouse-wheel scrolling still works.
+1. **Fitting content:** Run `view 1`, then enlarge the window vertically until Alpha Patient's details fit without a
+   scrollbar. Focus patient details and press each of the six scrolling keys.<br>
+   Expected: The details remain unchanged because there is no content to scroll.
+1. **View reset and command focus:** Run `view 2`, focus patient details, and press End. Return to the command box and
+   run `view 2` again. Repeat after running `view 1`, then run `view 2` once more.<br>
+   Expected: Every successful view starts Beta Patient or Alpha Patient at the top, including the repeated same-patient
+   view and the switch between long and short records. After each command entered in the command box, focus remains in
+   the command box.
+1. **Empty-panel behavior after clearing:** Run `clear`, submit `y`, and focus the blank details panel through the Tab
+   cycle. Press each scrolling key separately.<br>
+   Expected: No key changes the blank panel, and Tab/Shift+Tab still move between all four sections.
+1. **Existing shortcuts:** Focus the command box and confirm <kbd>Up</kbd> and <kbd>Down</kbd> still recall command
+   history. Focus the patient list and move the selection down through at least four patients, then back up. Confirm
+   that each selected patient card remains fully visible and the list does not jump when the selected card is already
+   visible. Leave unfinished text in the command box, traverse with Tab and Shift+Tab, and confirm the text and
+   displayed patient do not change. Repeat F1, Help, and mouse-scrolling checks; their existing behavior should be
+   unchanged.
 
 ### Dates of birth
 
@@ -1955,7 +2032,8 @@ the rollback; enter any other response to cancel. A cancellation response is con
 command.
 
 1. Run `find n/Nextalpha`, then `view 1`. Try `prev`, `prev 0`, `prev 2147483648`, `prev 1 extra`, and `prev 2`.<br>
-   Expect usage for malformed arguments, `Index is too large.` with guidance and usage for `prev 2147483648`,
+   Expect `Invalid command format!` with usage for `prev`, `Index must be a positive integer.` with usage for
+   `prev 0` and `prev 1 extra`, `Index is too large.` with guidance and usage for `prev 2147483648`,
    and the invalid-index error for `prev 2`. Verify that patient data, the saved JSON, filtered list, and
    displayed details remain unchanged.
 1. Run `edit 1 vd/30/10/2026 0900 p/84567890 e/updated@example.com a/30 Updated Road all/Penicillin; latex alc/Does not drink smk/former note/Updated before rollback t/followup dob/15/6/1990 bt/A+ ec/Mary Tan, 91234567`,
@@ -2009,6 +2087,8 @@ command.
    close Doc. Expect both the saved dates and their order to remain unchanged.
 1. Run `view 999`. Expect an invalid-index error, no change to the displayed list, and no changes to stored patient
    data.
+1. Run `view 0`, `view -1`, `view abc`, and `view 99999999999`. Expect `Index must be a positive integer.` with
+   usage for the first three and `Index is too large.` with guidance and usage for the last one.
 1. Close and reopen the application. Expect all patient data to remain unchanged.
 
 ### Calendar labels for current visits
@@ -2110,10 +2190,10 @@ when midnight passes; another `view` recalculates it.
       Expected: No patient is deleted. The result display shows `Deletion cancelled.`
 
    1. Test case: `delete 0`<br>
-      Expected: No patient is deleted. The status message shows error details.
+      Expected: No patient is deleted. The status message shows `Index must be a positive integer.` with usage.
 
    1. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
-      Expected: The existing invalid-command response is shown and no confirmation is requested.
+      Expected: The matching index error is shown and no confirmation is requested.
 
 ### Clearing all patient records
 

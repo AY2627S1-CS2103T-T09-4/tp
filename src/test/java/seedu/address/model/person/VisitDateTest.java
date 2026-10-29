@@ -36,12 +36,18 @@ public class VisitDateTest {
         assertFalse(VisitDate.isValidVisitDate("18/13/2026 1000")); // invalid month
         assertFalse(VisitDate.isValidVisitDate("18/9/2026 2400")); // invalid hour
         assertFalse(VisitDate.isValidVisitDate("18/9/2026 1060")); // invalid minute
+        assertFalse(VisitDate.isValidVisitDate("1/1/0000 0000")); // year 0000
+        assertFalse(VisitDate.isValidVisitDate("31/12/1899 2359")); // last minute before the supported range
+        assertFalse(VisitDate.isValidVisitDate("1/1/2100 0000")); // first minute after the supported range
+        assertFalse(VisitDate.isValidVisitDate("1/1/9999 1000")); // mistyped far-future year
 
         // valid visit dates
         assertTrue(VisitDate.isValidVisitDate("18/9/2026 1000"));
         assertTrue(VisitDate.isValidVisitDate("18/09/2026 1000")); // leading zero in month
         assertTrue(VisitDate.isValidVisitDate("1/1/2020 0000")); // past date
         assertTrue(VisitDate.isValidVisitDate("29/2/2028 2359")); // leap year
+        assertTrue(VisitDate.isValidVisitDate("1/1/1900 0000")); // first minute of the supported range
+        assertTrue(VisitDate.isValidVisitDate("31/12/2099 2359")); // last minute of the supported range
     }
 
     @Test

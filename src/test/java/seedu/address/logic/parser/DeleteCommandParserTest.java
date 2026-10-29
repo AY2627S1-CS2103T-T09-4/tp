@@ -26,7 +26,15 @@ public class DeleteCommandParserTest {
     }
 
     @Test
+    public void parse_missingIndex_throwsParseException() {
+        assertParseFailure(parser, "", String.format(MESSAGE_INVALID_COMMAND_FORMAT, DeleteCommand.MESSAGE_USAGE));
+    }
+
+    @Test
     public void parse_invalidArgs_throwsParseException() {
-        assertParseFailure(parser, "a", String.format(MESSAGE_INVALID_COMMAND_FORMAT, DeleteCommand.MESSAGE_USAGE));
+        assertParseFailure(parser, "a", ParserUtil.MESSAGE_INVALID_INDEX + "\n" + DeleteCommand.MESSAGE_USAGE);
+        assertParseFailure(parser, "0", ParserUtil.MESSAGE_INVALID_INDEX + "\n" + DeleteCommand.MESSAGE_USAGE);
+        assertParseFailure(parser, "2147483648",
+                ParserUtil.MESSAGE_INDEX_TOO_LARGE + "\n" + DeleteCommand.MESSAGE_USAGE);
     }
 }

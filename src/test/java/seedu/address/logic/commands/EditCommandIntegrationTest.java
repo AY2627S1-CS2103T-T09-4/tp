@@ -19,6 +19,7 @@ import org.junit.jupiter.api.io.TempDir;
 import seedu.address.logic.LogicManager;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
+import seedu.address.logic.parser.ParserUtil;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
@@ -174,7 +175,7 @@ public class EditCommandIntegrationTest {
         assertRejectedEdit("edit 2 note/" + REPLACEMENT_NOTE, CommandException.class,
                 Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
         assertRejectedEdit("edit 0 note/", ParseException.class,
-                String.format(Messages.MESSAGE_INVALID_COMMAND_FORMAT, EditCommand.MESSAGE_USAGE));
+                ParserUtil.MESSAGE_INVALID_INDEX + "\n" + EditCommand.MESSAGE_USAGE);
     }
 
     @Test

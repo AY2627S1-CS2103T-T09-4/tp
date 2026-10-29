@@ -51,13 +51,13 @@ public class AddCommandTest {
     public void formatSuccessMessage_listsDetailsAndVisitDate() {
         Person person = new PersonBuilder().withTags("followup").build();
         assertEquals("Added patient Amy Bee; Phone: 85355255; Email: amy@gmail.com; "
-                + "Address: 123, Jurong West Ave 6, #08-111; Tags: [followup]\nVisit date: 18/9/2026 1000",
+                + "Address: 123, Jurong West Ave 6, #08-111; Visit date: 18/9/2026 1000; Tags: [followup]",
                 AddCommand.formatSuccessMessage(person));
 
-        // an empty email is left out, as in the edit and delete messages
+        // an empty email and an empty tag list are left out
         Person personWithoutEmail = new PersonBuilder().withEmail("").build();
-        assertEquals("Added patient Amy Bee; Phone: 85355255; Address: 123, Jurong West Ave 6, #08-111; Tags: "
-                + "\nVisit date: 18/9/2026 1000", AddCommand.formatSuccessMessage(personWithoutEmail));
+        assertEquals("Added patient Amy Bee; Phone: 85355255; Address: 123, Jurong West Ave 6, #08-111; "
+                + "Visit date: 18/9/2026 1000", AddCommand.formatSuccessMessage(personWithoutEmail));
     }
 
     @Test

@@ -65,6 +65,9 @@ public class EditCommandParserTest {
     private static final String MESSAGE_INVALID_FORMAT =
             String.format(MESSAGE_INVALID_COMMAND_FORMAT, EditCommand.MESSAGE_USAGE);
 
+    private static final String MESSAGE_INVALID_EDIT_INDEX =
+            ParserUtil.MESSAGE_INVALID_INDEX + "\n" + EditCommand.MESSAGE_USAGE;
+
     private static final String INDEX_AND_VISIT_DATE = "1" + VISIT_DATE_DESC_AMY;
 
     private final EditCommandParser parser = new EditCommandParser();
@@ -72,7 +75,10 @@ public class EditCommandParserTest {
     @Test
     public void parse_missingParts_failure() {
         // no index specified
-        assertParseFailure(parser, VALID_NAME_AMY, MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, NAME_DESC_AMY, MESSAGE_INVALID_FORMAT);
+
+        // name supplied in place of the index
+        assertParseFailure(parser, VALID_NAME_AMY, MESSAGE_INVALID_EDIT_INDEX);
 
         // no field specified
         assertParseFailure(parser, "1", EditCommand.MESSAGE_NOT_EDITED);
@@ -85,16 +91,20 @@ public class EditCommandParserTest {
     @Test
     public void parse_invalidPreamble_failure() {
         // negative index
-        assertParseFailure(parser, "-5" + NAME_DESC_AMY, MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "-5" + NAME_DESC_AMY, MESSAGE_INVALID_EDIT_INDEX);
 
         // zero index
-        assertParseFailure(parser, "0" + NAME_DESC_AMY, MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "0" + NAME_DESC_AMY, MESSAGE_INVALID_EDIT_INDEX);
+
+        // index too large to represent
+        assertParseFailure(parser, "2147483648" + NAME_DESC_AMY,
+                ParserUtil.MESSAGE_INDEX_TOO_LARGE + "\n" + EditCommand.MESSAGE_USAGE);
 
         // invalid arguments being parsed as preamble
-        assertParseFailure(parser, "1 some random string", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 some random string", MESSAGE_INVALID_EDIT_INDEX);
 
         // invalid prefix being parsed as preamble
-        assertParseFailure(parser, "1 i/ string", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "1 i/ string", MESSAGE_INVALID_EDIT_INDEX);
     }
 
     @Test
@@ -178,6 +188,9 @@ public class EditCommandParserTest {
     public void parse_visitDateWhitespace_success() {
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder().withVisitDate(VALID_VISIT_DATE_AMY).build();
         assertParseSuccess(parser, " 1 vd/  18/09/2026 1000  ", new EditCommand(INDEX_FIRST_PERSON, descriptor));
+
+        // repeated spaces between the date and time, as next already accepts
+        assertParseSuccess(parser, " 1 vd/18/09/2026    1000", new EditCommand(INDEX_FIRST_PERSON, descriptor));
     }
 
     @Test
@@ -193,7 +206,8 @@ public class EditCommandParserTest {
 
     @Test
     public void parse_invalidVisitDate_failure() {
-        String[] invalidDates = {"", "  ", "31/2/2026 1000", "8/10/2026 2500", "8/10/2026", "2026-10-08 1000"};
+        String[] invalidDates = {"", "  ", "31/2/2026 1000", "8/10/2026 2500", "8/10/2026", "2026-10-08 1000",
+            "8/10/0000 1000", "8/10/2100 1000"};
         for (String invalidDate : invalidDates) {
             assertParseFailure(parser, "1 vd/" + invalidDate, VisitDate.MESSAGE_CONSTRAINTS);
         }
@@ -214,7 +228,7 @@ public class EditCommandParserTest {
     @Test
     public void parse_validationOrder_failure() {
         // Precedence: These staged cases verify index, duplicate-prefix, and invalid-value errors in order.
-        assertParseFailure(parser, "0" + EMAIL_DESC_AMY + EMAIL_DESC_BOB, MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "0" + EMAIL_DESC_AMY + EMAIL_DESC_BOB, MESSAGE_INVALID_EDIT_INDEX);
         assertParseFailure(parser, "1" + EMAIL_DESC_AMY + EMAIL_DESC_BOB,
                 Messages.getErrorMessageForDuplicatePrefixes(PREFIX_EMAIL));
         assertParseFailure(parser, "1" + INVALID_EMAIL_DESC, Email.MESSAGE_CONSTRAINTS);
@@ -306,8 +320,8 @@ public class EditCommandParserTest {
     @Test
     public void parse_noteValidationOrder_failure() {
         // Precedence: Index errors precede duplicate-prefix errors, which precede field-value validation.
-        assertParseFailure(parser, "0" + NOTE_DESC_AMY + NOTE_DESC_AMY, MESSAGE_INVALID_FORMAT);
-        assertParseFailure(parser, "x note/ note/", MESSAGE_INVALID_FORMAT);
+        assertParseFailure(parser, "0" + NOTE_DESC_AMY + NOTE_DESC_AMY, MESSAGE_INVALID_EDIT_INDEX);
+        assertParseFailure(parser, "x note/ note/", MESSAGE_INVALID_EDIT_INDEX);
         assertParseFailure(parser, "1" + INVALID_NAME_DESC + NOTE_DESC_AMY + NOTE_DESC_AMY,
                 Messages.getErrorMessageForDuplicatePrefixes(PREFIX_NOTE));
         assertParseFailure(parser, "1" + INVALID_VISIT_DATE_DESC + " note/ note/",
@@ -325,13 +339,15 @@ public class EditCommandParserTest {
     }
 
     @Test
-    public void parse_notePrefixDelimiter_preservesExistingGrammar() {
+    public void parse_notePrefixAfterWhitespace_startsNewField() {
         EditPersonDescriptor descriptor = new EditPersonDescriptorBuilder()
                 .withNote("Review medication").withEmail(VALID_EMAIL_AMY).build();
         assertParseSuccess(parser, "1 note/Review medication" + EMAIL_DESC_AMY,
                 new EditCommand(INDEX_FIRST_PERSON, descriptor));
-        EditPersonDescriptor literalNote = new EditPersonDescriptorBuilder().withNote("Review\te/literal").build();
-        assertParseSuccess(parser, "1 note/Review\te/literal", new EditCommand(INDEX_FIRST_PERSON, literalNote));
+        EditPersonDescriptor noteAndEmail = new EditPersonDescriptorBuilder()
+                .withNote("Review").withEmail("literal@example.com").build();
+        assertParseSuccess(parser, "1 note/Review\te/literal@example.com",
+                new EditCommand(INDEX_FIRST_PERSON, noteAndEmail));
     }
 
     @Test
