@@ -178,7 +178,7 @@ public class PrevCommandIntegrationTest {
     }
 
     @Test
-    public void execute_saveFailures_reportsExistingErrorWithoutRollingBackModel() throws Exception {
+    public void execute_saveFailures_reportsExistingErrorAndRollsBackModel() throws Exception {
         for (IOException failure : List.of(new IOException("test save failure"),
                 new AccessDeniedException("addressBook.json"))) {
             assertSaveFailure(failure);
@@ -188,6 +188,8 @@ public class PrevCommandIntegrationTest {
     private void assertSaveFailure(IOException failure) throws Exception {
         model.setPerson(model.getAddressBook().getPersonList().getFirst(), AMY);
         String savedData = Files.readString(fixture.getAddressBookStorage().getAddressBookFilePath());
+        AddressBook addressBookBefore = new AddressBook(model.getAddressBook());
+        List<Person> displayedPersonsBefore = List.copyOf(model.getFilteredPersonList());
         fixture.useFailingStorage(failure);
         logic = fixture.getLogic();
         String errorFormat = failure instanceof AccessDeniedException
@@ -200,9 +202,8 @@ public class PrevCommandIntegrationTest {
         assertThrows(CommandException.class, expectedErrorMessage, () -> logic.execute("y"));
 
         assertEquals(savedData, Files.readString(fixture.getAddressBookStorage().getAddressBookFilePath()));
-        assertEquals(new PersonBuilder(AMY).withVisitDate("20/10/2026 1000")
-                .withPreviousVisitDates("10/10/2026 1000").build(),
-                model.getAddressBook().getPersonList().getFirst());
+        assertEquals(addressBookBefore, model.getAddressBook());
+        assertEquals(displayedPersonsBefore, model.getFilteredPersonList());
         assertFalse(logic.isInputRequestPending());
     }
 

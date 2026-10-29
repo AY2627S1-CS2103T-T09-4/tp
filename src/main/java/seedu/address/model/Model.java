@@ -11,6 +11,10 @@ import seedu.address.model.person.Person;
  * The API of the Model component.
  */
 public interface Model {
+    /** Opaque snapshot of a model's patient data and displayed-list state. */
+    interface ModelState {
+    }
+
     /** {@code Predicate} that always evaluates to true */
     Predicate<Person> PREDICATE_SHOW_ALL_PERSONS = unused -> true;
 
@@ -31,6 +35,18 @@ public interface Model {
      * Sets the user prefs' GUI settings.
      */
     void setGuiSettings(GuiSettings guiSettings);
+
+    /**
+     * Returns a snapshot of the patient data and displayed-list state.
+     */
+    ModelState createStateSnapshot();
+
+    /**
+     * Restores patient data and displayed-list state from {@code modelState}.
+     *
+     * @throws IllegalArgumentException If the snapshot was created by an incompatible model implementation.
+     */
+    void restoreStateSnapshot(ModelState modelState);
 
     /**
      * Replaces address book data with the data in {@code addressBook}.
