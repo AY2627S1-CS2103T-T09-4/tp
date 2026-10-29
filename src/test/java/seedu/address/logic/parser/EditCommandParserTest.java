@@ -100,11 +100,12 @@ public class EditCommandParserTest {
         assertParseFailure(parser, "2147483648" + NAME_DESC_AMY,
                 ParserUtil.MESSAGE_INDEX_TOO_LARGE + "\n" + EditCommand.MESSAGE_USAGE);
 
-        // invalid arguments being parsed as preamble
-        assertParseFailure(parser, "1 some random string", MESSAGE_INVALID_EDIT_INDEX);
+        // text after the index being parsed as preamble
+        String extraArgumentsMessage = ParserUtil.MESSAGE_EXTRA_INDEX_ARGUMENTS + "\n" + EditCommand.MESSAGE_USAGE;
+        assertParseFailure(parser, "1 some random string", extraArgumentsMessage);
 
         // invalid prefix being parsed as preamble
-        assertParseFailure(parser, "1 i/ string", MESSAGE_INVALID_EDIT_INDEX);
+        assertParseFailure(parser, "1 i/ string", extraArgumentsMessage);
     }
 
     @Test

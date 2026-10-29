@@ -166,10 +166,12 @@ public class PrevCommandIntegrationTest {
         logic.execute("view 1");
         fixture.assertRejectedCommand("prev", ParseException.class,
                 String.format(Messages.MESSAGE_INVALID_COMMAND_FORMAT, PrevCommand.MESSAGE_USAGE));
-        for (String commandText : List.of("prev 0", "prev -1", "prev 1 extra")) {
+        for (String commandText : List.of("prev 0", "prev -1")) {
             fixture.assertRejectedCommand(commandText, ParseException.class,
                     ParserUtil.MESSAGE_INVALID_INDEX + "\n" + PrevCommand.MESSAGE_USAGE);
         }
+        fixture.assertRejectedCommand("prev 1 extra", ParseException.class,
+                ParserUtil.MESSAGE_EXTRA_INDEX_ARGUMENTS + "\n" + PrevCommand.MESSAGE_USAGE);
         fixture.assertRejectedCommand("prev 2147483648", ParseException.class,
                 ParserUtil.MESSAGE_INDEX_TOO_LARGE + "\n" + PrevCommand.MESSAGE_USAGE);
         fixture.assertRejectedCommand("prev 2", CommandException.class,
