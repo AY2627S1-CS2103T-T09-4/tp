@@ -103,9 +103,9 @@ Choose the command according to what you want to change:
 | Restore the latest previous datetime. | [prev](#restoring-the-previous-visit-prev) `INDEX` | Remove the latest previous datetime from the list and use it to replace the current datetime; discard the replaced datetime. |
 | Leave a final visit recorded without planning another. | No command needed. | Keep the current datetime, including after it becomes past. |
 
-Successful `edit`, `next`, and `prev` commands show the full patient list in stored order, clearing filtering and
-sorting. The details panel automatically shows the updated patient and refreshes the record and its calendar label.
-To return to search results, run `find` again.
+Successful `edit`, `next`, and `prev` commands preserve the current filtering and sorting. The updated patient may
+move within the list or disappear if the changed details no longer match those rules. The details panel automatically
+shows the updated patient and refreshes the record and its calendar label. Run `list` to return to the full list.
 
 When `next` moves an appointment to a different day that already has seven or more current appointments, Doc asks for
 confirmation. Patients hidden by filtering still count, but previous visit history does not. Moving the appointment to
@@ -192,14 +192,16 @@ Format: `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NU
   already uses the supplied date and time, including a patient hidden by filtering, the addition is rejected,
   the existing patient is shown in the patient details panel, and the app asks you to choose a different slot.
 * Date of birth, blood type, allergies, alcohol history, smoking status, `EMAIL`, `NOTES`, and the emergency contact are optional.
-* Use `p/PHONE` to record the patient's phone number. It must contain at least 3 digits, be at most 30
-  characters long, and may include `+`, spaces, and dashes. Surrounding whitespace is trimmed.
+* Use `p/PHONE` to record the patient's phone number. It must contain at least 3 digits and be at most 30
+  characters long. It may start with `+` and may use single spaces or dashes between groups of digits, e.g.
+  `p/+65 9123-4567`. Values such as `------123` or `123+456` are rejected. Surrounding whitespace is trimmed.
 * Use `ec/[NAME, ]PHONE_NUMBER` to record one emergency contact, e.g. `ec/Mary Tan, 98765432`.
   The phone number is required; the name is optional. Use `ec/98765432` when the name is unknown.
   When supplying a name, include exactly one comma between the name and phone number.
   Names follow the patient-name rules (letters, numbers, spaces, and common name punctuation, not blank) and cannot
-  contain `p/`, which is reserved for the phone field. Phone numbers contain at least 3 digits, are at most 30
-  characters long, and may include `+`, spaces, and dashes. Surrounding whitespace is trimmed from both details.
+  contain `p/`, which is reserved for the phone field. Phone numbers contain at least 3 digits and are at most 30
+  characters long. They may start with `+` and may use single spaces or dashes between groups of digits, e.g.
+  `+65 9123-4567`; `------123` and `123+456` are rejected. Surrounding whitespace is trimmed from both details.
   An empty `ec/`, missing phone number, invalid detail, or repeated `ec/` is rejected.
 * Use `dob/DATE` to record the date of birth in `d/M/yyyy` format, e.g. `dob/15/6/1990`.
   The year must have four digits, from `0001` onwards. The date must exist and must not be in the future;
@@ -251,7 +253,8 @@ Format: `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NU
 Duplicate detection has these limitations:
 
 * It does not recognize nicknames, reordered names, misspellings, transliterations, or equivalent accented forms.
-* Phone numbers are compared exactly, so different country-code forms of the same number are not recognized as equal.
+* Phone numbers are compared by their digits, so `8123 4567`, `8123-4567`, and `81234567` are the same number.
+  Forms with and without a country code, such as `+65 8123 4567` and `81234567`, are not recognized as equal.
 * Two different patients with the same normalized name and phone number cannot both be added. Include a distinguishing
   name component, such as a middle name or suffix, or use a different contact number.
 * Patients whose intentional name difference consists only of capitalization or spacing will trigger duplicate
@@ -318,7 +321,10 @@ Format: `agenda START_DATE [DAYS]`
 * `DAYS` must be a whole number from 1 to 365.
 * If `DAYS` is omitted, the agenda covers seven calendar days starting from `START_DATE`.
 * Both the first and last calendar days are included, regardless of the visit time.
-* The last included day must be on or before 31/12/9999. A range extending beyond this date is rejected.
+* Like visit dates, the agenda must lie within the years 1900 to 2099: `START_DATE` must be on or after 1/1/1900, and
+  the last included day must be on or before 31/12/2099. A range outside these dates is rejected.
+* A mistake shows its reason followed by the command format: an invalid start date (e.g. `agenda 31/2/2026`) is named,
+  a `DAYS` value outside 1 to 365 shows `Days must be between 1 and 365.`, and extra arguments are reported.
 * The command replaces any current `find` results and `sort` ordering with the agenda results.
 * The stored patient order and saved data are not changed. Run `list` to return to the full list in stored order.
 
@@ -527,8 +533,8 @@ Format: `next INDEX DATETIME`
 * If no further visit is planned, leave the current date and time unchanged, even after it passes.
 * Success shows `Next visit scheduled for patient NAME: DATETIME`, saves the record, and automatically shows the
   updated patient in the details panel.
-* Validation errors preserve data and the displayed list. A save failure reports a storage error; the in-memory
-  appointment may already have changed.
+* Validation errors preserve data and the displayed list. A save failure reports a storage error and restores the
+  patient data and displayed list to their state before the command.
 
 Common errors:
 
@@ -546,7 +552,7 @@ The current time in the error uses `d/M/yyyy HHmm`, without seconds; validation 
 Examples (the selected patient's current visit must have arrived or passed; choose an unused future datetime):
 
 * `next 1 1/11/2026 0930` schedules the first displayed patient's next appointment for 1 November 2026 at 09:30.
-* `find n/Priya`, then `next 1 2/11/2026 1430`, schedules Priya Nair and restores the full list.
+* `find n/Priya`, then `next 1 2/11/2026 1430`, schedules Priya Nair and keeps the matching search results displayed.
 
 ### Restoring the previous visit: `prev`
 
@@ -582,8 +588,8 @@ Format: `prev INDEX`
 * A missing index shows usage. Invalid indices, including additional arguments, show the shared
   [index errors](#features) followed by usage. Rejected commands do not save changes.
 * A later `next` uses the restored state and still requires the current visit to have arrived or passed and the
-  requested datetime to be in the future. A save failure reports a storage error; the in-memory record may
-  already have changed.
+  requested datetime to be in the future. A save failure reports a storage error and restores the record to its
+  state before the command.
 
 Example: suppose the clock reads `21/10/2026 1200`. Use globally unused replacement datetimes and George Miller's
 currently displayed `INDEX` for each command. Each row continues from the previous row:
@@ -614,7 +620,9 @@ Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t
   * `n/`: the start of any word in the name, first name or surname. For example, `n/m` matches `George Miller`,
     `Marcus Lim`, and `Mei Lin Tan`, but `n/ans` does not match `Hans`.
   * `p/`: any part of the phone number, so the last few digits are enough. For example, `p/8901` matches `85678901`.
-    Phone keywords may contain only digits.
+    Only digits are compared, so spaces, `+`, and `-` in either the saved number or the keyword are ignored:
+    `p/91234567` matches `9123 4567` and `+65 9123-4567`. Phone keywords may contain digits, `+`, and `-`, and must
+    include a digit. Type a number without spaces, since a space starts another keyword.
   * `a/`: the start of any word in the address. For example, `a/tamp` matches `46 Tampines Street 21, #08-03`.
   * `t/`: the start of any tag. For example, `t/morn` matches a patient tagged `morning`.
   * `vd/`: patients whose current visit is on that day, at any time. Give the date without a time in the format
@@ -696,6 +704,10 @@ Doc automatically saves completed changes, including successful `add`, `edit`, `
 `view` displays details without saving patient data. Confirmation prompts, cancelled operations, and
 `clear` when there are no patient records do not write a file because they do not change stored data. You do not need
 to save manually.
+
+If saving fails, Doc reports the save error and restores the patient data, active filter, and sorting to their state
+before the command. The data file remains consistent with the restored in-memory state. Restore write access before
+trying the command again.
 
 Emergency contacts are saved with the patient records and remain available after restarting Doc. Older valid
 data files without emergency contacts still load; their patients initially have no emergency contact.

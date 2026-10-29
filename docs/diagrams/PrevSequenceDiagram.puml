@@ -66,10 +66,6 @@ PrevCommand -> Model : setPerson(capturedPatient,\nupdatedPerson)
 activate Model
 Model --> PrevCommand
 deactivate Model
-PrevCommand -> Model : updateFilteredPersonList(...)
-activate Model
-Model --> PrevCommand
-deactivate Model
 PrevCommand --> InputRequest : result
 deactivate PrevCommand
 InputRequest --> LogicManager : result

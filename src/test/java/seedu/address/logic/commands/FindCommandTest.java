@@ -122,6 +122,20 @@ public class FindCommandTest {
     }
 
     @Test
+    public void execute_phoneStoredWithFormatting_foundByDigits() throws Exception {
+        // CARL's number 95352563, stored with a country code and spaces
+        Person carlWithFormattedPhone = new PersonBuilder(CARL).withPhone("+65 9535 2563").build();
+        for (Model eachModel : List.of(model, expectedModel)) {
+            eachModel.setPerson(CARL, carlWithFormattedPhone);
+        }
+        FindCommand command = new FindCommandParser().parse(" p/95352563");
+        expectedModel.updateFilteredPersonList(new PhoneContainsKeywordsPredicate(List.of("95352563")));
+
+        assertCommandSuccess(command, model, "1 patient found.", expectedModel);
+        assertEquals(List.of(carlWithFormattedPhone), model.getFilteredPersonList());
+    }
+
+    @Test
     public void execute_addressKeyword_matchesStartOfAddressWords() {
         assertFindSuccess(new AddressContainsKeywordsPredicate(List.of("street")), "3 patients found.",
                 List.of(CARL, DANIEL, GEORGE));
