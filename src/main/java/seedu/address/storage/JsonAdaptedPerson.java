@@ -110,83 +110,19 @@ class JsonAdaptedPerson {
      * @throws IllegalValueException if there were any data constraints violated in the adapted person.
      */
     public Person toModelType() throws IllegalValueException {
-        final List<Tag> personTags = new ArrayList<>();
-        for (JsonAdaptedTag tag : tags) {
-            personTags.add(tag.toModelType());
-        }
-
-        if (name == null) {
-            throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, Name.class.getSimpleName()));
-        }
-        if (!Name.isValidName(name)) {
-            throw new IllegalValueException(Name.MESSAGE_CONSTRAINTS);
-        }
-        final Name modelName = new Name(name);
-
-        if (phone == null) {
-            throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, Phone.class.getSimpleName()));
-        }
-        if (!Phone.isValidPhone(phone)) {
-            throw new IllegalValueException(Phone.MESSAGE_CONSTRAINTS);
-        }
-        final Phone modelPhone = new Phone(phone);
-
-        String storedDateOfBirth = dateOfBirth == null ? "" : dateOfBirth;
-        if (!DateOfBirth.isValidDateOfBirth(storedDateOfBirth)) {
-            throw new IllegalValueException(DateOfBirth.MESSAGE_CONSTRAINTS);
-        }
-        final DateOfBirth modelDateOfBirth = new DateOfBirth(storedDateOfBirth);
-
-        final BloodType modelBloodType;
-        try {
-            modelBloodType = BloodType.fromString(bloodType == null ? "" : bloodType);
-        } catch (IllegalArgumentException exception) {
-            throw new IllegalValueException(BloodType.MESSAGE_CONSTRAINTS);
-        }
-
-        if (email == null) {
-            throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, Email.class.getSimpleName()));
-        }
-        if (!Email.isValidEmail(email)) {
-            throw new IllegalValueException(Email.MESSAGE_CONSTRAINTS);
-        }
-        final Email modelEmail = new Email(email);
-
-        if (address == null) {
-            throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, Address.class.getSimpleName()));
-        }
-        if (!Address.isValidAddress(address)) {
-            throw new IllegalValueException(Address.MESSAGE_CONSTRAINTS);
-        }
-        final Address modelAddress = new Address(address);
-
-        if (visitDate == null) {
-            throw new IllegalValueException(
-                    String.format(MISSING_FIELD_MESSAGE_FORMAT, VisitDate.class.getSimpleName()));
-        }
-        if (!VisitDate.isValidVisitDate(visitDate)) {
-            throw new IllegalValueException(VisitDate.MESSAGE_CONSTRAINTS);
-        }
-        final VisitDate modelVisitDate = new VisitDate(visitDate);
-
-        // notes are optional, so a missing note is treated as no notes
+        final Set<Tag> modelTags = parseTags();
+        final Name modelName = parseName();
+        final Phone modelPhone = parsePhone();
+        final DateOfBirth modelDateOfBirth = parseDateOfBirth();
+        final BloodType modelBloodType = parseBloodType();
+        final Email modelEmail = parseEmail();
+        final Address modelAddress = parseAddress();
+        final VisitDate modelVisitDate = parseVisitDate();
         final Note modelNote = new Note(note == null ? "" : note);
-
-        String storedContact = emergencyContact == null ? "" : emergencyContact;
-        if (!EmergencyContact.isValidEmergencyContact(storedContact)) {
-            throw new IllegalValueException(EmergencyContact.MESSAGE_CONSTRAINTS);
-        }
-        final EmergencyContact modelEmergencyContact = new EmergencyContact(storedContact);
-
+        final EmergencyContact modelEmergencyContact = parseEmergencyContact();
         final Allergies modelAllergies = new Allergies(allergies == null ? "" : allergies);
         final AlcoholHistory modelAlcoholHistory = new AlcoholHistory(alcoholHistory == null ? "" : alcoholHistory);
-        final SmokingStatus modelSmokingStatus;
-        try {
-            modelSmokingStatus = SmokingStatus.fromString(smokingStatus == null ? "" : smokingStatus);
-        } catch (IllegalArgumentException exception) {
-            throw new IllegalValueException(SmokingStatus.MESSAGE_CONSTRAINTS, exception);
-        }
-        final Set<Tag> modelTags = new HashSet<>(personTags);
+        final SmokingStatus modelSmokingStatus = parseSmokingStatus();
         final List<VisitDate> modelPreviousVisitDates = parsePreviousVisitDates();
         try {
             return new Person(modelName, modelDateOfBirth, modelBloodType, modelAllergies, modelAlcoholHistory,
@@ -194,6 +130,127 @@ class JsonAdaptedPerson {
                     modelNote, modelEmergencyContact, modelTags);
         } catch (IllegalArgumentException e) {
             throw new IllegalValueException(Person.MESSAGE_PREVIOUS_VISIT_DATES_CONSTRAINTS, e);
+        }
+    }
+
+    /**
+     * Converts stored tags, retaining the first spelling of equivalent tags.
+     */
+    private Set<Tag> parseTags() throws IllegalValueException {
+        Set<Tag> modelTags = new HashSet<>();
+        for (JsonAdaptedTag tag : tags) {
+            modelTags.add(tag.toModelType());
+        }
+        return modelTags;
+    }
+
+    /**
+     * Converts the required stored name, rejecting missing or invalid values.
+     */
+    private Name parseName() throws IllegalValueException {
+        if (name == null) {
+            throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, Name.class.getSimpleName()));
+        }
+        if (!Name.isValidName(name)) {
+            throw new IllegalValueException(Name.MESSAGE_CONSTRAINTS);
+        }
+        return new Name(name);
+    }
+
+    /**
+     * Converts the required stored phone number, rejecting missing or invalid values.
+     */
+    private Phone parsePhone() throws IllegalValueException {
+        if (phone == null) {
+            throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, Phone.class.getSimpleName()));
+        }
+        if (!Phone.isValidPhone(phone)) {
+            throw new IllegalValueException(Phone.MESSAGE_CONSTRAINTS);
+        }
+        return new Phone(phone);
+    }
+
+    /**
+     * Converts the stored birth date, treating a missing value as unrecorded for older files.
+     */
+    private DateOfBirth parseDateOfBirth() throws IllegalValueException {
+        String storedDateOfBirth = dateOfBirth == null ? "" : dateOfBirth;
+        if (!DateOfBirth.isValidDateOfBirth(storedDateOfBirth)) {
+            throw new IllegalValueException(DateOfBirth.MESSAGE_CONSTRAINTS);
+        }
+        return new DateOfBirth(storedDateOfBirth);
+    }
+
+    /**
+     * Converts the optional stored blood type and preserves the cause of invalid values.
+     */
+    private BloodType parseBloodType() throws IllegalValueException {
+        try {
+            return BloodType.fromString(bloodType == null ? "" : bloodType);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalValueException(BloodType.MESSAGE_CONSTRAINTS, exception);
+        }
+    }
+
+    /**
+     * Converts the stored email, accepting an empty value but rejecting a missing field.
+     */
+    private Email parseEmail() throws IllegalValueException {
+        if (email == null) {
+            throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, Email.class.getSimpleName()));
+        }
+        if (!Email.isValidEmail(email)) {
+            throw new IllegalValueException(Email.MESSAGE_CONSTRAINTS);
+        }
+        return new Email(email);
+    }
+
+    /**
+     * Converts the required stored address, rejecting missing or invalid values.
+     */
+    private Address parseAddress() throws IllegalValueException {
+        if (address == null) {
+            throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, Address.class.getSimpleName()));
+        }
+        if (!Address.isValidAddress(address)) {
+            throw new IllegalValueException(Address.MESSAGE_CONSTRAINTS);
+        }
+        return new Address(address);
+    }
+
+    /**
+     * Converts the required current visit date, rejecting missing or invalid values.
+     */
+    private VisitDate parseVisitDate() throws IllegalValueException {
+        if (visitDate == null) {
+            throw new IllegalValueException(
+                    String.format(MISSING_FIELD_MESSAGE_FORMAT, VisitDate.class.getSimpleName()));
+        }
+        if (!VisitDate.isValidVisitDate(visitDate)) {
+            throw new IllegalValueException(VisitDate.MESSAGE_CONSTRAINTS);
+        }
+        return new VisitDate(visitDate);
+    }
+
+    /**
+     * Converts the stored emergency contact, treating a missing value as absent for older files.
+     */
+    private EmergencyContact parseEmergencyContact() throws IllegalValueException {
+        String storedContact = emergencyContact == null ? "" : emergencyContact;
+        if (!EmergencyContact.isValidEmergencyContact(storedContact)) {
+            throw new IllegalValueException(EmergencyContact.MESSAGE_CONSTRAINTS);
+        }
+        return new EmergencyContact(storedContact);
+    }
+
+    /**
+     * Converts the optional stored smoking status and preserves the cause of invalid values.
+     */
+    private SmokingStatus parseSmokingStatus() throws IllegalValueException {
+        try {
+            return SmokingStatus.fromString(smokingStatus == null ? "" : smokingStatus);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalValueException(SmokingStatus.MESSAGE_CONSTRAINTS, exception);
         }
     }
 

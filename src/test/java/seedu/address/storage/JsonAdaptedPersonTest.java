@@ -152,12 +152,15 @@ public class JsonAdaptedPersonTest {
     }
 
     @Test
-    public void toModelType_invalidBloodType_throwsIllegalValueException() {
+    public void toModelType_invalidBloodType_preservesCause() {
         for (String bloodType : List.of("C+", "A", "UNKNOWN")) {
             JsonAdaptedPerson person = new JsonAdaptedPerson(VALID_NAME, null, bloodType, null, null, null,
                     VALID_PHONE, VALID_EMAIL, VALID_ADDRESS, VALID_VISIT_DATE,
                     null, VALID_NOTE, null, VALID_TAGS);
-            assertThrows(IllegalValueException.class, BloodType.MESSAGE_CONSTRAINTS, person::toModelType);
+            IllegalValueException exception = Assertions.assertThrows(IllegalValueException.class, person::toModelType);
+            assertEquals(BloodType.MESSAGE_CONSTRAINTS, exception.getMessage());
+            assertEquals(IllegalArgumentException.class, exception.getCause().getClass());
+            assertEquals(BloodType.MESSAGE_CONSTRAINTS, exception.getCause().getMessage());
         }
     }
 
@@ -178,6 +181,26 @@ public class JsonAdaptedPersonTest {
             JsonAdaptedPerson adapted = JsonUtil.fromJsonString(record.toString(), JsonAdaptedPerson.class);
             assertEquals(expected, adapted.toModelType());
         }
+    }
+
+    @Test
+    public void toModelType_multipleInvalidFields_preservesValidationOrder() throws Exception {
+        ObjectNode record = JsonUtil.fromJsonString(JsonUtil.toJsonString(new JsonAdaptedPerson(BENSON)),
+                ObjectNode.class);
+        record.put("dateOfBirth", "31/2/2000");
+        record.put("bloodType", "C+");
+        record.put("email", INVALID_EMAIL);
+
+        JsonAdaptedPerson invalidBirthDate = JsonUtil.fromJsonString(record.toString(), JsonAdaptedPerson.class);
+        assertThrows(IllegalValueException.class, DateOfBirth.MESSAGE_CONSTRAINTS, invalidBirthDate::toModelType);
+
+        record.put("dateOfBirth", "");
+        JsonAdaptedPerson invalidBloodType = JsonUtil.fromJsonString(record.toString(), JsonAdaptedPerson.class);
+        assertThrows(IllegalValueException.class, BloodType.MESSAGE_CONSTRAINTS, invalidBloodType::toModelType);
+
+        record.put("bloodType", "");
+        JsonAdaptedPerson invalidEmail = JsonUtil.fromJsonString(record.toString(), JsonAdaptedPerson.class);
+        assertThrows(IllegalValueException.class, Email.MESSAGE_CONSTRAINTS, invalidEmail::toModelType);
     }
 
     @Test
