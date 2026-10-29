@@ -197,7 +197,7 @@ Format: `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NU
 * Use `ec/[NAME, ]PHONE_NUMBER` to record one emergency contact, e.g. `ec/Mary Tan, 98765432`.
   The phone number is required; the name is optional. Use `ec/98765432` when the name is unknown.
   When supplying a name, include exactly one comma between the name and phone number.
-  Names follow the patient-name rules (letters, numbers, spaces, and common name punctuation, not blank) and cannot
+  Names follow the patient-name rules (letters, numbers, spaces, and `.` `'` `-` `/`, not blank) and cannot
   contain `p/`, which is reserved for the phone field. Phone numbers contain at least 3 digits, are at most 30
   characters long, and may include `+`, spaces, and dashes. Surrounding whitespace is trimmed from both details.
   An empty `ec/`, missing phone number, invalid detail, or repeated `ec/` is rejected.

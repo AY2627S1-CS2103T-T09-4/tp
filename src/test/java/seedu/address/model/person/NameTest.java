@@ -1,5 +1,6 @@
 package seedu.address.model.person;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
@@ -80,5 +81,25 @@ public class NameTest {
 
         // normalized match with different stored value -> returns false
         assertFalse(name.equals(new Name("valid  name")));
+    }
+
+    @Test
+    public void getConstraintMessage_mentionsPhonePrefixOnlyWhenPresent() {
+        // mistakes unrelated to the phone prefix get the general message, without p/
+        for (String invalidName : new String[] {"!!!", "''", "James&", "Tan  .", "^"}) {
+            assertEquals(Name.MESSAGE_CONSTRAINTS, Name.getConstraintMessage(invalidName));
+        }
+        assertFalse(Name.MESSAGE_CONSTRAINTS.contains("p/"));
+
+        // a name that swallowed the phone prefix gets the specific message
+        assertEquals(Name.MESSAGE_CONTAINS_PHONE_PREFIX, Name.getConstraintMessage("John Tanp/91234567"));
+
+        assertThrows(NullPointerException.class, () -> Name.getConstraintMessage(null));
+    }
+
+    @Test
+    public void constructor_invalidName_throwsMatchingMessage() {
+        assertThrows(IllegalArgumentException.class, Name.MESSAGE_CONSTRAINTS, () -> new Name("!!!"));
+        assertThrows(IllegalArgumentException.class, Name.MESSAGE_CONTAINS_PHONE_PREFIX, () -> new Name("Ap/B"));
     }
 }
