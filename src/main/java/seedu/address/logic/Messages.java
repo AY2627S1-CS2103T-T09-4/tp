@@ -1,9 +1,6 @@
 package seedu.address.logic;
 
-<<<<<<< HEAD
-=======
 import java.util.Comparator;
->>>>>>> 90eaae934313e7670a0658c8813943e5cc833d4f
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,16 +15,12 @@ import seedu.address.model.tag.Tag;
  */
 public class Messages {
 
-<<<<<<< HEAD
-    public static final Locale DISPLAY_LOCALE = Locale.ENGLISH;
-=======
     /**
      * Locale for numbers in user-visible messages. The interface is in English, so counts are always shown with
      * the digits 0 to 9, whatever the computer's language setting.
      */
     public static final Locale DISPLAY_LOCALE = Locale.ENGLISH;
 
->>>>>>> 90eaae934313e7670a0658c8813943e5cc833d4f
     public static final String MESSAGE_UNKNOWN_COMMAND = "Unknown command.";
     public static final String MESSAGE_INVALID_COMMAND_FORMAT = "Invalid command format!\n%1$s";
     public static final String MESSAGE_INVALID_PERSON_DISPLAYED_INDEX =

@@ -585,14 +585,9 @@ commands preserve the active filter and sort comparator, allowing the replacemen
 those rules are reevaluated, and return feedback with a `CommandResult` that requests saving. `LogicManager` saves
 through storage before returning the result to the UI.
 
-<<<<<<< HEAD
 These results select the replacement patient for the details panel, refreshing the record and calendar label even if
 the patient moves or disappears from the displayed list. `view` can still select any displayed patient without
 requesting a save.
-=======
-These results request that the details panel show the updated patient and refresh the record and calendar label.
-`view` also supplies the patient without requesting a save.
->>>>>>> 90eaae934313e7670a0658c8813943e5cc833d4f
 
 Validation errors and cancelled confirmations leave patient data, saved data, and list context unchanged.
 Duplicate-related errors and name-confirmation prompts can display an existing patient in the details panel;
@@ -1416,15 +1411,9 @@ labels, not executable command arguments.
 
 The continuous `next` route and the rollback route deliberately share the sentinel and Nextalpha/Nextbeta fixture. The
 JSON, capacity, calendar, and Help checks are independent cases; preserve other patients and omitted optional fields when a
-<<<<<<< HEAD
 case does not say to reset them. Successful `edit`, `next`, and `prev` commands preserve the active filter and sort
 comparator, although the updated patient may move or disappear when those rules are reevaluated. Their patient card
 and details panel refresh to the replacement record.
-=======
-case does not say to reset them. After every successful `edit`, `next`, or `prev`, find the intended patient again
-before using an index, because the command restores the full list in stored order. The details panel automatically
-shows the updated patient after a successful save. If saving fails, the patient data and displayed list are restored.
->>>>>>> 90eaae934313e7670a0658c8813943e5cc833d4f
 
 ### Launch and shutdown
 
