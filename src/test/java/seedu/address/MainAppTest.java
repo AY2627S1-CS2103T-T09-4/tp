@@ -40,6 +40,64 @@ public class MainAppTest {
     public Path testFolder;
 
     @Test
+    public void resolveDataFilePath_filesMissing_usesDocPath() {
+        Path docDataFile = testFolder.resolve("doc.json");
+        Path legacyDataFile = testFolder.resolve("addressbook.json");
+
+        MainApp.DataFileResolution resolution = MainApp.resolveDataFilePath(docDataFile, legacyDataFile);
+
+        assertEquals(docDataFile, resolution.dataFilePath());
+        assertTrue(resolution.warning().isEmpty());
+    }
+
+    @Test
+    public void resolveDataFilePath_legacyFileOnly_movesToDocPath() throws Exception {
+        Path docDataFile = testFolder.resolve("doc.json");
+        Path legacyDataFile = testFolder.resolve("addressbook.json");
+        Files.writeString(legacyDataFile, "legacy patient data");
+
+        MainApp.DataFileResolution resolution = MainApp.resolveDataFilePath(docDataFile, legacyDataFile);
+
+        assertEquals(docDataFile, resolution.dataFilePath());
+        assertTrue(resolution.warning().isEmpty());
+        assertEquals("legacy patient data", Files.readString(docDataFile));
+        assertFalse(Files.exists(legacyDataFile));
+    }
+
+    @Test
+    public void resolveDataFilePath_bothFilesExist_usesDocAndPreservesLegacy() throws Exception {
+        Path docDataFile = testFolder.resolve("doc.json");
+        Path legacyDataFile = testFolder.resolve("addressbook.json");
+        Files.writeString(docDataFile, "current patient data");
+        Files.writeString(legacyDataFile, "legacy patient data");
+
+        MainApp.DataFileResolution resolution = MainApp.resolveDataFilePath(docDataFile, legacyDataFile);
+
+        assertEquals(docDataFile, resolution.dataFilePath());
+        assertTrue(resolution.warning().isEmpty());
+        assertEquals("current patient data", Files.readString(docDataFile));
+        assertEquals("legacy patient data", Files.readString(legacyDataFile));
+    }
+
+    @Test
+    public void resolveDataFilePath_migrationFails_usesLegacyAndWarns() throws Exception {
+        Path legacyDataFile = testFolder.resolve("addressbook.json");
+        Path invalidParent = testFolder.resolve("not-a-directory");
+        Path docDataFile = invalidParent.resolve("doc.json");
+        Files.writeString(legacyDataFile, "legacy patient data");
+        Files.writeString(invalidParent, "blocks the destination directory");
+
+        MainApp.DataFileResolution resolution = MainApp.resolveDataFilePath(docDataFile, legacyDataFile);
+
+        assertEquals(legacyDataFile, resolution.dataFilePath());
+        assertEquals("legacy patient data", Files.readString(legacyDataFile));
+        String warning = resolution.warning().orElseThrow();
+        assertTrue(warning.contains("could not rename"), warning);
+        assertTrue(warning.contains(legacyDataFile.toString()), warning);
+        assertTrue(warning.contains(docDataFile.toString()), warning);
+    }
+
+    @Test
     public void loadInitialData_missingFile_usesSampleDataWithoutWarning() {
         MainApp.InitialData initialData = MainApp.loadInitialData(createStorage(dataFile()), START_TIME);
 
@@ -156,7 +214,7 @@ public class MainAppTest {
 
         MainApp.InitialData initialData = MainApp.loadInitialData(createStorage(dataFile), START_TIME);
 
-        Path backupPath = testFolder.resolve("addressbook-invalid-20261029-153005.json");
+        Path backupPath = testFolder.resolve("doc-invalid-20261029-153005.json");
         assertEquals(new AddressBook(), initialData.addressBook());
         assertArrayEquals(originalBytes, Files.readAllBytes(backupPath));
         assertArrayEquals(originalBytes, Files.readAllBytes(dataFile));
@@ -167,7 +225,7 @@ public class MainAppTest {
     }
 
     private Path dataFile() {
-        return testFolder.resolve("addressbook.json");
+        return testFolder.resolve("doc.json");
     }
 
     private StorageManager createStorage(Path dataFile) {

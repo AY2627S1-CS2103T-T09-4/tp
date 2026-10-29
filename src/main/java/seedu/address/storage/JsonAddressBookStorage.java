@@ -72,7 +72,7 @@ public class JsonAddressBookStorage {
 
     /**
      * Copies the data file to a new file in the same folder, named after the data file and {@code backupTime}, e.g.
-     * {@code addressbook-invalid-20261029-153000.json}. Used when the data file cannot be loaded, so that the next
+     * {@code doc-invalid-20261029-153000.json}. Used when the data file cannot be loaded, so that the next
      * save does not destroy the only copy of the patient data.
      *
      * @param backupTime Time used in the backup file name.
