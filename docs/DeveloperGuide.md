@@ -719,30 +719,33 @@ advice also suits phone, address, tag, visit date, and note searches.
 preserving all other patient fields. This separates advancement from `edit`, which corrects the current datetime
 without adding history. The [User Guide](UserGuide.md#scheduling-the-next-visit-next) provides syntax and errors.
 
-Eligibility requires `current <= now < requested`. Keeping this clock-dependent rule in the command allows past
-appointments to remain valid in the model and storage. Together with the existing record chronology, it ensures
-that appending the old current datetime preserves strict ordering.
+Eligibility requires `current <= now` and `current < requested`. The requested visit may be in the past, which
+supports entering follow-up visits retrospectively without inventing a temporary future appointment. Combined
+with the existing record chronology, this preserves `history < old current < requested`. An unchanged datetime
+keeps its specific error; an earlier datetime reports that it must be later than the current recorded visit.
 
 The parser passes an injected clock to the command. Each eligibility check reads it once in the local time zone.
-Comparisons retain seconds and nanoseconds; error feedback formats the captured time as `d/M/yyyy HHmm` for
-readability. Fixed clocks make boundary tests deterministic.
+Comparisons retain seconds and nanoseconds. An appointment at or before now requires confirmation; a future
+appointment does not require the time warning. Fixed clocks make boundary tests deterministic.
 
 Before replacement, the command rejects an unchanged datetime and checks the complete candidate record against
 all other stored patients, including hidden patients and excluding the original record. The shared
 [visit-date uniqueness rule](#duplicate-patient-identity-visit-dates-and-name-confirmation) applies.
 
-If the requested day differs from the current visit's day and already has `Model.MAX_VISITS_PER_DAY` (7) or more
-current visits, the command returns a `CommandInputRequest` confirmation before mutating, as `add` and `edit` do.
-A later visit on the same day does not ask, because it replaces that day's visit rather than adding one.
+If the requested visit is at or before now, or moves to a different day with `Model.MAX_VISITS_PER_DAY` (7) or more
+current visits, the command combines all applicable warnings in one `CommandInputRequest` before mutating.
+A later visit on the same day skips only the capacity warning, because it replaces that day's visit.
 On confirmation, the command rechecks eligibility using a fresh clock reading, verifies that the original record
-still exists, and repeats the conflict check before replacing the patient.
+is unchanged, and repeats the conflict check before replacing the patient. If a future appointment reaches or passes
+now while a capacity prompt is open, it returns a new prompt including the time warning; only a subsequent `y`
+applies that operation. Prompts and cancellation do not mutate, save, or refresh the details panel.
 
 The following sequence diagram focuses on command execution, model updates, and saving through `Storage` for `next`
-when no busy-day confirmation is required. Command parsing and object construction are omitted; see the
+when no confirmation is required. Command parsing and object construction are omitted; see the
 [Logic overview](#logic-component) for parser routing and lifecycles. Validation, conflict checking, and the optional
 confirmation branch are also omitted.
 
-<puml src="diagrams/NextSequenceDiagram.puml" alt="Successful execution of next when no busy-day confirmation is required" width="800" />
+<puml src="diagrams/NextSequenceDiagram.puml" alt="Successful execution of next when no confirmation is required" width="800" />
 
 A visit-time conflict supplies the conflicting patient through `CommandException` so `MainWindow` displays that
 record without changing the displayed list. If no further visit is planned, the current datetime remains stored
@@ -1219,8 +1222,8 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 1.  Doctor requests a future appointment for a patient whose current visit has arrived or passed, identified by
     their displayed index.
-2.  Doc retains the current datetime in the previous dates, saves the new appointment, and shows the full caseload
-    in stored order.
+2.  Doc retains the current datetime in the previous dates, saves the new appointment, and refreshes the patient's
+    details while preserving the active filter and sort order.
 
     Use case ends.
 
@@ -1232,7 +1235,8 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case resumes at step 1.
 
-* 1b. The current visit is still in the future, or the requested appointment is invalid, not in the future, or unchanged.
+* 1b. The current visit is still in the future, or the requested appointment is invalid, earlier than the current visit,
+  or unchanged.
 
     * 1b1. Doc explains the specific reason for rejection.
 
@@ -1244,11 +1248,11 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case resumes at step 1.
 
-* 1d. The requested datetime is on a different day that already has at least seven current appointments.
+* 1d. The requested datetime is at or before now, or is on a different day with at least seven current appointments.
 
-    * 1d1. Doc warns the doctor that the selected day is busy and asks for confirmation.
+    * 1d1. Doc combines all applicable time and busy-day warnings and asks for confirmation once.
     * 1d2. The doctor confirms the warning.
-    * 1d3. Doc rechecks that the requested datetime is still in the future and unoccupied, then resumes step 2.
+    * 1d3. Doc rechecks eligibility, the unchanged patient, and the unoccupied slot, then resumes step 2.
 
         Use case ends.
 
@@ -1258,11 +1262,11 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
           Use case ends.
 
-    * 1d3a. The requested datetime is no longer in the future when the doctor confirms.
+    * 1d3a. A previously future datetime reaches or passes now when the doctor confirms.
 
-        * 1d3a1. Doc rejects the request and explains that a future datetime is required.
+        * 1d3a1. Doc adds the new time warning and asks for confirmation again without changing the record.
 
-          Use case resumes at step 1.
+          Use case resumes at step 1d2.
 
     * 1d3b. Another patient takes the requested datetime before approval.
 
@@ -1288,8 +1292,8 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
     then asks for confirmation.
 3.  Doctor enters `y`, ignoring surrounding whitespace and letter case.
 4.  Doc makes the latest previous datetime current and removes it from the previous-date list.
-5.  Doc saves the changed record, reports the restored and discarded datetimes, and shows the full caseload in
-    stored order.
+5.  Doc saves the changed record, reports the restored and discarded datetimes, and refreshes the patient's details
+    while preserving the active filter and sort order.
 
     Use case ends.
 
@@ -1955,14 +1959,15 @@ full unused `d/M/yyyy HHmm` value that preserves `P0 < P1 < P2 < actual now < F1
    | `next 2147483648 27/10/2026 0900` | Oversized index error and usage. |
    | `next 2 27/10/2026 0900` | Index outside the displayed list. |
    | `next 1 25/10/2026 0900` | Unchanged appointment. |
-   | `next 1 25/10/2026 1000` | Non-future appointment. |
+   | `next 1 25/10/2026 0859` | Appointment before the current recorded visit. |
    | `next 1 31/2/2027 0930` | Invalid date. |
    | `next 1 1/11/2026 2400` | Invalid time. |
    | `next 1 vd/27/10/2026 0900` | Prefix misuse and usage. |
    | `next 1 27/10/2026 0900 extra` | Extra arguments and usage. |
 
    Each rejection must preserve records, file contents, and the displayed list. Also test today's current local
-   minute; expect rejection. Repeat the unchanged-date test with equivalent leading zeros when applicable.
+   minute, provided it is later than the recorded visit; expect a time warning and cancel with `n`.
+   Repeat the unchanged-date test with equivalent leading zeros when applicable.
 
 1. Run `find n/Nextalpha Nextbeta`, then `sort date` again. Run `view 2`, followed by
    `next 2 27/10/2026 0900` (the illustration's `next 2 F1`). Expect Nextalpha's current datetime to become
@@ -2007,6 +2012,16 @@ full unused `d/M/yyyy HHmm` value that preserves `P0 < P1 < P2 < actual now < F1
 1. **Independent six-visit case:** reset the scratch data, create a new `Nextdelta Patient` at an unused past
    datetime, and create only six filler patients on a new future date `D` at `0800` through `1300`. Submit the
    concrete `next 1 D 1700` command after substituting the full date. Expect no busy-day prompt and a successful save.
+
+1. **Independent retrospective-entry case:** use disposable data and choose two unused past datetimes `P1 < P2`
+   and a later unused past datetime `P3`. Add a patient at `P1`, then run `next INDEX P2` with the full datetime.
+   Expect the non-future warning with no record, file, list, or details change. Enter `n` and verify cancellation.
+   Repeat and enter `y`; expect current `P2`, history `[P1]`, and refreshed details. Restart and verify persistence.
+   Run `next INDEX P3`, confirm, and verify current `P3`, history `[P1, P2]`, and preserved other fields.
+   Reject any requested date at or before the current visit, even if it is later than some existing history entries.
+   Reset the disposable data and repeat with seven filler patients on `P2`'s day, distinct from `P1`'s day;
+   expect both warnings in a single prompt and a single confirmation. When `P1` and `P2` are on the same day,
+   expect only the time warning.
 
 Fixed-clock automated tests cover exact equality to now, nanosecond boundaries, one initial clock read, and
 appointments becoming past as time advances, including while confirmation is pending. These boundaries are not
