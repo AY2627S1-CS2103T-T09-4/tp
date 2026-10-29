@@ -34,7 +34,7 @@ public class PrevCommand extends Command {
             + "Restore: %3$s\n"
             + "Discard permanently: %4$s";
     public static final String MESSAGE_PREV_CANCELLED = "Visit restoration cancelled.";
-    public static final String MESSAGE_PERSON_NO_LONGER_EXISTS =
+    public static final String MESSAGE_PERSON_CHANGED_OR_REMOVED =
             "The patient selected for rollback has changed or no longer exists. Run prev again.";
 
     private final Index index;
@@ -83,7 +83,7 @@ public class PrevCommand extends Command {
      */
     private CommandResult restorePreviousVisit(Model model, Person personToUpdate) throws CommandException {
         if (!model.getAddressBook().getPersonList().contains(personToUpdate)) {
-            throw new CommandException(MESSAGE_PERSON_NO_LONGER_EXISTS);
+            throw new CommandException(MESSAGE_PERSON_CHANGED_OR_REMOVED);
         }
 
         Person updatedPerson = createUpdatedPerson(personToUpdate);

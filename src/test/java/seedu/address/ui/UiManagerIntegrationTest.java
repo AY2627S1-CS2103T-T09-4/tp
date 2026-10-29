@@ -94,7 +94,7 @@ public class UiManagerIntegrationTest {
         assertNotNull(guideStatus);
         openGuideButton.fire();
 
-        assertEquals(List.of(HelpWindow.USERGUIDE_URL), requestedUrls);
+        assertEquals(List.of(HelpWindow.USER_GUIDE_URL), requestedUrls);
         assertTrue(primaryStage.isShowing());
         assertTrue(helpStage.isShowing());
         assertTrue(guideStatus.isVisible());

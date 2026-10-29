@@ -122,31 +122,15 @@ public class MainWindowTest {
                 commandTextField.requestFocus();
                 assertSame(commandTextField, scene.getFocusOwner());
                 assertFocusIndicator(scene, focusSections, 0);
-                fireTab(scene, false);
-                assertSame(resultDisplay, scene.getFocusOwner());
-                assertFocusIndicator(scene, focusSections, 1);
-                fireTab(scene, false);
-                assertSame(personListView, scene.getFocusOwner());
-                assertFocusIndicator(scene, focusSections, 2);
-                fireTab(scene, false);
-                assertSame(detailsPanel, scene.getFocusOwner());
-                assertFocusIndicator(scene, focusSections, 3);
-                fireTab(scene, false);
-                assertSame(commandTextField, scene.getFocusOwner());
-                assertFocusIndicator(scene, focusSections, 0);
+                assertTabTransition(scene, focusSections, resultDisplay, 1, false);
+                assertTabTransition(scene, focusSections, personListView, 2, false);
+                assertTabTransition(scene, focusSections, detailsPanel, 3, false);
+                assertTabTransition(scene, focusSections, commandTextField, 0, false);
 
-                fireTab(scene, true);
-                assertSame(detailsPanel, scene.getFocusOwner());
-                assertFocusIndicator(scene, focusSections, 3);
-                fireTab(scene, true);
-                assertSame(personListView, scene.getFocusOwner());
-                assertFocusIndicator(scene, focusSections, 2);
-                fireTab(scene, true);
-                assertSame(resultDisplay, scene.getFocusOwner());
-                assertFocusIndicator(scene, focusSections, 1);
-                fireTab(scene, true);
-                assertSame(commandTextField, scene.getFocusOwner());
-                assertFocusIndicator(scene, focusSections, 0);
+                assertTabTransition(scene, focusSections, detailsPanel, 3, true);
+                assertTabTransition(scene, focusSections, personListView, 2, true);
+                assertTabTransition(scene, focusSections, resultDisplay, 1, true);
+                assertTabTransition(scene, focusSections, commandTextField, 0, true);
 
                 logic.setExecutionOutcome(ExecutionOutcome.CLEAR_DETAILS);
                 assertDoesNotThrow(() -> mainWindow.executeCommand("clear"));
@@ -163,7 +147,7 @@ public class MainWindowTest {
     }
 
     @Test
-    public void focusIndicators_preserveCommandErrorAndPatientSelection() {
+    public void focusIndicators_commandErrorAndSelectedPatient_preservesBothStates() {
         runOnFxThread(() -> {
             Person person = new PersonBuilder().withName("Selected Patient").build();
             ObservableList<Person> persons = FXCollections.observableArrayList(person);
@@ -547,6 +531,14 @@ public class MainWindowTest {
         TextField commandTextField = (TextField) scene.lookup("#commandTextField");
         assertNotNull(commandTextField);
         return commandTextField;
+    }
+
+    /** Checks that one Tab press moves keyboard focus and its indicator to the expected section. */
+    private static void assertTabTransition(Scene scene, List<Node> focusSections, Node expectedFocusTarget,
+            int expectedSectionIndex, boolean isShiftDown) {
+        fireTab(scene, isShiftDown);
+        assertSame(expectedFocusTarget, scene.getFocusOwner());
+        assertFocusIndicator(scene, focusSections, expectedSectionIndex);
     }
 
     private static void fireTab(Scene scene, boolean isShiftDown) {

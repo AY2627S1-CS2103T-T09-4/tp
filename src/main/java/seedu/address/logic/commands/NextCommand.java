@@ -38,7 +38,7 @@ public class NextCommand extends Command {
     public static final String MESSAGE_UNCHANGED_VISIT_DATE = "Patient %1$s already has an appointment at %2$s.";
     public static final String MESSAGE_VISIT_DATE_NOT_AFTER_CURRENT =
             "The next visit must be later than the current recorded visit (%1$s). Choose a later date and time.";
-    public static final String MESSAGE_WARNING_PAST_VISIT = "This appointment is not in the future: %1$s.";
+    public static final String MESSAGE_WARNING_NON_FUTURE_VISIT = "This appointment is not in the future: %1$s.";
     public static final String MESSAGE_CONFIRM_RECORD_VISIT =
             "Record it as the next visit for %1$s anyway? Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_CURRENT_VISIT_IN_FUTURE =
@@ -50,8 +50,8 @@ public class NextCommand extends Command {
             "Heads up: you already have %1$d visits on %2$s. Schedule %3$s's next visit on that day anyway? "
                     + "Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_NEXT_CANCELLED = "Scheduling cancelled.";
-    public static final String MESSAGE_PERSON_NO_LONGER_EXISTS =
-            "The patient selected for scheduling no longer exists.";
+    public static final String MESSAGE_PERSON_CHANGED_OR_REMOVED =
+            "The patient selected for scheduling has changed or no longer exists. Run next again.";
 
     private static final Logger logger = LogsCenter.getLogger(NextCommand.class);
 
@@ -123,18 +123,18 @@ public class NextCommand extends Command {
             LocalDateTime now) throws CommandException {
         boolean isVisitDayChanged = !personToUpdate.getVisitDate().isSameDay(visitDate);
         int visitsOnNewDay = model.countPersonsWithSameVisitDay(updatedPerson);
-        boolean isFullDay = isVisitDayChanged && visitsOnNewDay >= Model.MAX_VISITS_PER_DAY;
+        boolean isMovingToFullDay = isVisitDayChanged && visitsOnNewDay >= Model.MAX_VISITS_PER_DAY;
         boolean isNonFutureVisit = !visitDate.value.isAfter(now);
-        if (!isFullDay && !isNonFutureVisit) {
+        if (!isMovingToFullDay && !isNonFutureVisit) {
             return scheduleVisit(model, personToUpdate, updatedPerson);
         }
 
-        String prompt = isFullDay
+        String prompt = isMovingToFullDay
                 ? String.format(DISPLAY_LOCALE, MESSAGE_CONFIRM_FULL_DAY, visitsOnNewDay,
                         visitDate.toDayString(), updatedPerson.getName())
                 : String.format(MESSAGE_CONFIRM_RECORD_VISIT, updatedPerson.getName());
         if (isNonFutureVisit) {
-            prompt = String.format(MESSAGE_WARNING_PAST_VISIT, visitDate) + " " + prompt;
+            prompt = String.format(MESSAGE_WARNING_NON_FUTURE_VISIT, visitDate) + " " + prompt;
         }
         logger.info("Requesting confirmation for next visit at " + visitDate);
         CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(prompt, MESSAGE_NEXT_CANCELLED,
@@ -152,8 +152,8 @@ public class NextCommand extends Command {
             boolean wasNonFutureVisit) throws CommandException {
         LocalDateTime now = LocalDateTime.now(clock);
         validateVisitDate(personToUpdate, now);
-        boolean isNowNonFuture = !visitDate.value.isAfter(now);
-        if (!wasNonFutureVisit && isNowNonFuture) {
+        boolean isNowNonFutureVisit = !visitDate.value.isAfter(now);
+        if (!wasNonFutureVisit && isNowNonFutureVisit) {
             validateReplacement(model, personToUpdate, updatedPerson);
             return scheduleVisitOrRequestConfirmation(model, personToUpdate, updatedPerson, now);
         }
@@ -164,7 +164,7 @@ public class NextCommand extends Command {
      * Replaces the patient captured when this command was first executed while preserving the current list context.
      * Checks again for conflicts, since the address book may have changed while confirmation was pending.
      *
-     * @throws CommandException If the captured patient no longer exists or the visit now conflicts.
+     * @throws CommandException If the captured patient has changed or no longer exists, or the visit now conflicts.
      */
     private CommandResult scheduleVisit(Model model, Person personToUpdate, Person updatedPerson)
             throws CommandException {
@@ -198,7 +198,7 @@ public class NextCommand extends Command {
     /** Checks that the captured patient is unchanged and its replacement does not conflict with another record. */
     private void validateReplacement(Model model, Person personToUpdate, Person updatedPerson) throws CommandException {
         if (!model.getAddressBook().getPersonList().contains(personToUpdate)) {
-            throw new CommandException(MESSAGE_PERSON_NO_LONGER_EXISTS);
+            throw new CommandException(MESSAGE_PERSON_CHANGED_OR_REMOVED);
         }
         validateNoConflicts(model, personToUpdate, updatedPerson);
     }

@@ -62,50 +62,51 @@ public class NextCommandUiTest {
         MainWindow window = new MainWindow(stage, fixture.getLogic(),
                 fixture.getAddressBookStorage().getAddressBookFilePath(), url -> { });
         window.fillInnerParts();
-        TextField commandBox = (TextField) stage.getScene().lookup("#commandTextField");
-        VBox details = (VBox) ((ScrollPane) window.getPatientDetailsPanel().getRoot()).getContent();
-        submit(commandBox, "view 1");
-        List<String> before = getVisitDetails(details);
+        TextField commandTextField = (TextField) stage.getScene().lookup("#commandTextField");
+        VBox detailsContainer = (VBox) ((ScrollPane) window.getPatientDetailsPanel().getRoot()).getContent();
+        submit(commandTextField, "view 1");
+        List<String> visitDetailTextsBefore = getVisitDetails(detailsContainer);
 
-        assertPendingAndCancel(stage, commandBox, details, before, fixture, original);
-        submit(commandBox, "next 1 15/10/2026 1000");
-        submit(commandBox, " Y ");
+        assertPendingAndCancel(stage, commandTextField, detailsContainer, visitDetailTextsBefore, fixture, original);
+        submit(commandTextField, "next 1 15/10/2026 1000");
+        submit(commandTextField, " Y ");
 
         assertFalse(fixture.getLogic().isInputRequestPending());
-        assertFalse(commandBox.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
-        assertTrue(getVisitDetails(details).getFirst().startsWith("Visit date: 15/10/2026 1000 ("));
-        assertEquals("1/10/2026 0900\n1/9/2026 0900", getVisitDetails(details).get(1));
+        assertFalse(commandTextField.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
+        assertTrue(getVisitDetails(detailsContainer).getFirst().startsWith("Visit date: 15/10/2026 1000 ("));
+        assertEquals("1/10/2026 0900\n1/9/2026 0900", getVisitDetails(detailsContainer).get(1));
         Person expected = new PersonBuilder(original).withVisitDate("15/10/2026 1000")
                 .withPreviousVisitDates("1/9/2026 0900", "1/10/2026 0900").build();
         fixture.assertPersistedPatients(expected);
         assertEquals(1, fixture.getSaveCount());
     }
 
-    private void assertPendingAndCancel(Stage stage, TextField commandBox, VBox details, List<String> before,
-            LogicManagerIntegrationFixture fixture, Person original) throws Exception {
-        submit(commandBox, "next 1 15/10/2026 1000");
+    private void assertPendingAndCancel(Stage stage, TextField commandTextField, VBox detailsContainer,
+            List<String> visitDetailTextsBefore, LogicManagerIntegrationFixture fixture, Person original)
+            throws Exception {
+        submit(commandTextField, "next 1 15/10/2026 1000");
         String feedback = ((TextArea) stage.getScene().lookup("#resultDisplay")).getText();
         assertTrue(feedback.contains("not in the future: 15/10/2026 1000"));
         assertTrue(fixture.getLogic().isInputRequestPending());
-        assertEquals(before, getVisitDetails(details));
+        assertEquals(visitDetailTextsBefore, getVisitDetails(detailsContainer));
         fixture.assertPersistedPatients(original);
 
-        submit(commandBox, "n");
+        submit(commandTextField, "n");
 
         assertFalse(fixture.getLogic().isInputRequestPending());
-        assertEquals(before, getVisitDetails(details));
+        assertEquals(visitDetailTextsBefore, getVisitDetails(detailsContainer));
         fixture.assertPersistedPatients(original);
         assertEquals(0, fixture.getSaveCount());
     }
 
-    private List<String> getVisitDetails(VBox details) {
-        Label visit = (Label) details.lookup("#visitDate");
-        Label history = (Label) details.lookup("#previousVisitDates");
+    private List<String> getVisitDetails(VBox detailsContainer) {
+        Label visit = (Label) detailsContainer.lookup("#visitDate");
+        Label history = (Label) detailsContainer.lookup("#previousVisitDates");
         return List.of(visit.getText(), history.getText());
     }
 
-    private void submit(TextField commandBox, String text) {
-        commandBox.setText(text);
-        commandBox.getOnAction().handle(new ActionEvent(commandBox, commandBox));
+    private void submit(TextField commandTextField, String text) {
+        commandTextField.setText(text);
+        commandTextField.getOnAction().handle(new ActionEvent(commandTextField, commandTextField));
     }
 }

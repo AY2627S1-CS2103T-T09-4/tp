@@ -233,7 +233,7 @@ public class PrevCommandIntegrationTest {
         Person replacementPerson = new PersonBuilder(AMY).withName("Amy Updated").build();
         model.setPerson(AMY, replacementPerson);
 
-        assertThrows(CommandException.class, PrevCommand.MESSAGE_PERSON_NO_LONGER_EXISTS, () -> logic.execute("y"));
+        assertThrows(CommandException.class, PrevCommand.MESSAGE_PERSON_CHANGED_OR_REMOVED, () -> logic.execute("y"));
 
         assertEquals(replacementPerson, model.getAddressBook().getPersonList().getFirst());
         assertFalse(logic.isInputRequestPending());

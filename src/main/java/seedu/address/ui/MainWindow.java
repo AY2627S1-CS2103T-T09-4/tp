@@ -175,20 +175,20 @@ public class MainWindow extends UiPart<Stage> {
             return;
         }
 
-        int currentSection = findFocusedSection();
-        if (currentSection < 0) {
+        int currentSectionIndex = findFocusedSectionIndex();
+        if (currentSectionIndex < 0) {
             return;
         }
 
         int direction = keyEvent.isShiftDown() ? -1 : 1;
-        int nextSection = (currentSection + direction + mainSectionFocusTargets.size())
+        int nextSectionIndex = (currentSectionIndex + direction + mainSectionFocusTargets.size())
                 % mainSectionFocusTargets.size();
-        mainSectionFocusTargets.get(nextSection).requestFocus();
+        mainSectionFocusTargets.get(nextSectionIndex).requestFocus();
         keyEvent.consume();
     }
 
     /** Returns the index of the section containing the current focus owner, or -1 if there is none. */
-    private int findFocusedSection() {
+    private int findFocusedSectionIndex() {
         Node focusOwner = primaryStage.getScene().getFocusOwner();
         for (int i = 0; i < mainSectionRoots.size(); i++) {
             if (isDescendantOf(focusOwner, mainSectionRoots.get(i))) {
