@@ -49,11 +49,18 @@ public class PrevCommandParserTest {
             // EP: Signed, nonnumeric, and non-integral spellings form invalid numeric partitions.
             "+1", "a", "1.5", "-2147483649", "+2147483648", "2147483648abc", "2147483648.0",
             // Stress sample: A long spelling of zero is still non-positive.
-            "0".repeat(1000),
-            // EP: Extra tokens and unsupported prefixes.
-            "1 2", "1 vd/1/11/2026 1000"
+            "0".repeat(1000)
         };
         for (String args : invalidArguments) {
+            assertParseFailure(parser, args, expectedMessage);
+        }
+    }
+
+    @Test
+    public void parse_extraArguments_showsUnexpectedArgumentsAndPrevUsage() {
+        // EP: Extra tokens and unsupported prefixes after a valid index.
+        String expectedMessage = ParserUtil.MESSAGE_EXTRA_INDEX_ARGUMENTS + "\n" + PrevCommand.MESSAGE_USAGE;
+        for (String args : new String[] {"1 2", "1 vd/1/11/2026 1000", "1 extra"}) {
             assertParseFailure(parser, args, expectedMessage);
         }
     }

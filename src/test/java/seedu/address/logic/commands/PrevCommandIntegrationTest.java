@@ -166,10 +166,12 @@ public class PrevCommandIntegrationTest {
         logic.execute("view 1");
         fixture.assertRejectedCommand("prev", ParseException.class,
                 String.format(Messages.MESSAGE_INVALID_COMMAND_FORMAT, PrevCommand.MESSAGE_USAGE));
-        for (String commandText : List.of("prev 0", "prev -1", "prev 1 extra")) {
+        for (String commandText : List.of("prev 0", "prev -1")) {
             fixture.assertRejectedCommand(commandText, ParseException.class,
                     ParserUtil.MESSAGE_INVALID_INDEX + "\n" + PrevCommand.MESSAGE_USAGE);
         }
+        fixture.assertRejectedCommand("prev 1 extra", ParseException.class,
+                ParserUtil.MESSAGE_EXTRA_INDEX_ARGUMENTS + "\n" + PrevCommand.MESSAGE_USAGE);
         fixture.assertRejectedCommand("prev 2147483648", ParseException.class,
                 ParserUtil.MESSAGE_INDEX_TOO_LARGE + "\n" + PrevCommand.MESSAGE_USAGE);
         fixture.assertRejectedCommand("prev 2", CommandException.class,
@@ -178,7 +180,7 @@ public class PrevCommandIntegrationTest {
     }
 
     @Test
-    public void execute_saveFailures_reportsExistingErrorWithoutRollingBackModel() throws Exception {
+    public void execute_saveFailures_reportsExistingErrorAndRollsBackModel() throws Exception {
         for (IOException failure : List.of(new IOException("test save failure"),
                 new AccessDeniedException("addressBook.json"))) {
             assertSaveFailure(failure);
@@ -188,6 +190,8 @@ public class PrevCommandIntegrationTest {
     private void assertSaveFailure(IOException failure) throws Exception {
         model.setPerson(model.getAddressBook().getPersonList().getFirst(), AMY);
         String savedData = Files.readString(fixture.getAddressBookStorage().getAddressBookFilePath());
+        AddressBook addressBookBefore = new AddressBook(model.getAddressBook());
+        List<Person> displayedPersonsBefore = List.copyOf(model.getFilteredPersonList());
         fixture.useFailingStorage(failure);
         logic = fixture.getLogic();
         String errorFormat = failure instanceof AccessDeniedException
@@ -200,9 +204,8 @@ public class PrevCommandIntegrationTest {
         assertThrows(CommandException.class, expectedErrorMessage, () -> logic.execute("y"));
 
         assertEquals(savedData, Files.readString(fixture.getAddressBookStorage().getAddressBookFilePath()));
-        assertEquals(new PersonBuilder(AMY).withVisitDate("20/10/2026 1000")
-                .withPreviousVisitDates("10/10/2026 1000").build(),
-                model.getAddressBook().getPersonList().getFirst());
+        assertEquals(addressBookBefore, model.getAddressBook());
+        assertEquals(displayedPersonsBefore, model.getFilteredPersonList());
         assertFalse(logic.isInputRequestPending());
     }
 
@@ -255,6 +258,7 @@ public class PrevCommandIntegrationTest {
         assertEquals(String.format(PrevCommand.MESSAGE_SUCCESS, expectedPatient.getName(),
                 expectedPatient.getVisitDate(), otherPatient.getVisitDate()), result.getFeedbackToUser());
         fixture.assertPersistedPatients(AMY, expectedPatient);
+        assertEquals(List.of(expectedPatient), model.getFilteredPersonList());
     }
 
     @Test

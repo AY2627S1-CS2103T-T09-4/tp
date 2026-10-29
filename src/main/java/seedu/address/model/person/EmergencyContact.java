@@ -12,7 +12,7 @@ public class EmergencyContact {
     public static final String MESSAGE_CONSTRAINTS =
             "Emergency contacts must use ec/PHONE_NUMBER or ec/NAME, PHONE_NUMBER. "
                     + "The phone number is required; the name is optional. "
-                    + Name.MESSAGE_CONSTRAINTS + ". " + Phone.MESSAGE_CONSTRAINTS + ".";
+                    + Name.MESSAGE_CONSTRAINTS + " " + Phone.MESSAGE_CONSTRAINTS + ".";
 
     private final String value;
 
@@ -32,6 +32,7 @@ public class EmergencyContact {
             value = emergencyContact.trim();
         } else {
             String[] details = emergencyContact.split(",", -1);
+            assert details.length == 2 : "A validated named contact must contain a name and phone number";
             value = details[0].trim() + ", " + details[1].trim();
         }
     }

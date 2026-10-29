@@ -76,9 +76,21 @@ public class ParserUtilTest {
     @Test
     public void parseIndexWithUsage_nonPositiveOrNonNumericIndex_throwsInvalidIndex() {
         String expectedMessage = MESSAGE_INVALID_INDEX + "\n" + COMMAND_USAGE;
-        for (String index : List.of("0", "-1", "+1", "abc", "1.5", "1 abc", "0".repeat(20))) {
+        for (String index : List.of("0", "-1", "+1", "abc", "1.5", "0 1", "0".repeat(20))) {
             assertThrows(ParseException.class, expectedMessage, () -> ParserUtil.parseIndex(index, COMMAND_USAGE));
         }
+    }
+
+    @Test
+    public void parseIndexWithUsage_validIndexWithExtraArguments_throwsUnexpectedArguments() {
+        String expectedMessage = ParserUtil.MESSAGE_EXTRA_INDEX_ARGUMENTS + "\n" + COMMAND_USAGE;
+        for (String index : List.of("1 abc", "1 2", "  3   extra words  ")) {
+            assertThrows(ParseException.class, expectedMessage, () -> ParserUtil.parseIndex(index, COMMAND_USAGE));
+        }
+
+        // an oversized first word is still reported as too large
+        assertThrows(ParseException.class, ParserUtil.MESSAGE_INDEX_TOO_LARGE + "\n" + COMMAND_USAGE, () ->
+                ParserUtil.parseIndex("2147483648 2", COMMAND_USAGE));
     }
 
     @Test
@@ -98,6 +110,10 @@ public class ParserUtilTest {
     @Test
     public void parseName_invalidValue_throwsParseException() {
         assertThrows(ParseException.class, () -> ParserUtil.parseName(INVALID_NAME));
+
+        // the phone prefix is mentioned only for a name that contains it
+        assertThrows(ParseException.class, Name.MESSAGE_CONSTRAINTS, () -> ParserUtil.parseName("!!!"));
+        assertThrows(ParseException.class, Name.MESSAGE_CONTAINS_PHONE_PREFIX, () -> ParserUtil.parseName("Ap/B"));
     }
 
     @Test

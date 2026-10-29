@@ -1,7 +1,6 @@
 package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
-import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -89,7 +88,6 @@ public class PrevCommand extends Command {
 
         Person updatedPerson = createUpdatedPerson(personToUpdate);
         model.setPerson(personToUpdate, updatedPerson);
-        model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
         return CommandResult.showUpdatedPerson(String.format(MESSAGE_SUCCESS, updatedPerson.getName(),
                 updatedPerson.getVisitDate(), personToUpdate.getVisitDate()), updatedPerson);
     }

@@ -371,7 +371,9 @@ accepted without confirmation. This preserves phone numbers shared by a househol
 phone together to identify a patient record.
 
 `Model#hasPerson` exposes the true-duplicate check, while `Model#hasPersonWithSameName` exposes the weaker warning
-check. Phone comparison continues to use exact `Phone` value equality.
+check. `Person#isSamePerson` compares phones with `Phone#isSameNumber`, which ignores everything except digits, so a
+number re-entered with spaces or dashes is still recognized as the same patient. `Phone#equals` stays an exact
+comparison, so changing only a number's formatting is still a real edit.
 
 Visit dates and times form a separate invariant across all current and previous dates.
 `Person#hasCommonVisitDate` compares the complete records using parsed `VisitDate` equality.
@@ -397,10 +399,11 @@ visit-date conflict.
 
 `CommandResult` carries the preview together with a name-duplicate confirmation request. `CommandException` carries
 the preview for banned identity and visit-date conflicts. `MainWindow` sends either preview to `PatientDetailsPanel`,
-using the same presentation as `view`, while feedback remains in `ResultDisplay`. A successful add or edit restores
-the full patient list; a rejected or cancelled operation leaves the displayed list unchanged. While a confirmation is
-pending, the command box treats the next submission as the confirmation response, so displayed indices cannot be used
-by another command until the doctor confirms or cancels.
+using the same presentation as `view`, while feedback remains in `ResultDisplay`. A successful add restores the full
+patient list, while a successful edit preserves the active filter and sort comparator. A rejected or cancelled
+operation leaves the displayed list unchanged. While a confirmation is pending, the command box treats the next
+submission as the confirmation response, so displayed indices cannot be used by another command until the doctor
+confirms or cancels.
 
 #### Adding a patient: validation and confirmation
 
@@ -450,8 +453,8 @@ Duplicate detection is a heuristic because Doc does not assign a permanent patie
 * A returning patient with both a changed name and changed phone number is not detected as a possible duplicate.
 * Normalization does not understand nicknames, reordered names, misspellings, transliterations, or equivalent accented
   forms. It performs no fuzzy or culture-specific matching.
-* Phone numbers are compared exactly. Equivalent numbers entered with different country-code forms are not detected as
-  the same number.
+* Phone numbers are compared by their digits only. Equivalent numbers entered with and without a country code are not
+  detected as the same number.
 * Collapsing whitespace and ignoring case can warn about two distinct names whose intentional difference is only
   capitalization or spacing.
 
@@ -580,21 +583,20 @@ behavior follow the [shared visit-change flow](#saving-and-displaying-visit-chan
 
 `edit`, `next`, and confirmed `prev` validate the proposed change before replacing the patient. A valid `prev` first
 returns a non-saving `CommandInputRequest`; only its confirmed callback replaces the captured patient. Successful
-commands follow the existing `add`/`edit` interaction pattern: clear filtering and sorting, show the full list in
-stored order, and return feedback with a `CommandResult` that requests saving. `LogicManager` saves through storage
-before returning the result to the UI.
+commands preserve the active filter and sort comparator, allowing the replacement patient to move or disappear as
+those rules are reevaluated, and return feedback with a `CommandResult` that requests saving. `LogicManager` saves
+through storage before returning the result to the UI.
 
-These results request that the details panel show the updated patient and refresh the record and calendar label.
-`view` also supplies the patient without requesting a save.
+These results select the replacement patient for the details panel, refreshing the record and calendar label even if
+the patient moves or disappears from the displayed list. `view` can still select any displayed patient without
+requesting a save.
 
 Validation errors and cancelled confirmations leave patient data, saved data, and list context unchanged.
 Duplicate-related errors and name-confirmation prompts can display an existing patient in the details panel;
 other rejected inputs do not change that panel.
-A storage I/O failure occurs after the in-memory update. `LogicManager` throws a `CommandSaveException` containing
-the completed `CommandResult` and the storage exception. `MainWindow` displays the save error and still applies that
-result's details-panel action, so the record and list remain consistent with memory without rolling back the change.
-The same handling shows added patients, clears the displayed patient after deletion, and clears all details after
-`clear`, even if saving fails. Other command and parsing errors keep their existing details-panel behavior.
+If storage reports an I/O or permission failure, `LogicManager` restores the patient data, active filter, and sort
+captured before command execution. The command reports the save error, while the data file and displayed model remain
+consistent with the last successful save.
 
 ### Sorting displayed visits by date
 
@@ -768,8 +770,8 @@ compares it to `y` case-insensitively; other responses are consumed as cancellat
 saved. For this feature, the request captures the immutable selected `Person` and invokes a private rollback helper
 only after confirmation. The helper checks the stored person list with full `Person.equals` semantics before creating
 the replacement. If an intervening edit or deletion changed the record, it throws the stale-selection error without
-changing the replacement record or displayed list. Otherwise it calls `createUpdatedPerson`, replaces the captured
-patient, and restores the full list in stored order.
+changing the replacement record or displayed list. Otherwise it calls `createUpdatedPerson` and replaces the captured
+patient while retaining the active filter and sort comparator.
 
 Empty previous dates produce a `CommandException` before the private rollback helper runs. The helper's assertion
 documents that internal precondition, while user-input validation remains effective with assertions disabled.
@@ -1220,8 +1222,8 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 1.  Doctor requests a future appointment for a patient whose current visit has arrived or passed, identified by
     their displayed index.
-2.  Doc retains the current datetime in the previous dates, saves the new appointment, and shows the full caseload
-    in stored order.
+2.  Doc retains the current datetime in the previous dates, saves the new appointment, and refreshes the patient's
+    details while preserving the active filter and sort order.
 
     Use case ends.
 
@@ -1290,8 +1292,8 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
     then asks for confirmation.
 3.  Doctor enters `y`, ignoring surrounding whitespace and letter case.
 4.  Doc makes the latest previous datetime current and removes it from the previous-date list.
-5.  Doc saves the changed record, reports the restored and discarded datetimes, and shows the full caseload in
-    stored order.
+5.  Doc saves the changed record, reports the restored and discarded datetimes, and refreshes the patient's details
+    while preserving the active filter and sort order.
 
     Use case ends.
 
@@ -1370,7 +1372,7 @@ it can be assessed.
 * **Visit record**: A patient's current and previous visit datetimes. These record scheduled times retained by the
   user and do not verify attendance or completion.
 
---------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------
 
 ## **Appendix: Instructions for manual testing**
 
@@ -1415,9 +1417,9 @@ labels, not executable command arguments.
 
 The continuous `next` route and the rollback route deliberately share the sentinel and Nextalpha/Nextbeta fixture. The
 JSON, capacity, calendar, and Help checks are independent cases; preserve other patients and omitted optional fields when a
-case does not say to reset them. After every successful `edit`, `next`, or `prev`, find the intended patient again
-before using an index, because the command restores the full list in stored order. The details panel automatically
-shows the updated patient, including when an in-memory change cannot be saved.
+case does not say to reset them. Successful `edit`, `next`, and `prev` commands preserve the active filter and sort
+comparator, although the updated patient may move or disappear when those rules are reevaluated. Their patient card
+and details panel refresh to the replacement record.
 
 ### Launch and shutdown
 
@@ -1446,13 +1448,13 @@ Use a disposable copy of Doc with disposable patient data. Do not modify the per
    `add n/Alpha p/90000001 a/1 Alpha Road vd/1/1/2000 0900`, then run `view 1`.
 1. While Doc stays open, make its `data/addressbook.json` read-only (on Windows, use the file's Properties dialog).
    Run `next 1 1/1/2099 1000`, using a later supported future datetime if necessary.
-   Expected: A save error remains in the response panel. Both the patient card and details show the new appointment;
-   details also show `1/1/2000 0900` in history. The saved JSON still contains the original visit.
+   Expected: A save error remains in the response panel. The patient card and details continue to show the original
+   appointment, and the saved JSON still contains the original visit.
 1. Restore write access. Run `delete 1`, then `y`.
    Expected: Deletion succeeds, both the list and details panel are empty, and the saved JSON has no patients.
 1. Repeat the setup, make the file read-only, then run `delete 1` and `y`.
-   Expected: A save error appears, but the deleted patient's details are cleared with the in-memory list. Restore
-   write access before continuing.
+   Expected: A save error appears, and the patient remains in both the list and details panel. Restore write access
+   before continuing.
 
 `MainWindowSaveFailureTest` automates the command-entry, display, and persistence assertions with injected
 permission and I/O failures, including `add`, `edit`, confirmed `prev`, deletion, clearing, and unchanged details
@@ -1901,7 +1903,7 @@ nonempty notes, and record the selected patient's existing details before editin
 1. Run `edit 1 t/friend t/colleague`, then `edit 1 t/`. Expect tags to be replaced, then cleared;
    the visit date/time and notes remain unchanged.
 1. Show a filtered or sorted list with a different first patient, then run `edit 1 note/Review medication`.
-   Expect that displayed patient to be edited, followed by the full list in stored order.
+   Expect that displayed patient to be edited while the filter or sort order remains active.
 1. With patients `Alex Tan` and `Betsy Crowe` using different phone numbers, rename Betsy to `Alex Tan`. Expect a
    confirmation prompt and no immediate change. Enter `y`; expect both records to use the name `Alex Tan`.
 1. Repeat the rename using `alex   tan`. Expect the same confirmation prompt because the normalized name matches.
@@ -1969,19 +1971,19 @@ full unused `d/M/yyyy HHmm` value that preserves `P0 < P1 < P2 < actual now < F1
 
 1. Run `find n/Nextalpha Nextbeta`, then `sort date` again. Run `view 2`, followed by
    `next 2 27/10/2026 0900` (the illustration's `next 2 F1`). Expect Nextalpha's current datetime to become
-   `27/10/2026 0900`, retaining all other fields, and the full list to return in stored order: Sentinel, Nextalpha,
-   Nextbeta. Success requests saving. Run `find n/Nextalpha` again, then `view 1`, to refresh its details. Close Doc
-   and inspect the JSON: expect current `27/10/2026 0900` and previous dates `[25/10/2026 0900]` in stored order.
+   `27/10/2026 0900`, retaining all other fields and the filtered, sorted Nextalpha/Nextbeta list. Success requests
+   saving and refreshes Nextalpha's details. Close Doc and inspect the JSON: expect current `27/10/2026 0900` and
+   previous dates `[25/10/2026 0900]` in stored order.
 
 1. Reopen Doc, run `find n/Nextalpha`, then immediately try `next 1 28/10/2026 0900` (the illustration's `F2`).<br>
    Expect the future-current-visit error advising `edit`, with record, saved file, and list unchanged. Run
-   `edit 1 vd/25/10/2026 1000` (the illustration's `P2`), re-run `find n/Nextalpha`, then submit
-   `next   1   28/10/2026 0900`. Expect repeated spaces to be accepted and the full list to return. Inspect the JSON
-   after closing Doc: expect current `28/10/2026 0900` and previous dates
+   `edit 1 vd/25/10/2026 1000` (the illustration's `P2`), then submit `next   1   28/10/2026 0900` without finding
+   Nextalpha again. Expect repeated spaces to be accepted and the one-patient filter to remain active. Inspect the
+   JSON after closing Doc: expect current `28/10/2026 0900` and previous dates
    `[25/10/2026 0900, 25/10/2026 1000]`, in that order. The edit does not append the replaced `27/10/2026 0900`.
 
 1. Reopen Doc, run `find n/Nextbeta`, then `edit 1 vd/25/10/2026 1100` (the illustration's `P3`). Run
-   `find n/Nextbeta` again before `next 1 27/10/2026 0900`, since the successful edit resets the list.<br>
+   `next 1 27/10/2026 0900` directly, since the successful edit preserves the one-patient filter.<br>
    Expect Nextbeta to change, retaining empty email, notes, and tags. Its previous dates contain
    `[25/10/2026 1100]`.
 
@@ -2040,7 +2042,8 @@ at `28/10/2026 0900` (`F2`) with history `[25/10/2026 0900, 25/10/2026 1000]` (`
 `27/10/2026 0900` (`F1`) with history `[25/10/2026 1100]` (`[P3]`). Restore this state before repeating an
 independent rollback variation. On another execution date, substitute the full datetime values from the common fixture
 table. Choose another globally unused future datetime for `F4`.
-Find the patient again after each successful mutation, since success restores the full list in stored order.
+Keep using the preserved filtered or sorted context after each successful mutation, accounting for any natural move
+or disappearance caused by the updated visit date.
 Record `all/Penicillin; latex alc/Does not drink smk/former` before rollback and check that all three fields
 remain unchanged after each `prev`, including after restarting Doc.
 For every valid `prev`, verify that the first command only shows the confirmation prompt and leaves the record,
@@ -2054,7 +2057,7 @@ command.
    and the invalid-index error for `prev 2`. Verify that patient data, the saved JSON, filtered list, and
    displayed details remain unchanged.
 1. Run `edit 1 vd/30/10/2026 0900 p/84567890 e/updated@example.com a/30 Updated Road all/Penicillin; latex alc/Does not drink smk/former note/Updated before rollback t/followup dob/15/6/1990 bt/A+ ec/Mary Tan, 91234567`,
-   then `find n/Nextalpha`, `prev 1`, and `y`.<br>
+   then `prev 1` and `y` without finding Nextalpha again.<br>
    Expect the prompt before confirmation and success even though the replacement datetime is in the future. Verify that feedback identifies `P2` as restored and the replacement datetime
    as discarded, including the time for both. Find and view the patient again: current is `P2`, previous
    dates are `[P1]`, and the updated phone, email, address, note, tags, date of birth, blood type, and emergency
@@ -2064,8 +2067,9 @@ command.
    Expect current `F2` and previous dates `[P1, P2]`. Rollback did not retain either discarded future datetime.
 1. Run `find n/Nextalpha Nextbeta`, then `sort date 1/1/2000`.<br>
    Expect Nextbeta at `F1` to be index 1 and Nextalpha at `F2` to be index 2. Run `view 2`, then `prev 2`, and `y`.
-   Expect the prompt to identify Nextalpha and then the patient to change with the full list returning in stored order. The right-hand details remain as last
-   viewed until another `view`. Find and view Nextalpha again: current is `P2`, previous dates are `[P1]`.
+   Expect the prompt to identify Nextalpha and then the patient to move to index 1 as the preserved date sort
+   reevaluates its restored `P2` visit. The right-hand details refresh automatically: current is `P2`, previous dates
+   are `[P1]`.
    Find and view Nextbeta separately: its record remains unchanged at `F1` with previous dates `[P3]`.
    Run `find n/Nextalpha` and `view 1` before continuing.
 1. With Nextalpha at `P2` and previous dates `[P1]`, run `find n/Nextalpha`, then start a fresh `prev 1` request
@@ -2132,8 +2136,8 @@ Replace the placeholders with full `d/M/yyyy HHmm` datetimes before submitting c
    | `TODAY_LATE` | `Today`, including when the time is still in the future. |
    | `TOMORROW` | `Upcoming`. |
 
-   The successful edit restores the full list; finding the test patient again ensures the correct displayed index.
-   Details refresh only when `view` runs. Verify that the label does not appear beside previous dates or in JSON.
+   The successful edit preserves the one-patient filter and refreshes the details automatically. Verify that the label
+   does not appear beside previous dates or in JSON.
 1. While only Calendarcheck is displayed, run `sort date 1/1/2000`, then `view 1`.<br>
    Expect the label to remain based on today's local date, independently of the chosen sort cutoff.
 1. Close and reopen Doc, run `find n/Calendarcheck`, and view it again.<br>

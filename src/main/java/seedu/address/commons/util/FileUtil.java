@@ -1,54 +1,63 @@
 package seedu.address.commons.util;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 /**
- * Writes and reads files
+ * Writes and reads files.
  */
 public class FileUtil {
 
-    private static final String CHARSET = "UTF-8";
-
-    /**
-     * Creates a file if it does not exist along with its missing parent directories.
-     * @throws IOException if the file or directory cannot be created.
-     */
-    public static void createIfMissing(Path file) throws IOException {
-        if (Files.exists(file)) {
-            return;
-        }
-
-        createParentDirsOfFile(file);
-
-        Files.createFile(file);
+    /** Writes content to a specified path. */
+    @FunctionalInterface
+    interface ContentWriter {
+        /**
+         * Writes {@code contents} to {@code file}.
+         *
+         * @throws IOException If the content cannot be written.
+         */
+        void write(Path file, byte[] contents) throws IOException;
     }
 
     /**
-     * Creates parent directories of file if it has a parent directory
-     */
-    private static void createParentDirsOfFile(Path file) throws IOException {
-        Path parentDir = file.getParent();
-
-        if (parentDir != null) {
-            Files.createDirectories(parentDir);
-        }
-    }
-
-    /**
-     * Assumes file exists
+     * Reads the contents of an existing file.
+     *
+     * @throws IOException If the file cannot be read.
      */
     public static String readFromFile(Path file) throws IOException {
-        return new String(Files.readAllBytes(file), CHARSET);
+        return Files.readString(file, StandardCharsets.UTF_8);
     }
 
     /**
-     * Writes given string to a file.
-     * Will create the file if it does not exist yet.
+     * Writes the given string without exposing a partially written destination file.
+     * Creates the destination file and its parent directories if they do not exist.
+     *
+     * @throws IOException If the content cannot be written or the destination cannot be replaced atomically.
      */
     public static void writeToFile(Path file, String content) throws IOException {
-        Files.write(file, content.getBytes(CHARSET));
+        writeToFile(file, content, (temporaryFile, bytes) -> Files.write(temporaryFile, bytes));
+    }
+
+    /**
+     * Writes the given string using {@code contentWriter} before replacing the destination file.
+     * This overload allows tests to simulate a failure during the temporary-file write.
+     */
+    static void writeToFile(Path file, String content, ContentWriter contentWriter) throws IOException {
+        Path targetFile = file.toAbsolutePath();
+        Path parentDirectory = targetFile.getParent();
+        Files.createDirectories(parentDirectory);
+
+        Path temporaryFile = Files.createTempFile(parentDirectory, "tmp-" + targetFile.getFileName(), ".tmp");
+        try {
+            contentWriter.write(temporaryFile, content.getBytes(StandardCharsets.UTF_8));
+            Files.move(temporaryFile, targetFile, StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING);
+        } finally {
+            Files.deleteIfExists(temporaryFile);
+        }
     }
 
 }

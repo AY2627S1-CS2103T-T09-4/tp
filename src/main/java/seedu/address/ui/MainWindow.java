@@ -23,7 +23,6 @@ import seedu.address.commons.core.LogsCenter;
 import seedu.address.logic.Logic;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.exceptions.CommandException;
-import seedu.address.logic.commands.exceptions.CommandSaveException;
 import seedu.address.logic.parser.exceptions.ParseException;
 
 /**
@@ -290,9 +289,6 @@ public class MainWindow extends UiPart<Stage> {
             return commandResult;
         } catch (CommandException e) {
             resultDisplay.setFeedbackToUser(e.getMessage());
-            if (e instanceof CommandSaveException saveException) {
-                updatePatientDetailsPanel(saveException.getCommandResult());
-            }
             e.getPersonToView().ifPresent(patientDetailsPanel::setPerson);
             logger.info("An error occurred while executing command: " + commandText
                     + "; reason: " + e.getMessage()
@@ -305,7 +301,7 @@ public class MainWindow extends UiPart<Stage> {
         }
     }
 
-    /** Applies the details-panel action after an in-memory operation, even if saving it failed. */
+    /** Applies the details-panel action carried by a successful command result. */
     private void updatePatientDetailsPanel(CommandResult commandResult) {
         switch (commandResult.getDetailsPanelAction()) {
             case KEEP:
