@@ -92,7 +92,8 @@ patient list, and patient-details `ScrollPane` as four focus sections, routing b
 the empty details panel remains reachable and descendants such as details labels or scrollbar controls do not become
 additional stops. The currently focused section receives a light-gray, 2-pixel outline; every section reserves the same
 border space even when unfocused. The menu bar is not part of this cycle. The details panel handles its six scrolling
-keys locally, so command-history and patient-list arrow-key behavior remains scoped to those controls.
+keys locally, so command-history and patient-list arrow-key behavior remains scoped to those controls. The patient list
+scrolls only as needed to keep the selected patient card fully visible.
 
 `MainWindow` manages a separate `HelpWindow` for offline command discovery and access to the full User Guide.
 See [Help window](#help-window) for its layout, lifecycle, and external-action boundaries.
@@ -1466,9 +1467,11 @@ the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Pa
    cycle. Press each scrolling key separately.<br>
    Expected: No key changes the blank panel, and Tab/Shift+Tab still move between all four sections.
 1. **Existing shortcuts:** Focus the command box and confirm <kbd>Up</kbd> and <kbd>Down</kbd> still recall command
-   history. Focus the patient list and confirm its arrow-key navigation still works. Leave unfinished text in the
-   command box, traverse with Tab and Shift+Tab, and confirm the text and displayed patient do not change. Repeat F1,
-   Help, and mouse-scrolling checks; their existing behavior should be unchanged.
+   history. Focus the patient list and move the selection down through at least four patients, then back up. Confirm
+   that each selected patient card remains fully visible and the list does not jump when the selected card is already
+   visible. Leave unfinished text in the command box, traverse with Tab and Shift+Tab, and confirm the text and
+   displayed patient do not change. Repeat F1, Help, and mouse-scrolling checks; their existing behavior should be
+   unchanged.
 
 ### Dates of birth
 

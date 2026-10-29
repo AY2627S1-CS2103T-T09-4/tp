@@ -23,6 +23,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
+import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
@@ -191,6 +192,48 @@ public class MainWindowTest {
             } finally {
                 stage.close();
             }
+        });
+    }
+
+    @Test
+    public void patientList_arrowNavigation_keepsSelectedPatientVisible() {
+        ObservableList<Person> persons = FXCollections.observableArrayList();
+        persons.add(new PersonBuilder().withName("Patient 1").build());
+        for (int i = 2; i <= 4; i++) {
+            persons.add(new PersonBuilder().withName("Patient " + i)
+                    .withNote("A long note that makes this patient card tall. ".repeat(10)).build());
+        }
+        Stage[] stageHolder = new Stage[1];
+        ListView<?>[] personListViewHolder = new ListView<?>[1];
+
+        runOnFxThread(() -> {
+            TestLogic logic = new TestLogic(persons.get(0), persons);
+            Stage stage = new Stage();
+            stageHolder[0] = stage;
+            MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH, url -> { });
+            mainWindow.fillInnerParts();
+            mainWindow.show();
+            Scene scene = stage.getScene();
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            ListView<?> personListView = (ListView<?>) scene.lookup("#personListView");
+            personListViewHolder[0] = personListView;
+            personListView.getSelectionModel().select(0);
+            personListView.requestFocus();
+        });
+
+        for (int i = 0; i < persons.size() - 1; i++) {
+            runOnFxThread(() -> fireKeyPressed(personListViewHolder[0], KeyCode.DOWN));
+            waitForNextPulse();
+            int navigationStep = i;
+            runOnFxThread(() -> assertSelectedPatientFullyVisible(personListViewHolder[0], navigationStep >= 1));
+        }
+
+        runOnFxThread(() -> {
+            ListView<?> personListView = personListViewHolder[0];
+            assertEquals(persons.size() - 1, personListView.getSelectionModel().getSelectedIndex());
+            stageHolder[0].close();
         });
     }
 
@@ -429,6 +472,26 @@ public class MainWindowTest {
         assertNotNull(focusOwner);
         focusOwner.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.TAB,
                 isShiftDown, false, false, false));
+    }
+
+    private static void fireKeyPressed(Node target, KeyCode keyCode) {
+        target.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", keyCode,
+                false, false, false, false));
+    }
+
+    private static void assertSelectedPatientFullyVisible(ListView<?> personListView, boolean alignBottom) {
+        ListCell<?> selectedCell = getSelectedListCell(personListView);
+        Node selectedPatient = selectedCell.getGraphic();
+        Bounds selectedBounds = selectedPatient.localToScene(selectedPatient.getBoundsInLocal());
+        Bounds viewportBounds = personListView.localToScene(personListView.getBoundsInLocal());
+        assertTrue(selectedBounds.getMinY() >= viewportBounds.getMinY(),
+                "The selected patient should start within the visible list viewport");
+        assertTrue(selectedBounds.getMaxY() <= viewportBounds.getMaxY(),
+                "The selected patient should be fully visible in the list viewport");
+        if (alignBottom) {
+            assertEquals(viewportBounds.getMaxY(), selectedBounds.getMaxY(), 3.0,
+                    "A clipped downward selection should settle at the viewport bottom");
+        }
     }
 
     private static void submitCommand(TextField commandTextField, String commandText) {

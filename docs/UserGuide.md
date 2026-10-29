@@ -120,6 +120,8 @@ With the patient-details panel focused, use <kbd>Up</kbd> and <kbd>Down</kbd> to
 <kbd>End</kbd> to move to the top and bottom. These scrolling keys have no effect when the panel is empty or all
 details already fit. <kbd>Up</kbd> and <kbd>Down</kbd> keep their existing command-history behavior in the command box
 and patient-list navigation behavior in the patient list.
+In the patient list, Up and Down move the selection and scroll only as needed to keep the selected patient card fully
+visible.
 
 After every successful `view INDEX`, the patient-details panel returns to the top, including when viewing another
 patient or viewing the same patient again. Entering `view INDEX` in the command box leaves the cursor in the command box.
