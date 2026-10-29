@@ -189,6 +189,7 @@ public class EditCommandTest {
         String expectedMessage = String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson));
 
         Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        showPersonAtIndex(expectedModel, INDEX_FIRST_PERSON);
         expectedModel.setPerson(model.getFilteredPersonList().get(0), editedPerson);
 
         assertCommandSuccess(editCommand, model,
@@ -386,11 +387,13 @@ public class EditCommandTest {
         Person storedSecondPerson = model.getAddressBook().getPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
         Person earlierPerson = new PersonBuilder(storedSecondPerson).withVisitDate(VALID_VISIT_DATE_BOB).build();
         model.setPerson(storedSecondPerson, earlierPerson);
-        model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
+        Comparator<Person> visitDateComparator = Comparator.comparing(person -> person.getVisitDate().value);
+        model.sortFilteredPersonList(visitDateComparator);
         assertEquals(earlierPerson, model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased()));
 
         Person editedPerson = new PersonBuilder(earlierPerson).withVisitDate(VALID_VISIT_DATE_AMY).build();
         Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
+        expectedModel.sortFilteredPersonList(visitDateComparator);
         expectedModel.setPerson(earlierPerson, editedPerson);
         EditCommand command = new EditCommand(INDEX_FIRST_PERSON,
                 new EditPersonDescriptorBuilder().withVisitDate(VALID_VISIT_DATE_AMY).build());
@@ -491,18 +494,18 @@ public class EditCommandTest {
     }
 
     @Test
-    public void execute_noteFilteredList_editsDisplayedPersonAndRestoresFullList() {
+    public void execute_noteFilteredList_editsDisplayedPersonAndPreservesFilter() {
         Person original = setExistingNoteAndPreviousDates(INDEX_SECOND_PERSON);
         showPersonAtIndex(model, INDEX_SECOND_PERSON);
         Person editedPerson = new PersonBuilder(original).withNote(REPLACEMENT_NOTE).build();
 
         assertEditSuccess(INDEX_FIRST_PERSON, original, editedPerson,
                 new EditPersonDescriptorBuilder().withNote(REPLACEMENT_NOTE).build());
-        assertEquals(editedPerson, model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased()));
+        assertEquals(List.of(editedPerson), model.getFilteredPersonList());
     }
 
     @Test
-    public void execute_noteSortedList_editsDisplayedPersonAndRestoresStoredOrder() {
+    public void execute_noteSortedList_editsDisplayedPersonAndPreservesSortOrder() {
         Person original = setExistingNoteAndPreviousDates(INDEX_SECOND_PERSON);
         Person earlierPerson = new PersonBuilder(original).withVisitDate(VALID_VISIT_DATE_BOB).build();
         model.setPerson(original, earlierPerson);
@@ -512,7 +515,7 @@ public class EditCommandTest {
 
         assertEditSuccess(INDEX_FIRST_PERSON, earlierPerson, editedPerson,
                 new EditPersonDescriptorBuilder().withNote(REPLACEMENT_NOTE).build());
-        assertEquals(editedPerson, model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased()));
+        assertEquals(editedPerson, model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased()));
     }
 
     @Test
@@ -909,18 +912,23 @@ public class EditCommandTest {
     }
 
     /**
-     * Checks the complete edited record, success feedback, and restoration of the full displayed list.
+     * Checks the complete edited record and success feedback.
      */
     private void assertEditSuccess(Index displayedIndex, Person original, Person editedPerson,
             EditPersonDescriptor descriptor) {
-        Model expectedModel = new ModelManager(model.getAddressBook(), new UserPrefs());
-        expectedModel.setPerson(original, editedPerson);
+        AddressBook expectedAddressBook = new AddressBook(model.getAddressBook());
+        expectedAddressBook.setPerson(original, editedPerson);
         EditCommand command = new EditCommand(displayedIndex, descriptor);
 
-        assertCommandSuccess(command, model,
-                CommandResult.showUpdatedPerson(
-                        String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
-                        editedPerson),
-                expectedModel);
+        try {
+            CommandResult result = command.execute(model);
+            CommandResult expectedResult = CommandResult.showUpdatedPerson(
+                    String.format(EditCommand.MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)),
+                    editedPerson);
+            assertEquals(expectedResult, result);
+            assertEquals(expectedAddressBook, model.getAddressBook());
+        } catch (CommandException e) {
+            throw new AssertionError("Edit command should execute successfully.", e);
+        }
     }
 }

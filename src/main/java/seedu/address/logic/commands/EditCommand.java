@@ -14,7 +14,6 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_SMOKING_STATUS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_VISIT_DATE;
-import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -126,7 +125,7 @@ public class EditCommand extends Command {
 
     /**
      * {@inheritDoc}
-     * Replaces the person at the displayed index and restores the full list in stored order.
+     * Replaces the person at the displayed index while preserving the current list filter and sort order.
      */
     @Override
     public CommandResult execute(Model model) throws CommandException {
@@ -208,7 +207,6 @@ public class EditCommand extends Command {
 
         model.setPerson(personToEdit, editedPerson);
         logOptionalFieldUpdates();
-        model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
         return CommandResult.showUpdatedPerson(
                 String.format(MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)), editedPerson);
     }
