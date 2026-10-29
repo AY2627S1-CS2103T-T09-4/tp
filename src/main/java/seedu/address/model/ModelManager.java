@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 
@@ -19,6 +20,11 @@ import seedu.address.model.person.Person;
  */
 public class ModelManager implements Model {
     private static final Logger logger = LogsCenter.getLogger(ModelManager.class);
+
+    /** Snapshot used to restore patient data together with the active filter and sort. */
+    private record ModelManagerState(List<Person> persons, Predicate<? super Person> predicate,
+            Comparator<? super Person> comparator) implements ModelState {
+    }
 
     private final AddressBook addressBook;
     private final UserPrefs userPrefs;
@@ -59,6 +65,24 @@ public class ModelManager implements Model {
     public void setGuiSettings(GuiSettings guiSettings) {
         requireNonNull(guiSettings);
         userPrefs.setGuiSettings(guiSettings);
+    }
+
+    @Override
+    public ModelState createStateSnapshot() {
+        return new ModelManagerState(List.copyOf(addressBook.getPersonList()), filteredPersons.getPredicate(),
+                sortedPersons.getComparator());
+    }
+
+    @Override
+    public void restoreStateSnapshot(ModelState modelState) {
+        requireNonNull(modelState);
+        if (!(modelState instanceof ModelManagerState modelManagerState)) {
+            throw new IllegalArgumentException("Snapshot was created by an incompatible model implementation");
+        }
+
+        addressBook.setPersons(modelManagerState.persons());
+        filteredPersons.setPredicate(modelManagerState.predicate());
+        sortedPersons.setComparator(modelManagerState.comparator());
     }
 
     //=========== AddressBook ================================================================================

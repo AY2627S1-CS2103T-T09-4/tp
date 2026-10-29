@@ -57,13 +57,14 @@ public class LogicManager implements Logic {
     @Override
     public CommandResult execute(String commandText) throws CommandException, ParseException {
         logger.info("----------------[USER COMMAND][" + commandText + "]");
+        Model.ModelState modelState = model.createStateSnapshot();
 
         CommandResult commandResult = hasPendingInputRequest()
                 ? handleRequestedInput(commandText)
                 : executeParsedCommand(commandText);
 
         if (commandResult.shouldSaveAddressBook()) {
-            saveAddressBook();
+            saveAddressBook(modelState);
         }
 
         pendingInputRequest = commandResult.getInputRequest().orElse(null);
@@ -100,15 +101,17 @@ public class LogicManager implements Logic {
     }
 
     /**
-     * Saves the current address book state and converts storage failures to command failures.
+     * Saves the current address book state and restores the previous model state if storage fails.
      */
-    private void saveAddressBook() throws CommandException {
+    private void saveAddressBook(Model.ModelState modelState) throws CommandException {
         try {
             storage.saveAddressBook(model.getAddressBook());
         } catch (AccessDeniedException e) {
+            model.restoreStateSnapshot(modelState);
             logger.log(Level.WARNING, "Patient data could not be saved: access denied", e);
             throw new CommandException(String.format(FILE_OPS_PERMISSION_ERROR_FORMAT, e.getMessage()), e);
         } catch (IOException ioe) {
+            model.restoreStateSnapshot(modelState);
             logger.log(Level.WARNING, "Patient data could not be saved: I/O failure", ioe);
             throw new CommandException(String.format(FILE_OPS_ERROR_FORMAT, ioe.getMessage()), ioe);
         }

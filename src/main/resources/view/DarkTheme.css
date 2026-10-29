@@ -147,6 +147,12 @@
     -fx-padding: 0 0 0 0;
 }
 
+.list-cell #cardPane {
+    /* Keep row heights unchanged when the selection border appears. */
+    -fx-border-color: transparent;
+    -fx-border-width: 1;
+}
+
 .list-cell:filled:even {
     -fx-background-color: #3c3e3f;
 }
@@ -204,6 +210,15 @@
      -fx-background-color: derive(#1d1d1d, 20%);
      -fx-border-color: derive(#1d1d1d, 10%);
      -fx-border-top-width: 1px;
+}
+
+.keyboard-focus-section {
+     -fx-border-color: transparent;
+     -fx-border-width: 2px;
+}
+
+.keyboard-focus-section:keyboard-focused {
+     -fx-border-color: #909090;
 }
 
 .status-bar {

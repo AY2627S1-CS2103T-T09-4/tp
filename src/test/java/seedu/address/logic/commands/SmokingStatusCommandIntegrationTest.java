@@ -6,8 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_SMOKING_STATUS;
 import static seedu.address.testutil.Assert.assertThrows;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -24,12 +28,14 @@ import seedu.address.model.ModelManager;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.SmokingStatus;
 import seedu.address.storage.JsonAddressBookStorage;
-import seedu.address.storage.JsonUserPrefsStorage;
-import seedu.address.storage.StorageManager;
+import seedu.address.testutil.LogicManagerIntegrationFixture;
 import seedu.address.testutil.PersonBuilder;
 import seedu.address.testutil.PersonUtil;
 
 public class SmokingStatusCommandIntegrationTest {
+
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-21T04:00:00Z"),
+            ZoneId.of("Asia/Singapore"));
 
     private static final String ADD_PATIENT = "add n/Amy Bee dob/15/6/1990 bt/A+ alc/Occasional drinking "
             + "p/85355255 ec/Mary Tan, 91234567 e/amy@gmail.com a/123, Jurong West Ave 6, #08-111 "
@@ -40,55 +46,56 @@ public class SmokingStatusCommandIntegrationTest {
 
     private Model model;
     private LogicManager logic;
+    private LogicManagerIntegrationFixture fixture;
     private JsonAddressBookStorage storage;
 
     @BeforeEach
-    public void setUp() {
+    public void setUp() throws IOException {
         model = new ModelManager();
-        storage = new JsonAddressBookStorage(testFolder.resolve("patients.json"));
-        logic = new LogicManager(model, new StorageManager(storage,
-                new JsonUserPrefsStorage(testFolder.resolve("preferences.json"))));
+        fixture = new LogicManagerIntegrationFixture(model, testFolder, FIXED_CLOCK);
+        logic = fixture.getLogic();
+        storage = fixture.getAddressBookStorage();
     }
 
     @Test
     public void execute_addEditViewAndNext_preservesCompleteRecord() throws Exception {
         logic.execute(ADD_PATIENT + " smk/  FoRmEr  ");
         Person original = expectedPatient().withSmokingStatus("former").build();
-        assertStoredPatient(original);
+        fixture.assertPersistedPatients(original);
         assertEquals(original, logic.execute("view 1").getPersonToView().orElseThrow());
 
         logic.execute("edit 1 smk/current n/Amy Tan");
         Person edited = new PersonBuilder(original).withName("Amy Tan").withSmokingStatus("current").build();
-        assertStoredPatient(edited);
+        fixture.assertPersistedPatients(edited);
         logic.execute("edit 1 alc/Does not drink");
         logic.execute("next 1 1/1/2099 1000");
         Person scheduled = new PersonBuilder(edited).withAlcoholHistory("Does not drink")
                 .withPreviousVisitDates("1/1/2000 1000").withVisitDate("1/1/2099 1000").build();
-        assertStoredPatient(scheduled);
+        fixture.assertPersistedPatients(scheduled);
         assertEquals(scheduled, logic.execute("view 1").getPersonToView().orElseThrow());
         logic.execute("edit 1 smk/");
-        assertStoredPatient(new PersonBuilder(scheduled).withSmokingStatus("").build());
+        fixture.assertPersistedPatients(new PersonBuilder(scheduled).withSmokingStatus("").build());
     }
 
     @Test
     public void execute_blankEdit_clearsStatusWhileUnknownRemainsRecorded() throws Exception {
         logic.execute(ADD_PATIENT + " smk/unknown");
-        assertStoredPatient(expectedPatient().withSmokingStatus("unknown").build());
+        fixture.assertPersistedPatients(expectedPatient().withSmokingStatus("unknown").build());
         for (String blank : List.of("", "   ", " \t ", "\u2003")) {
             logic.execute("edit 1 smk/unknown");
             logic.execute("edit 1 smk/" + blank);
-            assertStoredPatient(expectedPatient().build());
+            fixture.assertPersistedPatients(expectedPatient().build());
         }
         logic.execute("edit 1 smk/");
-        assertStoredPatient(expectedPatient().build());
+        fixture.assertPersistedPatients(expectedPatient().build());
         logic.execute("edit 1 smk/never");
-        assertStoredPatient(expectedPatient().withSmokingStatus("never").build());
+        fixture.assertPersistedPatients(expectedPatient().withSmokingStatus("never").build());
     }
 
     @Test
     public void execute_omittedOrLegacyStatus_loadsAsUnrecorded() throws Exception {
         logic.execute(ADD_PATIENT);
-        assertStoredPatient(expectedPatient().build());
+        fixture.assertPersistedPatients(expectedPatient().build());
         logic.execute("edit 1 smk/unknown");
         String json = Files.readString(storage.getAddressBookFilePath());
         String legacyJson = json.replaceAll("(?m)^\\s*\"smokingStatus\"[^\\r\\n]*\\R", "");
@@ -105,36 +112,32 @@ public class SmokingStatusCommandIntegrationTest {
     @Test
     public void execute_unsupportedOrRepeatedStatus_leavesPatientAndFileUnchanged() throws Exception {
         logic.execute(ADD_PATIENT + " smk/former");
-        String originalJson = Files.readString(storage.getAddressBookFilePath());
         for (String invalid : List.of("daily", "yes", "no", "never smoker", "unrecorded")) {
-            assertThrows(ParseException.class, SmokingStatus.MESSAGE_CONSTRAINTS, () ->
-                    logic.execute("edit 1 smk/" + invalid));
-            assertThrows(ParseException.class,
-                    String.format(AddCommand.MESSAGE_NOT_ADDED, SmokingStatus.MESSAGE_CONSTRAINTS), () ->
-                    logic.execute(ADD_PATIENT + " smk/" + invalid));
+            fixture.assertRejectedCommand("edit 1 smk/" + invalid, ParseException.class,
+                    SmokingStatus.MESSAGE_CONSTRAINTS);
+            fixture.assertRejectedCommand(ADD_PATIENT + " smk/" + invalid, ParseException.class,
+                    String.format(AddCommand.MESSAGE_NOT_ADDED, SmokingStatus.MESSAGE_CONSTRAINTS));
         }
         for (String blank : List.of("", "   ", " \t ", "\u2003")) {
-            assertThrows(ParseException.class,
-                    String.format(AddCommand.MESSAGE_NOT_ADDED, SmokingStatus.MESSAGE_CONSTRAINTS), () ->
-                    logic.execute(ADD_PATIENT + " smk/" + blank));
+            fixture.assertRejectedCommand(ADD_PATIENT + " smk/" + blank, ParseException.class,
+                    String.format(AddCommand.MESSAGE_NOT_ADDED, SmokingStatus.MESSAGE_CONSTRAINTS));
         }
         String duplicateMessage = Messages.getErrorMessageForDuplicatePrefixes(PREFIX_SMOKING_STATUS);
         for (String repeated : List.of("smk/ smk/", "smk/former smk/", "smk/ smk/current", "smk/never smk/never")) {
-            assertThrows(ParseException.class, duplicateMessage, () -> logic.execute("edit 1 " + repeated));
-            assertThrows(ParseException.class, String.format(AddCommand.MESSAGE_NOT_ADDED, duplicateMessage), () ->
-                    logic.execute(ADD_PATIENT + " " + repeated));
+            fixture.assertRejectedCommand("edit 1 " + repeated, ParseException.class, duplicateMessage);
+            fixture.assertRejectedCommand(ADD_PATIENT + " " + repeated, ParseException.class,
+                    String.format(AddCommand.MESSAGE_NOT_ADDED, duplicateMessage));
         }
-        assertStoredPatient(expectedPatient().withSmokingStatus("former").build());
-        assertEquals(originalJson, Files.readString(storage.getAddressBookFilePath()));
+        fixture.assertPersistedPatients(expectedPatient().withSmokingStatus("former").build());
     }
 
     @Test
     public void execute_allStatusesAndReorderedPrefixes_normalizesAndPersistsStatus() throws Exception {
         logic.execute("add smk/CURRENT " + ADD_PATIENT.substring("add ".length()));
-        assertStoredPatient(expectedPatient().withSmokingStatus("current").build());
+        fixture.assertPersistedPatients(expectedPatient().withSmokingStatus("current").build());
         for (String status : List.of(" NEVER ", "FoRmEr", " CURRENT\t", "UNKNOWN")) {
             logic.execute("edit 1 alc/Does not drink smk/" + status + " bt/O-");
-            assertStoredPatient(expectedPatient().withAlcoholHistory("Does not drink").withBloodType("O-")
+            fixture.assertPersistedPatients(expectedPatient().withAlcoholHistory("Does not drink").withBloodType("O-")
                     .withSmokingStatus(status).build());
         }
     }
@@ -188,10 +191,5 @@ public class SmokingStatusCommandIntegrationTest {
         return new PersonBuilder().withDateOfBirth("15/6/1990").withBloodType("A+")
                 .withAlcoholHistory("Occasional drinking").withVisitDate("1/1/2000 1000")
                 .withNote("Review medication").withEmergencyContact("Mary Tan, 91234567").withTags("family");
-    }
-
-    private void assertStoredPatient(Person expected) throws Exception {
-        assertEquals(List.of(expected), model.getAddressBook().getPersonList());
-        assertEquals(List.of(expected), storage.readAddressBook().orElseThrow().getPersonList());
     }
 }

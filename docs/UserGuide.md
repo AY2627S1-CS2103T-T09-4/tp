@@ -63,7 +63,7 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
   For example, `[t/TAG]... ` may be omitted, or written as `t/friend` or `t/friend t/family`.
 
 * Prefixed fields can be in any order after any required positional arguments.<br>
-  For example, if the command specifies `n/NAME p/PHONE_NUMBER`, `p/PHONE_NUMBER n/NAME` is also acceptable.
+  For example, if the command specifies `n/NAME p/PHONE`, `p/PHONE n/NAME` is also acceptable.
 
 * Prefixes are recognized at the start of the arguments or after whitespace, including spaces, tabs, and line breaks.
   A prefix-looking token separated by whitespace starts a new field; there is no quoting or escaping for literal
@@ -110,6 +110,25 @@ shows the updated patient and refreshes the record and its calendar label. Run `
 When `next` moves an appointment to a different day that already has seven or more current appointments, Doc asks for
 confirmation. Patients hidden by filtering still count, but previous visit history does not. Moving the appointment to
 a later time on the same day does not trigger this warning.
+
+### Navigating the main window by keyboard
+
+When the main window is active, press <kbd>Tab</kbd> to move through the four main sections in this order: command box,
+response panel, patient list, and patient-details panel. Press <kbd>Shift</kbd>+<kbd>Tab</kbd> to move in reverse order. Both directions
+wrap around. A visible light-gray outline surrounds the section that currently contains keyboard focus: command box,
+response panel, patient list, or patient-details panel. The outline remains visible for empty sections; labels and the
+patient-details scrollbar are not separate Tab destinations.
+
+With the patient-details panel focused, use <kbd>Up</kbd> and <kbd>Down</kbd> to scroll by a small increment,
+<kbd>Page Up</kbd> and <kbd>Page Down</kbd> to scroll by approximately one viewport, and <kbd>Home</kbd> and
+<kbd>End</kbd> to move to the top and bottom. These scrolling keys have no effect when the panel is empty or all
+details already fit. <kbd>Up</kbd> and <kbd>Down</kbd> keep their existing command-history behavior in the command box
+and patient-list navigation behavior in the patient list.
+In the patient list, Up and Down move the selection and scroll only as needed to keep the selected patient card fully
+visible.
+
+After every successful `view INDEX`, the patient-details panel returns to the top, including when viewing another
+patient or viewing the same patient again. Entering `view INDEX` in the command box leaves the cursor in the command box.
 
 ### Navigating command history
 
@@ -164,15 +183,16 @@ Typing `help` and pressing Enter answers that prompt instead of opening Help.
 
 Adds a patient record to Doc.
 
-Format: `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]... `
+Format: `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...`
 
-* `VISIT_DATE` must be a date and time in the format `d/M/yyyy HHmm`, e.g. `18/9/2026 1000`. Past dates are allowed.
+* `DATETIME` must be a date and time in the format `d/M/yyyy HHmm`, e.g. `18/9/2026 1000`. Past dates are allowed.
+  The year must be from `1900` to `2099`, so that a mistyped year such as `0026` or `2206` is caught.
   Extra spaces or tabs between the date and the time are accepted, e.g. `vd/18/9/2026   1000`.
 * Each current or previous visit date and time must be unique across patients. If another patient's visit record
   already uses the supplied date and time, including a patient hidden by filtering, the addition is rejected,
   the existing patient is shown in the patient details panel, and the app asks you to choose a different slot.
 * Date of birth, blood type, allergies, alcohol history, smoking status, `EMAIL`, `NOTES`, and the emergency contact are optional.
-* Use `p/PHONE_NUMBER` to record the patient's phone number. It must contain at least 3 digits, be at most 30
+* Use `p/PHONE` to record the patient's phone number. It must contain at least 3 digits, be at most 30
   characters long, and may include `+`, spaces, and dashes. Surrounding whitespace is trimmed.
 * Use `ec/[NAME, ]PHONE_NUMBER` to record one emergency contact, e.g. `ec/Mary Tan, 98765432`.
   The phone number is required; the name is optional. Use `ec/98765432` when the name is unknown.
@@ -207,11 +227,10 @@ Format: `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HIST
   Omitting `smk/` leaves the status unrecorded. Explicit `smk/unknown` records that the status is unknown;
   it is distinct from having no record. Blank values, unsupported statuses, and repeated `smk/` are rejected on add.
   The examples place `smk/` immediately after `alc/`; prefixes can still appear in any order.
-* On success, the app shows `Added patient` followed by the patient's name, phone number, email (if given), address,
-  and tags, with the visit date on the next line. The new patient appears in the list and its full record appears in
-  the patient details panel. For example:<br>
-  `Added patient John Tan; Phone: 91234567; Address: 123 Clementi Road; Tags: `<br>
-  `Visit date: 22/10/2026 1000`
+* On success, the app shows `Added patient` followed by the patient's recorded details: name, phone number, email,
+  address, visit date, any recorded health details and note, and tags. Details that were not given are left out.
+  The new patient appears in the list and its full record appears in the patient details panel. For example:<br>
+  `Added patient John Tan; Phone: 91234567; Address: 123 Clementi Road; Visit date: 22/10/2026 1000; Emergency contact: 98765432 (Mary Tan)`
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
 * A patient with the same normalized name and phone number as an existing patient is a duplicate and cannot be added.
 * If only the name matches an existing patient, the app shows the matching patient in the patient details panel and
@@ -359,7 +378,8 @@ Format: `view INDEX`
   They update when you run `view`; run it again after midnight or a date change to refresh the details.
   A visit later today shows `Today`; `next` still rejects it while its datetime is in the future.
 * A patient with no previous dates shows `No previous visit dates`. Scroll the details panel to read long records;
-  all previous dates are included.
+  all previous dates are included. See [Navigating the main window by keyboard](#navigating-the-main-window-by-keyboard)
+  for keyboard scrolling and focus navigation.
 * Viewing a patient does not change their stored details.
 * Recorded allergies appear first in `Medical profile` as `Allergies: Penicillin; latex`, so safety-critical
   information is easy to find. The row is hidden when allergy information is unrecorded.
@@ -386,7 +406,7 @@ Example:
 
 Edits an existing patient record in Doc.
 
-Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [p/PHONE] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`
+Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...`
 
 * Edits the patient at the specified `INDEX`. The index refers to the index number shown in the displayed patient
   list. The index **must be a positive integer** 1, 2, 3, ...
@@ -421,8 +441,8 @@ Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALC
   Use an empty `ec/` to clear the contact, e.g. `edit 1 ec/`. Whitespace-only values also clear it.
   Clearing an already-empty contact succeeds; repeated `ec/` prefixes are rejected.
 * To update the visit date and time, use `vd/` with the format `d/M/yyyy HHmm`
-  (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted. As with `add` and `next`, extra spaces
-  or tabs between the date and the time are accepted.
+  (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted. The year must be from `1900` to `2099`,
+  as for `add`. As with `add` and `next`, extra spaces or tabs between the date and the time are accepted.
 * The visit date and time can be edited by itself. Omitting `vd/` preserves the existing visit date and time.
 * Editing preserves any previous visit dates. The current datetime must remain strictly later than the latest
   previous datetime, when one exists.
@@ -441,6 +461,8 @@ Format: `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALC
 * Editing replaces the stored visit date and time; it does not append a visit-history entry.
   Use `edit ... vd/` to correct a missed or rescheduled appointment, or
   [next](#scheduling-the-next-visit-next) to schedule the following visit.
+* On success, the app shows `Edited person:` followed by the patient's updated details in the same form as `add`,
+  including the visit date and any recorded health details, so you can check the change.
 * After editing, the patient details panel automatically shows the updated record.
 * When editing tags, all of the patient's existing tags are removed; adding tags is not cumulative.
 * To remove all of a patient's tags, enter `t/` without a tag after it.
@@ -482,8 +504,9 @@ Format: `next INDEX DATETIME`
 
 * Use a positive `INDEX` from the currently displayed list, including results of `find` or `sort date`.
   `view` keeps that list and its indices unchanged.
-* Enter `DATETIME` as `d/M/yyyy HHmm`, with a four-digit 24-hour time. Spaces or tabs separate the arguments;
-  repeated and outer whitespace are accepted. Do not use `vd/`, quotation marks, or extra arguments.
+* Enter `DATETIME` as `d/M/yyyy HHmm`, with a four-digit 24-hour time and a year from `1900` to `2099`. Spaces or tabs
+  separate the arguments; repeated and outer whitespace are accepted. Do not use `vd/`, quotation marks, or extra
+  arguments.
 * The current visit must be at or before your computer's current local time at execution. If it is still in the
   future, use `edit ... vd/` to reschedule it.
 * The requested appointment must be strictly after that execution time; the current minute's start is rejected.
@@ -504,8 +527,8 @@ Format: `next INDEX DATETIME`
 * If no further visit is planned, leave the current date and time unchanged, even after it passes.
 * Success shows `Next visit scheduled for patient NAME: DATETIME`, saves the record, and automatically shows the
   updated patient in the details panel.
-* Validation errors preserve data and the displayed list. A save failure reports a storage error; the in-memory
-  appointment may already have changed.
+* Validation errors preserve data and the displayed list. A save failure reports a storage error and restores the
+  patient data and displayed list to their state before the command.
 
 Common errors:
 
@@ -559,8 +582,8 @@ Format: `prev INDEX`
 * A missing index shows usage. Invalid indices, including additional arguments, show the shared
   [index errors](#features) followed by usage. Rejected commands do not save changes.
 * A later `next` uses the restored state and still requires the current visit to have arrived or passed and the
-  requested datetime to be in the future. A save failure reports a storage error; the in-memory record may
-  already have changed.
+  requested datetime to be in the future. A save failure reports a storage error and restores the record to its
+  state before the command.
 
 Example: suppose the clock reads `21/10/2026 1200`. Use globally unused replacement datetimes and George Miller's
 currently displayed `INDEX` for each command. Each row continues from the previous row:
@@ -591,7 +614,9 @@ Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t
   * `n/`: the start of any word in the name, first name or surname. For example, `n/m` matches `George Miller`,
     `Marcus Lim`, and `Mei Lin Tan`, but `n/ans` does not match `Hans`.
   * `p/`: any part of the phone number, so the last few digits are enough. For example, `p/8901` matches `85678901`.
-    Phone keywords may contain only digits.
+    Only digits are compared, so spaces, `+`, and `-` in either the saved number or the keyword are ignored:
+    `p/91234567` matches `9123 4567` and `+65 9123-4567`. Phone keywords may contain digits, `+`, and `-`, and must
+    include a digit. Type a number without spaces, since a space starts another keyword.
   * `a/`: the start of any word in the address. For example, `a/tamp` matches `46 Tampines Street 21, #08-03`.
   * `t/`: the start of any tag. For example, `t/morn` matches a patient tagged `morning`.
   * `vd/`: patients whose current visit is on that day, at any time. Give the date without a time in the format
@@ -632,6 +657,7 @@ Format: `delete INDEX`
 * The index refers to the index number shown in the displayed patient list.
 * The index **must be a positive integer** 1, 2, 3, ...
 * A valid command displays `Delete NAME? Type y to confirm. Any other input cancels.` without deleting the patient.
+  After `y`, the app shows `Deleted person:` followed by the deleted patient's details in the same form as `add`.
 * Type `y` and press Enter to confirm. Surrounding spaces and letter case are ignored.
 * Any other input, including an empty response or another valid command, cancels the deletion and is not run as a
   command. The result display then shows `Deletion cancelled.`
@@ -673,6 +699,10 @@ Doc automatically saves completed changes, including successful `add`, `edit`, `
 `clear` when there are no patient records do not write a file because they do not change stored data. You do not need
 to save manually.
 
+If saving fails, Doc reports the save error and restores the patient data, active filter, and sorting to their state
+before the command. The data file remains consistent with the restored in-memory state. Restore write access before
+trying the command again.
+
 Emergency contacts are saved with the patient records and remain available after restarting Doc. Older valid
 data files without emergency contacts still load; their patients initially have no emergency contact.
 
@@ -682,9 +712,10 @@ Doc's patient data is saved automatically as a JSON file at `[JAR file location]
 users may update the data directly by editing that file.
 
 Each patient has a required `visitDate` and a `previousVisitDates` array of datetime strings in `d/M/yyyy HHmm`
-format. Previous dates must be strictly increasing, oldest first, and earlier than the current date. All current
-and previous datetimes must be unique across patients. Missing or `null` previous-date arrays in older files load
-as empty arrays. Invalid records are rejected without sorting, deduplicating, or dropping entries.
+format, with years from `1900` to `2099`. Previous dates must be strictly increasing, oldest first, and earlier than
+the current date. All current and previous datetimes must be unique across patients. Missing or `null`
+previous-date arrays in older files load as empty arrays. Invalid records are rejected without sorting,
+deduplicating, or dropping entries.
 
 <box type="warning" seamless>
 
@@ -721,6 +752,10 @@ Doc home folder.
 ## Known issues
 
 1. **When using multiple screens**, if you move the application to a secondary screen, and later switch to using only the primary screen, the GUI will open off-screen. The remedy is to delete the `preferences.json` file created by the application before running the application again.
+1. **Computers set to a language with other digits**, such as Arabic: Doc's interface is in English. Counts in
+   messages, such as `3 patients found.` or `Clear 7 entries?`, always use the digits 0 to 9, whatever the
+   computer's language setting. Other numeral systems are not supported for input: type indices, phone numbers,
+   dates, and times with the digits 0 to 9, in the formats shown in this guide.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -728,11 +763,11 @@ Doc home folder.
 
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-**Add**    | `add n/NAME [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] p/PHONE_NUMBER a/ADDRESS vd/VISIT_DATE [e/EMAIL] [note/NOTES] [ec/[NAME, ]PHONE_NUMBER] [t/TAG]... ` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
+**Add**    | `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
 **Agenda** | `agenda START_DATE [DAYS]`<br> e.g., `agenda 27/10/2026 7`
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
-**Edit**   | `edit INDEX [n/NAME] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [p/PHONE_NUMBER] [ec/[NAME, ]PHONE_NUMBER] [a/ADDRESS] [vd/DATE_TIME] [e/EMAIL] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
+**Edit**   | `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
 **Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`<br> e.g., `find n/George a/maple`, `find vd/15/10/2026`, `find note/mobility`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (current visit must have arrived; choose an available future appointment)

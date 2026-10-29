@@ -8,7 +8,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
+import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 
 /**
@@ -55,10 +57,18 @@ final class JavaFxTestUtil {
      * Runs an assertion block on the JavaFX application thread and propagates its failure to JUnit.
      */
     static void runOnFxThread(Runnable action) {
-        FutureTask<Void> task = new FutureTask<>(action, null);
+        callOnFxThread(() -> {
+            action.run();
+            return null;
+        });
+    }
+
+    /** Runs a value-producing action on the JavaFX application thread and returns its result. */
+    static <T> T callOnFxThread(Supplier<T> action) {
+        FutureTask<T> task = new FutureTask<>(action::get);
         Platform.runLater(task);
         try {
-            task.get(FX_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            return task.get(FX_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new AssertionError("Interrupted while waiting for the JavaFX application thread", e);
@@ -72,6 +82,31 @@ final class JavaFxTestUtil {
             throw new AssertionError("JavaFX test action failed", e.getCause());
         } catch (TimeoutException e) {
             throw new AssertionError("JavaFX application thread did not respond", e);
+        }
+    }
+
+    /** Waits for the next JavaFX pulse so layout and focus transitions can complete. */
+    static void waitForNextPulse() {
+        CountDownLatch pulseLatch = new CountDownLatch(1);
+        AnimationTimer[] timerHolder = new AnimationTimer[1];
+        runOnFxThread(() -> {
+            timerHolder[0] = new AnimationTimer() {
+                @Override
+                public void handle(long now) {
+                    stop();
+                    pulseLatch.countDown();
+                }
+            };
+            timerHolder[0].start();
+        });
+
+        try {
+            assertTrue(pulseLatch.await(FX_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("Interrupted while waiting for a JavaFX pulse", e);
+        } finally {
+            runOnFxThread(() -> timerHolder[0].stop());
         }
     }
 }
