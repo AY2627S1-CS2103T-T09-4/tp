@@ -88,16 +88,16 @@ final class JavaFxTestUtil {
     /** Waits for the next JavaFX pulse so layout and focus transitions can complete. */
     static void waitForNextPulse() {
         CountDownLatch pulseLatch = new CountDownLatch(1);
-        AnimationTimer[] timerHolder = new AnimationTimer[1];
-        runOnFxThread(() -> {
-            timerHolder[0] = new AnimationTimer() {
+        AnimationTimer timer = callOnFxThread(() -> {
+            AnimationTimer pulseTimer = new AnimationTimer() {
                 @Override
                 public void handle(long now) {
                     stop();
                     pulseLatch.countDown();
                 }
             };
-            timerHolder[0].start();
+            pulseTimer.start();
+            return pulseTimer;
         });
 
         try {
@@ -106,7 +106,7 @@ final class JavaFxTestUtil {
             Thread.currentThread().interrupt();
             throw new AssertionError("Interrupted while waiting for a JavaFX pulse", e);
         } finally {
-            runOnFxThread(() -> timerHolder[0].stop());
+            runOnFxThread(timer::stop);
         }
     }
 }

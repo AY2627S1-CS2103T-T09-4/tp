@@ -50,6 +50,9 @@ public class PatientDetailsPanelTest {
     private static final double MINIMUM_PAGE_TO_ARROW_RATIO = 2.0;
     private static final double SCROLL_PIXEL_TOLERANCE = 0.001;
     private static final double SCROLL_VALUE_TOLERANCE = 0.001;
+    private static final double SCROLL_TEST_SCENE_WIDTH = 320;
+    private static final double SCROLL_TEST_SCENE_HEIGHT = 240;
+    private static final double FITTING_TEST_SCENE_HEIGHT = 2_000;
     private static final List<String> LONG_RECORD_PREVIOUS_DATES = createLongRecordPreviousDates();
 
     @BeforeAll
@@ -478,10 +481,7 @@ public class PatientDetailsPanelTest {
             PatientDetailsPanel panel = new PatientDetailsPanel(FIXED_CLOCK);
             panel.setPerson(createLongRecord());
             ScrollPane scrollPane = getScrollPane(panel);
-            Scene scene = new Scene(scrollPane, 320, 240);
-            scene.getStylesheets().add(PatientDetailsPanel.class.getResource("/view/DarkTheme.css").toExternalForm());
-            scene.getRoot().applyCss();
-            scene.getRoot().layout();
+            layoutInScene(scrollPane, SCROLL_TEST_SCENE_HEIGHT);
 
             assertTrue(getDetailsContainer(panel).getHeight() > scrollPane.getViewportBounds().getHeight());
             double top = scrollPane.getVmin();
@@ -523,21 +523,14 @@ public class PatientDetailsPanelTest {
         runOnFxThread(() -> {
             PatientDetailsPanel panel = new PatientDetailsPanel(FIXED_CLOCK);
             ScrollPane scrollPane = getScrollPane(panel);
-            Scene scene = new Scene(scrollPane, 320, 240);
-            scene.getStylesheets().add(PatientDetailsPanel.class.getResource("/view/DarkTheme.css").toExternalForm());
-            scene.getRoot().applyCss();
-            scene.getRoot().layout();
+            layoutInScene(scrollPane, SCROLL_TEST_SCENE_HEIGHT);
 
             assertScrollingKeysHaveNoEffect(scrollPane);
 
             PatientDetailsPanel fittingPanel = new PatientDetailsPanel(FIXED_CLOCK);
             ScrollPane fittingScrollPane = getScrollPane(fittingPanel);
-            Scene fittingScene = new Scene(fittingScrollPane, 320, 2_000);
-            fittingScene.getStylesheets().add(
-                    PatientDetailsPanel.class.getResource("/view/DarkTheme.css").toExternalForm());
             fittingPanel.setPerson(new PersonBuilder().build());
-            fittingScene.getRoot().applyCss();
-            fittingScene.getRoot().layout();
+            layoutInScene(fittingScrollPane, FITTING_TEST_SCENE_HEIGHT);
             assertTrue(getDetailsContainer(fittingPanel).getHeight()
                     <= fittingScrollPane.getViewportBounds().getHeight());
 
@@ -551,10 +544,7 @@ public class PatientDetailsPanelTest {
             PatientDetailsPanel panel = new PatientDetailsPanel(FIXED_CLOCK);
             panel.setPerson(createLongRecord());
             ScrollPane scrollPane = getScrollPane(panel);
-            Scene scene = new Scene(scrollPane, 320, 240);
-            scene.getStylesheets().add(PatientDetailsPanel.class.getResource("/view/DarkTheme.css").toExternalForm());
-            scrollPane.applyCss();
-            scrollPane.layout();
+            layoutInScene(scrollPane, SCROLL_TEST_SCENE_HEIGHT);
             fireKeyPressed(scrollPane, KeyCode.DOWN);
             double initialValue = scrollPane.getVvalue();
             assertTrue(initialValue > scrollPane.getVmin());
@@ -575,10 +565,7 @@ public class PatientDetailsPanelTest {
             PatientDetailsPanel panel = new PatientDetailsPanel(FIXED_CLOCK);
             panel.setPerson(createLongRecord());
             ScrollPane scrollPane = getScrollPane(panel);
-            Scene scene = new Scene(scrollPane, 320, 240);
-            scene.getStylesheets().add(PatientDetailsPanel.class.getResource("/view/DarkTheme.css").toExternalForm());
-            scrollPane.applyCss();
-            scrollPane.layout();
+            layoutInScene(scrollPane, SCROLL_TEST_SCENE_HEIGHT);
             assertTrue(getScrollableHeight(scrollPane) > 0);
 
             getDetailsContainer(panel).setVisible(false);
@@ -748,10 +735,7 @@ public class PatientDetailsPanelTest {
 
     private static void assertRecordCanScrollToBottom(PatientDetailsPanel patientDetailsPanel) {
         ScrollPane scrollPane = getScrollPane(patientDetailsPanel);
-        Scene scene = new Scene(scrollPane, 320, 240);
-        scene.getStylesheets().add(PatientDetailsPanel.class.getResource("/view/DarkTheme.css").toExternalForm());
-        scrollPane.applyCss();
-        scrollPane.layout();
+        layoutInScene(scrollPane, SCROLL_TEST_SCENE_HEIGHT);
 
         Label previousVisitDates = getLabel(patientDetailsPanel, "previousVisitDates");
         assertTrue(scrollPane.isFitToWidth());
@@ -767,6 +751,14 @@ public class PatientDetailsPanelTest {
         Bounds previousVisitDatesBounds = previousVisitDates.localToScene(previousVisitDates.getBoundsInLocal());
         assertTrue(previousVisitDatesBounds.getMaxY() <= viewportBounds.getMaxY());
         assertTrue(previousVisitDatesBounds.getMaxY() > viewportBounds.getMinY());
+    }
+
+    /** Lays out a styled details panel at the requested height without opening a window. */
+    private static void layoutInScene(ScrollPane scrollPane, double sceneHeight) {
+        Scene scene = new Scene(scrollPane, SCROLL_TEST_SCENE_WIDTH, sceneHeight);
+        scene.getStylesheets().add(PatientDetailsPanel.class.getResource("/view/DarkTheme.css").toExternalForm());
+        scrollPane.applyCss();
+        scrollPane.layout();
     }
 
     private static List<String> createLongRecordPreviousDates() {

@@ -92,7 +92,7 @@ public class NextCommandIntegrationTest {
     }
 
     @Test
-    public void execute_filteredIndex_persistsDisplayedPatientAndRestoresStoredOrder() throws Exception {
+    public void execute_filteredIndex_persistsDisplayedPatientAndPreservesFilter() throws Exception {
         logic.execute("find n/Meier");
         assertEquals(List.of(benson), model.getFilteredPersonList());
 
@@ -105,15 +105,17 @@ public class NextCommandIntegrationTest {
     }
 
     @Test
-    public void execute_sortedIndexAndView_persistsDisplayedPatientAndClearsSort() throws Exception {
-        model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
-        CommandResult viewResult = logic.execute("view 1");
+    public void execute_sortedIndexAndView_persistsDisplayedPatientAndPreservesSort() throws Exception {
+        model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
+        CommandResult viewResult = logic.execute("view 2");
         assertEquals(benson, viewResult.getPersonToView().orElseThrow());
 
-        logic.execute("next 1 " + NEW_VISIT_DATE);
+        logic.execute("next 2 " + NEW_VISIT_DATE);
 
-        fixture.assertPersistedPatients(amy, new PersonBuilder(benson).withVisitDate(NEW_VISIT_DATE)
-                .withPreviousVisitDates("12/10/2026 1000").build());
+        Person expectedBenson = new PersonBuilder(benson).withVisitDate(NEW_VISIT_DATE)
+                .withPreviousVisitDates("12/10/2026 1000").build();
+        fixture.assertPersistedPatients(amy, expectedBenson);
+        assertEquals(List.of(expectedBenson, amy), model.getFilteredPersonList());
     }
 
     @Test

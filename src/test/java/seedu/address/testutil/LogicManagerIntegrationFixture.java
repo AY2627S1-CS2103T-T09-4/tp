@@ -125,8 +125,8 @@ public class LogicManagerIntegrationFixture {
     }
 
     /**
-     * Executes a command expected to fail and verifies that model, display, file, save count, and pending input
-     * remain unchanged.
+     * Executes a command expected to fail and verifies that the model, display, file, and save count remain unchanged.
+     * Also verifies that no input request remains pending.
      *
      * @param commandText Command to execute.
      * @param exceptionClass Expected exception type.

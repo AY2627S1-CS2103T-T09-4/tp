@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.TypicalPersons.getTypicalAddressBook;
+import static seedu.address.ui.JavaFxTestUtil.callOnFxThread;
 import static seedu.address.ui.JavaFxTestUtil.runOnFxThread;
 import static seedu.address.ui.JavaFxTestUtil.startJavaFx;
 
@@ -285,9 +286,8 @@ public class HelpWindowIntegrationTest {
     /** Waits off the FX thread so native window events can finish, reporting the transition on timeout. */
     private void waitForFxCondition(BooleanSupplier condition, String transition) throws InterruptedException {
         CountDownLatch conditionMet = new CountDownLatch(1);
-        AnimationTimer[] timerHolder = new AnimationTimer[1];
-        runOnFxThread(() -> {
-            timerHolder[0] = new AnimationTimer() {
+        AnimationTimer timer = callOnFxThread(() -> {
+            AnimationTimer conditionTimer = new AnimationTimer() {
                 @Override
                 public void handle(long now) {
                     if (condition.getAsBoolean()) {
@@ -296,14 +296,15 @@ public class HelpWindowIntegrationTest {
                     }
                 }
             };
-            timerHolder[0].start();
+            conditionTimer.start();
+            return conditionTimer;
         });
 
         try {
             assertTrue(conditionMet.await(WINDOW_TRANSITION_TIMEOUT_SECONDS, TimeUnit.SECONDS),
                     "Timed out waiting for " + transition);
         } finally {
-            runOnFxThread(() -> timerHolder[0].stop());
+            runOnFxThread(timer::stop);
         }
     }
 
