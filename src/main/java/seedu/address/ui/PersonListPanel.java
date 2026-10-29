@@ -20,6 +20,7 @@ import seedu.address.model.person.Person;
  */
 public class PersonListPanel extends UiPart<Region> {
     private static final String FXML = "PersonListPanel.fxml";
+    private static final int MAX_SCROLL_ADJUSTMENT_ATTEMPTS = 3;
     private static final double SCROLL_EPSILON = 0.5;
     private final Logger logger = LogsCenter.getLogger(PersonListPanel.class);
 
@@ -43,11 +44,11 @@ public class PersonListPanel extends UiPart<Region> {
             return;
         }
 
-        Platform.runLater(() -> keepSelectedPatientVisible(selectedIndex));
+        Platform.runLater(() -> keepSelectedPatientVisible(selectedIndex, false, 0));
     }
 
     /** Adjusts the list only when the selected patient card is clipped by the viewport. */
-    private void keepSelectedPatientVisible(int selectedIndex) {
+    private void keepSelectedPatientVisible(int selectedIndex, boolean isAligningBottom, int adjustmentAttempt) {
         if (personListView.getScene() == null
                 || personListView.getSelectionModel().getSelectedIndex() != selectedIndex) {
             return;
@@ -57,14 +58,16 @@ public class PersonListPanel extends UiPart<Region> {
         ListCell<?> selectedCell = findSelectedCell(selectedIndex);
         if (selectedCell == null) {
             personListView.scrollTo(selectedIndex);
-            Platform.runLater(() -> keepSelectedPatientVisible(selectedIndex));
+            Platform.runLater(() -> keepSelectedPatientVisible(selectedIndex, isAligningBottom, adjustmentAttempt));
             return;
         }
 
         Node selectedContent = selectedCell.getGraphic() == null ? selectedCell : selectedCell.getGraphic();
         Bounds viewportBounds = personListView.localToScene(personListView.getBoundsInLocal());
         Bounds selectedBounds = selectedContent.localToScene(selectedContent.getBoundsInLocal());
-        double requiredScrollPixels = getRequiredScrollPixels(selectedBounds, viewportBounds);
+        boolean isSelectedCardBelowViewport = selectedBounds.getMaxY() > viewportBounds.getMaxY();
+        boolean shouldAlignBottom = isAligningBottom || isSelectedCardBelowViewport;
+        double requiredScrollPixels = getRequiredScrollPixels(selectedBounds, viewportBounds, shouldAlignBottom);
         if (Math.abs(requiredScrollPixels) <= SCROLL_EPSILON) {
             return;
         }
@@ -91,10 +94,17 @@ public class PersonListPanel extends UiPart<Region> {
                 + requiredScrollPixels / scrollableHeight * valueRange;
         verticalScrollBar.setValue(Math.max(verticalScrollBar.getMin(),
                 Math.min(verticalScrollBar.getMax(), targetValue)));
+
+        if (shouldAlignBottom && adjustmentAttempt < MAX_SCROLL_ADJUSTMENT_ATTEMPTS) {
+            Platform.runLater(() -> keepSelectedPatientVisible(selectedIndex, true, adjustmentAttempt + 1));
+        }
     }
 
     /** Returns the number of pixels by which the selected card lies outside the viewport. */
-    private double getRequiredScrollPixels(Bounds selectedBounds, Bounds viewportBounds) {
+    private double getRequiredScrollPixels(Bounds selectedBounds, Bounds viewportBounds, boolean isAligningBottom) {
+        if (isAligningBottom) {
+            return selectedBounds.getMaxY() - viewportBounds.getMaxY();
+        }
         if (selectedBounds.getMaxY() > viewportBounds.getMaxY()) {
             return selectedBounds.getMaxY() - viewportBounds.getMaxY();
         }
