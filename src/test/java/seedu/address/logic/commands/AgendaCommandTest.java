@@ -104,6 +104,7 @@ public class AgendaCommandTest {
         assertThrows(IllegalArgumentException.class, () ->
                 new AgendaCommand(START_DATE, AgendaCommand.MAX_DAYS + 1));
         assertThrows(IllegalArgumentException.class, () -> new AgendaCommand(LocalDate.of(2099, 12, 31), 2));
+        assertThrows(IllegalArgumentException.class, () -> new AgendaCommand(LocalDate.of(1899, 12, 31), 1));
         assertThrows(IllegalArgumentException.class, () -> new AgendaCommand(LocalDate.MAX, 1));
         assertThrows(NullPointerException.class, () -> new AgendaCommand(START_DATE).execute(null));
     }
