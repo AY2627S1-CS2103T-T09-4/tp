@@ -1,6 +1,7 @@
 package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
+import static seedu.address.logic.Messages.DISPLAY_LOCALE;
 
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
@@ -30,7 +31,7 @@ public class ClearCommand extends Command {
 
         String prompt = entryCount == 1
                 ? MESSAGE_CONFIRM_CLEAR_ONE
-                : String.format(MESSAGE_CONFIRM_CLEAR_MULTIPLE, entryCount);
+                : String.format(DISPLAY_LOCALE, MESSAGE_CONFIRM_CLEAR_MULTIPLE, entryCount);
         CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(
                 prompt, MESSAGE_CLEAR_CANCELLED, this::clearAddressBook);
         return CommandResult.requestInput(inputRequest);
@@ -41,6 +42,6 @@ public class ClearCommand extends Command {
      */
     private CommandResult clearAddressBook(Model model) {
         model.setAddressBook(new AddressBook());
-        return new CommandResult(MESSAGE_SUCCESS);
+        return CommandResult.clearDetailsPanel(MESSAGE_SUCCESS);
     }
 }

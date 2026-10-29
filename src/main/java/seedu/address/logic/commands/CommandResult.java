@@ -13,6 +13,14 @@ import seedu.address.model.person.Person;
  */
 public class CommandResult {
 
+    /** Describes how a command result changes the patient details panel. */
+    public enum DetailsPanelAction {
+        KEEP,
+        SHOW,
+        CLEAR,
+        CLEAR_IF_SHOWING
+    }
+
     private final String feedbackToUser;
 
     /** Help information should be shown to the user. */
@@ -27,24 +35,28 @@ public class CommandResult {
     /** The next command-line input should be handled by this request. */
     private final CommandInputRequest inputRequest;
 
-    /** The person whose details should be displayed. */
-    private final Person personToView;
+    /** Change to apply to the patient details panel. */
+    private final DetailsPanelAction detailsPanelAction;
+
+    /** Patient associated with a show or conditional-clear action. */
+    private final Person detailsPerson;
 
     /**
      * Constructs a {@code CommandResult} with the specified fields.
      */
     public CommandResult(String feedbackToUser, boolean showHelp, boolean exit) {
-        this(feedbackToUser, showHelp, exit, true, null, null);
+        this(feedbackToUser, showHelp, exit, true, null, DetailsPanelAction.KEEP, null);
     }
 
     private CommandResult(String feedbackToUser, boolean showHelp, boolean exit, boolean saveAddressBook,
-            CommandInputRequest inputRequest, Person personToView) {
+            CommandInputRequest inputRequest, DetailsPanelAction detailsPanelAction, Person detailsPerson) {
         this.feedbackToUser = requireNonNull(feedbackToUser);
         this.showHelp = showHelp;
         this.exit = exit;
         this.saveAddressBook = saveAddressBook;
         this.inputRequest = inputRequest;
-        this.personToView = personToView;
+        this.detailsPanelAction = requireNonNull(detailsPanelAction);
+        this.detailsPerson = detailsPerson;
     }
 
     /**
@@ -64,7 +76,8 @@ public class CommandResult {
      */
     public static CommandResult requestInput(CommandInputRequest inputRequest) {
         requireNonNull(inputRequest);
-        return new CommandResult(inputRequest.getPrompt(), false, false, false, inputRequest, null);
+        return new CommandResult(inputRequest.getPrompt(), false, false, false, inputRequest,
+                DetailsPanelAction.KEEP, null);
     }
 
     /**
@@ -78,7 +91,8 @@ public class CommandResult {
     public static CommandResult requestInput(CommandInputRequest inputRequest, Person personToView) {
         requireNonNull(inputRequest);
         requireNonNull(personToView);
-        return new CommandResult(inputRequest.getPrompt(), false, false, false, inputRequest, personToView);
+        return new CommandResult(inputRequest.getPrompt(), false, false, false, inputRequest,
+                DetailsPanelAction.SHOW, personToView);
     }
 
     /**
@@ -88,7 +102,7 @@ public class CommandResult {
      * @return Result that does not trigger an address book save.
      */
     public static CommandResult withoutSaving(String feedbackToUser) {
-        return new CommandResult(feedbackToUser, false, false, false, null, null);
+        return new CommandResult(feedbackToUser, false, false, false, null, DetailsPanelAction.KEEP, null);
     }
 
     /**
@@ -100,7 +114,44 @@ public class CommandResult {
      */
     public static CommandResult viewPerson(String feedbackToUser, Person personToView) {
         requireNonNull(personToView);
-        return new CommandResult(feedbackToUser, false, false, false, null, personToView);
+        return new CommandResult(feedbackToUser, false, false, false, null,
+                DetailsPanelAction.SHOW, personToView);
+    }
+
+    /**
+     * Creates a saving result that shows the added or updated patient after persistence succeeds.
+     *
+     * @param feedbackToUser Feedback to display.
+     * @param personToView Added or updated patient to display.
+     * @return Saving result that displays the patient.
+     */
+    public static CommandResult showUpdatedPerson(String feedbackToUser, Person personToView) {
+        requireNonNull(personToView);
+        return new CommandResult(feedbackToUser, false, false, true, null,
+                DetailsPanelAction.SHOW, personToView);
+    }
+
+    /**
+     * Creates a saving result that clears the details panel if it shows the deleted patient.
+     *
+     * @param feedbackToUser Feedback to display.
+     * @param deletedPerson Deleted patient whose details should be cleared.
+     * @return Saving result that conditionally clears the details panel.
+     */
+    public static CommandResult clearPersonIfShowing(String feedbackToUser, Person deletedPerson) {
+        requireNonNull(deletedPerson);
+        return new CommandResult(feedbackToUser, false, false, true, null,
+                DetailsPanelAction.CLEAR_IF_SHOWING, deletedPerson);
+    }
+
+    /**
+     * Creates a saving result that clears the details panel after persistence succeeds.
+     *
+     * @param feedbackToUser Feedback to display.
+     * @return Saving result that clears the details panel.
+     */
+    public static CommandResult clearDetailsPanel(String feedbackToUser) {
+        return new CommandResult(feedbackToUser, false, false, true, null, DetailsPanelAction.CLEAR, null);
     }
 
     public String getFeedbackToUser() {
@@ -124,7 +175,22 @@ public class CommandResult {
     }
 
     public Optional<Person> getPersonToView() {
-        return Optional.ofNullable(personToView);
+        return detailsPanelAction == DetailsPanelAction.SHOW
+                ? Optional.of(detailsPerson)
+                : Optional.empty();
+    }
+
+    public DetailsPanelAction getDetailsPanelAction() {
+        return detailsPanelAction;
+    }
+
+    /**
+     * Returns the deleted patient associated with a conditional-clear action.
+     */
+    public Optional<Person> getPersonToClearFromView() {
+        return detailsPanelAction == DetailsPanelAction.CLEAR_IF_SHOWING
+                ? Optional.of(detailsPerson)
+                : Optional.empty();
     }
 
     @Override
@@ -143,12 +209,14 @@ public class CommandResult {
                 && exit == otherCommandResult.exit
                 && saveAddressBook == otherCommandResult.saveAddressBook
                 && (inputRequest != null) == (otherCommandResult.inputRequest != null)
-                && Objects.equals(personToView, otherCommandResult.personToView);
+                && detailsPanelAction == otherCommandResult.detailsPanelAction
+                && Objects.equals(detailsPerson, otherCommandResult.detailsPerson);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(feedbackToUser, showHelp, exit, saveAddressBook, inputRequest != null, personToView);
+        return Objects.hash(feedbackToUser, showHelp, exit, saveAddressBook, inputRequest != null,
+                detailsPanelAction, detailsPerson);
     }
 
     @Override
@@ -159,7 +227,8 @@ public class CommandResult {
                 .add("exit", exit)
                 .add("saveAddressBook", saveAddressBook)
                 .add("inputRequested", inputRequest != null)
-                .add("personToView", personToView)
+                .add("detailsPanelAction", detailsPanelAction)
+                .add("detailsPerson", detailsPerson)
                 .toString();
     }
 

@@ -27,6 +27,7 @@ import static seedu.address.logic.commands.CommandTestUtil.VALID_NOTE_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_PHONE_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_TAG_FRIEND;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_TAG_HUSBAND;
+import static seedu.address.logic.commands.CommandTestUtil.VALID_VISIT_DATE_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_VISIT_DATE_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VISIT_DATE_DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.VISIT_DATE_DESC_BOB;
@@ -72,6 +73,14 @@ public class AddCommandParserTest {
         assertParseSuccess(parser, NAME_DESC_BOB + PHONE_DESC_BOB + EMAIL_DESC_BOB + ADDRESS_DESC_BOB
                 + VISIT_DATE_DESC_BOB + TAG_DESC_HUSBAND + TAG_DESC_FRIEND,
                 new AddCommand(expectedPersonMultipleTags));
+    }
+
+    @Test
+    public void parse_nameWithSlash_success() {
+        Person expectedPerson = new PersonBuilder(BOB).withName("s/o Rajan").withEmail("").withTags().build();
+
+        assertParseSuccess(parser, " n/s/o Rajan" + PHONE_DESC_BOB + ADDRESS_DESC_BOB + VISIT_DATE_DESC_BOB,
+                new AddCommand(expectedPerson));
     }
 
     @Test
@@ -148,6 +157,15 @@ public class AddCommandParserTest {
         // invalid visit date
         assertAddFailure(validExpectedPersonString + INVALID_VISIT_DATE_DESC,
                 Messages.getErrorMessageForDuplicatePrefixes(PREFIX_VISIT_DATE));
+    }
+
+    @Test
+    public void parse_repeatedWhitespaceInVisitDate_success() {
+        String visitDateWithExtraSpaces = " " + PREFIX_VISIT_DATE + VALID_VISIT_DATE_AMY.replace(" ", "   ");
+        Person expectedPerson = new PersonBuilder(AMY).withTags().build();
+
+        assertParseSuccess(parser, NAME_DESC_AMY + PHONE_DESC_AMY + EMAIL_DESC_AMY + ADDRESS_DESC_AMY
+                + visitDateWithExtraSpaces, new AddCommand(expectedPerson));
     }
 
     @Test

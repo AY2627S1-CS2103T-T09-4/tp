@@ -12,13 +12,15 @@ import java.util.Locale;
 public class Name {
 
     public static final String MESSAGE_CONSTRAINTS =
-            "Names should only contain alphanumeric characters and spaces, and should not be blank";
+            "Names should contain letters, numbers, spaces, or common name punctuation, and should not contain p/";
 
     /*
      * The first character of the name must not be a whitespace,
      * otherwise " " (a blank string) becomes a valid input.
      */
-    public static final String VALIDATION_REGEX = "[\\p{Alnum}][\\p{Alnum} ]*";
+    private static final String NAME_PART_REGEX = "[\\p{L}\\p{M}\\p{N}]+(?:[.'/-][\\p{L}\\p{M}\\p{N}]+)*\\.?";
+
+    public static final String VALIDATION_REGEX = "(?!.*p/)" + NAME_PART_REGEX + "(?: +" + NAME_PART_REGEX + ")* *";
 
     private static final String SPACE_SEQUENCE_REGEX = " +";
     private static final String NORMALIZED_SPACE = " ";

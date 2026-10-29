@@ -1,6 +1,7 @@
 package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
+import static seedu.address.logic.Messages.DISPLAY_LOCALE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ALCOHOL_HISTORY;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ALLERGIES;
@@ -22,6 +23,7 @@ import java.util.logging.Logger;
 
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.util.ToStringBuilder;
+import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.person.Person;
@@ -36,17 +38,17 @@ public class AddCommand extends Command {
     public static final String MESSAGE_USAGE = COMMAND_WORD + ": Adds a person to the address book. "
             + "Parameters: "
             + PREFIX_NAME + "NAME "
+            + PREFIX_PHONE + "PHONE "
+            + PREFIX_ADDRESS + "ADDRESS "
+            + PREFIX_VISIT_DATE + "DATETIME "
+            + "[" + PREFIX_EMAIL + "EMAIL] "
+            + "[" + PREFIX_EMERGENCY_CONTACT + "[NAME, ]PHONE_NUMBER] "
             + "[" + PREFIX_DATE_OF_BIRTH + "DATE] "
             + "[" + PREFIX_BLOOD_TYPE + "BLOOD_TYPE] "
             + "[" + PREFIX_ALLERGIES + "ALLERGIES] "
             + "[" + PREFIX_ALCOHOL_HISTORY + "ALCOHOL_HISTORY] "
             + "[" + PREFIX_SMOKING_STATUS + "STATUS] "
-            + PREFIX_PHONE + "PHONE "
-            + PREFIX_ADDRESS + "ADDRESS "
-            + PREFIX_VISIT_DATE + "VISIT_DATE "
-            + "[" + PREFIX_EMAIL + "EMAIL] "
             + "[" + PREFIX_NOTE + "NOTES] "
-            + "[" + PREFIX_EMERGENCY_CONTACT + "[NAME, ]PHONE_NUMBER] "
             + "[" + PREFIX_TAG + "TAG]...\n"
             + "Example: " + COMMAND_WORD + " "
             + PREFIX_NAME + "John Doe "
@@ -127,7 +129,7 @@ public class AddCommand extends Command {
 
         int visitsOnSameDay = model.countPersonsWithSameVisitDay(toAdd);
         if (visitsOnSameDay >= Model.MAX_VISITS_PER_DAY) {
-            warnings.add(String.format(MESSAGE_WARNING_FULL_DAY, visitsOnSameDay,
+            warnings.add(String.format(DISPLAY_LOCALE, MESSAGE_WARNING_FULL_DAY, visitsOnSameDay,
                     toAdd.getVisitDate().toDayString()));
         }
 
@@ -152,7 +154,16 @@ public class AddCommand extends Command {
                 + ", alcoholHistory=" + !toAdd.getAlcoholHistory().isEmpty()
                 + ", smokingStatus=" + !toAdd.getSmokingStatus().isEmpty()
                 + ", emergencyContact=" + !toAdd.getEmergencyContact().isEmpty());
-        return new CommandResult(String.format(MESSAGE_SUCCESS, toAdd.getName()));
+        return CommandResult.showUpdatedPerson(formatSuccessMessage(toAdd), toAdd);
+    }
+
+    /**
+     * Returns the message shown after {@code person} is added, listing the recorded details, including the visit
+     * date, so that the doctor can check what was saved.
+     */
+    public static String formatSuccessMessage(Person person) {
+        requireNonNull(person);
+        return String.format(MESSAGE_SUCCESS, Messages.format(person));
     }
 
     /**
@@ -182,7 +193,7 @@ public class AddCommand extends Command {
 
         return (duplicateCount == 1)
                 ? String.format(MESSAGE_WARNING_DUPLICATE_NAME, toAdd.getName())
-                : String.format(MESSAGE_WARNING_DUPLICATE_NAMES, toAdd.getName(), duplicateCount);
+                : String.format(DISPLAY_LOCALE, MESSAGE_WARNING_DUPLICATE_NAMES, toAdd.getName(), duplicateCount);
     }
 
     @Override

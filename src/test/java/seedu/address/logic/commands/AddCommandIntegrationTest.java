@@ -44,7 +44,8 @@ public class AddCommandIntegrationTest {
         expectedModel.addPerson(validPerson);
 
         assertCommandSuccess(new AddCommand(validPerson), model,
-                String.format(AddCommand.MESSAGE_SUCCESS, validPerson.getName()),
+                CommandResult.showUpdatedPerson(
+                        AddCommand.formatSuccessMessage(validPerson), validPerson),
                 expectedModel);
     }
 
@@ -57,7 +58,9 @@ public class AddCommandIntegrationTest {
         expectedModel.addPerson(samePhoneDifferentName);
 
         assertCommandSuccess(new AddCommand(samePhoneDifferentName), model,
-                String.format(AddCommand.MESSAGE_SUCCESS, samePhoneDifferentName.getName()), expectedModel);
+                CommandResult.showUpdatedPerson(
+                        AddCommand.formatSuccessMessage(samePhoneDifferentName),
+                        samePhoneDifferentName), expectedModel);
     }
 
     @Test
@@ -180,8 +183,9 @@ public class AddCommandIntegrationTest {
 
         CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond(" y ", model);
 
-        assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, sameNameDifferentPhone.getName()),
+        assertEquals(AddCommand.formatSuccessMessage(sameNameDifferentPhone),
                 confirmedResult.getFeedbackToUser());
+        assertEquals(sameNameDifferentPhone, confirmedResult.getPersonToView().orElseThrow());
         assertTrue(confirmedResult.shouldSaveAddressBook());
         assertTrue(model.getAddressBook().getPersonList().contains(sameNameDifferentPhone));
         assertEquals(model.getAddressBook().getPersonList(), model.getFilteredPersonList());
@@ -210,7 +214,9 @@ public class AddCommandIntegrationTest {
         expectedModel.addPerson(seventhVisitOnDay);
 
         assertCommandSuccess(new AddCommand(seventhVisitOnDay), model,
-                String.format(AddCommand.MESSAGE_SUCCESS, seventhVisitOnDay.getName()), expectedModel);
+                CommandResult.showUpdatedPerson(
+                        AddCommand.formatSuccessMessage(seventhVisitOnDay), seventhVisitOnDay),
+                expectedModel);
     }
 
     @Test
@@ -233,8 +239,9 @@ public class AddCommandIntegrationTest {
 
         CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond("y", model);
 
-        assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, eighthVisitOnDay.getName()),
+        assertEquals(AddCommand.formatSuccessMessage(eighthVisitOnDay),
                 confirmedResult.getFeedbackToUser());
+        assertEquals(eighthVisitOnDay, confirmedResult.getPersonToView().orElseThrow());
         assertTrue(confirmedResult.shouldSaveAddressBook());
         assertTrue(model.getAddressBook().getPersonList().contains(eighthVisitOnDay));
     }
@@ -289,8 +296,9 @@ public class AddCommandIntegrationTest {
 
         CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond("y", model);
 
-        assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, thirdSameName.getName()),
+        assertEquals(AddCommand.formatSuccessMessage(thirdSameName),
                 confirmedResult.getFeedbackToUser());
+        assertEquals(thirdSameName, confirmedResult.getPersonToView().orElseThrow());
         assertTrue(confirmedResult.getInputRequest().isEmpty());
         assertTrue(model.getAddressBook().getPersonList().contains(thirdSameName));
     }
@@ -304,8 +312,9 @@ public class AddCommandIntegrationTest {
 
         CommandResult confirmedResult = requestResult.getInputRequest().orElseThrow().respond("y", model);
 
-        assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, sameNameOnFullDay.getName()),
+        assertEquals(AddCommand.formatSuccessMessage(sameNameOnFullDay),
                 confirmedResult.getFeedbackToUser());
+        assertEquals(sameNameOnFullDay, confirmedResult.getPersonToView().orElseThrow());
         assertTrue(confirmedResult.getInputRequest().isEmpty());
         assertTrue(confirmedResult.shouldSaveAddressBook());
         assertTrue(model.getAddressBook().getPersonList().contains(sameNameOnFullDay));

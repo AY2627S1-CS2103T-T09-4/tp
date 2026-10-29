@@ -8,6 +8,7 @@ import static seedu.address.testutil.TypicalPersons.BENSON;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Assertions;
@@ -27,11 +28,12 @@ import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
 import seedu.address.model.person.SmokingStatus;
 import seedu.address.model.person.VisitDate;
+import seedu.address.model.tag.Tag;
 import seedu.address.testutil.PersonBuilder;
 
 public class JsonAdaptedPersonTest {
     private static final String INVALID_NAME = "R@chel";
-    private static final String INVALID_PHONE = "+651234";
+    private static final String INVALID_PHONE = "911a";
     private static final String INVALID_ADDRESS = " ";
     private static final String INVALID_EMAIL = "example.com";
     private static final String INVALID_TAG = "#friend";
@@ -117,6 +119,18 @@ public class JsonAdaptedPersonTest {
         previousDates.clear();
 
         assertEquals(List.of(new VisitDate("1/1/2024 1000")), adapted.toModelType().getPreviousVisitDates());
+    }
+
+    @Test
+    public void toModelType_caseVariantTags_keepsFirstSpellingOnce() throws Exception {
+        List<JsonAdaptedTag> caseVariantTags = List.of(new JsonAdaptedTag("FollowUp"), new JsonAdaptedTag("followup"));
+        JsonAdaptedPerson person = new JsonAdaptedPerson(VALID_NAME, null, null, null, null, null,
+                VALID_PHONE, VALID_EMAIL, VALID_ADDRESS, VALID_VISIT_DATE, null, VALID_NOTE, null, caseVariantTags);
+
+        Set<Tag> tags = person.toModelType().getTags();
+
+        assertEquals(1, tags.size());
+        assertEquals("FollowUp", tags.iterator().next().tagName);
     }
 
     private JsonAdaptedPerson withPreviousVisitDates(List<String> previousDates) {

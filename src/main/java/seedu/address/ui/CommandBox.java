@@ -4,6 +4,7 @@ import java.util.function.BooleanSupplier;
 
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Region;
@@ -75,6 +76,11 @@ public class CommandBox extends UiPart<Region> {
             lastAnchor = commandTextField.getAnchor();
             lastCaretPosition = commandTextField.getCaretPosition();
         }
+    }
+
+    /** Returns the text field used as the command-box focus stop. */
+    Node getFocusTarget() {
+        return commandTextField;
     }
 
     /**

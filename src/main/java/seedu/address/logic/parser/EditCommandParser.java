@@ -1,7 +1,6 @@
 package seedu.address.logic.parser;
 
 import static java.util.Objects.requireNonNull;
-import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ALCOHOL_HISTORY;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ALLERGIES;
@@ -50,7 +49,7 @@ public class EditCommandParser implements Parser<EditCommand> {
         ArgumentMultimap argMultimap = ArgumentTokenizer.tokenize(args, PREFIX_NAME, PREFIX_DATE_OF_BIRTH,
                 PREFIX_BLOOD_TYPE, PREFIX_ALLERGIES, PREFIX_ALCOHOL_HISTORY, PREFIX_SMOKING_STATUS, PREFIX_PHONE,
                 PREFIX_EMAIL, PREFIX_ADDRESS, PREFIX_VISIT_DATE, PREFIX_NOTE, PREFIX_EMERGENCY_CONTACT, PREFIX_TAG);
-        Index index = parseIndex(argMultimap.getPreamble());
+        Index index = ParserUtil.parseIndex(argMultimap.getPreamble(), EditCommand.MESSAGE_USAGE);
 
         argMultimap.verifyNoDuplicatePrefixesFor(PREFIX_NAME, PREFIX_DATE_OF_BIRTH, PREFIX_BLOOD_TYPE,
                 PREFIX_ALLERGIES, PREFIX_ALCOHOL_HISTORY, PREFIX_SMOKING_STATUS, PREFIX_PHONE, PREFIX_EMAIL,
@@ -61,17 +60,6 @@ public class EditCommandParser implements Parser<EditCommand> {
         }
 
         return new EditCommand(index, editPersonDescriptor);
-    }
-
-    /**
-     * Parses the displayed index and includes edit usage when the index is invalid.
-     */
-    private Index parseIndex(String preamble) throws ParseException {
-        try {
-            return ParserUtil.parseIndex(preamble);
-        } catch (ParseException pe) {
-            throw new ParseException(String.format(MESSAGE_INVALID_COMMAND_FORMAT, EditCommand.MESSAGE_USAGE), pe);
-        }
     }
 
     /**

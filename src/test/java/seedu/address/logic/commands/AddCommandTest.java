@@ -48,13 +48,26 @@ public class AddCommandTest {
     }
 
     @Test
+    public void formatSuccessMessage_listsDetailsAndVisitDate() {
+        Person person = new PersonBuilder().withTags("followup").build();
+        assertEquals("Added patient Amy Bee; Phone: 85355255; Email: amy@gmail.com; "
+                + "Address: 123, Jurong West Ave 6, #08-111; Visit date: 18/9/2026 1000; Tags: [followup]",
+                AddCommand.formatSuccessMessage(person));
+
+        // an empty email and an empty tag list are left out
+        Person personWithoutEmail = new PersonBuilder().withEmail("").build();
+        assertEquals("Added patient Amy Bee; Phone: 85355255; Address: 123, Jurong West Ave 6, #08-111; "
+                + "Visit date: 18/9/2026 1000", AddCommand.formatSuccessMessage(personWithoutEmail));
+    }
+
+    @Test
     public void execute_personAcceptedByModel_addSuccessful() throws Exception {
         ModelStubAcceptingPersonAdded modelStub = new ModelStubAcceptingPersonAdded();
         Person validPerson = new PersonBuilder().build();
 
         CommandResult commandResult = new AddCommand(validPerson).execute(modelStub);
 
-        assertEquals(String.format(AddCommand.MESSAGE_SUCCESS, validPerson.getName()),
+        assertEquals(AddCommand.formatSuccessMessage(validPerson),
                 commandResult.getFeedbackToUser());
         assertEquals(List.of(validPerson), modelStub.personsAdded);
     }
