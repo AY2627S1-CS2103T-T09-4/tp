@@ -234,6 +234,14 @@ public class JsonAdaptedPersonTest {
     }
 
     @Test
+    public void toModelType_nameContainsPhonePrefix_throwsSpecificMessage() {
+        JsonAdaptedPerson person = new JsonAdaptedPerson("Rachelp/91234567", null, null, null, null, null,
+                VALID_PHONE, VALID_EMAIL, VALID_ADDRESS, VALID_VISIT_DATE,
+                null, VALID_NOTE, null, VALID_TAGS);
+        assertThrows(IllegalValueException.class, Name.MESSAGE_CONTAINS_PHONE_PREFIX, person::toModelType);
+    }
+
+    @Test
     public void toModelType_nullName_throwsIllegalValueException() {
         JsonAdaptedPerson person = new JsonAdaptedPerson(null, null, null, null, null, null,
                 VALID_PHONE, VALID_EMAIL, VALID_ADDRESS, VALID_VISIT_DATE,

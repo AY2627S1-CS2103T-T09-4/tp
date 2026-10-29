@@ -343,6 +343,10 @@ public class PersonTest {
         editedAlice = new PersonBuilder(ALICE).withPhone(VALID_PHONE_BOB).build();
         assertFalse(ALICE.isSamePerson(editedAlice));
 
+        // same name, same phone digits written with a space or a dash -> returns true
+        assertTrue(ALICE.isSamePerson(new PersonBuilder(ALICE).withPhone("9435 1253").build()));
+        assertTrue(ALICE.isSamePerson(new PersonBuilder(ALICE).withPhone("9435-1253").build()));
+
         // different name, all other attributes same -> returns false
         editedAlice = new PersonBuilder(ALICE).withName(VALID_NAME_BOB).build();
         assertFalse(ALICE.isSamePerson(editedAlice));

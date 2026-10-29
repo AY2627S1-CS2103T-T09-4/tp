@@ -11,8 +11,13 @@ import java.util.Locale;
  */
 public class Name {
 
-    public static final String MESSAGE_CONSTRAINTS =
-            "Names should contain letters, numbers, spaces, or common name punctuation, and should not contain p/";
+    public static final String MESSAGE_CONSTRAINTS = "Names should contain only letters, numbers, spaces, and the "
+            + "punctuation . ' - /, and should not be blank.";
+    public static final String MESSAGE_CONTAINS_PHONE_PREFIX = "Names cannot contain " + Name.PHONE_PREFIX
+            + ", which starts the phone number. Check that there is a space before " + Name.PHONE_PREFIX + ".";
+
+    /** Phone prefix that a name cannot contain, since names may otherwise use '/' as in "s/o". */
+    private static final String PHONE_PREFIX = "p/";
 
     /*
      * The first character of the name must not be a whitespace,
@@ -35,9 +40,18 @@ public class Name {
      */
     public Name(String name) {
         requireNonNull(name);
-        checkArgument(isValidName(name), MESSAGE_CONSTRAINTS);
+        checkArgument(isValidName(name), getConstraintMessage(name));
         fullName = name;
         normalizedName = normalize(name);
+    }
+
+    /**
+     * Returns the reason {@code invalidName} is not a valid name, mentioning the phone prefix only when the name
+     * contains it, so that other mistakes are not explained as a phone-prefix problem.
+     */
+    public static String getConstraintMessage(String invalidName) {
+        requireNonNull(invalidName);
+        return invalidName.contains(PHONE_PREFIX) ? MESSAGE_CONTAINS_PHONE_PREFIX : MESSAGE_CONSTRAINTS;
     }
 
     /**

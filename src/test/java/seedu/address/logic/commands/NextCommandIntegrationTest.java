@@ -98,8 +98,10 @@ public class NextCommandIntegrationTest {
 
         logic.execute("next\t1 \t01/11/2026  0930");
 
-        fixture.assertPersistedPatients(amy, new PersonBuilder(benson).withVisitDate(NEW_VISIT_DATE)
-                .withPreviousVisitDates("12/10/2026 1000").build());
+        Person expectedBenson = new PersonBuilder(benson).withVisitDate(NEW_VISIT_DATE)
+                .withPreviousVisitDates("12/10/2026 1000").build();
+        fixture.assertPersistedPatients(amy, expectedBenson);
+        assertEquals(List.of(expectedBenson), model.getFilteredPersonList());
     }
 
     @Test
@@ -159,6 +161,7 @@ public class NextCommandIntegrationTest {
                 .withPreviousVisitDates("1/10/2026 1000", "2/10/2026 1000", "13/10/2026 1000", "14/10/2026 1000")
                 .build();
         fixture.assertPersistedPatients(expectedPerson, benson);
+        assertEquals(List.of(expectedPerson), model.getFilteredPersonList());
         assertEquals(4, fixture.getSaveCount());
         // Two next commands, find, and edit save; view and the rejected next do not.
     }
@@ -170,9 +173,7 @@ public class NextCommandIntegrationTest {
         fixture.assertRejectedCommand("next 1 13/10/2026 1000", CommandException.class,
                 String.format(NextCommand.MESSAGE_UNCHANGED_VISIT_DATE, amy.getName(), amy.getVisitDate()));
         fixture.assertRejectedCommand("next 1 1/1/2025 1000", CommandException.class,
-                String.format(NextCommand.MESSAGE_NON_FUTURE_VISIT_DATE, "14/10/2026 1200"));
-        fixture.assertRejectedCommand("next 1 14/10/2026 1200", CommandException.class,
-                String.format(NextCommand.MESSAGE_NON_FUTURE_VISIT_DATE, "14/10/2026 1200"));
+                String.format(NextCommand.MESSAGE_VISIT_DATE_NOT_AFTER_CURRENT, amy.getVisitDate()));
         fixture.assertRejectedCommand("next 2 " + NEW_VISIT_DATE, CommandException.class,
                 Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
         fixture.assertRejectedCommand("next 1 31/2/2026 0930", ParseException.class, VisitDate.MESSAGE_CONSTRAINTS);
@@ -187,7 +188,7 @@ public class NextCommandIntegrationTest {
     }
 
     @Test
-    public void execute_saveFailure_reportsExistingErrorWithoutRollback() throws Exception {
+    public void execute_saveFailure_reportsExistingErrorAndRollsBack() throws Exception {
         IOException failure = new IOException("test save failure");
         assertSaveFailure(failure, String.format(LogicManager.FILE_OPS_ERROR_FORMAT, failure.getMessage()));
     }
@@ -206,11 +207,12 @@ public class NextCommandIntegrationTest {
         Model reloadedModel = new ModelManager(fixture.getAddressBookStorage().readAddressBook().orElseThrow(),
                 new UserPrefs());
         LogicManager laterLogic = fixture.createLogic(reloadedModel, laterClock);
-        String expectedMessage = String.format(NextCommand.MESSAGE_NON_FUTURE_VISIT_DATE, "1/1/2027 0800");
-
         assertEquals(model.getAddressBook(), reloadedModel.getAddressBook());
-        assertThrows(CommandException.class, expectedMessage, () ->
-                laterLogic.execute("next 1 1/11/2026 0931"));
+        CommandResult request = laterLogic.execute("next 1 1/11/2026 0931");
+        assertTrue(request.getInputRequest().isPresent());
+        assertFalse(request.shouldSaveAddressBook());
+        assertTrue(request.getFeedbackToUser().contains("not in the future"));
+        laterLogic.execute("n");
         assertEquals(model.getAddressBook(), reloadedModel.getAddressBook());
 
         laterLogic.execute("edit 1 vd/14/10/2026 1000");
@@ -243,7 +245,7 @@ public class NextCommandIntegrationTest {
         Model reloadedModel = new ModelManager(fixture.getAddressBookStorage().readAddressBook().orElseThrow(),
                 new UserPrefs());
         assertEquals(model.getAddressBook(), reloadedModel.getAddressBook());
-        assertEquals(model.getFilteredPersonList(), reloadedModel.getFilteredPersonList());
+        assertEquals(List.of(benson), model.getFilteredPersonList());
     }
 
     @Test
@@ -263,24 +265,81 @@ public class NextCommandIntegrationTest {
     }
 
     @Test
-    public void execute_deferredConfirmationAtAppointmentTime_rejectsAndClearsPendingInput() throws Exception {
-        // Boundary: Confirmation exactly at the requested appointment must revalidate and clear the request.
+    public void execute_deferredConfirmationAtAppointmentTime_requestsNewWarningBeforeSaving() throws Exception {
         int displayedAmyIndex = prepareFullDayRequest();
         DeferredSnapshot beforeRequest = takeSnapshot();
         openDeferredRequest(displayedAmyIndex, beforeRequest);
         clock.setDelegate(Clock.fixed(Instant.parse("2026-11-02T08:30:00Z"), FIXED_CLOCK.getZone()));
 
-        String expectedMessage = String.format(NextCommand.MESSAGE_NON_FUTURE_VISIT_DATE, FULL_DAY_VISIT_DATE);
-        assertThrows(CommandException.class, expectedMessage, () -> logic.execute("y"));
+        CommandResult newWarning = logic.execute("y");
+        assertEquals(String.format(NextCommand.MESSAGE_WARNING_PAST_VISIT, FULL_DAY_VISIT_DATE) + " "
+                + String.format(NextCommand.MESSAGE_CONFIRM_FULL_DAY, Model.MAX_VISITS_PER_DAY,
+                        FULL_DAY_DISPLAY_DATE, amy.getName()), newWarning.getFeedbackToUser());
 
-        assertFalse(logic.isInputRequestPending());
+        assertTrue(logic.isInputRequestPending());
+        assertFalse(newWarning.shouldSaveAddressBook());
         assertUnchanged(beforeRequest);
+        logic.execute("n");
+        assertFalse(logic.isInputRequestPending());
         CommandResult viewResult = logic.execute("view " + displayedAmyIndex);
         assertEquals(amy, viewResult.getPersonToView().orElseThrow());
         assertFalse(viewResult.shouldSaveAddressBook());
         assertTrue(viewResult.getInputRequest().isEmpty());
         assertFalse(logic.isInputRequestPending());
         assertUnchanged(beforeRequest);
+    }
+
+    @Test
+    public void execute_repeatedPastVisitsConfirmed_persistsOrderedHistoryWithoutFuturePlaceholder() throws Exception {
+        for (String requested : List.of("13/10/2026 1001", "14/10/2026 1000")) {
+            DeferredSnapshot before = takeSnapshot();
+            CommandResult prompt = logic.execute("next 1 " + requested);
+            assertTrue(prompt.getFeedbackToUser().contains("not in the future"));
+            assertTrue(logic.isInputRequestPending());
+            assertUnchanged(before);
+
+            CommandResult result = logic.execute(" Y ");
+            assertFalse(logic.isInputRequestPending());
+            assertTrue(result.getInputRequest().isEmpty());
+            assertEquals(before.saveCount() + 1, fixture.getSaveCount());
+        }
+        Person expected = new PersonBuilder(amy).withVisitDate("14/10/2026 1000")
+                .withPreviousVisitDates("1/10/2026 1000", "2/10/2026 1000", "13/10/2026 1000", "13/10/2026 1001")
+                .build();
+        fixture.assertPersistedPatients(expected, benson);
+        assertEquals(2, fixture.getSaveCount());
+    }
+
+    @Test
+    public void execute_pastVisitCancelled_preservesDiskAndDisplayedContext() throws Exception {
+        model.updateFilteredPersonList(person -> person.equals(amy));
+        model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
+        DeferredSnapshot before = takeSnapshot();
+        logic.execute("next 1 14/10/2026 1000");
+
+        CommandResult result = logic.execute("next 1 " + NEW_VISIT_DATE);
+
+        assertEquals(NextCommand.MESSAGE_NEXT_CANCELLED, result.getFeedbackToUser());
+        assertFalse(logic.isInputRequestPending());
+        assertUnchanged(before);
+    }
+
+    @Test
+    public void execute_pastVisitOnFullDay_confirmsBothWarningsAndSavesOnce() throws Exception {
+        int index = prepareFullDayRequest("14/10/2026");
+        DeferredSnapshot before = takeSnapshot();
+        CommandResult prompt = logic.execute("next " + index + " 14/10/2026 1130");
+        assertTrue(prompt.getFeedbackToUser().contains("not in the future"));
+        assertTrue(prompt.getFeedbackToUser().contains("already have 7 visits"));
+        assertUnchanged(before);
+
+        CommandResult result = logic.execute("y");
+
+        assertTrue(result.getInputRequest().isEmpty());
+        assertFalse(logic.isInputRequestPending());
+        assertEquals(1, fixture.getSaveCount());
+        assertEquals(new VisitDate("14/10/2026 1130"), result.getPersonToView().orElseThrow().getVisitDate());
+        fixture.assertPersistedPatients(model.getAddressBook().getPersonList().toArray(Person[]::new));
     }
 
     /** Opens the pending request through the real parser and verifies its no-write contract. */
@@ -310,9 +369,14 @@ public class NextCommandIntegrationTest {
 
     /** Persists the complete busy-day fixture before recording any command writes or display state. */
     private int prepareFullDayRequest() throws IOException {
+        return prepareFullDayRequest(FULL_DAY);
+    }
+
+    /** Persists a busy day and hides its patients behind the arranged target selection. */
+    private int prepareFullDayRequest(String day) throws IOException {
         for (int i = 0; i < Model.MAX_VISITS_PER_DAY; i++) {
             model.addPerson(new PersonBuilder().withName("Busy Patient " + i).withPhone("8000000" + i)
-                    .withVisitDate(String.format("%s %02d00", FULL_DAY, 8 + i)).build());
+                    .withVisitDate(String.format("%s %02d00", day, 8 + i)).build());
         }
         fixture = new LogicManagerIntegrationFixture(model, testFolder, clock);
         logic = fixture.getLogic();
@@ -333,15 +397,17 @@ public class NextCommandIntegrationTest {
 
     private void assertSaveFailure(IOException failure, String expectedMessage) throws Exception {
         String savedData = Files.readString(fixture.getAddressBookStorage().getAddressBookFilePath());
+        model.updateFilteredPersonList(person -> person.equals(amy));
+        model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
+        AddressBook addressBookBefore = new AddressBook(model.getAddressBook());
+        List<Person> displayedPersonsBefore = List.copyOf(model.getFilteredPersonList());
         fixture.useFailingStorage(failure);
         logic = fixture.getLogic();
 
         assertThrows(CommandException.class, expectedMessage, () -> logic.execute("next 1 " + NEW_VISIT_DATE));
 
         assertEquals(savedData, Files.readString(fixture.getAddressBookStorage().getAddressBookFilePath()));
-        assertEquals(new VisitDate(NEW_VISIT_DATE), model.getAddressBook().getPersonList().getFirst().getVisitDate());
-        assertEquals(List.of(new VisitDate("1/10/2026 1000"), new VisitDate("2/10/2026 1000"), amy.getVisitDate()),
-                model.getAddressBook().getPersonList().getFirst().getPreviousVisitDates());
-        assertTrue(model.getAddressBook().getPersonList().contains(benson));
+        assertEquals(addressBookBefore, model.getAddressBook());
+        assertEquals(displayedPersonsBefore, model.getFilteredPersonList());
     }
 }
