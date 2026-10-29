@@ -113,7 +113,7 @@ public class LogicManagerIntegrationFixture {
     }
 
     /**
-     * Asserts that the model, displayed list, and reloaded file contain the expected patients.
+     * Asserts that the model and reloaded file contain the expected patients.
      *
      * @param expectedPersons Patients expected in stored order.
      * @throws DataLoadingException If the persisted address book cannot be read.
@@ -121,7 +121,6 @@ public class LogicManagerIntegrationFixture {
     public void assertPersistedPatients(Person... expectedPersons) throws DataLoadingException {
         List<Person> expectedPatients = List.of(expectedPersons);
         assertEquals(expectedPatients, model.getAddressBook().getPersonList());
-        assertEquals(expectedPatients, model.getFilteredPersonList());
         assertEquals(expectedPatients, addressBookStorage.readAddressBook().orElseThrow().getPersonList());
     }
 

@@ -103,9 +103,9 @@ Choose the command according to what you want to change:
 | Restore the latest previous datetime. | [prev](#restoring-the-previous-visit-prev) `INDEX` | Remove the latest previous datetime from the list and use it to replace the current datetime; discard the replaced datetime. |
 | Leave a final visit recorded without planning another. | No command needed. | Keep the current datetime, including after it becomes past. |
 
-Successful `edit`, `next`, and `prev` commands show the full patient list in stored order, clearing filtering and
-sorting. The details panel automatically shows the updated patient and refreshes the record and its calendar label.
-To return to search results, run `find` again.
+Successful `edit`, `next`, and `prev` commands preserve the current filtering and sorting. The updated patient may
+move within the list or disappear if the changed details no longer match those rules. The details panel automatically
+shows the updated patient and refreshes the record and its calendar label. Run `list` to return to the full list.
 
 When `next` moves an appointment to a different day that already has seven or more current appointments, Doc asks for
 confirmation. Patients hidden by filtering still count, but previous visit history does not. Moving the appointment to
@@ -536,8 +536,8 @@ Format: `next INDEX DATETIME`
 * If no further visit is planned, leave the current date and time unchanged, even after it passes.
 * Success shows `Next visit scheduled for patient NAME: DATETIME`, saves the record, and automatically shows the
   updated patient in the details panel.
-* Validation errors preserve data and the displayed list. A save failure reports a storage error; the in-memory
-  appointment may already have changed.
+* Validation errors preserve data and the displayed list. A save failure reports a storage error and restores the
+  patient data and displayed list to their state before the command.
 
 Common errors:
 
@@ -555,7 +555,7 @@ Datetimes in feedback use `d/M/yyyy HHmm`; comparisons with the clock still use 
 Examples (the selected patient's current visit must have arrived or passed; choose an unused datetime later than it):
 
 * `next 1 1/11/2026 0930` schedules the first displayed patient's next appointment for 1 November 2026 at 09:30.
-* `find n/Priya`, then `next 1 2/11/2026 1430`, schedules Priya Nair and restores the full list.
+* `find n/Priya`, then `next 1 2/11/2026 1430`, schedules Priya Nair and keeps the matching search results displayed.
 * On 29 October 2026, if the current visit is `1/10/2026 0900`, `next 1 15/10/2026 1000` asks for confirmation.
   Entering `y` retains October 1 in history and records October 15 as current. No temporary future appointment is needed.
 
@@ -594,7 +594,7 @@ Format: `prev INDEX`
   [index errors](#features) followed by usage. Rejected commands do not save changes.
 * A later `next` uses the restored state and still requires the current visit to have arrived or passed and the
   requested datetime to be later than the restored visit, with confirmation if it is not in the future.
-  A save failure reports a storage error; the in-memory record may already have changed.
+  A save failure reports a storage error and restores the record to its state before the command.
 
 Example: suppose the clock reads `21/10/2026 1200`. Use globally unused replacement datetimes and George Miller's
 currently displayed `INDEX` for each command. Each row continues from the previous row:
@@ -710,10 +710,9 @@ Doc automatically saves completed changes, including successful `add`, `edit`, `
 `clear` when there are no patient records do not write a file because they do not change stored data. You do not need
 to save manually.
 
-If saving fails, Doc reports the save error, but the change may already have been applied in memory. The patient list
-and details panel reflect that in-memory state: added or updated patients are shown, deleted patients' details are
-cleared if displayed, and clearing all patients also clears the details panel. These display changes do not mean the
-data was saved. Restore write access before continuing; restarting before a successful save can lose unsaved changes.
+If saving fails, Doc reports the save error and restores the patient data, active filter, and sorting to their state
+before the command. The data file remains consistent with the restored in-memory state. Restore write access before
+trying the command again.
 
 Emergency contacts are saved with the patient records and remain available after restarting Doc. Older valid
 data files without emergency contacts still load; their patients initially have no emergency contact.
