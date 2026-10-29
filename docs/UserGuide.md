@@ -99,7 +99,7 @@ Choose the command according to what you want to change:
 | Goal | Command | Effect on the visit record |
 | --- | --- | --- |
 | Correct or reschedule the current appointment. | [edit](#editing-a-patient-edit) `INDEX vd/DATETIME` | Replace the current datetime; keep previous dates unchanged. |
-| Plan the following visit after the current visit time has arrived. | [next](#scheduling-the-next-visit-next) `INDEX DATETIME` | Retain the old current datetime and set an unused future datetime. |
+| Plan or record the following visit after the current visit time has arrived. | [next](#scheduling-the-next-visit-next) `INDEX DATETIME` | Retain the old current datetime and set an unused later datetime; confirm if it is not in the future. |
 | Restore the latest previous datetime. | [prev](#restoring-the-previous-visit-prev) `INDEX` | Remove the latest previous datetime from the list and use it to replace the current datetime; discard the replaced datetime. |
 | Leave a final visit recorded without planning another. | No command needed. | Keep the current datetime, including after it becomes past. |
 
@@ -496,9 +496,10 @@ Examples:
 
 ### Scheduling the next visit: `next`
 
-Schedules a patient's following appointment and retains the current visit date and time in their visit record.
-Use `next` after handling the current visit and planning another. Retained dates do not verify attendance or
-completion. Use `edit ... vd/` to correct or reschedule an existing appointment without adding a previous date.
+Schedules or records a patient's following appointment and retains the current visit date and time in their visit
+record. Use `next` after handling the current visit, including when entering follow-up visits late. Retained dates
+do not verify attendance or completion. Use `edit ... vd/` to correct or reschedule an existing appointment without
+adding a previous date.
 
 Format: `next INDEX DATETIME`
 
@@ -509,7 +510,11 @@ Format: `next INDEX DATETIME`
   arguments.
 * The current visit must be at or before your computer's current local time at execution. If it is still in the
   future, use `edit ... vd/` to reschedule it.
-* The requested appointment must be strictly after that execution time; the current minute's start is rejected.
+* The requested appointment must be strictly later than the current recorded visit. This keeps every previous visit
+  earlier than the new current visit. An unchanged or earlier datetime is rejected.
+* An appointment at or before the computer's current local time is allowed after confirmation. Doc warns,
+  `This appointment is not in the future: DATETIME. Record it as the next visit for NAME anyway? Type y to confirm.
+  Any other input cancels.` This includes an appointment exactly at now or at the start of the current minute.
 * The requested appointment must differ from every other patient's current and previous visit dates and times,
   including hidden patients. Leading-zero dates compare equally: `1/11/2026 0930` and `01/11/2026 0930` are the same time.
 * Conflict detection covers identical start times, not visit duration, travel time, or partial overlaps.
@@ -518,9 +523,13 @@ Format: `next INDEX DATETIME`
   `Heads up: you already have 7 visits on Mon, 2 Nov 2026. Schedule Jane Tan's next visit on that day anyway? Type y
   to confirm. Any other input cancels.` Type `y` and press Enter to schedule it; surrounding spaces and letter case
   are ignored. Any other input shows `Scheduling cancelled.`, keeps the data unchanged, and is not run as a command.
-  If the requested time has passed, or another patient has taken it, by the time you enter `y`, the visit is not
-  scheduled and the usual error is shown.
-  A next visit later on the same day as the current visit does not ask, since that day's visit count does not grow.
+  When both the time and full-day warnings apply, Doc combines them into one prompt with one confirmation.
+  If a future appointment reaches or passes now while a full-day prompt is open, Doc asks again with the new
+  time warning before applying the change. If another patient takes the slot, or the selected record changes,
+  the request is rejected. Confirmation rechecks that the current visit has arrived and the new visit is later.
+  Moving later on the same day skips the full-day warning, since that day's visit count does not grow;
+  a non-future appointment still requires confirmation.
+* Prompts and cancellation preserve patient data, visit history, the displayed list, and the details panel.
 * Success appends the old current date and time to the previous dates, then sets the new current date and time.
   All other details, including empty optional fields, are preserved. Previous dates are saved in order in the
   JSON data file and appear below the current visit date in the automatically refreshed patient details panel.
@@ -535,18 +544,20 @@ Common errors:
 | Input problem | Feedback |
 | --- | --- |
 | Current visit still in the future | `Patient NAME has a current visit at DATETIME that is still in the future. Use edit to reschedule it.` |
-| Time at or before now | `The next visit must be later than the current time (DATETIME). Choose a later date and time.` |
+| Time before the current recorded visit | `The next visit must be later than the current recorded visit (DATETIME). Choose a later date and time.` |
 | Unchanged appointment | `Patient NAME already has an appointment at DATETIME.` |
 | Another patient's current or previous visit | `Patient NAME already has a current or previous visit at DATETIME and is shown in the patient details panel. Choose a different date and time.` |
 
 Bare `next` shows usage. Missing or extra arguments, `vd/` syntax, and incorrect index syntax show a reason and usage.
 Invalid dates show the required format; an index outside the displayed list shows the existing invalid-index error.
-The current time in the error uses `d/M/yyyy HHmm`, without seconds; validation still uses the full execution time.
+Datetimes in feedback use `d/M/yyyy HHmm`; comparisons with the clock still use its full precision.
 
-Examples (the selected patient's current visit must have arrived or passed; choose an unused future datetime):
+Examples (the selected patient's current visit must have arrived or passed; choose an unused datetime later than it):
 
 * `next 1 1/11/2026 0930` schedules the first displayed patient's next appointment for 1 November 2026 at 09:30.
 * `find n/Priya`, then `next 1 2/11/2026 1430`, schedules Priya Nair and restores the full list.
+* On 29 October 2026, if the current visit is `1/10/2026 0900`, `next 1 15/10/2026 1000` asks for confirmation.
+  Entering `y` retains October 1 in history and records October 15 as current. No temporary future appointment is needed.
 
 ### Restoring the previous visit: `prev`
 
@@ -582,8 +593,8 @@ Format: `prev INDEX`
 * A missing index shows usage. Invalid indices, including additional arguments, show the shared
   [index errors](#features) followed by usage. Rejected commands do not save changes.
 * A later `next` uses the restored state and still requires the current visit to have arrived or passed and the
-  requested datetime to be in the future. A save failure reports a storage error; the in-memory record may
-  already have changed.
+  requested datetime to be later than the restored visit, with confirmation if it is not in the future.
+  A save failure reports a storage error; the in-memory record may already have changed.
 
 Example: suppose the clock reads `21/10/2026 1200`. Use globally unused replacement datetimes and George Miller's
 currently displayed `INDEX` for each command. Each row continues from the previous row:
@@ -771,7 +782,7 @@ Action     | Format, Examples
 **Edit**   | `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
 **Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`<br> e.g., `find n/George a/maple`, `find vd/15/10/2026`, `find note/mobility`
 **List**   | `list`
-**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (current visit must have arrived; choose an available future appointment)
+**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (current visit must have arrived; choose an available later appointment; confirm if not in the future)
 **Prev**   | `prev INDEX`<br> e.g., `prev 1` (requires a previous datetime and `y` confirmation; replaces and discards the current datetime; no redo)
 **Sort**   | `sort date [START_DATE]`<br> e.g., `sort date 18/9/2026`
 **View**   | `view INDEX`<br> e.g., `view 1` (refreshes details and the calendar label)

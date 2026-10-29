@@ -23,7 +23,7 @@ import seedu.address.model.person.Person;
 import seedu.address.model.person.VisitDate;
 
 /**
- * Retains a patient's current visit date and time before scheduling an available future appointment.
+ * Retains a patient's current visit date and time before recording a later appointment.
  * The current visit must have arrived or passed; retained dates do not verify attendance or completion.
  */
 public class NextCommand extends Command {
@@ -32,12 +32,16 @@ public class NextCommand extends Command {
     public static final String MESSAGE_USAGE = COMMAND_WORD
             + ": Schedules the next visit for the patient identified by the displayed index.\n"
             + "The current visit must have arrived or passed. Use edit to reschedule a future current visit.\n"
-            + "Parameters: INDEX (must be a positive integer) DATETIME (d/M/yyyy HHmm, must be in the future)\n"
+            + "Parameters: INDEX (must be a positive integer) DATETIME (d/M/yyyy HHmm, after the current visit)\n"
+            + "Appointments at or before now require confirmation.\n"
             + "Example: " + COMMAND_WORD + " 1 1/11/2026 0930";
     public static final String MESSAGE_SUCCESS = "Next visit scheduled for patient %1$s: %2$s";
     public static final String MESSAGE_UNCHANGED_VISIT_DATE = "Patient %1$s already has an appointment at %2$s.";
-    public static final String MESSAGE_NON_FUTURE_VISIT_DATE =
-            "The next visit must be later than the current time (%1$s). Choose a later date and time.";
+    public static final String MESSAGE_VISIT_DATE_NOT_AFTER_CURRENT =
+            "The next visit must be later than the current recorded visit (%1$s). Choose a later date and time.";
+    public static final String MESSAGE_WARNING_PAST_VISIT = "This appointment is not in the future: %1$s.";
+    public static final String MESSAGE_CONFIRM_RECORD_VISIT =
+            "Record it as the next visit for %1$s anyway? Type y to confirm. Any other input cancels.";
     public static final String MESSAGE_CURRENT_VISIT_IN_FUTURE =
             "Patient %1$s has a current visit at %2$s that is still in the future. Use edit to reschedule it.";
     public static final String MESSAGE_DUPLICATE_VISIT_DATE =
@@ -75,9 +79,9 @@ public class NextCommand extends Command {
 
     /**
      * {@inheritDoc}
-     * Appends the current visit to the previous dates, replaces it with the requested future visit,
+     * Appends the current visit to the previous dates, replaces it with the requested later visit,
      * and restores the full displayed list in stored order after validation.
-     * Asks for confirmation first if the requested day already has {@value Model#MAX_VISITS_PER_DAY} or more visits.
+     * Asks for confirmation if the requested visit is not in the future or moves to a full day.
      */
     @Override
     public CommandResult execute(Model model) throws CommandException {
@@ -88,11 +92,12 @@ public class NextCommand extends Command {
         }
 
         Person personToUpdate = displayedPersons.get(index.getZeroBased());
-        validateVisitDate(personToUpdate);
+        LocalDateTime now = LocalDateTime.now(clock);
+        validateVisitDate(personToUpdate, now);
 
         Person updatedPerson = createUpdatedPerson(personToUpdate);
         validateNoConflicts(model, personToUpdate, updatedPerson);
-        return scheduleVisitAfterVisitDayCheck(model, personToUpdate, updatedPerson);
+        return scheduleVisitAfterWarnings(model, personToUpdate, updatedPerson, now);
     }
 
     /**
@@ -110,38 +115,48 @@ public class NextCommand extends Command {
     }
 
     /**
-     * Schedules the visit, first asking for confirmation if it moves to another day that already has
-     * {@value Model#MAX_VISITS_PER_DAY} or more visits. A next visit later on the same day as the current one
-     * never asks, since it replaces that day's visit instead of adding another.
+     * Schedules the visit or combines all applicable time and full-day warnings into one confirmation.
+     * Moving later on the same day does not increase capacity, but still warns for a non-future visit.
      *
      * @throws CommandException If the visit cannot be scheduled.
      */
-    private CommandResult scheduleVisitAfterVisitDayCheck(Model model, Person personToUpdate, Person updatedPerson)
-            throws CommandException {
+    private CommandResult scheduleVisitAfterWarnings(Model model, Person personToUpdate, Person updatedPerson,
+            LocalDateTime now) throws CommandException {
         boolean isVisitDayChanged = !personToUpdate.getVisitDate().isSameDay(visitDate);
         int visitsOnNewDay = model.countPersonsWithSameVisitDay(updatedPerson);
-        if (!isVisitDayChanged || visitsOnNewDay < Model.MAX_VISITS_PER_DAY) {
+        boolean isFullDay = isVisitDayChanged && visitsOnNewDay >= Model.MAX_VISITS_PER_DAY;
+        boolean isNonFutureVisit = !visitDate.value.isAfter(now);
+        if (!isFullDay && !isNonFutureVisit) {
             return scheduleVisit(model, personToUpdate, updatedPerson);
         }
 
-        logger.info("Requesting confirmation to schedule a visit on " + visitDate.toDayString()
-                + ", which already has " + visitsOnNewDay + " visits");
-        String prompt = String.format(DISPLAY_LOCALE, MESSAGE_CONFIRM_FULL_DAY, visitsOnNewDay,
-                visitDate.toDayString(), updatedPerson.getName());
+        String prompt = isFullDay
+                ? String.format(DISPLAY_LOCALE, MESSAGE_CONFIRM_FULL_DAY, visitsOnNewDay,
+                        visitDate.toDayString(), updatedPerson.getName())
+                : String.format(MESSAGE_CONFIRM_RECORD_VISIT, updatedPerson.getName());
+        if (isNonFutureVisit) {
+            prompt = String.format(MESSAGE_WARNING_PAST_VISIT, visitDate) + " " + prompt;
+        }
+        logger.info("Requesting confirmation for next visit at " + visitDate);
         CommandInputRequest inputRequest = CommandInputRequest.createConfirmation(prompt, MESSAGE_NEXT_CANCELLED,
-                confirmedModel -> scheduleConfirmedVisit(confirmedModel, personToUpdate, updatedPerson));
+                confirmedModel -> scheduleConfirmedVisit(confirmedModel, personToUpdate, updatedPerson,
+                        isNonFutureVisit));
         return CommandResult.requestInput(inputRequest);
     }
 
     /**
-     * Schedules the visit after the user confirms the full-day prompt.
-     * Rechecks the times first, since the requested appointment may have passed while the prompt was open.
+     * Rechecks a confirmed operation and asks again if the appointment has newly reached or passed now.
      *
-     * @throws CommandException If the appointment is no longer in the future or can no longer be scheduled.
+     * @throws CommandException If the captured patient or appointment can no longer be updated.
      */
-    private CommandResult scheduleConfirmedVisit(Model model, Person personToUpdate, Person updatedPerson)
-            throws CommandException {
-        validateVisitDate(personToUpdate);
+    private CommandResult scheduleConfirmedVisit(Model model, Person personToUpdate, Person updatedPerson,
+            boolean wasNonFutureVisit) throws CommandException {
+        LocalDateTime now = LocalDateTime.now(clock);
+        validateVisitDate(personToUpdate, now);
+        if (!wasNonFutureVisit && !visitDate.value.isAfter(now)) {
+            validateReplacement(model, personToUpdate, updatedPerson);
+            return scheduleVisitAfterWarnings(model, personToUpdate, updatedPerson, now);
+        }
         return scheduleVisit(model, personToUpdate, updatedPerson);
     }
 
@@ -153,10 +168,7 @@ public class NextCommand extends Command {
      */
     private CommandResult scheduleVisit(Model model, Person personToUpdate, Person updatedPerson)
             throws CommandException {
-        if (!model.getAddressBook().getPersonList().contains(personToUpdate)) {
-            throw new CommandException(MESSAGE_PERSON_NO_LONGER_EXISTS);
-        }
-        validateNoConflicts(model, personToUpdate, updatedPerson);
+        validateReplacement(model, personToUpdate, updatedPerson);
 
         model.setPerson(personToUpdate, updatedPerson);
         model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
@@ -166,23 +178,30 @@ public class NextCommand extends Command {
     }
 
     /**
-     * Requires the current visit to be at or before now and the requested visit to be strictly after now.
-     * Reads the execution-time clock once for both comparisons, retaining its full precision.
+     * Requires the current visit to be at or before now and the requested visit to be strictly after it.
      */
-    private void validateVisitDate(Person personToUpdate) throws CommandException {
+    private void validateVisitDate(Person personToUpdate, LocalDateTime now) throws CommandException {
         if (visitDate.equals(personToUpdate.getVisitDate())) {
             throw new CommandException(String.format(MESSAGE_UNCHANGED_VISIT_DATE,
                     personToUpdate.getName(), visitDate));
         }
 
-        LocalDateTime now = LocalDateTime.now(clock);
         if (personToUpdate.getVisitDate().value.isAfter(now)) {
             throw new CommandException(String.format(MESSAGE_CURRENT_VISIT_IN_FUTURE,
                     personToUpdate.getName(), personToUpdate.getVisitDate()));
         }
-        if (!visitDate.value.isAfter(now)) {
-            throw new CommandException(String.format(MESSAGE_NON_FUTURE_VISIT_DATE, now.format(VisitDate.FORMATTER)));
+        if (!visitDate.value.isAfter(personToUpdate.getVisitDate().value)) {
+            throw new CommandException(String.format(MESSAGE_VISIT_DATE_NOT_AFTER_CURRENT,
+                    personToUpdate.getVisitDate()));
         }
+    }
+
+    /** Checks that the captured patient is unchanged and its replacement does not conflict with another record. */
+    private void validateReplacement(Model model, Person personToUpdate, Person updatedPerson) throws CommandException {
+        if (!model.getAddressBook().getPersonList().contains(personToUpdate)) {
+            throw new CommandException(MESSAGE_PERSON_NO_LONGER_EXISTS);
+        }
+        validateNoConflicts(model, personToUpdate, updatedPerson);
     }
 
     /**

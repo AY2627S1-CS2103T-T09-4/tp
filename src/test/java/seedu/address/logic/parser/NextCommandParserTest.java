@@ -107,7 +107,7 @@ public class NextCommandParserTest {
     }
 
     @Test
-    public void parse_pastDateTime_leavesFutureValidationToExecution() {
+    public void parse_pastDateTime_leavesChronologyAndWarningsToExecution() {
         assertParseSuccess(parser, "1 1/1/2025 1000",
                 new NextCommand(INDEX_FIRST_PERSON, new VisitDate("1/1/2025 1000")));
     }

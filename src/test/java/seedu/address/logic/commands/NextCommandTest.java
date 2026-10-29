@@ -185,20 +185,24 @@ public class NextCommandTest {
     }
 
     @Test
-    public void execute_pastAndCurrentMinuteAppointments_preservesDataAndDisplay() {
-        // Rule: Scheduling requires currentVisit <= now < requestedVisit.
-        // EP: Non-future requests, represented by past-day and same-day appointments.
-        for (String dateTime : List.of("1/1/2026 1000", "14/10/2026 1159", "14/10/2026 1200")) {
+    public void execute_appointmentBeforeCurrentVisit_preservesDataAndDisplay() {
+        for (String dateTime : List.of("1/1/2026 1000", "13/10/2026 0959")) {
             assertScheduleFailure(INDEX_FIRST_PERSON, new VisitDate(dateTime), FIXED_CLOCK,
-                    String.format(NextCommand.MESSAGE_NON_FUTURE_VISIT_DATE, "14/10/2026 1200"));
+                    String.format(NextCommand.MESSAGE_VISIT_DATE_NOT_AFTER_CURRENT, AMY.getVisitDate()));
         }
     }
 
     @Test
-    public void execute_equalToNow_rejectsAppointment() {
+    public void execute_pastAndCurrentMinuteAppointments_requestsConfirmation() throws Exception {
+        for (String dateTime : List.of("13/10/2026 1001", "14/10/2026 1159", "14/10/2026 1200")) {
+            assertPastVisitRequest(dateTime, FIXED_CLOCK);
+        }
+    }
+
+    @Test
+    public void execute_equalToNow_requestsConfirmation() throws Exception {
         Clock exactMinuteClock = Clock.fixed(Instant.parse("2026-10-14T04:00:00Z"), FIXED_CLOCK.getZone());
-        assertScheduleFailure(INDEX_FIRST_PERSON, new VisitDate("14/10/2026 1200"), exactMinuteClock,
-                String.format(NextCommand.MESSAGE_NON_FUTURE_VISIT_DATE, "14/10/2026 1200"));
+        assertPastVisitRequest("14/10/2026 1200", exactMinuteClock);
     }
 
     @Test
@@ -246,30 +250,29 @@ public class NextCommandTest {
     }
 
     @Test
-    public void execute_requestedVisitOneNanosecondBeforeNow_rejectsAppointment() {
+    public void execute_requestedVisitOneNanosecondBeforeNow_requestsConfirmation() throws Exception {
         Clock justAfterRequestedVisit = Clock.fixed(Instant.parse("2026-10-14T04:00:00.000000001Z"),
                 FIXED_CLOCK.getZone());
 
-        assertScheduleFailure(INDEX_FIRST_PERSON, new VisitDate("14/10/2026 1200"), justAfterRequestedVisit,
-                String.format(NextCommand.MESSAGE_NON_FUTURE_VISIT_DATE, "14/10/2026 1200"));
+        assertPastVisitRequest("14/10/2026 1200", justAfterRequestedVisit);
     }
 
     @Test
-    public void execute_clockTimeZone_usesLocalDateTime() {
+    public void execute_clockTimeZone_usesLocalDateTime() throws Exception {
         Clock differentZoneClock = FIXED_CLOCK.withZone(ZoneId.of("Pacific/Auckland"));
-        assertScheduleFailure(INDEX_FIRST_PERSON, new VisitDate("14/10/2026 1300"), differentZoneClock,
-                String.format(NextCommand.MESSAGE_NON_FUTURE_VISIT_DATE, "14/10/2026 1700"));
+        assertPastVisitRequest("14/10/2026 1300", differentZoneClock);
     }
 
     @Test
-    public void execute_timeAdvancedAfterCreation_validatesAtExecution() {
+    public void execute_timeAdvancedAfterCreation_validatesAtExecution() throws Exception {
         CountingClock clock = new CountingClock(FIXED_CLOCK);
         NextCommand command = new NextCommand(INDEX_FIRST_PERSON, new VisitDate(NEW_VISIT_DATE), clock);
         assertEquals(0, clock.getReadCount());
         clock.setDelegate(Clock.offset(FIXED_CLOCK, Duration.ofDays(30)));
-        String expectedMessage = String.format(NextCommand.MESSAGE_NON_FUTURE_VISIT_DATE, "13/11/2026 1200");
-
-        assertThrows(CommandException.class, expectedMessage, () -> command.execute(model));
+        CommandResult result = command.execute(model);
+        assertTrue(result.getFeedbackToUser().startsWith(
+                String.format(NextCommand.MESSAGE_WARNING_PAST_VISIT, NEW_VISIT_DATE)));
+        assertTrue(result.getInputRequest().isPresent());
         assertEquals(1, clock.getReadCount());
         assertEquals(List.of(AMY, BENSON, CARL), model.getAddressBook().getPersonList());
     }
@@ -298,13 +301,9 @@ public class NextCommandTest {
     }
 
     @Test
-    public void execute_nonFutureVisit_showsCurrentMinuteWithoutReadingClockAgain() {
+    public void execute_nonFutureVisit_readsClockOnce() throws Exception {
         CountingClock clock = new CountingClock(FIXED_CLOCK);
-        String expectedMessage = "The next visit must be later than the current time (14/10/2026 1200). "
-                + "Choose a later date and time.";
-
-        assertScheduleFailure(INDEX_FIRST_PERSON, new VisitDate("14/10/2026 1200"), clock, expectedMessage);
-
+        assertPastVisitRequest("14/10/2026 1200", clock);
         assertEquals(1, clock.getReadCount());
     }
 
@@ -421,7 +420,7 @@ public class NextCommandTest {
     }
 
     @Test
-    public void confirmation_appointmentPassedBeforeConfirmation_rejectsWithoutChangingData() throws Exception {
+    public void confirmation_appointmentPassedBeforeConfirmation_requestsPastWarningThenSchedules() throws Exception {
         fillDay(FULL_DAY, Model.MAX_VISITS_PER_DAY);
         CountingClock clock = new CountingClock(FIXED_CLOCK);
         CommandResult requestResult = new NextCommand(INDEX_FIRST_PERSON, new VisitDate(FULL_DAY_VISIT_DATE), clock)
@@ -431,10 +430,17 @@ public class NextCommandTest {
         // the prompt stays open until after the requested appointment time
         clock.setDelegate(Clock.offset(FIXED_CLOCK, Duration.ofDays(30)));
         CommandInputRequest inputRequest = requestResult.getInputRequest().orElseThrow();
-        String expectedMessage = String.format(NextCommand.MESSAGE_NON_FUTURE_VISIT_DATE, "13/11/2026 1200");
-
-        assertThrows(CommandException.class, expectedMessage, () -> inputRequest.respond("y", model));
+        CommandResult pastWarning = inputRequest.respond("y", model);
+        String expectedPrompt = String.format(NextCommand.MESSAGE_WARNING_PAST_VISIT, FULL_DAY_VISIT_DATE)
+                + " " + requestResult.getFeedbackToUser();
+        assertEquals(expectedPrompt, pastWarning.getFeedbackToUser());
+        assertFalse(pastWarning.shouldSaveAddressBook());
         assertEquals(before, model.getAddressBook());
+
+        CommandResult confirmed = pastWarning.getInputRequest().orElseThrow().respond("y", model);
+        assertTrue(confirmed.getInputRequest().isEmpty());
+        assertEquals(List.of(AMY.getVisitDate()), confirmed.getPersonToView().orElseThrow().getPreviousVisitDates());
+        assertEquals(3, clock.getReadCount());
     }
 
     @Test
@@ -469,6 +475,111 @@ public class NextCommandTest {
         String expectedMessage = NextCommand.MESSAGE_PERSON_NO_LONGER_EXISTS;
 
         assertThrows(CommandException.class, expectedMessage, () -> inputRequest.respond("y", model));
+    }
+
+    @Test
+    public void confirmation_pastVisitConfirmed_appendsCurrentAndPreservesOtherFields() throws Exception {
+        CommandResult request = assertPastVisitRequest("14/10/2026 1000", FIXED_CLOCK);
+        Person expected = AMY.copyWithVisitDates(new VisitDate("14/10/2026 1000"), List.of(AMY.getVisitDate()));
+
+        CommandResult result = request.getInputRequest().orElseThrow().respond(" Y ", model);
+
+        assertEquals(expected, result.getPersonToView().orElseThrow());
+        assertEquals(List.of(expected, BENSON, CARL), model.getAddressBook().getPersonList());
+        assertTrue(result.shouldSaveAddressBook());
+        assertTrue(result.getInputRequest().isEmpty());
+    }
+
+    @Test
+    public void confirmation_pastVisitCancelled_preservesFilterSortAndRecord() throws Exception {
+        model.updateFilteredPersonList(person -> person.equals(AMY));
+        model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
+        for (String response : List.of("n", "", "next 1 " + NEW_VISIT_DATE)) {
+            CommandResult request = assertPastVisitRequest("14/10/2026 1000", FIXED_CLOCK);
+            CommandResult result = request.getInputRequest().orElseThrow().respond(response, model);
+            assertEquals(NextCommand.MESSAGE_NEXT_CANCELLED, result.getFeedbackToUser());
+            assertFalse(result.shouldSaveAddressBook());
+            assertEquals(List.of(AMY), model.getFilteredPersonList());
+            assertEquals(List.of(AMY, BENSON, CARL), model.getAddressBook().getPersonList());
+        }
+    }
+
+    @Test
+    public void execute_requestAfterHistoryButBeforeCurrent_rejectsWithoutChangingRecord() {
+        Person original = new PersonBuilder(AMY).withPreviousVisitDates("1/10/2026 1000").build();
+        model.setPerson(AMY, original);
+        for (String dateTime : List.of("30/9/2026 1000", "1/10/2026 1000", "2/10/2026 1000")) {
+            assertScheduleFailure(INDEX_FIRST_PERSON, new VisitDate(dateTime), FIXED_CLOCK,
+                    String.format(NextCommand.MESSAGE_VISIT_DATE_NOT_AFTER_CURRENT, original.getVisitDate()));
+        }
+    }
+
+    @Test
+    public void execute_pastVisitOnFullDay_combinesWarningsAndConfirmsOnce() throws Exception {
+        fillDay("14/10/2026", Model.MAX_VISITS_PER_DAY);
+        VisitDate requested = new VisitDate("14/10/2026 1500");
+        Clock laterClock = Clock.offset(FIXED_CLOCK, Duration.ofDays(1));
+        AddressBook before = new AddressBook(model.getAddressBook());
+
+        CommandResult request = new NextCommand(INDEX_FIRST_PERSON, requested, laterClock).execute(model);
+
+        String expectedPrompt = String.format(NextCommand.MESSAGE_WARNING_PAST_VISIT, requested) + " "
+                + String.format(NextCommand.MESSAGE_CONFIRM_FULL_DAY, Model.MAX_VISITS_PER_DAY,
+                        requested.toDayString(), AMY.getName());
+        assertEquals(expectedPrompt, request.getFeedbackToUser());
+        assertFalse(request.shouldSaveAddressBook());
+        assertEquals(before, model.getAddressBook());
+        CommandResult result = request.getInputRequest().orElseThrow().respond("y", model);
+        assertTrue(result.getInputRequest().isEmpty());
+        assertTrue(result.shouldSaveAddressBook());
+        assertEquals(requested, result.getPersonToView().orElseThrow().getVisitDate());
+    }
+
+    @Test
+    public void execute_pastVisitOnSameFullDay_warnsOnlyAboutTime() throws Exception {
+        model.setPerson(AMY, new PersonBuilder(AMY).withVisitDate("13/10/2026 0730").build());
+        fillDay("13/10/2026", Model.MAX_VISITS_PER_DAY);
+        assertPastVisitRequest("13/10/2026 1630", FIXED_CLOCK);
+    }
+
+    @Test
+    public void confirmation_clockMovedBackBeforeCurrentVisit_rejectsWithoutChangingRecord() throws Exception {
+        CountingClock clock = new CountingClock(FIXED_CLOCK);
+        CommandResult request = assertPastVisitRequest("14/10/2026 1000", clock);
+        clock.setDelegate(Clock.offset(FIXED_CLOCK, Duration.ofDays(-2)));
+        AddressBook before = new AddressBook(model.getAddressBook());
+
+        assertThrows(CommandException.class, String.format(NextCommand.MESSAGE_CURRENT_VISIT_IN_FUTURE,
+                AMY.getName(), AMY.getVisitDate()), () -> request.getInputRequest().orElseThrow().respond("y", model));
+
+        assertEquals(before, model.getAddressBook());
+    }
+
+    @Test
+    public void confirmation_pastVisitPatientEdited_rejectsWithoutOverwritingEdit() throws Exception {
+        CommandResult request = assertPastVisitRequest("14/10/2026 1000", FIXED_CLOCK);
+        Person edited = new PersonBuilder(AMY).withNote("Changed while waiting").build();
+        model.setPerson(AMY, edited);
+        AddressBook before = new AddressBook(model.getAddressBook());
+
+        assertThrows(CommandException.class, NextCommand.MESSAGE_PERSON_NO_LONGER_EXISTS, () ->
+                request.getInputRequest().orElseThrow().respond("y", model));
+
+        assertEquals(before, model.getAddressBook());
+    }
+
+    @Test
+    public void confirmation_pastVisitSlotTaken_rejectsWithoutChangingRecord() throws Exception {
+        CommandResult request = assertPastVisitRequest("14/10/2026 1000", FIXED_CLOCK);
+        Person conflicting = new PersonBuilder(BENSON).withVisitDate("14/10/2026 1000").build();
+        model.setPerson(BENSON, conflicting);
+        AddressBook before = new AddressBook(model.getAddressBook());
+
+        assertThrows(CommandException.class, String.format(NextCommand.MESSAGE_DUPLICATE_VISIT_DATE,
+                conflicting.getName(), conflicting.getVisitDate()), () ->
+                request.getInputRequest().orElseThrow().respond("y", model));
+
+        assertEquals(before, model.getAddressBook());
     }
 
     @Test
@@ -545,6 +656,23 @@ public class NextCommandTest {
         assertEquals(before, model.getAddressBook());
         assertEquals(displayedPersons, model.getFilteredPersonList());
         return exception;
+    }
+
+    /** Checks that a past-visit prompt leaves both the complete record and displayed list unchanged. */
+    private CommandResult assertPastVisitRequest(String dateTime, Clock clock) throws Exception {
+        AddressBook before = new AddressBook(model.getAddressBook());
+        List<Person> displayedPersons = List.copyOf(model.getFilteredPersonList());
+        CommandResult result = new NextCommand(INDEX_FIRST_PERSON, new VisitDate(dateTime), clock).execute(model);
+
+        String expectedPrompt = String.format(NextCommand.MESSAGE_WARNING_PAST_VISIT, dateTime) + " "
+                + String.format(NextCommand.MESSAGE_CONFIRM_RECORD_VISIT, displayedPersons.getFirst().getName());
+        assertEquals(expectedPrompt, result.getFeedbackToUser());
+        assertTrue(result.getInputRequest().isPresent());
+        assertFalse(result.shouldSaveAddressBook());
+        assertEquals(CommandResult.DetailsPanelAction.KEEP, result.getDetailsPanelAction());
+        assertEquals(before, model.getAddressBook());
+        assertEquals(displayedPersons, model.getFilteredPersonList());
+        return result;
     }
 
     /** Checks that requesting confirmation preserves both the complete book and the arranged display. */
