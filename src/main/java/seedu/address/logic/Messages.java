@@ -1,5 +1,6 @@
 package seedu.address.logic;
 
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -12,6 +13,7 @@ import seedu.address.model.person.Person;
  */
 public class Messages {
 
+    public static final Locale DISPLAY_LOCALE = Locale.ENGLISH;
     public static final String MESSAGE_UNKNOWN_COMMAND = "Unknown command.";
     public static final String MESSAGE_INVALID_COMMAND_FORMAT = "Invalid command format!\n%1$s";
     public static final String MESSAGE_INVALID_PERSON_DISPLAYED_INDEX =
