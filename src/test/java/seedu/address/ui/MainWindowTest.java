@@ -31,6 +31,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -144,16 +145,32 @@ public class MainWindowTest {
 
                 resultDisplay.setText("Response line\n".repeat(30));
                 resultDisplay.positionCaret(0);
-                resultDisplay.setScrollTop(0);
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
+                resultDisplay.setScrollTop(0);
+
+                ScrollBar verticalScrollBar = (ScrollBar) resultDisplay.lookup(".scroll-bar:vertical");
+                assertNotNull(verticalScrollBar);
+                assertTrue(verticalScrollBar.getMax() > verticalScrollBar.getMin());
+                assertTrue(verticalScrollBar.getUnitIncrement() > 0);
 
                 fireKeyPressed(resultDisplay, KeyCode.DOWN);
-                assertEquals(40, resultDisplay.getScrollTop(), LAYOUT_TOLERANCE);
+                assertEquals(verticalScrollBar.getMin() + verticalScrollBar.getUnitIncrement(),
+                        verticalScrollBar.getValue(), LAYOUT_TOLERANCE);
                 assertEquals(0, resultDisplay.getCaretPosition());
 
                 fireKeyPressed(resultDisplay, KeyCode.UP);
-                assertEquals(0, resultDisplay.getScrollTop(), LAYOUT_TOLERANCE);
+                assertEquals(verticalScrollBar.getMin(), verticalScrollBar.getValue(), LAYOUT_TOLERANCE);
+                assertEquals(0, resultDisplay.getCaretPosition());
+
+                for (int i = 0; i < 100; i++) {
+                    fireKeyPressed(resultDisplay, KeyCode.DOWN);
+                }
+                assertEquals(verticalScrollBar.getMax(), verticalScrollBar.getValue(), LAYOUT_TOLERANCE);
+
+                fireKeyPressed(resultDisplay, KeyCode.UP);
+                assertEquals(verticalScrollBar.getMax() - verticalScrollBar.getUnitIncrement(),
+                        verticalScrollBar.getValue(), LAYOUT_TOLERANCE);
                 assertEquals(0, resultDisplay.getCaretPosition());
             } finally {
                 stage.close();

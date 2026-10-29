@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import javafx.fxml.FXML;
 import javafx.scene.Node;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.control.TextArea;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Region;
@@ -14,7 +15,6 @@ import javafx.scene.layout.Region;
 public class ResultDisplay extends UiPart<Region> {
 
     private static final String FXML = "ResultDisplay.fxml";
-    private static final double SMALL_SCROLL_PIXELS = 40.0;
 
     @FXML
     private TextArea resultDisplay;
@@ -43,8 +43,8 @@ public class ResultDisplay extends UiPart<Region> {
         }
 
         switch (keyEvent.getCode()) {
-            case UP -> scrollByPixels(-SMALL_SCROLL_PIXELS);
-            case DOWN -> scrollByPixels(SMALL_SCROLL_PIXELS);
+            case UP -> scrollByUnits(-1);
+            case DOWN -> scrollByUnits(1);
             default -> {
                 return;
             }
@@ -52,10 +52,18 @@ public class ResultDisplay extends UiPart<Region> {
         keyEvent.consume();
     }
 
-    /** Scrolls response text vertically by the specified number of pixels. */
-    private void scrollByPixels(double pixels) {
-        double targetScrollTop = Math.max(0, resultDisplay.getScrollTop() + pixels);
-        resultDisplay.setScrollTop(targetScrollTop);
+    /** Scrolls response text vertically by the specified number of scrollbar units. */
+    private void scrollByUnits(int units) {
+        ScrollBar verticalScrollBar = (ScrollBar) resultDisplay.lookup(".scroll-bar:vertical");
+        if (verticalScrollBar == null) {
+            return;
+        }
+
+        double targetScrollValue = verticalScrollBar.getValue()
+                + units * verticalScrollBar.getUnitIncrement();
+        targetScrollValue = Math.max(verticalScrollBar.getMin(), targetScrollValue);
+        targetScrollValue = Math.min(verticalScrollBar.getMax(), targetScrollValue);
+        verticalScrollBar.setValue(targetScrollValue);
     }
 
 }

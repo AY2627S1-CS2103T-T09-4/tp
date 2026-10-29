@@ -88,7 +88,8 @@ The `UI` component,
 text area can be scrolled vertically when a message exceeds the panel height. The panel does not grow when the main
 window is resized; extra vertical space remains available to the patient list and patient-details panel instead.
 `ResultDisplay` intercepts unmodified Up and Down key presses before JavaFX performs caret navigation, scrolling the
-text area immediately while preserving modified arrow-key behavior for text selection and navigation.
+text area immediately while preserving modified arrow-key behavior for text selection and navigation. Each movement
+is clamped to the TextArea's vertical scrollbar bounds so repeated presses at an edge do not accumulate hidden scroll.
 
 `CommandBox` owns a session-scoped `CommandHistory`. It records ordinary command submissions and uses it to replace
 the command box text when the user presses the Up or Down arrow key.
