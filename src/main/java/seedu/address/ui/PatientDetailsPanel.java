@@ -7,8 +7,11 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import seedu.address.model.person.Person;
@@ -20,9 +23,14 @@ import seedu.address.model.person.VisitDate;
 public class PatientDetailsPanel extends UiPart<Region> {
 
     private static final String FXML = "PatientDetailsPanel.fxml";
+    private static final double SMALL_SCROLL_PIXELS = 40.0;
+    private static final double PAGE_SCROLL_RATIO = 0.9;
 
     private final Clock clock;
     private Person displayedPerson;
+
+    @FXML
+    private ScrollPane scrollPane;
 
     @FXML
     private VBox detailsContainer;
@@ -87,6 +95,8 @@ public class PatientDetailsPanel extends UiPart<Region> {
     PatientDetailsPanel(Clock clock) {
         super(FXML);
         this.clock = requireNonNull(clock);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
     }
 
     /**
@@ -99,6 +109,7 @@ public class PatientDetailsPanel extends UiPart<Region> {
      */
     public void setPerson(Person person) {
         requireNonNull(person);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         name.setText(person.getName().fullName);
         boolean hasDateOfBirth = !person.getDateOfBirth().isEmpty();
         dateOfBirth.setText(hasDateOfBirth ? "Date of birth: " + person.getDateOfBirth().toDisplayString() : "");
@@ -151,11 +162,13 @@ public class PatientDetailsPanel extends UiPart<Region> {
         detailsContainer.setManaged(true);
         detailsContainer.setVisible(true);
         displayedPerson = person;
+        resetScrollPositionAfterLayout();
     }
 
     /** Hides the displayed patient details. */
     public void clear() {
         displayedPerson = null;
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         detailsContainer.setManaged(false);
         detailsContainer.setVisible(false);
     }
@@ -180,6 +193,74 @@ public class PatientDetailsPanel extends UiPart<Region> {
         return person.getPreviousVisitDates().reversed().stream()
                 .map(VisitDate::toString)
                 .collect(Collectors.joining("\n"));
+    }
+
+    /** Handles scrolling keys while the details panel owns keyboard focus. */
+    private void handleKeyPressed(KeyEvent keyEvent) {
+        switch (keyEvent.getCode()) {
+            case UP -> scrollByPixels(-SMALL_SCROLL_PIXELS);
+            case DOWN -> scrollByPixels(SMALL_SCROLL_PIXELS);
+            case PAGE_UP -> scrollByPixels(-getPageScrollPixels());
+            case PAGE_DOWN -> scrollByPixels(getPageScrollPixels());
+            case HOME -> scrollToBoundary(scrollPane.getVmin());
+            case END -> scrollToBoundary(scrollPane.getVmax());
+            default -> {
+                return;
+            }
+        }
+        keyEvent.consume();
+    }
+
+    /** Scrolls the panel by the given number of content pixels within its valid bounds. */
+    private void scrollByPixels(double pixels) {
+        if (!canScroll()) {
+            return;
+        }
+
+        double scrollableHeight = getScrollableHeight();
+        double valueRange = scrollPane.getVmax() - scrollPane.getVmin();
+        double currentPixels = (scrollPane.getVvalue() - scrollPane.getVmin()) / valueRange * scrollableHeight;
+        double targetPixels = Math.max(0, Math.min(scrollableHeight, currentPixels + pixels));
+        double targetValue = scrollPane.getVmin() + targetPixels / scrollableHeight * valueRange;
+        scrollPane.setVvalue(targetValue);
+    }
+
+    /** Moves to a boundary only when the panel has content that can scroll. */
+    private void scrollToBoundary(double value) {
+        if (canScroll()) {
+            scrollPane.setVvalue(value);
+        }
+    }
+
+    /** Returns true when the details content exceeds the available viewport. */
+    private boolean canScroll() {
+        return detailsContainer.isManaged() && detailsContainer.isVisible()
+                && getScrollableHeight() > 0 && scrollPane.getVmax() > scrollPane.getVmin();
+    }
+
+    /** Returns the number of content pixels outside the details viewport. */
+    private double getScrollableHeight() {
+        return scrollPane.getContent().getBoundsInLocal().getHeight()
+                - scrollPane.getViewportBounds().getHeight();
+    }
+
+    /** Returns the number of pixels used by one page scroll. */
+    private double getPageScrollPixels() {
+        return scrollPane.getViewportBounds().getHeight() * PAGE_SCROLL_RATIO;
+    }
+
+    /** Resets the scroll position immediately and again after the updated content is laid out. */
+    private void resetScrollPositionAfterLayout() {
+        scrollPane.setVvalue(scrollPane.getVmin());
+        if (scrollPane.getScene() == null) {
+            return;
+        }
+
+        Platform.runLater(() -> {
+            scrollPane.applyCss();
+            scrollPane.layout();
+            scrollPane.setVvalue(scrollPane.getVmin());
+        });
     }
 
     /**

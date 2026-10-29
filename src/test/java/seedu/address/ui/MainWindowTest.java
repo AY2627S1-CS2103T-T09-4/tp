@@ -3,11 +3,15 @@ package seedu.address.ui;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.testutil.Assert.assertThrows;
+import static seedu.address.ui.JavaFxTestUtil.callOnFxThread;
 import static seedu.address.ui.JavaFxTestUtil.runOnFxThread;
 import static seedu.address.ui.JavaFxTestUtil.startJavaFx;
+import static seedu.address.ui.JavaFxTestUtil.waitForNextPulse;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -17,9 +21,23 @@ import org.junit.jupiter.api.Test;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.css.PseudoClass;
+import javafx.event.ActionEvent;
+import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.Border;
+import javafx.scene.layout.BorderStroke;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.logic.Logic;
@@ -32,6 +50,10 @@ import seedu.address.testutil.PersonBuilder;
 public class MainWindowTest {
 
     private static final Path TEST_DATA_FILE_PATH = Path.of("data", "test-addressbook.json");
+    private static final double FOCUS_BORDER_WIDTH = 2.0;
+    private static final Color FOCUS_BORDER_COLOR = Color.web("#909090");
+    private static final PseudoClass KEYBOARD_FOCUSED_PSEUDO_CLASS =
+            PseudoClass.getPseudoClass("keyboard-focused");
 
     @BeforeAll
     public static void setUpJavaFx() throws InterruptedException {
@@ -68,6 +90,143 @@ public class MainWindowTest {
                 stage.close();
             }
         });
+    }
+
+    @Test
+    public void keyboardNavigation_emptyDetails_cyclesForwardAndReverse() {
+        runOnFxThread(() -> {
+            Person person = new PersonBuilder().withName("Keyboard Patient").build();
+            TestLogic logic = new TestLogic(person, FXCollections.observableArrayList());
+            Stage stage = new Stage();
+
+            try {
+                MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH, url -> { });
+                mainWindow.fillInnerParts();
+                mainWindow.show();
+                Scene scene = stage.getScene();
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+
+                TextField commandTextField = (TextField) scene.lookup("#commandTextField");
+                TextArea resultDisplay = (TextArea) scene.lookup("#resultDisplay");
+                ListView<?> personListView = (ListView<?>) scene.lookup("#personListView");
+                ScrollPane detailsPanel = (ScrollPane) mainWindow.getPatientDetailsPanel().getRoot();
+                List<Node> focusSections = getFocusSections(scene);
+
+                commandTextField.requestFocus();
+                assertSame(commandTextField, scene.getFocusOwner());
+                assertFocusIndicator(scene, focusSections, 0);
+                fireTab(scene, false);
+                assertSame(resultDisplay, scene.getFocusOwner());
+                assertFocusIndicator(scene, focusSections, 1);
+                fireTab(scene, false);
+                assertSame(personListView, scene.getFocusOwner());
+                assertFocusIndicator(scene, focusSections, 2);
+                fireTab(scene, false);
+                assertSame(detailsPanel, scene.getFocusOwner());
+                assertFocusIndicator(scene, focusSections, 3);
+                fireTab(scene, false);
+                assertSame(commandTextField, scene.getFocusOwner());
+                assertFocusIndicator(scene, focusSections, 0);
+
+                fireTab(scene, true);
+                assertSame(detailsPanel, scene.getFocusOwner());
+                assertFocusIndicator(scene, focusSections, 3);
+                fireTab(scene, true);
+                assertSame(personListView, scene.getFocusOwner());
+                assertFocusIndicator(scene, focusSections, 2);
+                fireTab(scene, true);
+                assertSame(resultDisplay, scene.getFocusOwner());
+                assertFocusIndicator(scene, focusSections, 1);
+                fireTab(scene, true);
+                assertSame(commandTextField, scene.getFocusOwner());
+                assertFocusIndicator(scene, focusSections, 0);
+
+                logic.setExecutionOutcome(ExecutionOutcome.CLEAR_DETAILS);
+                assertDoesNotThrow(() -> mainWindow.executeCommand("clear"));
+                commandTextField.requestFocus();
+                fireTab(scene, false);
+                fireTab(scene, false);
+                fireTab(scene, false);
+                assertSame(detailsPanel, scene.getFocusOwner());
+                assertFocusIndicator(scene, focusSections, 3);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    @Test
+    public void focusIndicators_preserveCommandErrorAndPatientSelection() {
+        runOnFxThread(() -> {
+            Person person = new PersonBuilder().withName("Selected Patient").build();
+            ObservableList<Person> persons = FXCollections.observableArrayList(person);
+            TestLogic logic = new TestLogic(person, ExecutionOutcome.COMMAND_ERROR, persons);
+            Stage stage = new Stage();
+
+            try {
+                MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH, url -> { });
+                mainWindow.fillInnerParts();
+                mainWindow.show();
+                Scene scene = stage.getScene();
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+
+                List<Node> focusSections = getFocusSections(scene);
+                TextField commandTextField = getCommandTextField(scene);
+                ListView<?> personListView = (ListView<?>) scene.lookup("#personListView");
+
+                commandTextField.setText("invalid command");
+                commandTextField.getOnAction().handle(new ActionEvent(commandTextField, commandTextField));
+                assertTrue(commandTextField.getStyleClass().contains(CommandBox.ERROR_STYLE_CLASS));
+                commandTextField.requestFocus();
+                assertFocusIndicator(scene, focusSections, 0);
+
+                personListView.getSelectionModel().select(0);
+                personListView.requestFocus();
+                assertEquals(0, personListView.getSelectionModel().getSelectedIndex());
+                assertTrue(getSelectedListCell(personListView).getPseudoClassStates()
+                        .contains(PseudoClass.getPseudoClass("selected")));
+                assertFocusIndicator(scene, focusSections, 2);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    @Test
+    public void commandEntry_view_keepsFocusAndResetsDetails() {
+        Person longRecord = new PersonBuilder().withName("Long Record")
+                .withNote("A long note that should overflow the details panel. ".repeat(200)).build();
+        Person shortRecord = new PersonBuilder().withName("Short Record").build();
+        MainWindowFixture fixture = callOnFxThread(() -> new MainWindowFixture(longRecord));
+
+        try {
+            runOnFxThread(fixture::submitView);
+            waitForNextPulse();
+            runOnFxThread(() -> {
+                fixture.assertCommandFocus();
+                fixture.assertDetailsAtTop();
+                fixture.scrollToBottom();
+                fixture.setPersonToView(shortRecord);
+                fixture.submitView();
+            });
+            waitForNextPulse();
+            runOnFxThread(() -> {
+                fixture.assertCommandFocus();
+                fixture.assertDetailsAtTop();
+                fixture.assertDisplayedName("Short Record");
+                fixture.setPersonToView(longRecord);
+                fixture.submitView();
+            });
+            waitForNextPulse();
+            runOnFxThread(() -> {
+                fixture.assertCommandFocus();
+                fixture.assertDetailsAtTop();
+            });
+        } finally {
+            runOnFxThread(fixture::close);
+        }
     }
 
     @Test
@@ -211,6 +370,72 @@ public class MainWindowTest {
         return (VBox) detailsPanel.getContent();
     }
 
+    private static ScrollPane getDetailsPanel(MainWindow mainWindow) {
+        return (ScrollPane) mainWindow.getPatientDetailsPanel().getRoot();
+    }
+
+    private static List<Node> getFocusSections(Scene scene) {
+        return List.of(
+                getNode(scene, "#commandBoxPlaceholder"),
+                getNode(scene, "#resultDisplayPlaceholder"),
+                getNode(scene, "#personList"),
+                getNode(scene, "#patientDetailsPanelPlaceholder"));
+    }
+
+    private static Node getNode(Scene scene, String selector) {
+        Node node = scene.lookup(selector);
+        assertNotNull(node);
+        return node;
+    }
+
+    private static void assertFocusIndicator(Scene scene, List<Node> focusSections, int focusedSectionIndex) {
+        scene.getRoot().applyCss();
+        for (int i = 0; i < focusSections.size(); i++) {
+            Region section = (Region) focusSections.get(i);
+            boolean isFocusedSection = i == focusedSectionIndex;
+            assertEquals(isFocusedSection,
+                    section.getPseudoClassStates().contains(KEYBOARD_FOCUSED_PSEUDO_CLASS));
+            Border border = section.getBorder();
+            assertNotNull(border);
+            BorderStroke borderStroke = border.getStrokes().get(0);
+            assertEquals(FOCUS_BORDER_WIDTH, borderStroke.getWidths().getTop());
+            assertEquals(FOCUS_BORDER_WIDTH, borderStroke.getWidths().getRight());
+            assertEquals(FOCUS_BORDER_WIDTH, borderStroke.getWidths().getBottom());
+            assertEquals(FOCUS_BORDER_WIDTH, borderStroke.getWidths().getLeft());
+            if (isFocusedSection) {
+                assertEquals(FOCUS_BORDER_COLOR, borderStroke.getTopStroke());
+            } else {
+                assertNotEquals(FOCUS_BORDER_COLOR, borderStroke.getTopStroke());
+            }
+        }
+    }
+
+    private static ListCell<?> getSelectedListCell(ListView<?> personListView) {
+        return personListView.lookupAll(".list-cell").stream()
+                .map(ListCell.class::cast)
+                .filter(ListCell::isSelected)
+                .findFirst()
+                .orElseThrow();
+    }
+
+    private static TextField getCommandTextField(Scene scene) {
+        TextField commandTextField = (TextField) scene.lookup("#commandTextField");
+        assertNotNull(commandTextField);
+        return commandTextField;
+    }
+
+    private static void fireTab(Scene scene, boolean isShiftDown) {
+        Node focusOwner = scene.getFocusOwner();
+        assertNotNull(focusOwner);
+        focusOwner.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.TAB,
+                isShiftDown, false, false, false));
+    }
+
+    private static void submitCommand(TextField commandTextField, String commandText) {
+        commandTextField.setText(commandText);
+        commandTextField.getOnAction().handle(new ActionEvent(commandTextField, commandTextField));
+    }
+
     private static List<String> getDisplayedDetails(VBox detailsContainer) {
         return List.of(
                 getLabelText(detailsContainer, "#name"),
@@ -240,10 +465,64 @@ public class MainWindowTest {
         PARSE_ERROR
     }
 
+    /** Provides a displayed main window and command-entry actions for view tests. */
+    private static final class MainWindowFixture {
+
+        private final Stage stage;
+        private final TestLogic logic;
+        private final TextField commandTextField;
+        private final ScrollPane detailsPanel;
+        private final List<Node> focusSections;
+
+        private MainWindowFixture(Person initialPerson) {
+            stage = new Stage();
+            logic = new TestLogic(initialPerson);
+            MainWindow mainWindow = new MainWindow(stage, logic, TEST_DATA_FILE_PATH, url -> { });
+            mainWindow.fillInnerParts();
+            mainWindow.show();
+            stage.getScene().getRoot().applyCss();
+            stage.getScene().getRoot().layout();
+            commandTextField = getCommandTextField(stage.getScene());
+            detailsPanel = getDetailsPanel(mainWindow);
+            focusSections = getFocusSections(stage.getScene());
+        }
+
+        private void submitView() {
+            commandTextField.requestFocus();
+            submitCommand(commandTextField, "view 1");
+        }
+
+        private void setPersonToView(Person person) {
+            logic.setPersonToView(person);
+        }
+
+        private void scrollToBottom() {
+            detailsPanel.requestFocus();
+            detailsPanel.setVvalue(detailsPanel.getVmax());
+        }
+
+        private void assertCommandFocus() {
+            assertSame(commandTextField, stage.getScene().getFocusOwner());
+            assertFocusIndicator(stage.getScene(), focusSections, 0);
+        }
+
+        private void assertDetailsAtTop() {
+            assertEquals(detailsPanel.getVmin(), detailsPanel.getVvalue());
+        }
+
+        private void assertDisplayedName(String name) {
+            assertEquals(name, getLabelText((VBox) detailsPanel.getContent(), "#name"));
+        }
+
+        private void close() {
+            stage.close();
+        }
+    }
+
     /** Logic stub that returns or throws the configured execution outcome. */
     private static class TestLogic implements Logic {
 
-        private final Person personToView;
+        private Person personToView;
         private final ObservableList<Person> persons;
         private ExecutionOutcome executionOutcome;
         private String lastCommandText;
@@ -253,9 +532,17 @@ public class MainWindowTest {
         }
 
         TestLogic(Person personToView, ExecutionOutcome executionOutcome) {
+            this(personToView, executionOutcome, FXCollections.observableArrayList(personToView));
+        }
+
+        TestLogic(Person personToView, ObservableList<Person> persons) {
+            this(personToView, ExecutionOutcome.SUCCESS, persons);
+        }
+
+        TestLogic(Person personToView, ExecutionOutcome executionOutcome, ObservableList<Person> persons) {
             this.personToView = personToView;
             this.executionOutcome = executionOutcome;
-            persons = FXCollections.observableArrayList(personToView);
+            this.persons = persons;
         }
 
         @Override
@@ -303,6 +590,10 @@ public class MainWindowTest {
 
         void setExecutionOutcome(ExecutionOutcome executionOutcome) {
             this.executionOutcome = executionOutcome;
+        }
+
+        void setPersonToView(Person personToView) {
+            this.personToView = personToView;
         }
     }
 }

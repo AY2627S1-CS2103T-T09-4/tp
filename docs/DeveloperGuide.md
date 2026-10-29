@@ -87,6 +87,13 @@ The `UI` component,
 `CommandBox` owns a session-scoped `CommandHistory`. It records ordinary command submissions and uses it to replace
 the command box text when the user presses the Up or Down arrow key.
 
+`MainWindow` installs a scene-level key-event filter for Tab navigation. It treats the command box, result display,
+patient list, and patient-details `ScrollPane` as four focus sections, routing both Tab directions explicitly so that
+the empty details panel remains reachable and descendants such as details labels or scrollbar controls do not become
+additional stops. The currently focused section receives a light-gray, 2-pixel outline; every section reserves the same
+border space even when unfocused. The menu bar is not part of this cycle. The details panel handles its six scrolling
+keys locally, so command-history and patient-list arrow-key behavior remains scoped to those controls.
+
 `MainWindow` manages a separate `HelpWindow` for offline command discovery and access to the full User Guide.
 See [Help window](#help-window) for its layout, lifecycle, and external-action boundaries.
 
@@ -323,6 +330,11 @@ No entries are sorted, deduplicated, or dropped to repair an invalid file.
 per line or `No previous visit dates` for an empty record. It reverses the dates only for display, placing recent
 visits first while preserving oldest-first storage. The existing `ScrollPane` accommodates long records without
 imposing a limit on the number of retained dates.
+
+The details `ScrollPane` resets its vertical value immediately when a record is rendered and once more after JavaFX
+lays out the updated content. This handles records of different lengths and repeated views of the same patient. Each
+main-window section reserves a fixed-width border whose color changes only for the focused section, keeping the panel
+geometry stable while making the focus stop visible.
 
 The current datetime includes a calendar-day label in parentheses: `Past`, `Today`, or `Upcoming`.
 `PatientDetailsPanel` uses an injected `Clock` (the system's local clock in production) and reads its current
@@ -1416,6 +1428,47 @@ list refreshes, but the details panel remains the last rendered record until `vi
        Expected: The most recent window size and location are retained.
 
 1. _{ more test cases … }_
+
+### Main-window keyboard navigation and details scrolling
+
+Use a new writable folder containing only a copy of `doc.jar`, so no normal patient data is changed. Launch Doc there;
+the first launch loads the sample data. The route below deliberately clears it before adding two known records, so
+the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Patient` at index 2.
+
+1. **Reach an empty details panel:** Run `clear`, then submit `y` at the confirmation prompt.<br>
+   Expected: The patient list is empty and the patient-details panel is blank. Click the command box and press Tab four
+   times. Focus should move through command box, response panel, patient list, and patient details, then wrap to the
+   command box. From the command box, press Shift+Tab four times and confirm the reverse cycle. The empty details panel
+   remains reachable and has a visible outline.
+1. **Create repeatable records:** Submit these commands in order:
+
+   ```text
+   add n/Alpha Patient p/90000001 a/1 Alpha Road vd/1/12/2099 0900
+   add n/Beta Patient p/90000002 a/2 Beta Road vd/2/12/2099 0900 note/This deliberately long clinical note records medication tolerance, home blood-pressure observations, mobility changes, caregiver updates, hydration reminders, and follow-up instructions for the next house call. Repeat the details panel checks after viewing this record so the note extends beyond the visible viewport and requires vertical scrolling.
+   ```
+
+   Each successful `add` may display the newly added patient. Run `view 2` before the scrolling checks so the long
+   `Beta Patient` record is definitely displayed and the list indices are known.
+1. **Details scrolling and focus outline:** Use Tab or Shift+Tab to focus patient details. Confirm that the outline
+   surrounds the whole panel rather than an individual label or scrollbar. Press <kbd>Up</kbd>, <kbd>Down</kbd>,
+   <kbd>Page Up</kbd>, <kbd>Page Down</kbd>, <kbd>Home</kbd>, and <kbd>End</kbd> separately.<br>
+   Expected: Up and Down move a small amount, Page Up and Page Down move about one viewport, and Home and End reach the
+   top and bottom without overscrolling. Mouse-wheel scrolling still works.
+1. **Fitting content:** Run `view 1`, then enlarge the window vertically until Alpha Patient's details fit without a
+   scrollbar. Focus patient details and press each of the six scrolling keys.<br>
+   Expected: The details remain unchanged because there is no content to scroll.
+1. **View reset and command focus:** Run `view 2`, focus patient details, and press End. Return to the command box and
+   run `view 2` again. Repeat after running `view 1`, then run `view 2` once more.<br>
+   Expected: Every successful view starts Beta Patient or Alpha Patient at the top, including the repeated same-patient
+   view and the switch between long and short records. After each command entered in the command box, focus remains in
+   the command box.
+1. **Empty-panel behavior after clearing:** Run `clear`, submit `y`, and focus the blank details panel through the Tab
+   cycle. Press each scrolling key separately.<br>
+   Expected: No key changes the blank panel, and Tab/Shift+Tab still move between all four sections.
+1. **Existing shortcuts:** Focus the command box and confirm <kbd>Up</kbd> and <kbd>Down</kbd> still recall command
+   history. Focus the patient list and confirm its arrow-key navigation still works. Leave unfinished text in the
+   command box, traverse with Tab and Shift+Tab, and confirm the text and displayed patient do not change. Repeat F1,
+   Help, and mouse-scrolling checks; their existing behavior should be unchanged.
 
 ### Dates of birth
 

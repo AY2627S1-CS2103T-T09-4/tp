@@ -1,16 +1,21 @@
 package seedu.address.ui;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
+import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextInputControl;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import seedu.address.commons.core.GuiSettings;
@@ -27,6 +32,8 @@ import seedu.address.logic.parser.exceptions.ParseException;
 public class MainWindow extends UiPart<Stage> {
 
     private static final String FXML = "MainWindow.fxml";
+    private static final PseudoClass KEYBOARD_FOCUSED_PSEUDO_CLASS =
+            PseudoClass.getPseudoClass("keyboard-focused");
 
     private final Logger logger = LogsCenter.getLogger(getClass());
 
@@ -40,6 +47,8 @@ public class MainWindow extends UiPart<Stage> {
     private ResultDisplay resultDisplay;
     private HelpWindow helpWindow;
     private CommandBox commandBox;
+    private List<Node> mainSectionRoots = List.of();
+    private List<Node> mainSectionFocusTargets = List.of();
 
     @FXML
     private StackPane commandBoxPlaceholder;
@@ -52,6 +61,9 @@ public class MainWindow extends UiPart<Stage> {
 
     @FXML
     private StackPane patientDetailsPanelPlaceholder;
+
+    @FXML
+    private VBox personList;
 
     @FXML
     private StackPane resultDisplayPlaceholder;
@@ -136,12 +148,74 @@ public class MainWindow extends UiPart<Stage> {
 
         commandBox = new CommandBox(this::executeCommand, logic::isInputRequestPending);
         commandBoxPlaceholder.getChildren().add(commandBox.getRoot());
+        configureKeyboardNavigation();
         helpWindow.getRoot().addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> {
             if (primaryStage.isShowing()) {
                 primaryStage.requestFocus();
                 commandBox.focus();
             }
         });
+    }
+
+    /** Configures the four-section keyboard cycle for the main window. */
+    private void configureKeyboardNavigation() {
+        mainSectionRoots = List.of(commandBoxPlaceholder, resultDisplayPlaceholder,
+                personList, patientDetailsPanelPlaceholder);
+        mainSectionFocusTargets = List.of(commandBox.getFocusTarget(), resultDisplay.getFocusTarget(),
+                personListPanel.getFocusTarget(), patientDetailsPanel.getRoot());
+        primaryStage.getScene().addEventFilter(KeyEvent.KEY_PRESSED, this::handleTabNavigation);
+        primaryStage.getScene().focusOwnerProperty().addListener((observable, oldFocusOwner, newFocusOwner) ->
+                updateFocusedSection(newFocusOwner));
+        updateFocusedSection(primaryStage.getScene().getFocusOwner());
+    }
+
+    /** Moves focus between the four main window sections when Tab or Shift+Tab is pressed. */
+    private void handleTabNavigation(KeyEvent keyEvent) {
+        if (keyEvent.getCode() != KeyCode.TAB) {
+            return;
+        }
+
+        int currentSection = findFocusedSection();
+        if (currentSection < 0) {
+            return;
+        }
+
+        int direction = keyEvent.isShiftDown() ? -1 : 1;
+        int nextSection = (currentSection + direction + mainSectionFocusTargets.size())
+                % mainSectionFocusTargets.size();
+        mainSectionFocusTargets.get(nextSection).requestFocus();
+        keyEvent.consume();
+    }
+
+    /** Returns the index of the section containing the current focus owner, or -1 if there is none. */
+    private int findFocusedSection() {
+        Node focusOwner = primaryStage.getScene().getFocusOwner();
+        for (int i = 0; i < mainSectionRoots.size(); i++) {
+            if (isDescendantOf(focusOwner, mainSectionRoots.get(i))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** Updates the focus outline on the one main-window section containing {@code focusOwner}. */
+    private void updateFocusedSection(Node focusOwner) {
+        for (int i = 0; i < mainSectionRoots.size(); i++) {
+            boolean isFocused = isDescendantOf(focusOwner, mainSectionRoots.get(i));
+            mainSectionRoots.get(i).pseudoClassStateChanged(KEYBOARD_FOCUSED_PSEUDO_CLASS, isFocused);
+        }
+    }
+
+    /** Returns true if {@code node} is the given root or one of its descendants. */
+    private boolean isDescendantOf(Node node, Node root) {
+        Node currentNode = node;
+        while (currentNode != null) {
+            if (currentNode == root) {
+                return true;
+            }
+            currentNode = currentNode.getParent();
+        }
+        return false;
     }
 
     /**
