@@ -64,8 +64,8 @@ public class DateOfBirthCommandIntegrationTest {
         logic.execute("edit 1 n/Amy Tan dob/20/7/1985");
         Person edited = new PersonBuilder().withName("Amy Tan").withDateOfBirth("20/7/1985").build();
         fixture.assertPersistedPatients(edited);
-        logic.execute("view 1");
-        assertEquals(edited, model.getFilteredPersonList().getFirst());
+        CommandResult viewResult = logic.execute("view 1");
+        assertEquals(edited, viewResult.getPersonToView().orElseThrow());
 
         logic.execute("edit 1 note/Review medication");
         logic.execute("next 1 1/1/2099 1000");
@@ -130,8 +130,8 @@ public class DateOfBirthCommandIntegrationTest {
             logic.execute("edit 1 dob/15/6/1990");
             logic.execute("edit 1 dob/" + emptyValue);
             fixture.assertPersistedPatients(cleared);
-            logic.execute("view 1");
-            assertTrue(model.getFilteredPersonList().getFirst().getDateOfBirth().isEmpty());
+            CommandResult viewResult = logic.execute("view 1");
+            assertEquals(cleared, viewResult.getPersonToView().orElseThrow());
         }
         logic.execute("edit 1 dob/");
         fixture.assertPersistedPatients(cleared);
