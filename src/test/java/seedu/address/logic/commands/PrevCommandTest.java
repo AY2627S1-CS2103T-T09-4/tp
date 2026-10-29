@@ -78,16 +78,18 @@ public class PrevCommandTest {
     }
 
     @Test
-    public void execute_filteredSortedIndex_targetsPatientAndResetsList() throws Exception {
+    public void execute_filteredSortedIndex_targetsPatientAndPreservesListContext() throws Exception {
         // EP: The restrictive filter hides one patient, and sorting changes the displayed order.
         model.addPerson(CHARLIE);
-        model.updateFilteredPersonList(person -> person.equals(AMY) || person.equals(CHARLIE));
+        model.updateFilteredPersonList(person -> person.getName().equals(AMY.getName())
+                || person.getName().equals(CHARLIE.getName()));
         model.sortFilteredPersonList(Comparator.comparing(person -> person.getVisitDate().value));
         assertEquals(List.of(CHARLIE, AMY), model.getFilteredPersonList());
         Person expectedPerson = new PersonBuilder(AMY).withVisitDate("20/10/2026 1000")
                 .withPreviousVisitDates("10/10/2026 1000").build();
 
         assertRollbackSuccess(INDEX_SECOND_PERSON, AMY, expectedPerson);
+        assertEquals(List.of(CHARLIE, expectedPerson), model.getFilteredPersonList());
         assertEquals(BENSON, model.getAddressBook().getPersonList().get(1));
         assertEquals(CHARLIE, model.getAddressBook().getPersonList().get(2));
     }
@@ -224,7 +226,6 @@ public class PrevCommandTest {
                 expectedPerson.getName(), expectedPerson.getVisitDate(), originalPerson.getVisitDate());
         assertEquals(expectedMessage, result.getFeedbackToUser());
         assertEquals(expectedAddressBook, model.getAddressBook());
-        assertEquals(expectedAddressBook.getPersonList(), model.getFilteredPersonList());
         assertTrue(result.shouldSaveAddressBook());
         assertEquals(expectedPerson, result.getPersonToView().orElseThrow());
         assertTrue(result.getInputRequest().isEmpty());

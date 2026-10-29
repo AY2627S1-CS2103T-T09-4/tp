@@ -103,9 +103,9 @@ Choose the command according to what you want to change:
 | Restore the latest previous datetime. | [prev](#restoring-the-previous-visit-prev) `INDEX` | Remove the latest previous datetime from the list and use it to replace the current datetime; discard the replaced datetime. |
 | Leave a final visit recorded without planning another. | No command needed. | Keep the current datetime, including after it becomes past. |
 
-Successful `edit`, `next`, and `prev` commands show the full patient list in stored order, clearing filtering and
-sorting. The details panel automatically shows the updated patient and refreshes the record and its calendar label.
-To return to search results, run `find` again.
+Successful `edit`, `next`, and `prev` commands preserve the current filtering and sorting. The updated patient may
+move within the list or disappear if the changed details no longer match those rules. The details panel automatically
+shows the updated patient and refreshes the record and its calendar label. Run `list` to return to the full list.
 
 When `next` moves an appointment to a different day that already has seven or more current appointments, Doc asks for
 confirmation. Patients hidden by filtering still count, but previous visit history does not. Moving the appointment to
@@ -546,7 +546,7 @@ The current time in the error uses `d/M/yyyy HHmm`, without seconds; validation 
 Examples (the selected patient's current visit must have arrived or passed; choose an unused future datetime):
 
 * `next 1 1/11/2026 0930` schedules the first displayed patient's next appointment for 1 November 2026 at 09:30.
-* `find n/Priya`, then `next 1 2/11/2026 1430`, schedules Priya Nair and restores the full list.
+* `find n/Priya`, then `next 1 2/11/2026 1430`, schedules Priya Nair and keeps the matching search results displayed.
 
 ### Restoring the previous visit: `prev`
 
