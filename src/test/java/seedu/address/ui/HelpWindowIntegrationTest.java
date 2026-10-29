@@ -49,6 +49,7 @@ import seedu.address.storage.StorageManager;
 public class HelpWindowIntegrationTest {
 
     private static final String DRAFT_COMMAND = "find Be";
+    private static final long WINDOW_TRANSITION_TIMEOUT_SECONDS = 10;
 
     @TempDir
     Path temporaryFolder;
@@ -112,7 +113,7 @@ public class HelpWindowIntegrationTest {
             Button openGuideButton = (Button) helpStage.getScene().lookup("#openGuideButton");
             openGuideButton.fire();
 
-            assertEquals(List.of(HelpWindow.USERGUIDE_URL), requestedUrls);
+            assertEquals(List.of(HelpWindow.USER_GUIDE_URL), requestedUrls);
             assertTrue(helpStage.isShowing());
         });
     }
@@ -299,7 +300,8 @@ public class HelpWindowIntegrationTest {
         });
 
         try {
-            assertTrue(conditionMet.await(10, TimeUnit.SECONDS), "Timed out waiting for " + transition);
+            assertTrue(conditionMet.await(WINDOW_TRANSITION_TIMEOUT_SECONDS, TimeUnit.SECONDS),
+                    "Timed out waiting for " + transition);
         } finally {
             runOnFxThread(() -> timerHolder[0].stop());
         }

@@ -10,6 +10,7 @@ import static seedu.address.ui.JavaFxTestUtil.startJavaFx;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ import javafx.stage.Stage;
 
 public class HelpWindowTest {
 
-    private static final List<String> EXPECTED_KEYBOARD_HINT = List.of("↑", "↓", "Scroll ·", "Tab", "/", "Shift",
+    private static final List<String> EXPECTED_KEYBOARD_HINT_PARTS = List.of("↑", "↓", "Scroll ·", "Tab", "/", "Shift",
             "+", "Tab", "Move focus ·", "Esc", "Close");
     private static final String NOTATION_LEGEND = "UPPERCASE: replace with your values · [ ]: optional · "
             + "...: repeatable";
@@ -70,219 +71,224 @@ public class HelpWindowTest {
 
     @Test
     public void helpWindow_minimumSize_isResizableAndScrollable() {
-        runOnFxThread(() -> {
-            HelpWindow helpWindow = new HelpWindow(new Stage(), url -> { }, () -> false);
+        withHelpWindow(helpWindow -> {
+            showAtMinimumSize(helpWindow);
             Stage stage = helpWindow.getRoot();
-            stage.setWidth(stage.getMinWidth());
-            stage.setHeight(stage.getMinHeight());
-            helpWindow.show();
+            assertTrue(stage.isResizable());
+            assertEquals(Modality.NONE, stage.getModality());
 
-            try {
-                assertTrue(stage.isResizable());
-                assertEquals(Modality.NONE, stage.getModality());
+            ScrollPane scrollPane = (ScrollPane) stage.getScene().lookup("#helpScrollPane");
+            assertTrue(scrollPane.isFitToWidth());
+            assertTrue(scrollPane.isPannable());
+            assertTrue(scrollPane.isFocusTraversable());
+            assertEquals(ScrollBarPolicy.NEVER, scrollPane.getHbarPolicy());
+            assertEquals(ScrollBarPolicy.AS_NEEDED, scrollPane.getVbarPolicy());
 
-                ScrollPane scrollPane = (ScrollPane) stage.getScene().lookup("#helpScrollPane");
-                assertTrue(scrollPane.isFitToWidth());
-                assertTrue(scrollPane.isPannable());
-                assertTrue(scrollPane.isFocusTraversable());
-                assertEquals(ScrollBarPolicy.NEVER, scrollPane.getHbarPolicy());
-                assertEquals(ScrollBarPolicy.AS_NEEDED, scrollPane.getVbarPolicy());
+            Label message = (Label) stage.getScene().lookup("#helpMessage");
+            assertNotNull(message);
+            assertTrue(message.isWrapText());
+            assertEquals(HelpWindow.HELP_MESSAGE, message.getText());
 
-                Label message = (Label) stage.getScene().lookup("#helpMessage");
-                assertNotNull(message);
-                assertTrue(message.isWrapText());
-                assertEquals(HelpWindow.HELP_MESSAGE, message.getText());
-
-                assertMinimumLayout(stage, scrollPane);
-                findButton(stage, "#copyButton").fire();
-                assertMinimumLayout(stage, scrollPane);
-            } finally {
-                stage.close();
-            }
+            assertMinimumLayout(stage, scrollPane);
+            findButton(stage, "#copyButton").fire();
+            assertMinimumLayout(stage, scrollPane);
         });
     }
 
     @Test
     public void helpWindow_availableCommands_listsEachCommandOnceInGroups() {
-        runOnFxThread(() -> {
-            HelpWindow helpWindow = new HelpWindow(url -> { });
-            Stage stage = helpWindow.getRoot();
-            try {
-                helpWindow.show();
-                Parent root = stage.getScene().getRoot();
-                assertEquals("Available commands", ((Label) root.lookup(".helpTitle")).getText());
-                List<String> groupSelectors = List.of("#patientAndVisitCommands", "#findingAndViewingCommands",
-                        "#applicationCommands");
-                List<String> expectedHeadings = List.of("Manage patients and visits", "Find and view patients",
-                        "Application controls");
-                List<List<List<String>>> expectedEntries = List.of(EXPECTED_PATIENT_AND_VISIT_ENTRIES,
-                        EXPECTED_FINDING_AND_VIEWING_ENTRIES, EXPECTED_APPLICATION_ENTRIES);
-                for (int i = 0; i < groupSelectors.size(); i++) {
-                    VBox commandGroup = (VBox) root.lookup(groupSelectors.get(i));
-                    assertNotNull(commandGroup);
-                    assertEquals(expectedHeadings.get(i), ((Label) commandGroup.getChildren().getFirst()).getText());
-                    assertCommandGroup(commandGroup, expectedEntries.get(i));
-                }
-
-                int expectedCommandCount = EXPECTED_PATIENT_AND_VISIT_ENTRIES.size()
-                        + EXPECTED_FINDING_AND_VIEWING_ENTRIES.size() + EXPECTED_APPLICATION_ENTRIES.size();
-                assertEquals(expectedCommandCount, root.lookupAll(".helpCommand").size());
-                ScrollPane scrollPane = (ScrollPane) root.lookup("#helpScrollPane");
-                FlowPane keyboardHint = (FlowPane) scrollPane.getContent().lookup("#keyboardHint");
-                TextFlow notationLegend = (TextFlow) scrollPane.getContent().lookup("#notationLegend");
-                List<Label> keyboardHintLabels = keyboardHint.getChildren().stream()
-                        .map(Label.class::cast)
-                        .toList();
-                assertEquals(EXPECTED_KEYBOARD_HINT, keyboardHintLabels.stream().map(Label::getText).toList());
-                assertFalse(keyboardHint.isFocusTraversable());
-                assertTrue(keyboardHintLabels.stream()
-                        .filter(label -> label.getStyleClass().contains("helpKeyCap"))
-                        .allMatch(label -> !label.isFocusTraversable() && label.isMouseTransparent()));
-                assertEquals(NOTATION_LEGEND, getTextFlowText(notationLegend));
-                assertTrue(notationLegend.getChildren().stream().allMatch(Text.class::isInstance));
-                VBox content = (VBox) scrollPane.getContent();
-                assertEquals(content.getChildren().indexOf(keyboardHint) + 1,
-                        content.getChildren().indexOf(notationLegend));
-                assertTrue(content.getChildren().indexOf(notationLegend)
-                        < content.getChildren().indexOf(root.lookup("#patientAndVisitCommands")));
-                assertSame(scrollPane, stage.getScene().getFocusOwner());
-                root.applyCss();
-                root.layout();
-                assertTrue(scrollPane.getContent().getBoundsInLocal().getHeight()
-                        > scrollPane.getViewportBounds().getHeight(), "The default window should allow scrolling");
-                assertEquals(ScrollBarPolicy.NEVER, scrollPane.getHbarPolicy());
-            } finally {
-                stage.close();
+        withHelpWindow(helpWindow -> {
+            helpWindow.show();
+            Parent root = helpWindow.getRoot().getScene().getRoot();
+            assertEquals("Available commands", ((Label) root.lookup(".helpTitle")).getText());
+            List<String> groupSelectors = List.of("#patientAndVisitCommands", "#findingAndViewingCommands",
+                    "#applicationCommands");
+            List<String> expectedHeadings = List.of("Manage patients and visits", "Find and view patients",
+                    "Application controls");
+            List<List<List<String>>> expectedEntries = List.of(EXPECTED_PATIENT_AND_VISIT_ENTRIES,
+                    EXPECTED_FINDING_AND_VIEWING_ENTRIES, EXPECTED_APPLICATION_ENTRIES);
+            for (int i = 0; i < groupSelectors.size(); i++) {
+                VBox commandGroup = (VBox) root.lookup(groupSelectors.get(i));
+                assertNotNull(commandGroup);
+                assertEquals(expectedHeadings.get(i), ((Label) commandGroup.getChildren().getFirst()).getText());
+                assertCommandGroup(commandGroup, expectedEntries.get(i));
             }
+
+            int expectedCommandCount = EXPECTED_PATIENT_AND_VISIT_ENTRIES.size()
+                    + EXPECTED_FINDING_AND_VIEWING_ENTRIES.size() + EXPECTED_APPLICATION_ENTRIES.size();
+            assertEquals(expectedCommandCount, root.lookupAll(".helpCommand").size());
+        });
+    }
+
+    @Test
+    public void helpWindow_keyboardHints_displaysNonInteractiveKeyCaps() {
+        withHelpWindow(helpWindow -> {
+            helpWindow.show();
+            FlowPane keyboardHint = (FlowPane) helpWindow.getRoot().getScene().lookup("#keyboardHint");
+            List<Label> keyboardHintLabels = keyboardHint.getChildren().stream()
+                    .map(Label.class::cast)
+                    .toList();
+
+            assertEquals(EXPECTED_KEYBOARD_HINT_PARTS, keyboardHintLabels.stream().map(Label::getText).toList());
+            assertFalse(keyboardHint.isFocusTraversable());
+            assertTrue(keyboardHintLabels.stream()
+                    .filter(label -> label.getStyleClass().contains("helpKeyCap"))
+                    .allMatch(label -> !label.isFocusTraversable() && label.isMouseTransparent()));
+        });
+    }
+
+    @Test
+    public void helpWindow_notationLegend_explainsSyntaxBeforeCommandGroups() {
+        withHelpWindow(helpWindow -> {
+            helpWindow.show();
+            Parent root = helpWindow.getRoot().getScene().getRoot();
+            ScrollPane scrollPane = (ScrollPane) root.lookup("#helpScrollPane");
+            VBox content = (VBox) scrollPane.getContent();
+            FlowPane keyboardHint = (FlowPane) content.lookup("#keyboardHint");
+            TextFlow notationLegend = (TextFlow) content.lookup("#notationLegend");
+
+            assertEquals(NOTATION_LEGEND, getTextFlowText(notationLegend));
+            assertTrue(notationLegend.getChildren().stream().allMatch(Text.class::isInstance));
+            assertEquals(content.getChildren().indexOf(keyboardHint) + 1,
+                    content.getChildren().indexOf(notationLegend));
+            assertTrue(content.getChildren().indexOf(notationLegend)
+                    < content.getChildren().indexOf(root.lookup("#patientAndVisitCommands")));
+        });
+    }
+
+    @Test
+    public void helpWindow_defaultSize_focusesScrollableCommands() {
+        withHelpWindow(helpWindow -> {
+            helpWindow.show();
+            Stage stage = helpWindow.getRoot();
+            Parent root = stage.getScene().getRoot();
+            ScrollPane scrollPane = (ScrollPane) root.lookup("#helpScrollPane");
+
+            assertSame(scrollPane, stage.getScene().getFocusOwner());
+            root.applyCss();
+            root.layout();
+            assertTrue(scrollPane.getContent().getBoundsInLocal().getHeight()
+                    > scrollPane.getViewportBounds().getHeight(), "The default window should allow scrolling");
+            assertEquals(ScrollBarPolicy.NEVER, scrollPane.getHbarPolicy());
         });
     }
 
     @Test
     public void helpWindow_minimumSize_arrowKeysScrollCommands() {
-        runOnFxThread(() -> {
-            HelpWindow helpWindow = new HelpWindow(url -> { });
+        withHelpWindow(helpWindow -> {
+            showAtMinimumSize(helpWindow);
             Stage stage = helpWindow.getRoot();
-            try {
-                stage.setWidth(stage.getMinWidth());
-                stage.setHeight(stage.getMinHeight());
-                helpWindow.show();
-                ScrollPane scrollPane = (ScrollPane) stage.getScene().lookup("#helpScrollPane");
-                assertMinimumLayout(stage, scrollPane);
-                assertSame(scrollPane, stage.getScene().getFocusOwner());
+            ScrollPane scrollPane = (ScrollPane) stage.getScene().lookup("#helpScrollPane");
+            assertMinimumLayout(stage, scrollPane);
+            assertSame(scrollPane, stage.getScene().getFocusOwner());
 
-                double positionBeforeDown = scrollPane.getVvalue();
-                fireKeyPressed(scrollPane, KeyCode.DOWN);
-                assertTrue(scrollPane.getVvalue() > positionBeforeDown, "Down should scroll towards later commands");
+            double positionBeforeDown = scrollPane.getVvalue();
+            fireKeyPressed(scrollPane, KeyCode.DOWN);
+            assertTrue(scrollPane.getVvalue() > positionBeforeDown, "Down should scroll towards later commands");
 
-                double positionBeforeUp = scrollPane.getVvalue();
-                fireKeyPressed(scrollPane, KeyCode.UP);
-                assertTrue(scrollPane.getVvalue() < positionBeforeUp, "Up should scroll towards earlier commands");
-            } finally {
-                stage.close();
-            }
+            double positionBeforeUp = scrollPane.getVvalue();
+            fireKeyPressed(scrollPane, KeyCode.UP);
+            assertTrue(scrollPane.getVvalue() < positionBeforeUp, "Up should scroll towards earlier commands");
         });
     }
 
     @Test
     public void helpWindow_minimumSize_wrapsTemplatesAndReachesFinalCommand() {
-        runOnFxThread(() -> {
-            HelpWindow helpWindow = new HelpWindow(url -> { });
-            Stage stage = helpWindow.getRoot();
-            try {
-                stage.setWidth(stage.getMinWidth());
-                stage.setHeight(stage.getMinHeight());
-                helpWindow.show();
-                Parent root = stage.getScene().getRoot();
-                ScrollPane scrollPane = (ScrollPane) root.lookup("#helpScrollPane");
-                root.applyCss();
-                root.layout();
+        withHelpWindow(helpWindow -> {
+            showAtMinimumSize(helpWindow);
+            Parent root = helpWindow.getRoot().getScene().getRoot();
+            ScrollPane scrollPane = (ScrollPane) root.lookup("#helpScrollPane");
+            root.applyCss();
+            root.layout();
 
-                List<Label> syntaxLabels = root.lookupAll(".helpCommandSyntax").stream()
-                        .map(Label.class::cast)
-                        .toList();
-                List<FlowPane> continuationPanes = root.lookupAll(".helpCommandContinuation").stream()
-                        .map(FlowPane.class::cast)
-                        .toList();
-                assertEquals(13, syntaxLabels.size());
-                assertEquals(3, continuationPanes.size());
-                assertTrue(syntaxLabels.stream().allMatch(Label::isWrapText));
-                assertTrue(continuationPanes.stream().allMatch(pane -> pane.getChildren().stream()
-                        .allMatch(Label.class::isInstance)));
-                double availableWidth = scrollPane.getViewportBounds().getWidth();
-                assertTemplateLabelsFit(syntaxLabels, availableWidth);
-                assertTemplatePanesFit(continuationPanes, availableWidth);
-                scrollPane.setVvalue(1.0);
-                root.layout();
-                Node finalCommand = findCommandEntry((VBox) root.lookup("#applicationCommands"), "exit");
-                Bounds viewportBounds = scrollPane.localToScene(scrollPane.getBoundsInLocal());
-                Bounds finalCommandBounds = finalCommand.localToScene(finalCommand.getBoundsInLocal());
-                String visibilityMessage = "The final command should be reachable at the minimum size: final="
-                        + finalCommandBounds + ", viewport=" + viewportBounds;
-                assertTrue(finalCommandBounds.getMaxY() >= viewportBounds.getMinY()
-                                && finalCommandBounds.getMinY() <= viewportBounds.getMaxY(), visibilityMessage);
-            } finally {
-                stage.close();
-            }
+            List<Label> syntaxLabels = root.lookupAll(".helpCommandSyntax").stream()
+                    .map(Label.class::cast)
+                    .toList();
+            List<FlowPane> continuationPanes = root.lookupAll(".helpCommandContinuation").stream()
+                    .map(FlowPane.class::cast)
+                    .toList();
+            assertEquals(13, syntaxLabels.size());
+            assertEquals(3, continuationPanes.size());
+            assertTrue(syntaxLabels.stream().allMatch(Label::isWrapText));
+            assertTrue(continuationPanes.stream().allMatch(pane -> pane.getChildren().stream()
+                    .allMatch(Label.class::isInstance)));
+            double availableWidth = scrollPane.getViewportBounds().getWidth();
+            assertTemplateLabelsFit(syntaxLabels, availableWidth);
+            assertTemplatePanesFit(continuationPanes, availableWidth);
+            assertFinalCommandVisible(root, scrollPane);
         });
     }
 
     @Test
     public void helpWindow_closeButton_closesWindow() {
         // EP: A shown Help stage transitions to hidden through its real Close button.
-        runOnFxThread(() -> {
-            HelpWindow helpWindow = new HelpWindow(url -> { });
-            Stage stage = helpWindow.getRoot();
+        withHelpWindow(helpWindow -> {
             helpWindow.show();
-
-            try {
-                Button closeButton = findButton(stage, "#closeButton");
-                assertTrue(closeButton.isFocusTraversable());
-                closeButton.fire();
-                assertFalse(helpWindow.isShowing());
-            } finally {
-                stage.close();
-            }
+            Button closeButton = findButton(helpWindow.getRoot(), "#closeButton");
+            assertTrue(closeButton.isFocusTraversable());
+            closeButton.fire();
+            assertFalse(helpWindow.isShowing());
         });
     }
 
     @Test
     public void helpWindow_escapeKey_closesWindow() {
-        runOnFxThread(() -> {
-            HelpWindow helpWindow = new HelpWindow(url -> { });
-            Stage stage = helpWindow.getRoot();
+        withHelpWindow(helpWindow -> {
             helpWindow.show();
-
-            try {
-                KeyEvent escape = new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.ESCAPE,
-                        false, false, false, false);
-                stage.getScene().getRoot().fireEvent(escape);
-                assertFalse(helpWindow.isShowing());
-            } finally {
-                stage.close();
-            }
+            fireKeyPressed(helpWindow.getRoot().getScene().getRoot(), KeyCode.ESCAPE);
+            assertFalse(helpWindow.isShowing());
         });
     }
 
     @Test
     public void show_minimizedWindow_restoresWindow() {
         // EP: Showing an iconified Help stage must restore it, rather than leave it minimized.
-        runOnFxThread(() -> {
-            HelpWindow helpWindow = new HelpWindow(url -> { });
+        withHelpWindow(helpWindow -> {
             Stage stage = helpWindow.getRoot();
+            helpWindow.show();
+            stage.setIconified(true);
+            assertTrue(stage.isIconified());
+
+            helpWindow.show();
+
+            assertTrue(helpWindow.isShowing());
+            assertFalse(stage.isIconified());
+            assertSame(stage.getScene().lookup("#helpScrollPane"), stage.getScene().getFocusOwner());
+        });
+    }
+
+    /** Runs assertions with a help window whose stage is always closed, including after assertion failures. */
+    private void withHelpWindow(Consumer<HelpWindow> assertions) {
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
             try {
-                helpWindow.show();
-                stage.setIconified(true);
-                assertTrue(stage.isIconified());
-
-                helpWindow.show();
-
-                assertTrue(helpWindow.isShowing());
-                assertFalse(stage.isIconified());
-                assertSame(stage.getScene().lookup("#helpScrollPane"), stage.getScene().getFocusOwner());
+                HelpWindow helpWindow = new HelpWindow(stage, url -> { }, () -> false);
+                assertions.accept(helpWindow);
             } finally {
                 stage.close();
             }
         });
+    }
+
+    /** Shows the help window at its minimum supported dimensions. */
+    private void showAtMinimumSize(HelpWindow helpWindow) {
+        Stage stage = helpWindow.getRoot();
+        stage.setWidth(stage.getMinWidth());
+        stage.setHeight(stage.getMinHeight());
+        helpWindow.show();
+    }
+
+    /** Checks that scrolling to the bottom makes the last command reachable. */
+    private void assertFinalCommandVisible(Parent root, ScrollPane scrollPane) {
+        scrollPane.setVvalue(1.0);
+        root.layout();
+        Node finalCommand = findCommandEntry((VBox) root.lookup("#applicationCommands"), "exit");
+        Bounds viewportBounds = scrollPane.localToScene(scrollPane.getBoundsInLocal());
+        Bounds finalCommandBounds = finalCommand.localToScene(finalCommand.getBoundsInLocal());
+        String visibilityMessage = "The final command should be reachable at the minimum size: final="
+                + finalCommandBounds + ", viewport=" + viewportBounds;
+        assertTrue(finalCommandBounds.getMaxY() >= viewportBounds.getMinY()
+                        && finalCommandBounds.getMinY() <= viewportBounds.getMaxY(), visibilityMessage);
     }
 
     private void fireKeyPressed(Node target, KeyCode keyCode) {
@@ -321,41 +327,53 @@ public class HelpWindowTest {
         assertEquals(expectedEntries.size(), actualEntries.size());
         List<String> commandNames = new ArrayList<>();
         for (int i = 0; i < expectedEntries.size(); i++) {
-            VBox actualEntry = actualEntries.get(i);
-            TextFlow description = (TextFlow) actualEntry.getChildren().getFirst();
-            List<Label> labels = actualEntry.getChildren().stream()
-                    .skip(1)
-                    .filter(Label.class::isInstance)
-                    .map(Label.class::cast)
-                    .toList();
-            List<FlowPane> continuationPanes = actualEntry.getChildren().stream()
-                    .skip(1)
-                    .filter(FlowPane.class::isInstance)
-                    .map(FlowPane.class::cast)
-                    .toList();
-            List<String> actualEntryText = new ArrayList<>();
-            actualEntryText.add(getTextFlowText(description));
-            actualEntryText.addAll(labels.stream().map(Label::getText).toList());
-            actualEntryText.addAll(continuationPanes.stream().map(this::getFlowPaneText).toList());
-            assertEquals(expectedEntries.get(i), actualEntryText);
-            assertTrue(description.getStyleClass().contains("helpCommandDescription"));
-            assertTrue(description.getChildren().stream().allMatch(Text.class::isInstance));
-            assertTrue(((Text) description.getChildren().getFirst()).getStyleClass().contains("helpCommandName"));
-            assertTrue(labels.stream().allMatch(label -> label.getStyleClass().contains("helpCommandSyntax")
-                    && label.isWrapText()));
-            assertTrue(continuationPanes.stream().allMatch(pane -> pane.getStyleClass()
-                    .contains("helpCommandContinuation")));
-            assertTrue(continuationPanes.stream().flatMap(pane -> pane.getChildren().stream())
-                    .map(Label.class::cast)
-                    .allMatch(label -> label.getStyleClass().contains("helpCommandToken")
-                            && !label.isWrapText()));
-
-            String[] commandParts = getTextFlowText(description).split(" — ", 2);
-            assertEquals(2, commandParts.length);
-            assertFalse(commandParts[1].isBlank());
-            commandNames.add(commandParts[0]);
+            commandNames.add(assertCommandEntry(actualEntries.get(i), expectedEntries.get(i)));
         }
         assertEquals(expectedEntries.stream().map(entry -> entry.getFirst().split(" — ", 2)[0]).toList(), commandNames);
+    }
+
+    /** Checks one command's displayed text and styles, returning its command word. */
+    private String assertCommandEntry(VBox entry, List<String> expectedTextParts) {
+        TextFlow description = (TextFlow) entry.getChildren().getFirst();
+        List<Label> syntaxLabels = entry.getChildren().stream()
+                .skip(1)
+                .filter(Label.class::isInstance)
+                .map(Label.class::cast)
+                .toList();
+        List<FlowPane> continuationPanes = entry.getChildren().stream()
+                .skip(1)
+                .filter(FlowPane.class::isInstance)
+                .map(FlowPane.class::cast)
+                .toList();
+        List<String> actualTextParts = new ArrayList<>();
+        actualTextParts.add(getTextFlowText(description));
+        actualTextParts.addAll(syntaxLabels.stream().map(Label::getText).toList());
+        actualTextParts.addAll(continuationPanes.stream().map(this::getFlowPaneText).toList());
+        assertEquals(expectedTextParts, actualTextParts);
+        assertCommandSyntax(syntaxLabels, continuationPanes);
+        return assertCommandDescription(description);
+    }
+
+    /** Checks a styled, nonempty command description and returns its command word. */
+    private String assertCommandDescription(TextFlow description) {
+        assertTrue(description.getStyleClass().contains("helpCommandDescription"));
+        assertTrue(description.getChildren().stream().allMatch(Text.class::isInstance));
+        assertTrue(((Text) description.getChildren().getFirst()).getStyleClass().contains("helpCommandName"));
+        String[] commandParts = getTextFlowText(description).split(" — ", 2);
+        assertEquals(2, commandParts.length);
+        assertFalse(commandParts[1].isBlank());
+        return commandParts[0];
+    }
+
+    /** Checks syntax wrapping, continuation containers, and non-wrapping tokens. */
+    private void assertCommandSyntax(List<Label> syntaxLabels, List<FlowPane> continuationPanes) {
+        assertTrue(syntaxLabels.stream().allMatch(label -> label.getStyleClass().contains("helpCommandSyntax")
+                && label.isWrapText()));
+        assertTrue(continuationPanes.stream().allMatch(pane -> pane.getStyleClass()
+                .contains("helpCommandContinuation")));
+        assertTrue(continuationPanes.stream().flatMap(pane -> pane.getChildren().stream())
+                .map(Label.class::cast)
+                .allMatch(label -> label.getStyleClass().contains("helpCommandToken") && !label.isWrapText()));
     }
 
     private Node findCommandEntry(VBox group, String commandWord) {

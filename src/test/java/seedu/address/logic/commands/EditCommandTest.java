@@ -82,14 +82,14 @@ public class EditCommandTest {
         model.updateFilteredPersonList(person -> person.equals(original) || person.equals(firstPerson));
         model.sortFilteredPersonList(Comparator.comparing((Person person) -> person.getVisitDate().value).reversed());
         AddressBook before = new AddressBook(model.getAddressBook());
-        List<Person> displayedBefore = List.copyOf(model.getFilteredPersonList());
+        List<Person> displayedPersonsBefore = List.copyOf(model.getFilteredPersonList());
 
         assertThrows(CommandException.class,
                 String.format(EditCommand.MESSAGE_DUPLICATE_VISIT_DATE, "1/10/2026 1000"), () ->
                 requestResult.getInputRequest().orElseThrow().respond("y", model));
 
         assertEquals(before, model.getAddressBook());
-        assertEquals(displayedBefore, model.getFilteredPersonList());
+        assertEquals(displayedPersonsBefore, model.getFilteredPersonList());
     }
 
     @Test

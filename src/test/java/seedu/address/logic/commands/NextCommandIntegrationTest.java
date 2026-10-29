@@ -269,7 +269,7 @@ public class NextCommandIntegrationTest {
         clock.setDelegate(Clock.fixed(Instant.parse("2026-11-02T08:30:00Z"), FIXED_CLOCK.getZone()));
 
         CommandResult newWarning = logic.execute("y");
-        assertEquals(String.format(NextCommand.MESSAGE_WARNING_PAST_VISIT, FULL_DAY_VISIT_DATE) + " "
+        assertEquals(String.format(NextCommand.MESSAGE_WARNING_NON_FUTURE_VISIT, FULL_DAY_VISIT_DATE) + " "
                 + String.format(NextCommand.MESSAGE_CONFIRM_FULL_DAY, Model.MAX_VISITS_PER_DAY,
                         FULL_DAY_DISPLAY_DATE, amy.getName()), newWarning.getFeedbackToUser());
 

@@ -51,7 +51,7 @@ public class MainWindowSaveFailureTest {
             .withPhone("90000002").withVisitDate("2/10/2026 0900").withPreviousVisitDates().build();
 
     @TempDir
-    public Path temporaryFolder;
+    private Path temporaryFolder;
 
     private SaveFailureFixture fixture;
 

@@ -168,7 +168,7 @@ public class PrevCommandTest {
         Person replacementPerson = new PersonBuilder(AMY).withName("Amy Updated").build();
         model.setPerson(AMY, replacementPerson);
 
-        assertThrows(CommandException.class, PrevCommand.MESSAGE_PERSON_NO_LONGER_EXISTS, () ->
+        assertThrows(CommandException.class, PrevCommand.MESSAGE_PERSON_CHANGED_OR_REMOVED, () ->
                 requestResult.getInputRequest().orElseThrow().respond("y", model));
         assertEquals(replacementPerson, model.getAddressBook().getPersonList().getFirst());
     }

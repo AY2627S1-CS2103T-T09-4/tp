@@ -22,8 +22,8 @@ import seedu.address.commons.core.LogsCenter;
  */
 public class HelpWindow extends UiPart<Stage> {
 
-    public static final String USERGUIDE_URL = "https://ay2627s1-cs2103t-t09-4.github.io/tp/UserGuide.html";
-    public static final String HELP_MESSAGE = "Refer to the user guide: " + USERGUIDE_URL;
+    public static final String USER_GUIDE_URL = "https://ay2627s1-cs2103t-t09-4.github.io/tp/UserGuide.html";
+    public static final String HELP_MESSAGE = "Refer to the user guide: " + USER_GUIDE_URL;
 
     static final String MESSAGE_BROWSER_REQUESTED = "Browser launch requested. If nothing opens, use Copy URL.";
     static final String MESSAGE_BROWSER_FAILURE =
@@ -58,7 +58,7 @@ public class HelpWindow extends UiPart<Stage> {
      *
      * @param root Stage to use as the root of the help window.
      * @param openDocument Requests a browser launch for the supplied URL.
-     * @param copyUrlToClipboard Copies {@link #USERGUIDE_URL} and reports whether the clipboard accepted it.
+     * @param copyUrlToClipboard Copies {@link #USER_GUIDE_URL} and reports whether the clipboard accepted it.
      */
     HelpWindow(Stage root, Consumer<String> openDocument, BooleanSupplier copyUrlToClipboard) {
         super(FXML, root);
@@ -124,7 +124,7 @@ public class HelpWindow extends UiPart<Stage> {
     @FXML
     private void openUserGuide() {
         try {
-            openDocument.accept(USERGUIDE_URL);
+            openDocument.accept(USER_GUIDE_URL);
         } catch (RuntimeException e) {
             logger.log(Level.WARNING, "Could not request a browser launch for the User Guide", e);
             showGuideStatus(MESSAGE_BROWSER_FAILURE);
@@ -165,7 +165,7 @@ public class HelpWindow extends UiPart<Stage> {
     private static boolean copyGuideUrlToClipboard() {
         final Clipboard clipboard = Clipboard.getSystemClipboard();
         final ClipboardContent url = new ClipboardContent();
-        url.putString(USERGUIDE_URL);
+        url.putString(USER_GUIDE_URL);
         return clipboard.setContent(url);
     }
 }

@@ -37,7 +37,7 @@ public class HelpWindowActionsTest {
 
             findButton(stage, "#openGuideButton").fire();
 
-            assertEquals(List.of(HelpWindow.USERGUIDE_URL), requestedUrls);
+            assertEquals(List.of(HelpWindow.USER_GUIDE_URL), requestedUrls);
             assertStatus(stage, HelpWindow.MESSAGE_BROWSER_REQUESTED);
         });
     }
@@ -96,7 +96,7 @@ public class HelpWindowActionsTest {
             assertTrue(requestedUrls.isEmpty());
 
             findButton(stage, "#openGuideButton").fire();
-            assertEquals(List.of(HelpWindow.USERGUIDE_URL), requestedUrls);
+            assertEquals(List.of(HelpWindow.USER_GUIDE_URL), requestedUrls);
             assertStatus(stage, HelpWindow.MESSAGE_BROWSER_REQUESTED);
         });
     }

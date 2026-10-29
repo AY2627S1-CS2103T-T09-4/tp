@@ -48,6 +48,8 @@ public class PatientDetailsPanelTest {
     private static final double MINIMUM_PAGE_SCROLL_RATIO = 0.75;
     private static final double MAXIMUM_PAGE_SCROLL_RATIO = 1.1;
     private static final double MINIMUM_PAGE_TO_ARROW_RATIO = 2.0;
+    private static final double SCROLL_PIXEL_TOLERANCE = 0.001;
+    private static final double SCROLL_VALUE_TOLERANCE = 0.001;
     private static final List<String> LONG_RECORD_PREVIOUS_DATES = createLongRecordPreviousDates();
 
     @BeforeAll
@@ -498,7 +500,7 @@ public class PatientDetailsPanelTest {
             assertPageMovementIsApproximatelyOneViewport(scrollPane, pageDownMovement);
             assertTrue(pageDownMovement >= arrowMovement * MINIMUM_PAGE_TO_ARROW_RATIO);
             fireKeyPressed(scrollPane, KeyCode.PAGE_UP);
-            assertEquals(0, getScrollPositionPixels(scrollPane), 0.001);
+            assertEquals(0, getScrollPositionPixels(scrollPane), SCROLL_PIXEL_TOLERANCE);
 
             fireKeyPressed(scrollPane, KeyCode.END);
             assertEquals(bottom, scrollPane.getVvalue());
@@ -804,7 +806,7 @@ public class PatientDetailsPanelTest {
                 KeyCode.HOME, KeyCode.END)) {
             double previousValue = scrollPane.getVvalue();
             fireKeyPressed(scrollPane, keyCode);
-            assertEquals(previousValue, scrollPane.getVvalue(), 0.001, keyCode.toString());
+            assertEquals(previousValue, scrollPane.getVvalue(), SCROLL_VALUE_TOLERANCE, keyCode.toString());
         }
     }
 
