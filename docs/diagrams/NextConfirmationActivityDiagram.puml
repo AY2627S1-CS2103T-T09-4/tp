@@ -1,0 +1,42 @@
+@startuml
+!include style.puml
+skinparam ActivityFontSize 15
+skinparam ArrowFontSize 13
+
+start
+:Capture selected patient and candidate visit record;
+floating note right
+  Parsing, eligibility, and initial conflict
+  checks have already succeeded.
+end note
+:Collect time and busy-day warnings;
+while () is ([warnings require confirmation])
+    :Show all applicable warnings in one prompt;
+    :Wait for the next command-box submission;
+    :Trim response and compare with y, ignoring case;
+    if () then ([not confirmed])
+        :Cancel without changing or saving patient data;
+        stop
+    else ([confirmed])
+    endif
+    :Read the clock again and recheck eligibility,
+    captured record, and visit-time conflicts;
+    if () then ([a recheck fails])
+        :Report the error without applying the visit change;
+        stop
+    else ([valid])
+    endif
+    if () then ([visit newly reaches or passes now])
+        :Collect warnings again, including the new time warning;
+    else ([time warning already accepted or still unnecessary])
+        :No further confirmation needed;
+    endif
+endwhile ([no further confirmation needed])
+:Replace captured patient, preserving filter and sort;
+:Save through LogicManager;
+floating note right
+  A save error restores the in-memory snapshot
+  and prevents success feedback and details refresh.
+end note
+stop
+@enduml

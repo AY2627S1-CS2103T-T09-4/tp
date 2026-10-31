@@ -117,7 +117,7 @@ When the main window is active, press <kbd>Tab</kbd> to move through the four ma
 response panel, patient list, and patient-details panel. Press <kbd>Shift</kbd>+<kbd>Tab</kbd> to move in reverse order. Both directions
 wrap around. A visible light-gray outline surrounds the section that currently contains keyboard focus: command box,
 response panel, patient list, or patient-details panel. The outline remains visible for empty sections; labels and the
-patient-details scrollbar are not separate Tab destinations.
+patient-details scrollbar are not separate Tab destinations. The menu bar is outside this four-section cycle.
 
 With the patient-details panel focused, use <kbd>Up</kbd> and <kbd>Down</kbd> to scroll by a small increment,
 <kbd>Page Up</kbd> and <kbd>Page Down</kbd> to scroll by approximately one viewport, and <kbd>Home</kbd> and
@@ -170,7 +170,7 @@ window to the front, restoring it if minimized. You can resize Help and continue
   an Internet connection. The launch message does not guarantee that the page loaded. If nothing opens,
   choose **Copy URL** and paste the address into your browser. If copying fails, retry or enter the displayed URL manually.
 * **Close Help:** Choose **Close**, press **Escape**, or use the window's close control. Focus returns to the
-  command box with your unfinished input unchanged. For example, type `find Be`, press F1, then close Help
+  command box with your unfinished input unchanged. For example, type `find n/Be`, press F1, then close Help
   to continue editing the same draft.
 
 Use **Tab** and **Shift+Tab** to move between the command list and buttons. Press **Space** to activate a focused
@@ -544,7 +544,7 @@ Format: `next INDEX DATETIME`
 * Prompts and cancellation preserve patient data, visit history, the displayed list, and the details panel.
 * Success appends the old current date and time to the previous dates, then sets the new current date and time.
   All other details, including empty optional fields, are preserved. Previous dates are saved in order in the
-  JSON data file and appear below the current visit date in the automatically refreshed patient details panel.
+  JSON data file and appear newest first under **Visit history**, at the bottom of the refreshed patient-details panel.
 * If no further visit is planned, leave the current date and time unchanged, even after it passes.
 * Success shows `Next visit scheduled for patient NAME: DATETIME`, saves the record, and automatically shows the
   updated patient in the details panel.
@@ -593,8 +593,8 @@ Format: `prev INDEX`
   ```
 
   Enter `y`, with optional surrounding whitespace and any letter case, to confirm. Every other response cancels and
-  is consumed as the confirmation response, even if it is valid command text. Prompting and cancellation do not
-  change records, filtering, sorting, or saved data.
+  is consumed as the confirmation response, even if it is valid command text. Cancellation shows
+  `Visit restoration cancelled.` Prompting and cancellation do not change records, filtering, sorting, or saved data.
 * Rollback also works after an intervening `edit`. It preserves the patient's latest name, contact details,
   address, allergies, alcohol history, smoking status, note, and tags; it restores only visit-date state.
 * Success shows `Visit date restored for NAME: RESTORED_DATETIME` followed by

@@ -1,5 +1,6 @@
 @startuml
 !include style.puml
+skinparam style strictuml
 skinparam ArrowFontStyle plain
 
 skinparam ParticipantPadding 6
@@ -61,6 +62,7 @@ activate PrevCommand
 note right of PrevCommand
   Require captured record unchanged.
   Restore latest previous datetime.
+  Remove it from history; discard current datetime.
 end note
 PrevCommand -> Model : setPerson(capturedPatient,\nupdatedPerson)
 activate Model
@@ -71,7 +73,7 @@ deactivate PrevCommand
 InputRequest --> LogicManager : result
 deactivate InputRequest
 
-LogicManager -> LogicManager : saveAddressBook()
+LogicManager -> LogicManager : saveAddressBook(modelState)
 activate LogicManager
 LogicManager -> Model : getAddressBook()
 activate Model
