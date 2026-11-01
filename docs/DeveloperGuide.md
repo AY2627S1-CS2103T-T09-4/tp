@@ -1520,12 +1520,16 @@ Use a disposable copy of Doc with disposable patient data. Do not modify the per
 1. Remove only the empty `doc.json` directory and rename `saved-doc.json` back to `doc.json`.
    Run `delete 1`, then `y`.
    Expected: Deletion succeeds, both the list and details panel are empty, and the saved JSON has no patients.
-1. Repeat the setup, make the file read-only, then run `delete 1` and `y`.
-   Expected: A save error appears, and the patient remains in both the list and details panel. Restore write access
-   before continuing.
+1. Add the patient again with `add n/Alpha p/90000001 a/1 Alpha Road vd/1/1/2000 0900`, then run `view 1`.
+   While Doc stays open, rename `data/doc.json` to `saved-doc.json` and create an empty directory named `doc.json`
+   in the same `data` folder. Run `delete 1`, then `y`.
+   Expected: A save error appears, the patient remains in both the list and details panel, and `saved-doc.json`
+   still contains the original patient record.
+1. Remove only the empty `doc.json` directory and rename `saved-doc.json` back to `doc.json` before continuing or
+   closing Doc.
 
-For the `next` case above, use the blocked-path setup: a read-only file alone may still permit atomic replacement
-through the parent directory. Never change permissions on real records.
+Both failure cases use the blocked-path setup because saving uses atomic replacement: a read-only file alone may
+still permit replacement through the parent directory. Never change permissions on real records.
 
 `MainWindowSaveFailureTest` automates the command-entry, display, and persistence assertions with injected
 permission and I/O failures, including `add`, `edit`, confirmed `prev`, deletion, clearing, and unchanged details
