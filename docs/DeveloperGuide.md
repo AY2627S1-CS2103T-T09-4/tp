@@ -198,6 +198,10 @@ together with a warning that gives the first line of the load error and the back
 fails, tells the user to copy the file before entering any command. `MainApp#start` passes the warning to
 `Ui#showStartupWarning`, which shows it in a dialog once the main window is open.
 
+Null entries inside the patient or tag arrays are rejected during storage conversion with an
+`IllegalValueException`, which storage wraps in a `DataLoadingException`. They follow the same backup-and-warning
+recovery path rather than being skipped or causing an uncaught null-pointer exception. Empty tag arrays remain valid.
+
 ### Common classes
 
 Classes used by multiple components are in the `seedu.address.commons` package.
@@ -2416,5 +2420,20 @@ when midnight passes; another `view` recalculates it.
 
    1. Restore the backup, assign distinct visit dates and times, and relaunch Doc.<br>
       Expected: Every patient record loads normally.
+
+1. Null patient or tag entries
+
+   1. Use a disposable copy of Doc and close it before editing `data/doc.json`.
+
+   1. Replace the file contents with `{"persons": [null]}`, then relaunch Doc.<br>
+      Expected: Doc opens with an empty patient list and a warning containing
+      `Patient list contains a null patient entry.` The warning names a timestamped backup containing the original
+      file contents. The invalid `doc.json` remains unchanged until a command saves data.
+
+   1. Close Doc and restore a valid patient file. Replace one patient's tags with `"tags": [null]`, then relaunch.<br>
+      Expected: The same recovery occurs, with `Patient's tags contain a null tag entry.` in the warning.
+
+   1. Close Doc, replace that value with `"tags": []`, and relaunch.<br>
+      Expected: The patient loads without a data warning and has no tags.
 
 1. _{ more test cases … }_
