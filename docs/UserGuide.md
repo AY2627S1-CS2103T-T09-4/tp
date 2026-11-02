@@ -98,10 +98,10 @@ Choose the command according to what you want to change:
 
 | Goal | Command | Effect on the visit record |
 | --- | --- | --- |
-| Correct or reschedule the current appointment. | [edit](#editing-a-patient-edit) `INDEX vd/DATETIME` | Replace the current datetime; keep previous dates unchanged. |
-| Plan or record the following visit after the current visit time has arrived. | [next](#scheduling-the-next-visit-next) `INDEX DATETIME` | Retain the old current datetime and set an unused later datetime; confirm if it is not in the future. |
-| Restore the latest previous datetime. | [prev](#restoring-the-previous-visit-prev) `INDEX` | Remove the latest previous datetime from the list and use it to replace the current datetime; discard the replaced datetime. |
-| Leave a final visit recorded without planning another. | No command needed. | Keep the current datetime, including after it becomes past. |
+| Correct or reschedule the current appointment. | [edit](#editing-a-patient-edit) `INDEX vd/DATETIME` | Set the current visit date and time to `DATETIME`; leave Previous visit dates unchanged. |
+| Plan or record the following visit after the current visit time has arrived. | [next](#scheduling-the-next-visit-next) `INDEX DATETIME` | Move the current visit date and time to Previous visit dates, then set an unused later date and time as current; confirm if the new visit time is now or has passed. |
+| Restore the most recent previous visit date and time. | [prev](#restoring-the-previous-visit-prev) `INDEX` | Remove the most recent entry from Previous visit dates and make it current; discard the visit date and time it replaces. |
+| Leave a final visit recorded without planning another. | No command needed. | Keep the current visit date and time recorded, even after it is marked `Past`. |
 
 Successful `edit`, `next`, and `prev` commands preserve the current filtering and sorting. The updated patient may
 move within the list or disappear if the changed details no longer match those rules. The details panel automatically
@@ -161,7 +161,7 @@ commands. Detailed validation rules and examples remain in the command sections 
 
 Format: `help`
 
-You can also press **F1** or choose **Help → Help**. Repeating a help request brings the existing
+You can also press **F1** or choose **Help → Help (F1)**. Repeating a help request brings the existing
 window to the front, restoring it if minimized. You can resize Help and continue using the main window.
 
 * **Browse commands:** The command list receives keyboard focus when Help opens. Use **Up** and **Down** to browse,
@@ -178,7 +178,7 @@ button. On Windows and Linux, you can also press **Enter**.
 
 <box type="warning" seamless>
 
-While a confirmation or follow-up prompt is pending, open Help with **F1** or **Help → Help**.
+While a confirmation or follow-up prompt is pending, open Help with **F1** or **Help → Help (F1)**.
 Typing `help` and pressing Enter answers that prompt instead of opening Help.
 </box>
 
