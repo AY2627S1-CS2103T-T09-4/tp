@@ -13,7 +13,16 @@
 
 ## **Acknowledgements**
 
-* _{List the sources of reused or adapted ideas, code, documentation, and third-party libraries here, with links to the originals.}_
+* Doc is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-level3), created by the
+  [SE-EDU initiative](https://se-education.org). Its application architecture, codebase, and documentation structure
+  were adapted for this project.
+* The user and developer documentation reuse and adapt guidance and examples from the
+  [AddressBook-Level3 documentation](https://se-education.org/addressbook-level3/).
+* Doc uses [JavaFX](https://openjfx.io/) for its desktop interface and
+  [Jackson](https://github.com/FasterXML/jackson) for JSON data persistence. Automated tests use
+  [JUnit 5](https://junit.org/junit5/).
+* The documentation is built with [MarkBind](https://markbind.org/) and uses
+  [PlantUML](https://plantuml.com/) for diagrams.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -185,14 +194,15 @@ The `Storage` component,
 both files exist, the preferred file takes precedence and the legacy file is left unchanged. A failed move falls back
 to the legacy path for that run and contributes a warning shown after the main window opens.
 
-When the patient data file does not exist, `MainApp` initializes the model with the seven records returned by
-`SampleDataUtil#getSampleAddressBook`. The sample patients are George Miller, Priya Nair, Aisha Rahman, Marcus Lim,
-Mei Lin Tan, Daniel Wong, and Noor Aziz. If an existing data file can be loaded successfully, including one with no
-records, its contents take precedence over these samples. If an existing data file cannot be loaded—for example,
+When the patient data file does not exist, `MainApp` initializes the model with the ten records returned by
+`SampleDataUtil#getSampleAddressBook`. The sample patients are Amelia Tan, Benjamin Lim, Chloe Ng, David Koh,
+Farah Aziz, Grace Wong, two patients named Jordan Lee, Kavita Rao, and Lucas Chen. If an existing data file can be
+loaded successfully, including one with no records, its contents take precedence over these samples. If an existing
+data file cannot be loaded—for example,
 because it is malformed or contains conflicting records—`MainApp` starts with an empty address book.
 
-Because almost every command saves the address book, the next command would overwrite the unreadable file.
-`MainApp#loadInitialData` therefore first calls `Storage#backupAddressBook`, which copies the file to a sibling named
+Because a later successful command that changes patient data could overwrite the unreadable file,
+`MainApp#loadInitialData` first calls `Storage#backupAddressBook`, which copies the file to a sibling named
 `doc-invalid-<yyyyMMdd-HHmmss>.json` without overwriting any existing backup. It returns the empty address book
 together with a warning that gives the first line of the load error and the backup's location, or, if the backup
 fails, tells the user to copy the file before entering any command. `MainApp#start` passes the warning to
@@ -1017,11 +1027,10 @@ The following activity diagram summarizes what happens when a user executes a ne
   * Pros: Will use less memory (e.g. for `delete`, just save the person being deleted).
   * Cons: We must ensure that the implementation of each individual command is correct.
 
-_{more aspects and alternatives to be added}_
-
 ### \[Proposed\] Data archiving
 
-_{Explain here how the data archiving feature will be implemented}_
+Data archiving is a planned feature and is not available in the current version. A future implementation may keep
+inactive patient records outside the active caseload while retaining their visit history for later reference.
 
 
 --------------------------------------------------------------------------------------------------------------------
@@ -1050,11 +1059,16 @@ _{Explain here how the data archiving feature will be implemented}_
 * can type fast and prefers typing to mouse interactions
 * is reasonably comfortable using CLI apps
 
-**Value proposition**: A house call doctor currently keeps patient contacts, addresses and medical histories across paper notes, phone contacts and memory, which makes planning and preparing for home visits slow and error-prone. Doc centralises all of it in one offline desktop app, and orders the day's visits by patient priority and next visit date, so the doctor can prepare for a visit and plan a route between visits faster than with a typical mouse-driven contact app.
+**Value proposition**: A house call doctor currently keeps patient contacts, addresses and medical histories across
+paper notes, phone contacts and memory, which makes planning and preparing for home visits slow and error-prone. Doc
+centralises all of it in one offline desktop app and organises scheduled visits by date and time, so the doctor can
+prepare for visits and plan upcoming rounds faster than with a typical mouse-driven contact app.
 
 ### User stories
 
 Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unlikely to have) - `*`
+
+#### Implemented user stories
 
 | Priority | As a …                  | I want to …                                                              | So that I can…                                                                       |
 |----------|-------------------------|--------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
@@ -1075,16 +1089,23 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* *`    | keyboard user           | move between the main panels and scroll patient details using keys       | review long records without switching to the mouse |
 | `* *`    | new user                | consult a command reference while keeping my unfinished input            | check syntax without losing what I have typed |
 | `* *`    | doctor                  | add or update notes about a patient's medical conditions                  | prepare for future visits                                                               |
-| `* *`    | doctor                  | assign a priority level to a patient                                      | tell at a glance which patients need closer attention                                   |
 | `* *`    | doctor                  | sort my patients by their next visit date                                 | plan upcoming visits while retaining past schedules for reference                       |
 | `* *`    | doctor                  | search patient notes for a medical condition                              | review together all the patients I treat for the same condition                         |
-| `* *`    | doctor                  | filter patients by how long ago they were last visited                    | find patients who have gone too long without a checkup                                  |
 | `* *`    | doctor                  | see the coming week's visits as a schedule                                | plan my week before it starts                                                           |
+| `* *`    | doctor                  | find patients due within a specified date range                           | plan visits for the coming days                                                        |
+
+#### Future user stories
+
+The following user stories describe planned functionality and are not implemented in the current version.
+
+| Priority | As a …                  | I want to …                                                              | So that I can…                                                                       |
+|----------|-------------------------|--------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| `* *`    | doctor                  | assign a priority level to a patient                                      | tell at a glance which patients need closer attention                                   |
+| `* *`    | doctor                  | filter patients by how long ago they were last visited                    | find patients who have gone too long without a checkup                                  |
 | `* *`    | doctor                  | copy a patient's address or phone number in one command                   | paste it into my maps or phone app without retyping it                                  |
 | `* *`    | doctor                  | archive a patient who no longer needs regular visits                      | keep my active list short without losing their history                                  |
 | `* *`    | doctor                  | view my archived patients                                                 | look up the history of a patient who returns after a long gap                           |
 | `* *`    | doctor                  | find patients whose next visit date has passed                            | follow up on overdue visits                                                             |
-| `* *`    | doctor                  | find patients due within a specified date range                           | plan visits for the coming days                                                        |
 | `* *`    | doctor                  | undo my most recent record-changing command                               | recover quickly from a typing mistake                                                   |
 | `* *`    | long-time user          | define my own aliases for the commands I use most                         | enter routine commands with fewer keystrokes                                            |
 | `*`      | new user                | import my existing patient records from a file                            | move my caseload into Doc without retyping every record                                 |
@@ -1095,12 +1116,14 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 (For all use cases below, the **System** is `Doc` and the **Actor** is the `doctor`, unless specified otherwise)
 
+Use cases marked **Future** describe planned functionality that is not available in the current version.
+
 **Use case: UC01 - Add a patient**
 
 **MSS**
 
 1.  Doctor requests to add a patient, providing the patient's name, address, phone number, next visit date and time,
-    and medical conditions.
+    and optionally notes about medical conditions.
 2.  Doc adds the patient to the caseload and shows the newly added patient record.
 
     Use case ends.
@@ -1210,9 +1233,10 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 **MSS**
 
 1.  Doctor requests the list of patients due to be visited today.
-2.  Doc shows those patients ordered by priority level, then by next visit date.
+2.  Doc shows those patients ordered by visit date and time.
 3.  Doctor requests to see the full record of a patient identified by their displayed index.
-4.  Doc shows the patient's address, contact number, medical conditions and past visit notes.
+4.  Doc shows the patient's address, contact number, patient-level medical notes and previous scheduled visit
+    datetimes.
 
     Steps 3 and 4 are repeated for each patient the doctor wants to prepare for.
 
@@ -1251,7 +1275,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case ends.
 
-**Use case: UC05 - Archive a patient**
+**Future use case: UC05 - Archive a patient (not implemented)**
 
 **MSS**
 
@@ -1444,7 +1468,8 @@ it can be assessed.
 ### Glossary
 
 * **Active patient record**: A patient record included in the doctor's current caseload and visit planning.
-* **Archived patient record**: A patient record retained for future reference but excluded from the active caseload and visit planning.
+* **Archived patient record (planned)**: A patient record retained for future reference but excluded from the active
+  caseload and visit planning. Archiving is not available in the current version.
 * **Calendar label**: `Past`, `Today`, or `Upcoming` beside the current datetime, based on its calendar date relative
   to the local date when details are rendered. It does not indicate attendance or completion.
 * **Caseload**: The collection of active patient records currently managed by a doctor.
@@ -1460,7 +1485,8 @@ it can be assessed.
   visit took place.
 * **Patient record**: The information Doc stores for one patient, including their contact details, medical notes,
   tags, current visit date and time, and previous visit dates and times retained by `next`.
-* **Priority level**: A label indicating how closely a patient needs to be followed up, used when ordering planned visits.
+* **Priority level (planned)**: A label indicating how closely a patient needs to be followed up. Patient priority is
+  not available in the current version.
 * **Rollback**: Restoring the latest previous visit datetime with `prev`, replacing and discarding the current datetime
   while preserving the patient's other details. It is not a general undo operation and has no redo.
 * **Visit**: A single house call. Doc stores one current datetime, ordered previous datetimes, and one patient-level note.
@@ -1522,18 +1548,22 @@ and details panel refresh to the replacement record.
 
    1. Download the JAR file and copy it into an empty folder.
 
-   1. Double-click the JAR file.<br>
-      Expected: The GUI opens with seven sample patient records in this order: George Miller, Priya Nair, Aisha
-      Rahman, Marcus Lim, Mei Lin Tan, Daniel Wong, and Noor Aziz. The window size may not be optimal.
+   1. Open a terminal in that folder and run `java -version`.<br>
+      Expected: The active Java version is 25. If another version is shown, configure the terminal to use JDK 25
+      before continuing.
+
+   1. Run `java -jar doc.jar`.<br>
+      Expected: The GUI opens with ten sample patient records in this order: Amelia Tan, Benjamin Lim, Chloe Ng,
+      David Koh, Farah Aziz, Grace Wong, two patients named Jordan Lee, Kavita Rao, and Lucas Chen. The window size
+      may not be optimal. Launching from the terminal also exposes startup errors that can be hidden when a JAR is
+      opened by double-clicking it.
 
 1. Saving window preferences
 
    1. Resize the window to an optimal size. Move the window to a different location. Close the window.
 
-   1. Relaunch the app by double-clicking the JAR file.<br>
+   1. Relaunch the app from the same folder using `java -jar doc.jar`.<br>
        Expected: The most recent window size and location are retained.
-
-1. _{ more test cases … }_
 
 ### Save failures and patient details
 
@@ -1818,22 +1848,22 @@ Browser-launch and clipboard rejection cases are simulated by `HelpWindowActions
 
 ### Finding patients
 
-Start with the seven sample patients by launching Doc from an empty folder. Run `list` before each step.
+Start with the ten sample patients by launching Doc from an empty folder. Run `list` before each step.
 
-1. Run `find n/m`.<br>
-   Expected: `3 patients found.` George Miller, Marcus Lim, and Mei Lin Tan are listed.
+1. Run `find n/j`.<br>
+   Expected: `2 patients found.` The two patients named Jordan Lee are listed.
 
-1. Run `find n/george priya`.<br>
-   Expected: George Miller and Priya Nair are listed, because keywords for one field match any of them.
+1. Run `find n/amelia benjamin`.<br>
+   Expected: Amelia Tan and Benjamin Lim are listed, because keywords for one field match any of them.
 
-1. Run `find n/m t/morning`.<br>
-   Expected: `1 patient found.` Only Mei Lin Tan is listed, because different fields must all match.
+1. Run `find n/b t/morning`.<br>
+   Expected: `1 patient found.` Only Benjamin Lim is listed, because different fields must all match.
 
 1. Run `find p/8901`, `find a/tampines`, and `find note/review`.<br>
-   Expected: Noor Aziz; Marcus Lim; then George Miller and Marcus Lim.
+   Expected: Farah Aziz and Kavita Rao; Amelia Tan; then Amelia Tan, Benjamin Lim, Farah Aziz, and Grace Wong.
 
-1. Run `find vd/15/10/2026`, then `find vd/14/10/2026 15/10/2026`, then `sort date`.<br>
-   Expected: Priya Nair; then Mei Lin Tan and Priya Nair, ordered by visit time after `sort date`.
+1. Run `find vd/24/10/2026`, then `find vd/22/10/2026 24/10/2026`, then `sort date`.<br>
+   Expected: Chloe Ng; then Benjamin Lim and Chloe Ng, ordered by visit time after `sort date`.
 
 1. Run `find p/0000`.<br>
    Expected: `No patients found.` followed by a hint listing every search prefix, and an empty list.
@@ -1848,7 +1878,7 @@ Start with the seven sample patients by launching Doc from an empty folder. Run 
    | `find n/george n/priya` | The duplicate-prefix error for `n/`. |
    | `find p/9123abc` | `Phone keywords may contain only digits, '+', and '-', and must include at least one digit.` |
    | `find vd/31/2/2026` | `"31/2/2026" is not a valid visit date.` with the date format. |
-   | `find vd/15/10/2026 0900` | `"0900" is not a valid visit date.` with the date format. |
+   | `find vd/15/10/2026 0900` | `"15/10/2026 0900" is not a valid visit date.` with the date format. |
 
    Expected: Each rejected command leaves the displayed list unchanged.
 
@@ -2409,8 +2439,6 @@ when midnight passes; another `view` recalculates it.
 
    1. Test case: `clear`<br>
       Expected: No confirmation is requested and the result display shows `Patient list is already empty.`
-
-1. _{ more test cases … }_
 
 ### Saving data
 
