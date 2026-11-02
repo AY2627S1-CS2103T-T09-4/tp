@@ -170,6 +170,22 @@ public class JsonAddressBookStorageTest {
         assertInvalidEntryRejected("nullTagAddressBook.json", "Patient's tags contain a null tag entry.");
     }
 
+    @Test
+    public void readAddressBook_emptyTags_loadsPatientWithoutTags() throws Exception {
+        Path filePath = testFolder.resolve("empty-tags.json");
+        Files.writeString(filePath, "{\"persons\":[" + createPatientJson("") + "]}");
+        byte[] originalBytes = Files.readAllBytes(filePath);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+
+        ReadOnlyAddressBook loaded = storage.readAddressBook().orElseThrow();
+
+        assertEquals(1, loaded.getPersonList().size());
+        Person patient = loaded.getPersonList().getFirst();
+        assertEquals("Test Patient", patient.getName().fullName);
+        assertTrue(patient.getTags().isEmpty());
+        assertArrayEquals(originalBytes, Files.readAllBytes(filePath));
+    }
+
     /**
      * Checks that invalid entries produce a recoverable loading error without modifying the saved file.
      */
