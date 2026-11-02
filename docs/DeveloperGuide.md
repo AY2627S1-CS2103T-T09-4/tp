@@ -13,7 +13,16 @@
 
 ## **Acknowledgements**
 
-* _{List the sources of reused or adapted ideas, code, documentation, and third-party libraries here, with links to the originals.}_
+* Doc is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-level3), created by the
+  [SE-EDU initiative](https://se-education.org). Its application architecture, codebase, and documentation structure
+  were adapted for this project.
+* The user and developer documentation reuse and adapt guidance and examples from the
+  [AddressBook-Level3 documentation](https://se-education.org/addressbook-level3/).
+* Doc uses [JavaFX](https://openjfx.io/) for its desktop interface and
+  [Jackson](https://github.com/FasterXML/jackson) for JSON data persistence. Automated tests use
+  [JUnit 5](https://junit.org/junit5/).
+* The documentation is built with [MarkBind](https://markbind.org/) and uses
+  [PlantUML](https://plantuml.com/) for diagrams.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -73,7 +82,7 @@ The **API** of this component is specified in [`Ui.java`](https://github.com/AY2
 
 <puml src="diagrams/UiClassDiagram.puml" alt="Structure of the UI Component"/>
 
-The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `PersonListPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
+The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `PersonListPanel`, `PatientDetailsPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
 
 The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/java/seedu/address/ui/MainWindow.java).
 
@@ -87,12 +96,12 @@ The `UI` component,
 `ResultDisplay` is hosted in a fixed-height response panel. Its feedback text wraps within the available width, and the
 text area can be scrolled vertically when a message exceeds the panel height. The panel does not grow when the main
 window is resized; extra vertical space remains available to the patient list and patient-details panel instead.
-`ResultDisplay` intercepts unmodified Up and Down key presses before JavaFX performs caret navigation, scrolling the
+`ResultDisplay` intercepts unmodified <kbd>Up</kbd> and <kbd>Down</kbd> key presses before JavaFX performs caret navigation, scrolling the
 text area immediately while preserving modified arrow-key behavior for text selection and navigation. Each movement
 is clamped to the TextArea's vertical scrollbar bounds so repeated presses at an edge do not accumulate hidden scroll.
 
 `CommandBox` owns a session-scoped `CommandHistory`. It records ordinary command submissions and uses it to replace
-the command box text when the user presses the Up or Down arrow key.
+the command box text when the user presses the <kbd>Up</kbd> or <kbd>Down</kbd> arrow key.
 
 `MainWindow` coordinates keyboard focus between four main sections; see
 [Main-window keyboard navigation](#main-window-keyboard-navigation) for event routing and scrolling boundaries.
@@ -185,18 +194,23 @@ The `Storage` component,
 both files exist, the preferred file takes precedence and the legacy file is left unchanged. A failed move falls back
 to the legacy path for that run and contributes a warning shown after the main window opens.
 
-When the patient data file does not exist, `MainApp` initializes the model with the seven records returned by
-`SampleDataUtil#getSampleAddressBook`. The sample patients are George Miller, Priya Nair, Aisha Rahman, Marcus Lim,
-Mei Lin Tan, Daniel Wong, and Noor Aziz. If an existing data file can be loaded successfully, including one with no
-records, its contents take precedence over these samples. If an existing data file cannot be loaded—for example,
+When the patient data file does not exist, `MainApp` initializes the model with the ten records returned by
+`SampleDataUtil#getSampleAddressBook`. The sample patients are Amelia Tan, Benjamin Lim, Chloe Ng, David Koh,
+Farah Aziz, Grace Wong, two patients named Jordan Lee, Kavita Rao, and Lucas Chen. If an existing data file can be
+loaded successfully, including one with no records, its contents take precedence over these samples. If an existing
+data file cannot be loaded—for example,
 because it is malformed or contains conflicting records—`MainApp` starts with an empty address book.
 
-Because almost every command saves the address book, the next command would overwrite the unreadable file.
-`MainApp#loadInitialData` therefore first calls `Storage#backupAddressBook`, which copies the file to a sibling named
+Because a later successful command that changes patient data could overwrite the unreadable file,
+`MainApp#loadInitialData` first calls `Storage#backupAddressBook`, which copies the file to a sibling named
 `doc-invalid-<yyyyMMdd-HHmmss>.json` without overwriting any existing backup. It returns the empty address book
 together with a warning that gives the first line of the load error and the backup's location, or, if the backup
 fails, tells the user to copy the file before entering any command. `MainApp#start` passes the warning to
 `Ui#showStartupWarning`, which shows it in a dialog once the main window is open.
+
+Null entries inside the patient or tag arrays are rejected during storage conversion with an
+`IllegalValueException`, which storage wraps in a `DataLoadingException`. They follow the same backup-and-warning
+recovery path rather than being skipped or causing an uncaught null-pointer exception. Empty tag arrays remain valid.
 
 ### Common classes
 
@@ -210,8 +224,8 @@ This section describes some noteworthy details on how certain features are imple
 
 ### Main-window keyboard navigation
 
-`MainWindow` installs a scene-level key-event filter that routes Tab through the command box, response panel,
-patient list, and patient-details `ScrollPane`, then back to the command box. Shift+Tab reverses this cycle.
+`MainWindow` installs a scene-level key-event filter that routes <kbd>Tab</kbd> through the command box, response panel,
+patient list, and patient-details `ScrollPane`, then back to the command box. <kbd>Shift</kbd>+<kbd>Tab</kbd> reverses this cycle.
 The handler identifies the section containing the focus owner, requests focus on the next section's target, and
 consumes the event. Focus outside these sections is left to normal JavaFX traversal; the menu bar is outside this cycle.
 
@@ -219,7 +233,8 @@ Explicit section targets keep the empty details panel reachable and prevent desc
 controls from becoming additional stops. A focus-owner listener updates the section's light-gray, 2-pixel outline.
 Every section reserves the same border space when unfocused, keeping the layout stable as focus moves.
 
-`PatientDetailsPanel` handles Up, Down, Page Up, Page Down, Home, and End locally and clamps scrolling to its bounds.
+`PatientDetailsPanel` handles <kbd>Up</kbd>, <kbd>Down</kbd>, <kbd>Page Up</kbd>, <kbd>Page Down</kbd>, <kbd>Home</kbd>,
+and <kbd>End</kbd> locally and clamps scrolling to its bounds.
 Command-history and patient-list arrow-key handling remain scoped to their own controls. The patient list scrolls
 only as needed to keep the selected card fully visible. These boundaries are checked in
 [Main-window keyboard navigation and details scrolling](#main-window-keyboard-navigation-and-details-scrolling).
@@ -232,15 +247,15 @@ See [Viewing help](UserGuide.md#viewing-help-help) for user instructions.
 
 #### Lifecycle and focus
 
-`MainWindow` retains one `HelpWindow` and reuses it for command, F1, and menu requests. The window is non-modal,
+`MainWindow` retains one `HelpWindow` and reuses it for command, <kbd>F1</kbd>, and menu requests. The window is non-modal,
 so the main window remains usable. Opening a hidden window calls `HelpWindow.show()` and focuses the command list.
 Requesting Help while it is already visible calls `focus()` instead, restoring a minimized window and bringing it
-forward without resetting its size, position, or command-list scroll position. The command list is a Tab stop so users
+forward without resetting its size, position, or command-list scroll position. The command list is a <kbd>Tab</kbd> stop so users
 can return from the guide buttons.
 
 Before opening or focusing Help, `MainWindow` saves the command-box caret and selection. When Help is hidden,
 it returns focus to `CommandBox` and restores that selection if the main window is still showing.
-F1 and the menu call the UI directly, leaving a pending input request intact. Typed `help` goes through `LogicManager`
+<kbd>F1</kbd> and the menu call the UI directly, leaving a pending input request intact. Typed `help` goes through `LogicManager`
 and is consumed as the response when a request is pending; it does not open Help in that case.
 
 #### Layout and content
@@ -685,7 +700,7 @@ Each field is searched by its own `Predicate<Person>` class in the Model compone
 `MatchesAllCriteriaPredicate` combines them. `FindCommand` stores this single combined predicate, so it does not need
 to know which fields were searched.
 
-<puml src="diagrams/FindPredicateClassDiagram.puml" alt="Classes used to represent find search criteria" width="650" />
+<puml src="diagrams/FindPredicateClassDiagram.puml" alt="Classes used to represent find search criteria" />
 
 * `FieldContainsKeywordsPredicate` holds a field's keywords and implements `test` as "any keyword matches".
   It also implements `equals`, `hashCode`, and `toString`, comparing exact classes so that, for example, a name
@@ -716,7 +731,9 @@ evaluates the predicate for each stored patient whenever the displayed list is r
 1. It rejects text before the first prefix with `MESSAGE_KEYWORDS_NEED_PREFIX` and
    repeated prefixes with the shared duplicate-prefix error.
 1. For each prefix that is present, it splits the value into keywords and creates that field's predicate.
-   An empty prefix such as `n/` is rejected. Phone keywords must be digits. Visit dates are parsed strictly with
+   An empty prefix such as `n/` is rejected. Phone keywords may contain only digits, `+`, and `-`, and must include
+   at least one digit. Phone matching compares only digits: for example, `find p/9123-4567` searches for `91234567`
+   within the stored phone number's digits. Visit dates are parsed strictly with
    `VisitDate#DAY_INPUT_FORMATTER` (`d/M/yyyy`), so impossible dates and dates followed by a time are rejected and the
    error names the invalid value.
 1. If no prefix was given, it shows the usage message; otherwise it wraps the predicates in a
@@ -899,12 +916,12 @@ execution remain available. Before recording, `CommandBox` checks whether `Logic
 `CommandInputRequest`; follow-up responses are excluded from command history because they are input for an existing
 command rather than new commands.
 
-The history position starts immediately after the newest entry. On the first Up arrow press, `CommandHistory` saves
-the current command box text as a draft and returns the newest command. Further Up presses move towards older
-commands and stop at the oldest entry. Down presses move towards newer commands; moving past the newest entry restores
+The history position starts immediately after the newest entry. On the first <kbd>Up</kbd> arrow press, `CommandHistory` saves
+the current command box text as a draft and returns the newest command. Further <kbd>Up</kbd> presses move towards older
+commands and stop at the oldest entry. <kbd>Down</kbd> presses move towards newer commands; moving past the newest entry restores
 the saved draft. A new ordinary submission resets the position to immediately after the newest entry.
 
-`CommandBox` handles JavaFX key-pressed events for the Up and Down arrow keys, replaces the text, positions the caret
+`CommandBox` handles JavaFX key-pressed events for the <kbd>Up</kbd> and <kbd>Down</kbd> arrow keys, replaces the text, positions the caret
 after the recalled text, and consumes the event so the key does not also move the caret. Other keys retain the usual
 `TextField` behavior. The history belongs only to the current `CommandBox`, so it is discarded when the application
 closes.
@@ -1010,11 +1027,10 @@ The following activity diagram summarizes what happens when a user executes a ne
   * Pros: Will use less memory (e.g. for `delete`, just save the person being deleted).
   * Cons: We must ensure that the implementation of each individual command is correct.
 
-_{more aspects and alternatives to be added}_
-
 ### \[Proposed\] Data archiving
 
-_{Explain here how the data archiving feature will be implemented}_
+Data archiving is a planned feature and is not available in the current version. A future implementation may keep
+inactive patient records outside the active caseload while retaining their visit history for later reference.
 
 
 --------------------------------------------------------------------------------------------------------------------
@@ -1043,11 +1059,16 @@ _{Explain here how the data archiving feature will be implemented}_
 * can type fast and prefers typing to mouse interactions
 * is reasonably comfortable using CLI apps
 
-**Value proposition**: A house call doctor currently keeps patient contacts, addresses and medical histories across paper notes, phone contacts and memory, which makes planning and preparing for home visits slow and error-prone. Doc centralises all of it in one offline desktop app, and orders the day's visits by patient priority and next visit date, so the doctor can prepare for a visit and plan a route between visits faster than with a typical mouse-driven contact app.
+**Value proposition**: A house call doctor currently keeps patient contacts, addresses and medical histories across
+paper notes, phone contacts and memory, which makes planning and preparing for home visits slow and error-prone. Doc
+centralises all of it in one offline desktop app and organises scheduled visits by date and time, so the doctor can
+prepare for visits and plan upcoming rounds faster than with a typical mouse-driven contact app.
 
 ### User stories
 
 Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unlikely to have) - `*`
+
+#### Implemented user stories
 
 | Priority | As a …                  | I want to …                                                              | So that I can…                                                                       |
 |----------|-------------------------|--------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
@@ -1068,16 +1089,23 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* *`    | keyboard user           | move between the main panels and scroll patient details using keys       | review long records without switching to the mouse |
 | `* *`    | new user                | consult a command reference while keeping my unfinished input            | check syntax without losing what I have typed |
 | `* *`    | doctor                  | add or update notes about a patient's medical conditions                  | prepare for future visits                                                               |
-| `* *`    | doctor                  | assign a priority level to a patient                                      | tell at a glance which patients need closer attention                                   |
 | `* *`    | doctor                  | sort my patients by their next visit date                                 | plan upcoming visits while retaining past schedules for reference                       |
 | `* *`    | doctor                  | search patient notes for a medical condition                              | review together all the patients I treat for the same condition                         |
-| `* *`    | doctor                  | filter patients by how long ago they were last visited                    | find patients who have gone too long without a checkup                                  |
 | `* *`    | doctor                  | see the coming week's visits as a schedule                                | plan my week before it starts                                                           |
+| `* *`    | doctor                  | find patients due within a specified date range                           | plan visits for the coming days                                                        |
+
+#### Future user stories
+
+The following user stories describe planned functionality and are not implemented in the current version.
+
+| Priority | As a …                  | I want to …                                                              | So that I can…                                                                       |
+|----------|-------------------------|--------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| `* *`    | doctor                  | assign a priority level to a patient                                      | tell at a glance which patients need closer attention                                   |
+| `* *`    | doctor                  | filter patients by how long ago they were last visited                    | find patients who have gone too long without a checkup                                  |
 | `* *`    | doctor                  | copy a patient's address or phone number in one command                   | paste it into my maps or phone app without retyping it                                  |
 | `* *`    | doctor                  | archive a patient who no longer needs regular visits                      | keep my active list short without losing their history                                  |
 | `* *`    | doctor                  | view my archived patients                                                 | look up the history of a patient who returns after a long gap                           |
 | `* *`    | doctor                  | find patients whose next visit date has passed                            | follow up on overdue visits                                                             |
-| `* *`    | doctor                  | find patients due within a specified date range                           | plan visits for the coming days                                                        |
 | `* *`    | doctor                  | undo my most recent record-changing command                               | recover quickly from a typing mistake                                                   |
 | `* *`    | long-time user          | define my own aliases for the commands I use most                         | enter routine commands with fewer keystrokes                                            |
 | `*`      | new user                | import my existing patient records from a file                            | move my caseload into Doc without retyping every record                                 |
@@ -1088,12 +1116,14 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 (For all use cases below, the **System** is `Doc` and the **Actor** is the `doctor`, unless specified otherwise)
 
+Use cases marked **Future** describe planned functionality that is not available in the current version.
+
 **Use case: UC01 - Add a patient**
 
 **MSS**
 
 1.  Doctor requests to add a patient, providing the patient's name, address, phone number, next visit date and time,
-    and medical conditions.
+    and optionally notes about medical conditions.
 2.  Doc adds the patient to the caseload and shows the newly added patient record.
 
     Use case ends.
@@ -1203,9 +1233,10 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 **MSS**
 
 1.  Doctor requests the list of patients due to be visited today.
-2.  Doc shows those patients ordered by priority level, then by next visit date.
+2.  Doc shows those patients ordered by visit date and time.
 3.  Doctor requests to see the full record of a patient identified by their displayed index.
-4.  Doc shows the patient's address, contact number, medical conditions and past visit notes.
+4.  Doc shows the patient's address, contact number, patient-level medical notes and previous scheduled visit
+    datetimes.
 
     Steps 3 and 4 are repeated for each patient the doctor wants to prepare for.
 
@@ -1244,7 +1275,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case ends.
 
-**Use case: UC05 - Archive a patient**
+**Future use case: UC05 - Archive a patient (not implemented)**
 
 **MSS**
 
@@ -1437,7 +1468,8 @@ it can be assessed.
 ### Glossary
 
 * **Active patient record**: A patient record included in the doctor's current caseload and visit planning.
-* **Archived patient record**: A patient record retained for future reference but excluded from the active caseload and visit planning.
+* **Archived patient record (planned)**: A patient record retained for future reference but excluded from the active
+  caseload and visit planning. Archiving is not available in the current version.
 * **Calendar label**: `Past`, `Today`, or `Upcoming` beside the current datetime, based on its calendar date relative
   to the local date when details are rendered. It does not indicate attendance or completion.
 * **Caseload**: The collection of active patient records currently managed by a doctor.
@@ -1453,7 +1485,8 @@ it can be assessed.
   visit took place.
 * **Patient record**: The information Doc stores for one patient, including their contact details, medical notes,
   tags, current visit date and time, and previous visit dates and times retained by `next`.
-* **Priority level**: A label indicating how closely a patient needs to be followed up, used when ordering planned visits.
+* **Priority level (planned)**: A label indicating how closely a patient needs to be followed up. Patient priority is
+  not available in the current version.
 * **Rollback**: Restoring the latest previous visit datetime with `prev`, replacing and discarding the current datetime
   while preserving the patient's other details. It is not a general undo operation and has no redo.
 * **Visit**: A single house call. Doc stores one current datetime, ordered previous datetimes, and one patient-level note.
@@ -1515,18 +1548,22 @@ and details panel refresh to the replacement record.
 
    1. Download the JAR file and copy it into an empty folder.
 
-   1. Double-click the JAR file.<br>
-      Expected: The GUI opens with seven sample patient records in this order: George Miller, Priya Nair, Aisha
-      Rahman, Marcus Lim, Mei Lin Tan, Daniel Wong, and Noor Aziz. The window size may not be optimal.
+   1. Open a terminal in that folder and run `java -version`.<br>
+      Expected: The active Java version is 25. If another version is shown, configure the terminal to use JDK 25
+      before continuing.
+
+   1. Run `java -jar doc.jar`.<br>
+      Expected: The GUI opens with ten sample patient records in this order: Amelia Tan, Benjamin Lim, Chloe Ng,
+      David Koh, Farah Aziz, Grace Wong, two patients named Jordan Lee, Kavita Rao, and Lucas Chen. The window size
+      may not be optimal. Launching from the terminal also exposes startup errors that can be hidden when a JAR is
+      opened by double-clicking it.
 
 1. Saving window preferences
 
    1. Resize the window to an optimal size. Move the window to a different location. Close the window.
 
-   1. Relaunch the app by double-clicking the JAR file.<br>
+   1. Relaunch the app from the same folder using `java -jar doc.jar`.<br>
        Expected: The most recent window size and location are retained.
-
-1. _{ more test cases … }_
 
 ### Save failures and patient details
 
@@ -1564,9 +1601,9 @@ the first launch loads the sample data. The route below deliberately clears it b
 the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Patient` at index 2.
 
 1. **Reach an empty details panel:** Run `clear`, then submit `y` at the confirmation prompt.<br>
-   Expected: The patient list is empty and the patient-details panel is blank. Click the command box and press Tab four
+   Expected: The patient list is empty and the patient-details panel is blank. Click the command box and press <kbd>Tab</kbd> four
    times. Focus should move through command box, response panel, patient list, and patient details, then wrap to the
-   command box. From the command box, press Shift+Tab four times and confirm the reverse cycle. The empty details panel
+   command box. From the command box, press <kbd>Shift</kbd>+<kbd>Tab</kbd> four times and confirm the reverse cycle. The empty details panel
    remains reachable and has a visible outline.
 1. **Create repeatable records:** Submit these commands in order:
 
@@ -1578,22 +1615,22 @@ the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Pa
    Each successful `add` may display the newly added patient. Run `view 2` before the scrolling checks so the long
    `Beta Patient` record is definitely displayed and the list indices are known. Reduce the window height until its
    details overflow and the vertical scrollbar appears before testing scrolling.
-1. **Details scrolling and focus outline:** Use Tab or Shift+Tab to focus patient details. Confirm that the outline
+1. **Details scrolling and focus outline:** Use <kbd>Tab</kbd> or <kbd>Shift</kbd>+<kbd>Tab</kbd> to focus patient details. Confirm that the outline
    surrounds the whole panel rather than an individual label or scrollbar. Press <kbd>Up</kbd>, <kbd>Down</kbd>,
    <kbd>Page Up</kbd>, <kbd>Page Down</kbd>, <kbd>Home</kbd>, and <kbd>End</kbd> separately.<br>
-   Expected: Up and Down move a small amount, Page Up and Page Down move about one viewport, and Home and End reach the
+   Expected: <kbd>Up</kbd> and <kbd>Down</kbd> move a small amount, <kbd>Page Up</kbd> and <kbd>Page Down</kbd> move about one viewport, and <kbd>Home</kbd> and <kbd>End</kbd> reach the
    top and bottom without overscrolling. Mouse-wheel scrolling still works.
 1. **Fitting content:** Run `view 1`, then enlarge the window vertically until Alpha Patient's details fit without a
    scrollbar. Focus patient details and press each of the six scrolling keys.<br>
    Expected: The details remain unchanged because there is no content to scroll.
-1. **View reset and command focus:** Run `view 2`, focus patient details, and press End. Return to the command box and
+1. **View reset and command focus:** Run `view 2`, focus patient details, and press <kbd>End</kbd>. Return to the command box and
    run `view 2` again. Repeat after running `view 1`, then run `view 2` once more.<br>
    Expected: Every successful view starts Beta Patient or Alpha Patient at the top, including the repeated same-patient
    view and the switch between long and short records. After each command entered in the command box, focus remains in
    the command box.
-1. **Empty-panel behavior after clearing:** Run `clear`, submit `y`, and focus the blank details panel through the Tab
+1. **Empty-panel behavior after clearing:** Run `clear`, submit `y`, and focus the blank details panel through the <kbd>Tab</kbd>
    cycle. Press each scrolling key separately.<br>
-   Expected: No key changes the blank panel, and Tab/Shift+Tab still move between all four sections.
+   Expected: No key changes the blank panel, and <kbd>Tab</kbd>/<kbd>Shift</kbd>+<kbd>Tab</kbd> still move between all four sections.
 1. **Existing shortcuts:** The preceding step cleared the list. Refill it with these disposable records:
 
    ```text
@@ -1607,9 +1644,9 @@ the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Pa
    <kbd>Up</kbd> and <kbd>Down</kbd> still recall command
    history. Focus the patient list and move the selection down through at least four patients, then back up. Confirm
    that each selected patient card remains fully visible and the list does not jump when the selected card is already
-   visible. Leave unfinished text in the command box, traverse with Tab and Shift+Tab, and confirm the text and
+   visible. Leave unfinished text in the command box, traverse with <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd>, and confirm the text and
    displayed patient do not change. Check mouse scrolling in the list and details panel, then follow the
-   [Help lifecycle checks](#help-window-lifecycle) for F1 and Help regressions.
+   [Help lifecycle checks](#help-window-lifecycle) for <kbd>F1</kbd> and Help regressions.
 
 ### Dates of birth
 
@@ -1728,7 +1765,7 @@ Use a disposable data file. Start with no patients and use available visit slots
 
 #### Content and layout checks
 
-1. **Offline access:** Open Help with F1 while disconnected from the Internet.<br>
+1. **Offline access:** Open Help with <kbd>F1</kbd> while disconnected from the Internet.<br>
    Expected: The command directory remains available, and no browser opens automatically.
 
 1. **Command directory:** Open Help at its default size.<br>
@@ -1738,7 +1775,7 @@ Use a disposable data file. Start with no patients and use available visit slots
    available navigation controls.
 
 1. **Navigation hint:** Inspect the hint at the top of the command list.<br>
-   Expected: The Up, Down, Tab, Shift, and Escape key labels are visible as non-interactive visual keycaps. They do
+   Expected: The <kbd>Up</kbd>, <kbd>Down</kbd>, <kbd>Tab</kbd>, <kbd>Shift</kbd>, and <kbd>Escape</kbd> key labels are visible as non-interactive visual keycaps. They do
    not receive focus or activate an action when clicked.
 
 1. **Small window:** Resize Help to its minimum size and scroll through the list. Repeat after a guide action
@@ -1746,14 +1783,14 @@ Use a disposable data file. Start with no patients and use available visit slots
    Expected: Several command entries remain readable, all groups can be reached by scrolling, and text wraps
    without horizontal clipping. The URL, feedback, and buttons remain visible below the list.
 
-1. **Keyboard scrolling:** Close Help, focus the result display, and press F1. Resize Help to its minimum size. Use Down and
-   End to reach the later commands, then Home and Up to return towards the top.<br>
+1. **Keyboard scrolling:** Close Help, focus the result display, and press <kbd>F1</kbd>. Resize Help to its minimum size. Use <kbd>Down</kbd> and
+   <kbd>End</kbd> to reach the later commands, then <kbd>Home</kbd> and <kbd>Up</kbd> to return towards the top.<br>
    Expected: Help opens with focus on the command list, and the keys allow every group to be reached.
 
-1. **Button navigation:** Open Help. Press Tab until **Open User Guide** is focused, then press Shift+Tab to return
-   to the command list. Press Tab through **Open User Guide** and **Copy URL** until **Close** is focused, then press
-   Space.<br>
-   Expected: Focus moves between the list and buttons, focused buttons have a visible outline, and Space activates Close.
+1. **Button navigation:** Open Help. Press <kbd>Tab</kbd> until **Open User Guide** is focused, then press <kbd>Shift</kbd>+<kbd>Tab</kbd> to return
+   to the command list. Press <kbd>Tab</kbd> through **Open User Guide** and **Copy URL** until **Close** is focused, then press
+   <kbd>Space</kbd>.<br>
+   Expected: Focus moves between the list and buttons, focused buttons have a visible outline, and <kbd>Space</kbd> activates Close.
 
 1. **Display scaling:** Repeat the layout and keyboard checks at 1920×1080 with 100% and 125% OS scaling, and at
    1280×720 with 150% OS scaling.<br>
@@ -1766,13 +1803,13 @@ Use a disposable data file. Start with no patients and use available visit slots
    then enter `help add` and `help 123` in the main window.<br>
    Expected: Each request focuses the same window without changing its size or position. Extra arguments are ignored.
 
-1. **Minimize and restore:** Minimize Help using its native control. Request it again using `help`, F1, and
+1. **Minimize and restore:** Minimize Help using its native control. Request it again using `help`, <kbd>F1</kbd>, and
    **Help → Help**, minimizing it before each attempt.<br>
    Expected: Help minimizes independently, the main window stays usable, and each request restores and focuses the
    existing window.
 
-1. **Draft preservation:** Type `find n/Be` without submitting it, select part of the text, and press F1. Close Help
-   using **Close**, **Escape**, and the native close control, reopening it for each attempt.<br>
+1. **Draft preservation:** Type `find n/Be` without submitting it, select part of the text, and press <kbd>F1</kbd>. Close Help
+   using **Close**, <kbd>Escape</kbd>, and the native close control, reopening it for each attempt.<br>
    Expected: Focus returns to the command box with the draft unsubmitted and its caret and selection restored.
 
 1. **Shutdown:** Open Help and exit Doc using `exit`, **File → Exit**, and the main window's native close control,
@@ -1783,7 +1820,7 @@ Use a disposable data file. Start with no patients and use available visit slots
 
 1. **Help during confirmation:** Launch Doc with disposable patient data containing at least one patient.
 
-   1. Enter `delete 1`, then type `y` without submitting it. Open and dismiss Help using F1 and the Help menu.<br>
+   1. Enter `delete 1`, then type `y` without submitting it. Open and dismiss Help using <kbd>F1</kbd> and the Help menu.<br>
       Expected: The confirmation prompt and draft remain unchanged, with no deletion or data-file write.<br>
       Cleanup: Replace the draft with `n` and submit it to cancel.
 
@@ -1796,7 +1833,7 @@ Use a disposable data file. Start with no patients and use available visit slots
 Open Help for these checks.
 
 1. **Open the guide:** With an Internet connection and a default browser configured, choose **Open User Guide**.
-   Repeat using Tab and Space, then Enter on Windows and Linux.<br>
+   Repeat using <kbd>Tab</kbd> and <kbd>Space</kbd>, then <kbd>Enter</kbd> on Windows and Linux.<br>
    Expected: The browser opens the displayed URL. Doc reports a launch request, not confirmation that the page loaded.
 
 1. **Copy the address:** Choose **Copy URL** (replacing the current clipboard contents), then paste into a scratch
@@ -1813,20 +1850,20 @@ Browser-launch and clipboard rejection cases are simulated by `HelpWindowActions
 
 Start with the ten sample patients by launching Doc from an empty folder. Run `list` before each step.
 
-1. Run `find n/l`.<br>
-   Expected: `4 patients found.` Benjamin Lim, both patients named Jordan Lee, and Lucas Chen are listed.
+1. Run `find n/j`.<br>
+   Expected: `2 patients found.` The two patients named Jordan Lee are listed.
 
-1. Run `find n/amelia farah`.<br>
-   Expected: Amelia Tan and Farah Aziz are listed, because keywords for one field match any of them.
+1. Run `find n/amelia benjamin`.<br>
+   Expected: Amelia Tan and Benjamin Lim are listed, because keywords for one field match any of them.
 
-1. Run `find n/l t/afternoon`.<br>
-   Expected: `1 patient found.` Only Lucas Chen is listed, because different fields must all match.
+1. Run `find n/b t/morning`.<br>
+   Expected: `1 patient found.` Only Benjamin Lim is listed, because different fields must all match.
 
 1. Run `find p/8123`, `find a/tampines`, and `find note/review`.<br>
    Expected: Amelia Tan; Amelia Tan; then Amelia Tan, Benjamin Lim, Farah Aziz, and Grace Wong.
 
-1. Run `find vd/20/10/2026`, then `find vd/20/10/2026 22/10/2026`, then `sort date`.<br>
-   Expected: Amelia Tan; then Amelia Tan and Benjamin Lim, in visit-date order after `sort date`.
+1. Run `find vd/24/10/2026`, then `find vd/22/10/2026 24/10/2026`, then `sort date`.<br>
+   Expected: Chloe Ng; then Benjamin Lim and Chloe Ng, ordered by visit time after `sort date`.
 
 1. Run `find p/0000`.<br>
    Expected: `No patients found.` followed by a hint listing every search prefix, and an empty list.
@@ -1839,13 +1876,13 @@ Start with the ten sample patients by launching Doc from an empty folder. Run `l
    | `find george` | A reminder to put a prefix before keywords, with find usage. |
    | `find n/` | `Give at least one keyword after n/.` |
    | `find n/george n/priya` | The duplicate-prefix error for `n/`. |
-   | `find p/9123abc` | `Phone keywords should only contain digits.` |
+   | `find p/9123abc` | `Phone keywords may contain only digits, '+', and '-', and must include at least one digit.` |
    | `find vd/31/2/2026` | `"31/2/2026" is not a valid visit date.` with the date format. |
-   | `find vd/15/10/2026 0900` | `"0900" is not a valid visit date.` with the date format. |
+   | `find vd/15/10/2026 0900` | `"15/10/2026 0900" is not a valid visit date.` with the date format. |
 
    Expected: Each rejected command leaves the displayed list unchanged.
 
-1. Paste `find n/amelia`, a tab character, and `p/0000` into the command box as one command, then press Enter.<br>
+1. Paste `find n/amelia`, a tab character, and `p/0000` into the command box as one command, then press <kbd>Enter</kbd>.<br>
    Expected: `No patients found.`, because the tab separates two fields and Amelia Tan's phone does not match.
 
 ### Sorting visits by date
@@ -1883,17 +1920,20 @@ displayed order, preserving the usual behavior of `list` and `find`.
 1. Run `agenda 27/10/2026`.<br>
    Expected: Visits from 27 October through 2 November 2026 appear chronologically.
 1. Run `agenda 27/10/2026 1`.<br>
-   Expected: Only visits on 27 October appear, including visits at 0000 and 2359.
+   Expected: Only the two visits on 27 October appear, at 0900 and then 1800.
 1. Run `find` for a patient outside the agenda range, then run `agenda 27/10/2026 7`.<br>
    Expected: The previous search is replaced with every visit in the agenda range.
 1. Run `list`.<br>
    Expected: All patients reappear in stored order.
 1. Run `agenda`, `agenda 31/2/2026`, `agenda 27/10/2026 0`, `agenda 27/10/2026 366`, and
    `agenda 27/10/2026 7 extra`.<br>
-   Expected: Each command shows the agenda usage message and leaves the displayed list unchanged.
-1. Run `agenda 31/12/9999 1`, then `agenda 31/12/9999 2`.<br>
-   Expected: The first shows visits on 31 December 9999; the second reports that the date range must end on or before
-   31/12/9999 and leaves the displayed list unchanged.
+   Expected: Each command shows its reason (`Invalid command format!`, `"31/2/2026" is not a valid start date.`,
+   `Days must be between 1 and 365.` twice, then `Give only a start date and an optional number of days.`)
+   followed by the agenda usage, and leaves the displayed list unchanged.
+1. Run `agenda 31/12/2099 1`, then `agenda 31/12/2099 2`.<br>
+   Expected: The first is accepted and shows any visits on 31 December 2099 (`No visits scheduled from 31/12/2099 to
+   31/12/2099.` if there are none); the second reports that the agenda date range must end on or before 31/12/2099
+   and leaves the displayed list unchanged.
 
 ### Distinguishing past visits in the patient list
 
@@ -2310,37 +2350,37 @@ when midnight passes; another `view` recalculates it.
    1. Restart the application. Enter `list`, then enter `find n/Amelia`.<br>
       Expected: Both commands run normally.
 
-   1. Press the Up arrow key once, then again.<br>
-      Expected: The command box shows `find n/Amelia`, then `list`. The caret is after the recalled text. Further Up arrow
+   1. Press the <kbd>Up</kbd> arrow key once, then again.<br>
+      Expected: The command box shows `find n/Amelia`, then `list`. The caret is after the recalled text. Further <kbd>Up</kbd> arrow
       presses leave `list` displayed.
 
-   1. Press the Down arrow key twice.<br>
-      Expected: The command box shows `find n/Amelia`, then becomes empty. Further Down arrow presses leave it empty.
+   1. Press the <kbd>Down</kbd> arrow key twice.<br>
+      Expected: The command box shows `find n/Amelia`, then becomes empty. Further <kbd>Down</kbd> arrow presses leave it empty.
 
 1. Restoring unfinished text
 
-   1. Type `find n/Ame` without pressing Enter, press the Up arrow key, then press the Down arrow key.<br>
+   1. Type `find n/Ame` without pressing <kbd>Enter</kbd>, press the <kbd>Up</kbd> arrow key, then press the <kbd>Down</kbd> arrow key.<br>
       Expected: A previous command is recalled, then the unfinished text `find n/Ame` is restored exactly.
 
 1. Recording command text
 
-   1. Submit an invalid command containing leading or trailing spaces, then press the Up arrow key.<br>
+   1. Submit an invalid command containing leading or trailing spaces, then press the <kbd>Up</kbd> arrow key.<br>
       Expected: The invalid command is recalled with its original spaces.
 
-   1. Restart the application. Submit `list`, then submit `find n/Amelia` twice. Press the Up arrow key twice.<br>
+   1. Restart the application. Submit `list`, then submit `find n/Amelia` twice. Press the <kbd>Up</kbd> arrow key twice.<br>
       Expected: The command box shows `find n/Amelia`, then `list`. The consecutive duplicate occupies one history
       position.
 
-   1. Restart the application. Submit `list`, `find n/Amelia`, then `list`. Press the Up arrow key three times.<br>
+   1. Restart the application. Submit `list`, `find n/Amelia`, then `list`. Press the <kbd>Up</kbd> arrow key three times.<br>
       Expected: The command box shows `list`, `find n/Amelia`, then `list`. Identical commands separated by another
       command occupy separate history positions.
 
 1. Excluding follow-up responses
 
-   1. Enter `delete 1`, then `n`. Press the Up arrow key once.<br>
+   1. Enter `delete 1`, then `n`. Press the <kbd>Up</kbd> arrow key once.<br>
       Expected: `delete 1` is recalled. The confirmation response `n` is not recalled.
 
-   1. Restart the application and press the Up arrow key before entering any command.<br>
+   1. Restart the application and press the <kbd>Up</kbd> arrow key before entering any command.<br>
       Expected: The command box remains unchanged because command history is not persisted.
 
 ### Deleting a patient
@@ -2363,7 +2403,7 @@ when midnight passes; another `view` recalculates it.
       Expected: No patient is deleted and `list` is consumed as the confirmation response. The result display shows
       `Deletion cancelled.` Entering `list` again lists all patients normally.
 
-   1. Test case: `delete 1`, followed by pressing Enter with an empty command box<br>
+   1. Test case: `delete 1`, followed by pressing <kbd>Enter</kbd> with an empty command box<br>
       Expected: No patient is deleted. The result display shows `Deletion cancelled.`
 
    1. Test case: `delete 0`<br>
@@ -2400,8 +2440,6 @@ when midnight passes; another `view` recalculates it.
    1. Test case: `clear`<br>
       Expected: No confirmation is requested and the result display shows `Patient list is already empty.`
 
-1. _{ more test cases … }_
-
 ### Saving data
 
 1. Dealing with missing/corrupted data files
@@ -2414,5 +2452,20 @@ when midnight passes; another `view` recalculates it.
 
    1. Restore the backup, assign distinct visit dates and times, and relaunch Doc.<br>
       Expected: Every patient record loads normally.
+
+1. Null patient or tag entries
+
+   1. Use a disposable copy of Doc and close it before editing `data/doc.json`.
+
+   1. Replace the file contents with `{"persons": [null]}`, then relaunch Doc.<br>
+      Expected: Doc opens with an empty patient list and a warning containing
+      `Patient list contains a null patient entry.` The warning names a timestamped backup containing the original
+      file contents. The invalid `doc.json` remains unchanged until a command saves data.
+
+   1. Close Doc and restore a valid patient file. Replace one patient's tags with `"tags": [null]`, then relaunch.<br>
+      Expected: The same recovery occurs, with `Patient's tags contain a null tag entry.` in the warning.
+
+   1. Close Doc, replace that value with `"tags": []`, and relaunch.<br>
+      Expected: The patient loads without a data warning and has no tags.
 
 1. _{ more test cases … }_
