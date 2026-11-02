@@ -74,6 +74,10 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
   For example, `edit INDEX ...` starts with the index, and `next INDEX DATETIME` requires the index before the date
   and time.
 
+* `INDEX` is the number shown beside a patient in the currently displayed patient list. Commands such as `find`,
+  `agenda`, and `sort` can change which patients are displayed or their order, so use the index shown after running
+  those commands.
+
 * Commands that take an `INDEX` (`view`, `edit`, `delete`, `next`, and `prev`) explain an invalid index the same way.
   These messages are followed by the command's usage: `Invalid command format!` for a missing index,
   `Index must be a positive integer.` for an index that is zero, negative, or not a whole number, and
@@ -87,6 +91,26 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </box>
+
+### Which command should I use?
+
+Choose a command based on what you want to do. Select the command name to jump to its full instructions.
+
+| Goal | Command |
+| --- | --- |
+| Learn how to use Doc or open the command reference. | [`help`](#viewing-help-help) |
+| Add a patient record. | [`add`](#adding-a-patient-add) |
+| Show every patient. | [`list`](#listing-all-patients-list) |
+| Find patients using details such as their name, phone number, address, tag, visit date, or notes. | [`find`](#locating-patients-find) |
+| View one patient's complete record. | [`view`](#viewing-a-patient-s-details-view) |
+| Update a patient's details or reschedule the current visit. | [`edit`](#editing-a-patient-edit) |
+| Show visits within a range of calendar days. | [`agenda`](#viewing-visits-as-an-agenda-agenda-start-date-days) |
+| Arrange the displayed patients around a chosen visit date. | [`sort`](#sorting-visits-by-date-sort-date-start-date) |
+| Schedule or record the visit after the current visit. | [`next`](#scheduling-the-next-visit-next) |
+| Restore the most recent visit from the patient's visit history. | [`prev`](#restoring-the-previous-visit-prev) |
+| Delete one patient record. | [`delete`](#deleting-a-patient-delete) |
+| Delete every patient record. | [`clear`](#clearing-all-patient-records-clear) |
+| Close Doc. | [`exit`](#exiting-the-program-exit) |
 
 ### Visit records
 
@@ -703,18 +727,18 @@ Doc home folder.
 
 ## Command summary
 
-Action     | Format, Examples
------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-**Add**    | `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1130 e/jamesho@example.com t/friend t/colleague`
-**Agenda** | `agenda START_DATE [DAYS]`<br> e.g., `agenda 27/10/2026 7`
-**Clear**  | `clear`
-**Delete** | `delete INDEX`<br> e.g., `delete 3`
-**Edit**   | `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
-**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`<br> e.g., `find n/Amelia a/tampines`, `find vd/20/10/2026`, `find note/mobility`
-**List**   | `list`
-**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/12/2026 0930`
-**Prev**   | `prev INDEX`<br> e.g., `prev 1`
-**Sort**   | `sort date [START_DATE]`<br> e.g., `sort date 18/9/2026`
-**View**   | `view INDEX`<br> e.g., `view 1` (refreshes details and the calendar label)
-**Help**   | `help`
-**Exit**   | `exit`
+Command | Purpose | Format and example
+--- | --- | ---
+[`add`](#adding-a-patient-add) | Add a patient record. | `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...`<br>e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1130 e/jamesho@example.com t/friend t/colleague`
+[`agenda`](#viewing-visits-as-an-agenda-agenda-start-date-days) | Show visits within a date range. | `agenda START_DATE [DAYS]`<br>e.g., `agenda 27/10/2026 7`
+[`clear`](#clearing-all-patient-records-clear) | Delete every patient record. | `clear`
+[`delete`](#deleting-a-patient-delete) | Delete one patient record. | `delete INDEX`<br>e.g., `delete 3`
+[`edit`](#editing-a-patient-edit) | Update a patient record. | `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...`<br>e.g., `edit 2 note/Review medication`
+[`find`](#locating-patients-find) | Find patients matching the supplied fields. | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`<br>e.g., `find n/Amelia a/tampines`
+[`list`](#listing-all-patients-list) | Show every patient. | `list`
+[`next`](#scheduling-the-next-visit-next) | Schedule or record the following visit. | `next INDEX DATETIME`<br>e.g., `next 1 1/12/2026 0930`
+[`prev`](#restoring-the-previous-visit-prev) | Restore the latest previous visit. | `prev INDEX`<br>e.g., `prev 1`
+[`sort`](#sorting-visits-by-date-sort-date-start-date) | Arrange displayed patients by visit date. | `sort date [START_DATE]`<br>e.g., `sort date 18/9/2026`
+[`view`](#viewing-a-patient-s-details-view) | Show one patient's complete record. | `view INDEX`<br>e.g., `view 1`
+[`help`](#viewing-help-help) | Open the command reference. | `help`
+[`exit`](#exiting-the-program-exit) | Close Doc. | `exit`
