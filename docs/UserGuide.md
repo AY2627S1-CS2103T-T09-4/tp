@@ -78,7 +78,8 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
   `Index must be a positive integer.` for an index that is zero, negative, or not a whole number, and
   `Index is too large.` for an index too large to represent. An index beyond the displayed list shows
   `The patient index provided is invalid.` The last two messages also ask you to enter an index shown in the
-  displayed patient list.
+  displayed patient list. For `view`, `edit`, `delete`, and `prev`, extra text after a valid index, such as
+  `view 1 2`, shows `Unexpected arguments after the index.` followed by the command's usage.
 
 * Extraneous parameters for commands that take no parameters, such as `help`, `list`, `exit`, and `clear`, are ignored.<br>
   For example, `help 123` is interpreted as `help`.
@@ -282,7 +283,7 @@ alphabetically, ignoring letter case.
 </box>
 
 Examples:
-* `add n/John Doe dob/15/6/1990 bt/A+ all/Penicillin; latex alc/Occasional drinking smk/former p/98765432 a/John street, block 123, #01-01 vd/18/9/2026 1000 e/JohnDoe@gmail.com note/This man is sick`
+* `add n/Siti Rahman dob/2/3/1948 bt/O+ all/Sulfa drugs alc/Does not drink smk/never p/91112222 a/Blk 456 Hougang Ave 8, #05-12 vd/19/9/2026 1000 e/siti.rahman@example.com note/Review diabetic foot wound`
 * `add n/John Tan p/91234567 a/123 Clementi Road vd/22/10/2026 1000 ec/Mary Tan, 98765432`
 * `add n/Betsy Crowe t/friend a/Newgate Prison p/1234567 vd/1/10/2026 1430 t/criminal`
 
@@ -744,7 +745,7 @@ Doc home folder.
 
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-**Add**    | `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
+**Add**    | `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1130 e/jamesho@example.com t/friend t/colleague`
 **Agenda** | `agenda START_DATE [DAYS]`<br> e.g., `agenda 27/10/2026 7`
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`

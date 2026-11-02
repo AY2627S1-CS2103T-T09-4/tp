@@ -1811,22 +1811,22 @@ Browser-launch and clipboard rejection cases are simulated by `HelpWindowActions
 
 ### Finding patients
 
-Start with the seven sample patients by launching Doc from an empty folder. Run `list` before each step.
+Start with the ten sample patients by launching Doc from an empty folder. Run `list` before each step.
 
-1. Run `find n/m`.<br>
-   Expected: `3 patients found.` George Miller, Marcus Lim, and Mei Lin Tan are listed.
+1. Run `find n/l`.<br>
+   Expected: `4 patients found.` Benjamin Lim, both patients named Jordan Lee, and Lucas Chen are listed.
 
-1. Run `find n/george priya`.<br>
-   Expected: George Miller and Priya Nair are listed, because keywords for one field match any of them.
+1. Run `find n/amelia farah`.<br>
+   Expected: Amelia Tan and Farah Aziz are listed, because keywords for one field match any of them.
 
-1. Run `find n/m t/morning`.<br>
-   Expected: `1 patient found.` Only Mei Lin Tan is listed, because different fields must all match.
+1. Run `find n/l t/afternoon`.<br>
+   Expected: `1 patient found.` Only Lucas Chen is listed, because different fields must all match.
 
-1. Run `find p/8901`, `find a/tampines`, and `find note/review`.<br>
-   Expected: Noor Aziz; Marcus Lim; then George Miller and Marcus Lim.
+1. Run `find p/8123`, `find a/tampines`, and `find note/review`.<br>
+   Expected: Amelia Tan; Amelia Tan; then Amelia Tan, Benjamin Lim, Farah Aziz, and Grace Wong.
 
-1. Run `find vd/15/10/2026`, then `find vd/14/10/2026 15/10/2026`, then `sort date`.<br>
-   Expected: Priya Nair; then Mei Lin Tan and Priya Nair, ordered by visit time after `sort date`.
+1. Run `find vd/20/10/2026`, then `find vd/20/10/2026 22/10/2026`, then `sort date`.<br>
+   Expected: Amelia Tan; then Amelia Tan and Benjamin Lim, in visit-date order after `sort date`.
 
 1. Run `find p/0000`.<br>
    Expected: `No patients found.` followed by a hint listing every search prefix, and an empty list.
@@ -1845,8 +1845,8 @@ Start with the seven sample patients by launching Doc from an empty folder. Run 
 
    Expected: Each rejected command leaves the displayed list unchanged.
 
-1. Paste `find n/george`, a tab character, and `p/0000` into the command box as one command, then press Enter.<br>
-   Expected: `No patients found.`, because the tab separates two fields and George Miller's phone does not match.
+1. Paste `find n/amelia`, a tab character, and `p/0000` into the command box as one command, then press Enter.<br>
+   Expected: `No patients found.`, because the tab separates two fields and Amelia Tan's phone does not match.
 
 ### Sorting visits by date
 
@@ -2245,7 +2245,7 @@ data-file path as instructed there before continuing.
 
 1. Run `list`, followed by `view 1`. Expect the full list to remain on the left and the first patient's complete
    details to appear on the right.
-1. Run `list`, followed by `find n/George`, and then `view 1`. Expect the search results to remain on the left and the
+1. Run `list`, followed by `find n/Amelia`, and then `view 1`. Expect the search results to remain on the left and the
    first patient's complete details to appear on the right.
 1. Run `sort date`, followed by `view 1`. Expect the sorted list to remain on the left and the first patient's complete
    details to appear on the right.
@@ -2307,32 +2307,32 @@ when midnight passes; another `view` recalculates it.
 
 1. Recalling submitted commands
 
-   1. Restart the application. Enter `list`, then enter `find n/George`.<br>
+   1. Restart the application. Enter `list`, then enter `find n/Amelia`.<br>
       Expected: Both commands run normally.
 
    1. Press the Up arrow key once, then again.<br>
-      Expected: The command box shows `find n/George`, then `list`. The caret is after the recalled text. Further Up arrow
+      Expected: The command box shows `find n/Amelia`, then `list`. The caret is after the recalled text. Further Up arrow
       presses leave `list` displayed.
 
    1. Press the Down arrow key twice.<br>
-      Expected: The command box shows `find n/George`, then becomes empty. Further Down arrow presses leave it empty.
+      Expected: The command box shows `find n/Amelia`, then becomes empty. Further Down arrow presses leave it empty.
 
 1. Restoring unfinished text
 
-   1. Type `find n/Geo` without pressing Enter, press the Up arrow key, then press the Down arrow key.<br>
-      Expected: A previous command is recalled, then the unfinished text `find n/Geo` is restored exactly.
+   1. Type `find n/Ame` without pressing Enter, press the Up arrow key, then press the Down arrow key.<br>
+      Expected: A previous command is recalled, then the unfinished text `find n/Ame` is restored exactly.
 
 1. Recording command text
 
    1. Submit an invalid command containing leading or trailing spaces, then press the Up arrow key.<br>
       Expected: The invalid command is recalled with its original spaces.
 
-   1. Restart the application. Submit `list`, then submit `find n/George` twice. Press the Up arrow key twice.<br>
-      Expected: The command box shows `find n/George`, then `list`. The consecutive duplicate occupies one history
+   1. Restart the application. Submit `list`, then submit `find n/Amelia` twice. Press the Up arrow key twice.<br>
+      Expected: The command box shows `find n/Amelia`, then `list`. The consecutive duplicate occupies one history
       position.
 
-   1. Restart the application. Submit `list`, `find n/George`, then `list`. Press the Up arrow key three times.<br>
-      Expected: The command box shows `list`, `find n/George`, then `list`. Identical commands separated by another
+   1. Restart the application. Submit `list`, `find n/Amelia`, then `list`. Press the Up arrow key three times.<br>
+      Expected: The command box shows `list`, `find n/Amelia`, then `list`. Identical commands separated by another
       command occupy separate history positions.
 
 1. Excluding follow-up responses
