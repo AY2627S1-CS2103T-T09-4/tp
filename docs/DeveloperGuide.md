@@ -13,7 +13,30 @@
 
 ## **Acknowledgements**
 
-* _{List the sources of reused or adapted ideas, code, documentation, and third-party libraries here, with links to the originals.}_
+* Doc is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-level3), created by the
+  [SE-EDU initiative](https://se-education.org). Its application architecture, codebase, and documentation structure
+  were adapted for this project.
+* The user and developer documentation reuse and adapt guidance and examples from the
+  [AddressBook-Level3 documentation](https://se-education.org/addressbook-level3/).
+* Doc uses [JavaFX](https://openjfx.io/) for its desktop interface and
+  [Jackson](https://github.com/FasterXML/jackson) for JSON data persistence. Automated tests use
+  [JUnit 5](https://junit.org/junit5/).
+* The documentation is built with [MarkBind](https://markbind.org/) and uses
+  [PlantUML](https://plantuml.com/) for diagrams.
+
+### AI assistance
+
+* Tee Ming Shun (`mingshun2005`) used OpenAI Codex for code review, bug investigation, implementation of fixes,
+  regression-test generation, documentation updates, and drafting issues and pull requests. For example,
+  [PR #279](https://github.com/AY2627S1-CS2103T-T09-4/tp/pull/279) contains Codex-generated null-entry validation,
+  storage/startup tests, and related documentation. Codex also assisted with rewriting the User Guide in
+  [PR #282](https://github.com/AY2627S1-CS2103T-T09-4/tp/pull/282) and the patient-feature documentation below.
+  Ming Shun also used Anthropic Claude Code to assist with project development. This acknowledgement describes
+  Ming Shun's use of these tools, not other team members' AI use.
+* Hoong Ken (`hhkennn`), Twisha Mehta (`ahsiwt101`), Chan Tze Yuon (`tzeyuon`), and Kean Lai (`JamesLee5182`)
+  used OpenAI Codex to assist with feature implementation, code refactoring, writing and updating tests, and
+  refining project documentation. Codex also assisted with reviewing code for potential bugs and checking
+  adherence to the project's Java coding and code-quality standards.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -185,14 +208,15 @@ The `Storage` component,
 both files exist, the preferred file takes precedence and the legacy file is left unchanged. A failed move falls back
 to the legacy path for that run and contributes a warning shown after the main window opens.
 
-When the patient data file does not exist, `MainApp` initializes the model with the seven records returned by
-`SampleDataUtil#getSampleAddressBook`. The sample patients are George Miller, Priya Nair, Aisha Rahman, Marcus Lim,
-Mei Lin Tan, Daniel Wong, and Noor Aziz. If an existing data file can be loaded successfully, including one with no
-records, its contents take precedence over these samples. If an existing data file cannot be loaded—for example,
+When the patient data file does not exist, `MainApp` initializes the model with the ten records returned by
+`SampleDataUtil#getSampleAddressBook`. The sample patients are Amelia Tan, Benjamin Lim, Chloe Ng, David Koh,
+Farah Aziz, Grace Wong, two patients named Jordan Lee, Kavita Rao, and Lucas Chen. If an existing data file can be
+loaded successfully, including one with no records, its contents take precedence over these samples. If an existing
+data file cannot be loaded—for example,
 because it is malformed or contains conflicting records—`MainApp` starts with an empty address book.
 
-Because almost every command saves the address book, the next command would overwrite the unreadable file.
-`MainApp#loadInitialData` therefore first calls `Storage#backupAddressBook`, which copies the file to a sibling named
+Because a later successful command that changes patient data could overwrite the unreadable file,
+`MainApp#loadInitialData` first calls `Storage#backupAddressBook`, which copies the file to a sibling named
 `doc-invalid-<yyyyMMdd-HHmmss>.json` without overwriting any existing backup. It returns the empty address book
 together with a warning that gives the first line of the load error and the backup's location, or, if the backup
 fails, tells the user to copy the file before entering any command. `MainApp#start` passes the warning to
@@ -278,6 +302,73 @@ Browser feedback confirms only a launch request, not page loading; no network pr
 Clipboard success requires `Clipboard.setContent` to return `true`. Detectable failures are logged and shown
 without hiding the URL or disabling the controls. `HelpWindowActionsTest` checks failure feedback, fallback actions,
 and retries. The [manual checks](#help-window-lifecycle) cover native window behaviour and real browser/clipboard integration.
+
+### Viewing patient details
+
+With no follow-up input pending, `AddressBookParser` dispatches `view INDEX` to `ViewCommandParser`.
+The parser uses `ParserUtil#parseIndex` to require exactly one positive index. `ViewCommand#execute` resolves
+that index against `Model#getFilteredPersonList`, so it selects from the displayed filtered/sorted list rather
+than the full address book. An out-of-range index raises `CommandException`.
+
+For a valid index, `CommandResult.viewPerson(feedback, person)` carries the selected `Person`, the `SHOW`
+details-panel action, and a false save flag. `LogicManager` therefore returns without writing patient data.
+`MainWindow#executeCommand` displays the feedback and routes the result to `PatientDetailsPanel#setPerson`.
+The diagram shows the successful route; model snapshots, feedback rendering, and private routing helpers are
+omitted for clarity. If a confirmation is pending, input goes to that request instead of the view parser.
+
+<puml src="diagrams/ViewPatientSequenceDiagram.puml" alt="Successful view command from parsing to patient-details rendering" />
+
+Viewing does not change patient data, filtering, or sorting. A malformed or out-of-range view request displays
+an error without replacing the previously displayed details. Rendering a valid record resets the panel's scroll
+position and updates its labels; see [Displaying visit records](#displaying-visit-records).
+
+**Design choice:** Commands return a `CommandResult` rather than calling JavaFX controls directly. This keeps
+command tests independent of UI controls and lets `MainWindow` handle `KEEP`, `SHOW`, `CLEAR`, and
+`CLEAR_IF_SHOWING` consistently. The latter clears details only when they belong to the deleted patient.
+Optional value labels are hidden and unmanaged when their values are unrecorded, preventing empty gaps.
+Switching patients updates these labels so stale values do not remain visible. The `Tags:` row remains visible
+and managed even when no tags are recorded. When all medical fields are unrecorded, the panel displays
+`No medical information recorded`.
+
+### Shared optional-patient-field behavior
+
+This section applies to date of birth, blood type, allergies, alcohol history, smoking status, and emergency
+contact. The individual sections below describe each field's validation and storage representation.
+
+| Input or operation | Result |
+| --- | --- |
+| Prefix omitted from `add` | Create an unrecorded model value. |
+| Prefix supplied with a blank value in `add` | Reject the command. |
+| Prefix omitted from `edit` | Leave the descriptor field unset and preserve the existing value. |
+| Empty or whitespace-only value in `edit` | Supply an explicit unrecorded replacement, clearing the field even if already empty. |
+| Repeated prefix in `add` or `edit` | Reject the command, including identical or blank values. |
+| Missing or JSON-null property in an older saved record | Load an unrecorded value. |
+| Invalid recorded value | Reject it at parsing or storage validation; free-text fields accept arbitrary text. |
+
+`Person` holds non-null values. An unset field in `EditPersonDescriptor` means "do not change", while an explicit
+empty value means "clear". This distinction prevents an unrelated edit from erasing health information.
+`BloodType.UNKNOWN` represents an unrecorded blood type. In contrast, `SmokingStatus.UNKNOWN` records explicit
+uncertainty; `SmokingStatus.UNRECORDED` represents no entry. Empty `Allergies` and `AlcoholHistory` values do not
+assert `No known allergies` or `Does not drink`. These values preserve what was entered without inferring a finding.
+
+#### Automated test map
+
+The following existing tests provide entry points for maintaining these features. A listed test suite is not a
+claim that every possible input is covered.
+
+| Feature | Model/command tests |
+| --- | --- |
+| Date of birth | [DateOfBirthTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/model/person/DateOfBirthTest.java), [DateOfBirthCommandIntegrationTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/logic/commands/DateOfBirthCommandIntegrationTest.java) |
+| Blood type | [BloodTypeTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/model/person/BloodTypeTest.java), [BloodTypeCommandIntegrationTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/logic/commands/BloodTypeCommandIntegrationTest.java) |
+| Allergies | [AllergiesTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/model/person/AllergiesTest.java), [AllergiesCommandIntegrationTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/logic/commands/AllergiesCommandIntegrationTest.java) |
+| Alcohol history | [AlcoholHistoryTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/model/person/AlcoholHistoryTest.java), [AlcoholHistoryCommandIntegrationTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/logic/commands/AlcoholHistoryCommandIntegrationTest.java) |
+| Smoking status | [SmokingStatusTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/model/person/SmokingStatusTest.java), [SmokingStatusCommandIntegrationTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/logic/commands/SmokingStatusCommandIntegrationTest.java) |
+| Emergency contact | [EmergencyContactTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/model/person/EmergencyContactTest.java), [EmergencyContactIntegrationTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/logic/commands/EmergencyContactIntegrationTest.java) |
+| Viewing | [ViewCommandParserTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/logic/parser/ViewCommandParserTest.java), [ViewCommandTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/logic/commands/ViewCommandTest.java) |
+
+[PatientDetailsPanelTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/ui/PatientDetailsPanelTest.java) checks rendering, field visibility, stale-value
+removal, empty profiles, and scrolling. [JsonAdaptedPersonTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/storage/JsonAdaptedPersonTest.java) checks
+conversion of saved fields. Integration suites exercise commands and persistence; UI tests separately check display.
 
 ### Optional emergency contacts
 
@@ -397,7 +488,8 @@ retained for display and storage, and `Name#equals` remains an exact value compa
 
 Doc distinguishes a **true duplicate** from a **name duplicate**:
 
-* A true duplicate has the same normalized name and exact phone number as an existing patient.
+* A true duplicate has the same normalized name and the same phone number, compared by digits only, as an existing
+  patient.
   `Person#isSamePerson` implements this identity rule. `UniquePersonList` rejects true duplicates, so the same
   invariant applies to commands, model replacement, and data loaded from JSON. A true duplicate is rejected without
   offering confirmation.
@@ -508,9 +600,9 @@ new duplicate rules:
 * A file accepted by an older version can become invalid when two records have the same phone number and names that
   differ only in letter case or repeated spacing. The normalized names now make those records true duplicates.
 * A file accepted by an older version can also become invalid when two records use the same visit date and time.
-* For either conflict, Doc reports the loading problem and starts with an empty patient list. The conflicting file is
-  not backed up automatically, and a command that triggers saving, such as `list`, can replace it with the empty
-  patient list. Users must back up the file and resolve the conflicts manually before migration.
+* For either conflict, Doc starts with an empty patient list and shows a start-up warning. It first copies the
+  conflicting file to `doc-invalid-<yyyyMMdd-HHmmss>.json` (see [Storage component](#storage-component)), so later
+  saves cannot lose it. Users must resolve the conflicts manually in that copy, then use it to replace `doc.json`.
 
 #### Visit-time conflict limitations
 
@@ -529,7 +621,19 @@ The visit-date rule prevents only exact scheduling collisions:
 `Person` retains an optional `DateOfBirth` alongside blood type, emergency contact, and visit history.
 Add and edit accept `dob/`; omitted values preserve existing data, while an empty value clears it during edit.
 Storage defaults missing or null `dateOfBirth` fields to an unrecorded value for older files.
-Patient cards and details show the recorded date and completed age below the name, before blood type.
+Patient cards show the recorded date and completed age below the name, before blood type. The details panel shows
+it in **Medical profile**, after blood type and before smoking status.
+
+`DateOfBirth` uses strict `LocalDate` parsing with `d/M/uuuu` after checking for a four-digit year.
+Nonempty values must be real dates from year 0001 and no later than the computer's current local date.
+`ParserUtil#parseDateOfBirth` rejects blank add values; an empty edit creates an unrecorded `DateOfBirth` instead.
+The model normalizes leading zeroes when formatting the date.
+
+Age is derived from the stored DOB, not persisted separately. `getAge(currentDate)` uses `Period.between` to
+return completed years, so a February 29 birthday advances on March 1 in a non-leap year. `toDisplayString`
+uses the computer's local date when rendered; there is no midnight timer to refresh an existing label.
+`DateOfBirthTest` checks validation and age boundaries, while `DateOfBirthCommandIntegrationTest` checks adding,
+editing, clearing, preservation, and persistence (see the [test map](#automated-test-map)).
 
 ### Optional blood type
 
@@ -540,9 +644,9 @@ edit maps an explicitly empty value to `UNKNOWN`. Other edits and visit reschedu
 
 `JsonAdaptedPerson` stores the display value (e.g. `A+`) in the `bloodType` property. Missing or null properties
 from older files load as `UNKNOWN`; an empty string represents a cleared value. Invalid stored values are rejected.
-Both patient cards and the details panel show recorded blood type below the date of birth (or the name when
-DOB is absent), hiding and unmanaging the row
-when it is unrecorded. Patient identity continues to use name and phone number.
+Patient cards show recorded blood type below the date of birth (or the name when DOB is absent). The details panel
+shows it in **Medical profile**, after allergies and before the date of birth. Both hide and unmanage the row when it
+is unrecorded. Patient identity continues to use name and phone number.
 
 ### Optional allergies
 
@@ -553,9 +657,9 @@ written in one value, such as `Penicillin; latex`; the field does not interpret,
 reject repeated prefixes. Unrelated edits, `next`, and `prev` preserve the field along with other patient details.
 
 `JsonAdaptedPerson` stores the `allergies` string and treats missing or null fields in older files as unrecorded.
-The right-hand details panel displays recorded allergies after blood type, before alcohol history and smoking
-status. Long values wrap within the scrollable panel. Unrecorded values hide the row without implying no allergies.
-Add/edit help follows the same field order; patient list cards and patient identity remain unchanged.
+The right-hand details panel displays recorded allergies first in **Medical profile**, before blood type, so this
+safety-critical information is easy to find. Long values wrap within the scrollable panel. Unrecorded values hide the
+row without implying no allergies. Patient list cards and patient identity remain unchanged.
 
 ### Optional alcohol history
 
@@ -565,8 +669,8 @@ removed; empty text represents unrecorded history and remains distinct from the 
 history. Both parsers reject repeated `alc/` prefixes. Unrelated edits, `next`, and `prev` preserve the history.
 
 `JsonAdaptedPerson` saves the `alcoholHistory` string and treats missing or null fields in older files as unrecorded.
-The right-hand details panel displays recorded alcohol history immediately after allergies, wraps long text, and
-hides the row when unrecorded. Patient list cards and duplicate-patient identity remain unchanged.
+The right-hand details panel displays recorded alcohol history last in **Medical profile**, after smoking status,
+wraps long text, and hides the row when unrecorded. Patient list cards and duplicate-patient identity remain unchanged.
 
 ### Optional smoking status
 
@@ -578,7 +682,8 @@ hides the row when unrecorded. Patient list cards and duplicate-patient identity
 
 `JsonAdaptedPerson` stores the normalized lowercase status, or an empty string for unrecorded values.
 Missing or null `smokingStatus` fields in older files load as `UNRECORDED`; unsupported saved values are rejected.
-The right-hand details panel displays smoking status immediately after alcohol history. Patient list cards and
+The right-hand details panel displays smoking status in **Medical profile**, after the date of birth and before
+alcohol history. Patient list cards and
 patient identity remain unchanged. Add/edit help places `[smk/STATUS]` after `[alc/ALCOHOL_HISTORY]`.
 
 ### Editing patient details
@@ -916,108 +1021,11 @@ after the recalled text, and consumes the event so the key does not also move th
 `TextField` behavior. The history belongs only to the current `CommandBox`, so it is discarded when the application
 closes.
 
-### \[Proposed\] Undo/redo feature
+### \[Proposed\] Data archiving
 
-#### Proposed Implementation
+Data archiving is a planned feature and is not available in the current version. A future implementation may keep
+inactive patient records outside the active caseload while retaining their visit history for later reference.
 
-The proposed undo/redo mechanism is facilitated by `VersionedAddressBook`. It extends `AddressBook` with an undo/redo history, stored internally as an `addressBookStateList` and `currentStatePointer`. Additionally, it implements the following operations:
-
-* `VersionedAddressBook#commit()` -- Saves the current patient-record state in its history.
-* `VersionedAddressBook#undo()` -- Restores the previous patient-record state from its history.
-* `VersionedAddressBook#redo()` -- Restores a previously undone patient-record state from its history.
-
-These operations are exposed in the `Model` interface as `Model#commitAddressBook()`, `Model#undoAddressBook()` and `Model#redoAddressBook()` respectively.
-
-Given below is an example usage scenario and how the undo/redo mechanism behaves at each step.
-
-Step 1. The user launches the application for the first time. The `VersionedAddressBook` will be initialized with the initial patient-record state, and the `currentStatePointer` pointing to that single state.
-
-<puml src="diagrams/UndoRedoState0.puml" alt="UndoRedoState0" />
-
-Step 2. The user executes `delete 5` to delete the 5th patient in Doc. The `delete` command calls
-`Model#commitAddressBook()`, causing the modified patient-record state to be saved in `addressBookStateList`, and the
-`currentStatePointer` is shifted to the newly inserted state.
-
-<puml src="diagrams/UndoRedoState1.puml" alt="UndoRedoState1" />
-
-Step 3. The user executes `add n/David …​` to add a new patient. The `add` command also calls
-`Model#commitAddressBook()`, causing another modified patient-record state to be saved into `addressBookStateList`.
-
-<puml src="diagrams/UndoRedoState2.puml" alt="UndoRedoState2" />
-
-<box type="info" seamless>
-
-**Note:** If a command fails its execution, it will not call `Model#commitAddressBook()`, so the patient-record state
-will not be saved into `addressBookStateList`.
-</box>
-
-Step 4. The user decides that adding the patient was a mistake and executes `undo`. The command calls
-`Model#undoAddressBook()`, shifts `currentStatePointer` once to the left, and restores the previous patient-record
-state.
-
-<puml src="diagrams/UndoRedoState3.puml" alt="UndoRedoState3" />
-
-
-<box type="info" seamless>
-
-**Note:** If `currentStatePointer` is at index 0, pointing to the initial patient-record state, there are no previous
-states to restore. The `undo` command uses `Model#canUndoAddressBook()` to check if this is the case. If so, it will return an error to the user rather
-than attempting to perform the undo.
-</box>
-
-The following sequence diagram shows how an undo operation goes through the `Logic` component:
-
-<puml src="diagrams/UndoSequenceDiagram-Logic.puml" alt="UndoSequenceDiagram-Logic" />
-
-<box type="info" seamless>
-
-**Note:** The lifeline for `UndoCommand` should end at the destroy marker (X), but due to a limitation of PlantUML, it continues to the end of the diagram.
-</box>
-
-Similarly, how an undo operation goes through the `Model` component is shown below:
-
-<puml src="diagrams/UndoSequenceDiagram-Model.puml" alt="UndoSequenceDiagram-Model" />
-
-The `redo` command does the opposite — it calls `Model#redoAddressBook()`, shifts `currentStatePointer` once to the
-right, and restores the previously undone patient-record state.
-
-<box type="info" seamless>
-
-**Note:** If `currentStatePointer` is at index `addressBookStateList.size() - 1`, pointing to the latest patient-record
-state, there are no undone states to restore. The `redo` command uses `Model#canRedoAddressBook()` to check if this is
-the case. If so, it returns an error instead of attempting the redo.
-</box>
-
-Step 5. The user executes `list`. Commands that do not modify patient data, such as `list`, do not call
-`Model#commitAddressBook()`, `Model#undoAddressBook()` or `Model#redoAddressBook()`. Thus, `addressBookStateList`
-remains unchanged.
-
-<puml src="diagrams/UndoRedoState4.puml" alt="UndoRedoState4" />
-
-Step 6. The user executes `clear`, which calls `Model#commitAddressBook()`. Since `currentStatePointer` is not at the
-end of `addressBookStateList`, all patient-record states after it are purged because redoing `add n/David …` would no
-longer be valid. This is the behavior that most modern desktop applications follow.
-
-<puml src="diagrams/UndoRedoState5.puml" alt="UndoRedoState5" />
-
-The following activity diagram summarizes what happens when a user executes a new command:
-
-<puml src="diagrams/CommitActivityDiagram.puml" width="250" />
-
-#### Design considerations:
-
-**Aspect: How undo & redo execute:**
-
-* **Alternative 1 (current choice):** Saves the entire patient-record state.
-  * Pros: Easy to implement.
-  * Cons: May have performance issues in terms of memory usage.
-
-* **Alternative 2:** Individual command knows how to undo/redo by
-  itself.
-  * Pros: Will use less memory (e.g. for `delete`, just save the person being deleted).
-  * Cons: We must ensure that the implementation of each individual command is correct.
-
-_{more aspects and alternatives to be added}_
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -1045,11 +1053,16 @@ _{more aspects and alternatives to be added}_
 * can type fast and prefers typing to mouse interactions
 * is reasonably comfortable using CLI apps
 
-**Value proposition**: A house call doctor currently keeps patient contacts, addresses and medical histories across paper notes, phone contacts and memory, which makes planning and preparing for home visits slow and error-prone. Doc centralises all of it in one offline desktop app, and orders the day's visits by patient priority and next visit date, so the doctor can prepare for a visit and plan a route between visits faster than with a typical mouse-driven contact app.
+**Value proposition**: A house call doctor currently keeps patient contacts, addresses and medical histories across
+paper notes, phone contacts and memory, which makes planning and preparing for home visits slow and error-prone. Doc
+centralises all of it in one offline desktop app and organises scheduled visits by date and time, so the doctor can
+prepare for visits and plan upcoming rounds faster than with a typical mouse-driven contact app.
 
 ### User stories
 
 Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unlikely to have) - `*`
+
+#### Implemented user stories
 
 | Priority | As a …                  | I want to …                                                              | So that I can…                                                                       |
 |----------|-------------------------|--------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
@@ -1070,16 +1083,33 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* *`    | keyboard user           | move between the main panels and scroll patient details using keys       | review long records without switching to the mouse |
 | `* *`    | new user                | consult a command reference while keeping my unfinished input            | check syntax without losing what I have typed |
 | `* *`    | doctor                  | add or update notes about a patient's medical conditions                  | prepare for future visits                                                               |
-| `* *`    | doctor                  | assign a priority level to a patient                                      | tell at a glance which patients need closer attention                                   |
 | `* *`    | doctor                  | sort my patients by their next visit date                                 | plan upcoming visits while retaining past schedules for reference                       |
 | `* *`    | doctor                  | search patient notes for a medical condition                              | review together all the patients I treat for the same condition                         |
-| `* *`    | doctor                  | filter patients by how long ago they were last visited                    | find patients who have gone too long without a checkup                                  |
 | `* *`    | doctor                  | see the coming week's visits as a schedule                                | plan my week before it starts                                                           |
+| `* *`    | doctor                  | find patients due within a specified date range                           | plan visits for the coming days                                                        |
+| `* * *`  | doctor                  | find patients by part of their phone number, address or tag               | locate a patient when I remember only some of their details                             |
+| `* *`    | doctor                  | combine search criteria, such as a name and a tag                         | narrow a search to exactly the patients I want                                          |
+| `* *`    | doctor                  | record a patient's emergency contact                                      | know whom to call if something goes wrong during a visit                                |
+| `* *`    | doctor                  | record a patient's date of birth, blood type, allergies, alcohol history and smoking status | check their medical background before treating them                  |
+| `* *`    | doctor                  | tag patients with labels such as their preferred visit time               | group patients with similar needs                                                       |
+| `* * *`  | doctor                  | be stopped from booking two patients at the same visit time               | avoid double-booking myself                                                             |
+| `* *`    | doctor                  | be warned before adding a patient whose name is already in my list         | avoid creating duplicate records by mistake                                             |
+| `* *`    | doctor                  | be warned before booking a visit on a day that already has many visits    | avoid overloading my schedule                                                           |
+| `* * *`  | doctor                  | confirm before a patient or all patient records are deleted               | avoid losing records through a typing mistake                                           |
+| `* *`    | keyboard user           | recall my previous commands                                               | repeat or correct a command without retyping it                                         |
+
+#### Future user stories
+
+The following user stories describe planned functionality and are not implemented in the current version.
+
+| Priority | As a …                  | I want to …                                                              | So that I can…                                                                       |
+|----------|-------------------------|--------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| `* *`    | doctor                  | assign a priority level to a patient                                      | tell at a glance which patients need closer attention                                   |
+| `* *`    | doctor                  | filter patients by how long ago they were last visited                    | find patients who have gone too long without a checkup                                  |
 | `* *`    | doctor                  | copy a patient's address or phone number in one command                   | paste it into my maps or phone app without retyping it                                  |
 | `* *`    | doctor                  | archive a patient who no longer needs regular visits                      | keep my active list short without losing their history                                  |
 | `* *`    | doctor                  | view my archived patients                                                 | look up the history of a patient who returns after a long gap                           |
 | `* *`    | doctor                  | find patients whose next visit date has passed                            | follow up on overdue visits                                                             |
-| `* *`    | doctor                  | find patients due within a specified date range                           | plan visits for the coming days                                                        |
 | `* *`    | doctor                  | undo my most recent record-changing command                               | recover quickly from a typing mistake                                                   |
 | `* *`    | long-time user          | define my own aliases for the commands I use most                         | enter routine commands with fewer keystrokes                                            |
 | `*`      | new user                | import my existing patient records from a file                            | move my caseload into Doc without retyping every record                                 |
@@ -1090,12 +1120,14 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 (For all use cases below, the **System** is `Doc` and the **Actor** is the `doctor`, unless specified otherwise)
 
+Use cases marked **Future** describe planned functionality that is not available in the current version.
+
 **Use case: UC01 - Add a patient**
 
 **MSS**
 
 1.  Doctor requests to add a patient, providing the patient's name, address, phone number, next visit date and time,
-    and medical conditions.
+    and optionally notes about medical conditions.
 2.  Doc adds the patient to the caseload and shows the newly added patient record.
 
     Use case ends.
@@ -1133,6 +1165,21 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
     * 1d1. Doc shows an error asking the doctor to choose a different date and time.
 
       Use case resumes at step 1.
+
+* 1e. The requested visit day already has 7 or more current visits.
+
+    * 1e1. Doc asks the doctor to confirm adding the patient on that day. If 1c also applies, both warnings appear
+      in one prompt.
+    * 1e2. The doctor confirms the addition.
+    * 1e3. Doc adds the patient to the caseload and shows the newly added patient record.
+
+      Use case ends.
+
+    * 1e2a. The doctor does not confirm the addition.
+
+        * 1e2a1. Doc cancels the addition without changing the caseload.
+
+          Use case ends.
 
 **Use case: UC02 - Edit a patient's details**
 
@@ -1200,14 +1247,29 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case resumes at step 3.
 
+* 3g. The requested changes move the visit to a different day that already has 7 or more current visits.
+
+    * 3g1. Doc asks the doctor to confirm the edit. If 3e also applies, both warnings appear in one prompt.
+    * 3g2. The doctor confirms the changes.
+    * 3g3. Doc updates the patient's details and shows the updated record.
+
+      Use case ends.
+
+    * 3g2a. The doctor does not confirm the changes.
+
+        * 3g2a1. Doc cancels the edit without changing the patient record.
+
+          Use case ends.
+
 **Use case: UC03 - Prepare for the day's visits**
 
 **MSS**
 
 1.  Doctor requests the list of patients due to be visited today.
-2.  Doc shows those patients ordered by priority level, then by next visit date.
+2.  Doc shows those patients ordered by visit date and time.
 3.  Doctor requests to see the full record of a patient identified by their displayed index.
-4.  Doc shows the patient's address, contact number, medical conditions and past visit notes.
+4.  Doc shows the patient's address, contact number, patient-level medical notes and previous scheduled visit
+    datetimes.
 
     Steps 3 and 4 are repeated for each patient the doctor wants to prepare for.
 
@@ -1246,7 +1308,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case ends.
 
-**Use case: UC05 - Archive a patient**
+**Future use case: UC05 - Archive a patient (not implemented)**
 
 **MSS**
 
@@ -1421,11 +1483,11 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
     connection. Opening the hosted full User Guide from Help requires internet access.
 4. Should support at least 1,000 patient records, with up to 100 previous visit datetimes and one patient-level note
    per record.
-5. **Target:** Should respond to each valid command within 2 seconds when operating on 1,000 patient records with up
-   to 100 previous visit datetimes and one patient-level note per record. This excludes the time spent entering the
-   command. **Verification:** Not yet verified; a benchmark under this workload remains to be run.
-6. For common tasks such as adding, finding, listing, editing, scheduling, and restoring patient visits, a user who
-   types at above-average speed should be able to complete the task faster through the CLI than by using the mouse.
+5. Should respond to each valid command within 2 seconds when operating on 1,000 patient records with up to 100
+   previous visit datetimes and one patient-level note per record. This excludes the time spent entering the command.
+6. Common tasks such as adding, finding, listing, editing, scheduling, and restoring patient visits should each be
+   possible with a single typed command and no mouse use, so that a user who types at above-average speed can
+   complete them faster than with a mouse-driven contact app.
 7.  A doctor who has not used a CLI application before should be able to add a patient and look up that patient's record within 15 minutes of reading the User Guide.
 8.  Should save every change to the local data file before accepting the next command, so that at most one command's worth of data is lost if the app terminates unexpectedly.
 9.  Should store all patient data only on the user's own machine, so that no patient data leaves the doctor's computer.
@@ -1433,13 +1495,11 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 11. Should not crash or lose existing records if the data file has been manually edited into an invalid state; it should instead report the problem and start with an empty caseload.
 12. Should be delivered as a single JAR file of no more than 100MB, so that it can be copied onto a laptop taken on house visits.
 
-NFR 6 is an unverified usability goal. The team must agree on a concrete mouse-versus-CLI comparison procedure before
-it can be assessed.
-
 ### Glossary
 
 * **Active patient record**: A patient record included in the doctor's current caseload and visit planning.
-* **Archived patient record**: A patient record retained for future reference but excluded from the active caseload and visit planning.
+* **Archived patient record (planned)**: A patient record retained for future reference but excluded from the active
+  caseload and visit planning. Archiving is not available in the current version.
 * **Calendar label**: `Past`, `Today`, or `Upcoming` beside the current datetime, based on its calendar date relative
   to the local date when details are rendered. It does not indicate attendance or completion.
 * **Caseload**: The collection of active patient records currently managed by a doctor.
@@ -1455,7 +1515,8 @@ it can be assessed.
   visit took place.
 * **Patient record**: The information Doc stores for one patient, including their contact details, medical notes,
   tags, current visit date and time, and previous visit dates and times retained by `next`.
-* **Priority level**: A label indicating how closely a patient needs to be followed up, used when ordering planned visits.
+* **Priority level (planned)**: A label indicating how closely a patient needs to be followed up. Patient priority is
+  not available in the current version.
 * **Rollback**: Restoring the latest previous visit datetime with `prev`, replacing and discarding the current datetime
   while preserving the patient's other details. It is not a general undo operation and has no redo.
 * **Visit**: A single house call. Doc stores one current datetime, ordered previous datetimes, and one patient-level note.
@@ -1517,18 +1578,22 @@ and details panel refresh to the replacement record.
 
    1. Download the JAR file and copy it into an empty folder.
 
-   1. Double-click the JAR file.<br>
-      Expected: The GUI opens with seven sample patient records in this order: George Miller, Priya Nair, Aisha
-      Rahman, Marcus Lim, Mei Lin Tan, Daniel Wong, and Noor Aziz. The window size may not be optimal.
+   1. Open a terminal in that folder and run `java -version`.<br>
+      Expected: The active Java version is 25. If another version is shown, configure the terminal to use JDK 25
+      before continuing.
+
+   1. Run `java -jar doc.jar`.<br>
+      Expected: The GUI opens with ten sample patient records in this order: Amelia Tan, Benjamin Lim, Chloe Ng,
+      David Koh, Farah Aziz, Grace Wong, two patients named Jordan Lee, Kavita Rao, and Lucas Chen. The window size
+      may not be optimal. Launching from the terminal also exposes startup errors that can be hidden when a JAR is
+      opened by double-clicking it.
 
 1. Saving window preferences
 
    1. Resize the window to an optimal size. Move the window to a different location. Close the window.
 
-   1. Relaunch the app by double-clicking the JAR file.<br>
+   1. Relaunch the app from the same folder using `java -jar doc.jar`.<br>
        Expected: The most recent window size and location are retained.
-
-1. _{ more test cases … }_
 
 ### Save failures and patient details
 
@@ -1615,11 +1680,11 @@ the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Pa
 
 ### Dates of birth
 
-Use a disposable data file and available visit slots.
+Use a disposable data file, starting with no patients and available visit slots.
 
 1. Run `add n/Dob Patient dob/15/6/1990 p/81234567 a/10 Test Road vd/22/10/2026 1000`, then `view 1`.
-   Expect `Date of birth: 15/6/1990 (N years old)` immediately below the name in both the left-hand patient
-   card and the right-hand details panel, with the age in completed years
+   Expect `Date of birth: 15/6/1990 (N years old)` immediately below the name in the left-hand patient card and
+   in **Medical profile** in the right-hand details panel, with the age in completed years
    on the computer's current local date. A leap-day birthday advances on March 1 in non-leap years.
 1. Run `edit 1 n/Dob Patient dob/20/7/1985`, then `view 1`; expect the replacement date and recalculated age.
 1. Edit another field, then run `edit 1 vd/1/1/2000 1000` so the current visit has passed.
@@ -1641,7 +1706,8 @@ Use a disposable data file and available visit slots.
 Use a disposable data file, starting with no patients and available visit slots.
 
 1. Run `add n/Allergy Test bt/A+ all/Penicillin; latex alc/Does not drink smk/former p/81234567 a/10 Test Road vd/1/1/2000 1000`.
-   Run `view 1`; expect allergies below blood type and above alcohol history and smoking status on the right.
+   Run `view 1`; expect allergies first in **Medical profile** on the right, above blood type, smoking status, and
+   alcohol history.
 1. Run `edit 1 all/No known allergies`, then `view 1`; expect the explicit entry to remain visible.
 1. Edit alcohol history or smoking status, then run `next 1 1/1/2099 1000`; expect allergies unchanged and the previous
    visit retained. Restart and view the patient; expect all recorded details to remain.
@@ -1656,8 +1722,9 @@ Use a disposable data file, starting with no patients and available visit slots.
 Use a disposable data file, starting with no patients and available visit slots.
 
 1. Run `add n/Smoking Test alc/Does not drink smk/FORMER p/81234567 a/10 Test Road vd/1/1/2000 1000`.
-   Run `view 1`; expect `Smoking status: former` immediately below alcohol history on the right.
-1. Run `edit 1 alc/Occasional drinking smk/current`, then `view 1`; expect both replacements in that order.
+   Run `view 1`; expect `Smoking status: former` immediately above alcohol history on the right.
+1. Run `edit 1 alc/Occasional drinking smk/current`, then `view 1`; expect both replacements, with smoking status
+   above alcohol history.
    Repeat with `never`, `former`, and `unknown`, including mixed case and surrounding whitespace.
 1. Edit another field, then run `next 1 1/1/2099 1000`; expect smoking status unchanged and the previous visit retained.
    Restart the application and view the patient; expect the status and visit history to remain.
@@ -1689,7 +1756,8 @@ Use a disposable data file, starting with no patients and available visit slots.
 Use a disposable data file, starting with no patients, and available visit slots.
 
 1. Run `add n/Blood Test bt/a+ p/81234567 a/10 Test Road vd/1/12/2099 1000`, then `view 1`.
-   Expect `Blood type: A+` directly below the name in the patient list and the details panel.
+   Expect `Blood type: A+` directly below the name in the patient list, and in **Medical profile** in the details
+   panel.
 1. Run `edit 1 bt/ab-`, then `view 1`; expect `Blood type: AB-` in both panels.
 1. Edit a different field, then run `edit 1 vd/1/1/2000 1000` so the current visit has passed.
    Run `next 1 2/12/2099 1000`; expect the blood type unchanged and `1/1/2000 1000` in the visit history.
@@ -1813,22 +1881,22 @@ Browser-launch and clipboard rejection cases are simulated by `HelpWindowActions
 
 ### Finding patients
 
-Start with the seven sample patients by launching Doc from an empty folder. Run `list` before each step.
+Start with the ten sample patients by launching Doc from an empty folder. Run `list` before each step.
 
-1. Run `find n/m`.<br>
-   Expected: `3 patients found.` George Miller, Marcus Lim, and Mei Lin Tan are listed.
+1. Run `find n/j`.<br>
+   Expected: `2 patients found.` The two patients named Jordan Lee are listed.
 
-1. Run `find n/george priya`.<br>
-   Expected: George Miller and Priya Nair are listed, because keywords for one field match any of them.
+1. Run `find n/amelia benjamin`.<br>
+   Expected: Amelia Tan and Benjamin Lim are listed, because keywords for one field match any of them.
 
-1. Run `find n/m t/morning`.<br>
-   Expected: `1 patient found.` Only Mei Lin Tan is listed, because different fields must all match.
+1. Run `find n/b t/morning`.<br>
+   Expected: `1 patient found.` Only Benjamin Lim is listed, because different fields must all match.
 
-1. Run `find p/8901`, `find a/tampines`, and `find note/review`.<br>
-   Expected: Noor Aziz; Marcus Lim; then George Miller and Marcus Lim.
+1. Run `find p/8123`, `find a/tampines`, and `find note/review`.<br>
+   Expected: Amelia Tan; Amelia Tan; then Amelia Tan, Benjamin Lim, Farah Aziz, and Grace Wong.
 
-1. Run `find vd/15/10/2026`, then `find vd/14/10/2026 15/10/2026`, then `sort date`.<br>
-   Expected: Priya Nair; then Mei Lin Tan and Priya Nair, ordered by visit time after `sort date`.
+1. Run `find vd/24/10/2026`, then `find vd/22/10/2026 24/10/2026`, then `sort date`.<br>
+   Expected: Chloe Ng; then Benjamin Lim and Chloe Ng, ordered by visit time after `sort date`.
 
 1. Run `find p/0000`.<br>
    Expected: `No patients found.` followed by a hint listing every search prefix, and an empty list.
@@ -1843,12 +1911,12 @@ Start with the seven sample patients by launching Doc from an empty folder. Run 
    | `find n/george n/priya` | The duplicate-prefix error for `n/`. |
    | `find p/9123abc` | `Phone keywords may contain only digits, '+', and '-', and must include at least one digit.` |
    | `find vd/31/2/2026` | `"31/2/2026" is not a valid visit date.` with the date format. |
-   | `find vd/15/10/2026 0900` | `"0900" is not a valid visit date.` with the date format. |
+   | `find vd/15/10/2026 0900` | `"15/10/2026 0900" is not a valid visit date.` with the date format. |
 
    Expected: Each rejected command leaves the displayed list unchanged.
 
-1. Paste `find n/george`, a tab character, and `p/0000` into the command box as one command, then press <kbd>Enter</kbd>.<br>
-   Expected: `No patients found.`, because the tab separates two fields and George Miller's phone does not match.
+1. Paste `find n/amelia`, a tab character, and `p/0000` into the command box as one command, then press <kbd>Enter</kbd>.<br>
+   Expected: `No patients found.`, because the tab separates two fields and Amelia Tan's phone does not match.
 
 ### Sorting visits by date
 
@@ -1969,30 +2037,6 @@ Use a disposable copy of the data file for these tests. Start with a patient nam
 1. Try to add another patient named `ALEX  TAN` with phone number `91234567`. Expect the true-duplicate error without
    a confirmation prompt, even if the remaining fields differ.
 1. Close and reopen the application after confirming a name duplicate. Expect both same-name patients to load.
-
-### Optional alcohol history
-
-`Person` stores an immutable `AlcoholHistory` alongside blood type. It holds free text with surrounding whitespace
-removed; empty text represents unrecorded history and remains distinct from the explicit text `Does not drink`.
-`ParserUtil#parseAlcoholHistory` rejects blank add values, while edit maps an explicitly blank `alc/` to an empty
-history. Both parsers reject repeated `alc/` prefixes. Unrelated edits, `next`, and `prev` preserve the history.
-
-`JsonAdaptedPerson` saves the `alcoholHistory` string and treats missing or null fields in older files as unrecorded.
-The right-hand details panel displays recorded alcohol history immediately after allergies, wraps long text, and
-hides the row when unrecorded. Patient list cards and duplicate-patient identity remain unchanged.
-
-### Optional smoking status
-
-`Person` stores a `SmokingStatus` enum with `NEVER`, `FORMER`, `CURRENT`, `UNKNOWN`, and `UNRECORDED`.
-`UNKNOWN` represents explicitly recorded uncertainty; only `UNRECORDED` hides the row in the details panel.
-`SmokingStatus#fromString` trims surrounding whitespace and normalizes letter case using `Locale.ROOT`.
-`ParserUtil#parseSmokingStatus` rejects blank or unsupported recorded values, while edit maps blank `smk/` to
-`UNRECORDED`. Both parsers reject repeated `smk/` prefixes. Other edits, `next`, and `prev` preserve smoking status.
-
-`JsonAdaptedPerson` stores the normalized lowercase status, or an empty string for unrecorded values.
-Missing or null `smokingStatus` fields in older files load as `UNRECORDED`; unsupported saved values are rejected.
-The right-hand details panel displays smoking status immediately after alcohol history. Patient list cards and
-patient identity remain unchanged. Add/edit help places `[smk/STATUS]` after `[alc/ALCOHOL_HISTORY]`.
 
 ### Editing patient details
 
@@ -2250,7 +2294,7 @@ data-file path as instructed there before continuing.
 
 1. Run `list`, followed by `view 1`. Expect the full list to remain on the left and the first patient's complete
    details to appear on the right.
-1. Run `list`, followed by `find n/George`, and then `view 1`. Expect the search results to remain on the left and the
+1. Run `list`, followed by `find n/Amelia`, and then `view 1`. Expect the search results to remain on the left and the
    first patient's complete details to appear on the right.
 1. Run `sort date`, followed by `view 1`. Expect the sorted list to remain on the left and the first patient's complete
    details to appear on the right.
@@ -2312,32 +2356,32 @@ when midnight passes; another `view` recalculates it.
 
 1. Recalling submitted commands
 
-   1. Restart the application. Enter `list`, then enter `find n/George`.<br>
+   1. Restart the application. Enter `list`, then enter `find n/Amelia`.<br>
       Expected: Both commands run normally.
 
    1. Press the <kbd>Up</kbd> arrow key once, then again.<br>
-      Expected: The command box shows `find n/George`, then `list`. The caret is after the recalled text. Further <kbd>Up</kbd> arrow
+      Expected: The command box shows `find n/Amelia`, then `list`. The caret is after the recalled text. Further <kbd>Up</kbd> arrow
       presses leave `list` displayed.
 
    1. Press the <kbd>Down</kbd> arrow key twice.<br>
-      Expected: The command box shows `find n/George`, then becomes empty. Further <kbd>Down</kbd> arrow presses leave it empty.
+      Expected: The command box shows `find n/Amelia`, then becomes empty. Further <kbd>Down</kbd> arrow presses leave it empty.
 
 1. Restoring unfinished text
 
-   1. Type `find n/Geo` without pressing <kbd>Enter</kbd>, press the <kbd>Up</kbd> arrow key, then press the <kbd>Down</kbd> arrow key.<br>
-      Expected: A previous command is recalled, then the unfinished text `find n/Geo` is restored exactly.
+   1. Type `find n/Ame` without pressing <kbd>Enter</kbd>, press the <kbd>Up</kbd> arrow key, then press the <kbd>Down</kbd> arrow key.<br>
+      Expected: A previous command is recalled, then the unfinished text `find n/Ame` is restored exactly.
 
 1. Recording command text
 
    1. Submit an invalid command containing leading or trailing spaces, then press the <kbd>Up</kbd> arrow key.<br>
       Expected: The invalid command is recalled with its original spaces.
 
-   1. Restart the application. Submit `list`, then submit `find n/George` twice. Press the <kbd>Up</kbd> arrow key twice.<br>
-      Expected: The command box shows `find n/George`, then `list`. The consecutive duplicate occupies one history
+   1. Restart the application. Submit `list`, then submit `find n/Amelia` twice. Press the <kbd>Up</kbd> arrow key twice.<br>
+      Expected: The command box shows `find n/Amelia`, then `list`. The consecutive duplicate occupies one history
       position.
 
-   1. Restart the application. Submit `list`, `find n/George`, then `list`. Press the <kbd>Up</kbd> arrow key three times.<br>
-      Expected: The command box shows `list`, `find n/George`, then `list`. Identical commands separated by another
+   1. Restart the application. Submit `list`, `find n/Amelia`, then `list`. Press the <kbd>Up</kbd> arrow key three times.<br>
+      Expected: The command box shows `list`, `find n/Amelia`, then `list`. Identical commands separated by another
       command occupy separate history positions.
 
 1. Excluding follow-up responses
@@ -2405,8 +2449,6 @@ when midnight passes; another `view` recalculates it.
    1. Test case: `clear`<br>
       Expected: No confirmation is requested and the result display shows `Patient list is already empty.`
 
-1. _{ more test cases … }_
-
 ### Saving data
 
 1. Dealing with missing/corrupted data files
@@ -2434,5 +2476,3 @@ when midnight passes; another `view` recalculates it.
 
    1. Close Doc, replace that value with `"tags": []`, and relaunch.<br>
       Expected: The patient loads without a data warning and has no tags.
-
-1. _{ more test cases … }_

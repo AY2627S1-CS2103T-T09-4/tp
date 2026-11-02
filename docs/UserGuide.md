@@ -27,8 +27,8 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar doc.jar`.<br>
    If your downloaded JAR has a different filename, replace `doc.jar` with that filename.<br>
    A GUI similar to the one below should appear in a few seconds. When no saved data file exists, Doc starts with
-   seven sample patient records: George Miller, Priya Nair, Aisha Rahman, Marcus Lim, Mei Lin Tan, Daniel Wong, and
-   Noor Aziz.<br>
+   ten sample patient records: Amelia Tan, Benjamin Lim, Chloe Ng, David Koh, Farah Aziz, Grace Wong, two patients
+   named Jordan Lee, Kavita Rao, and Lucas Chen.<br>
    ![Ui](images/Ui.png)
 
 1. Type a command in the command box and press <kbd>Enter</kbd> to execute it. For example, type **`help`** and press <kbd>Enter</kbd> to open the help window.<br>
@@ -79,7 +79,8 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
   `Index must be a positive integer.` for an index that is zero, negative, or not a whole number, and
   `Index is too large.` for an index too large to represent. An index beyond the displayed list shows
   `The patient index provided is invalid.` The last two messages also ask you to enter an index shown in the
-  displayed patient list.
+  displayed patient list. For `view`, `edit`, `delete`, and `prev`, extra text after a valid index, such as
+  `view 1 2`, shows `Unexpected arguments after the index.` followed by the command's usage.
 
 * Extraneous parameters for commands that take no parameters, such as `help`, `list`, `exit`, and `clear`, are ignored.<br>
   For example, `help 123` is interpreted as `help`.
@@ -191,8 +192,9 @@ While a confirmation or follow-up prompt is pending, open Help with <kbd>F1</kbd
 Typing `help` and pressing <kbd>Enter</kbd> answers that prompt instead of opening Help.
 </box>
 
-![Help window](images/helpWindow.png)
+<img src="images/helpWindow.png" alt="Help window" width="700" style="max-width: 100%; height: auto;">
 
+<br>
 
 ### Adding a patient: `add`
 
@@ -239,9 +241,11 @@ See [Emergency contact examples](#emergency-contact-examples) for accepted and r
   `Added patient John Tan; Phone: 91234567; Address: 123 Clementi Road; Visit date: 22/10/2026 1000; Emergency contact: 98765432 (Mary Tan)`
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
 * A patient with the same normalized name and phone number as an existing patient is a duplicate and cannot be added.
-* If only the name matches an existing patient, the app shows the matching patient in the patient details panel and
-  asks `A patient named NAME already exists. The matching patient is shown in the patient details panel. Add NAME
-  anyway? Type y to confirm. Any other input cancels.`
+* If the normalized name matches one existing patient but the phone number differs, the app shows that patient in
+  the patient details panel and asks `A patient named NAME already exists. The matching patient is shown in the
+  patient details panel. Add NAME anyway? Type y to confirm. Any other input cancels.`
+  If the name matches multiple patients, as with the two sample records named Jordan Lee, the warning instead states
+  the number of matches and that only one is shown. The same `Add NAME anyway?` confirmation follows.
 * Type `y` and press <kbd>Enter</kbd> to add the patient. Surrounding spaces and letter case are ignored. Any other input cancels
   the addition and is not run as a command. Confirmation rechecks that the visit date and time are still available.
 * If 7 or more patients already have a visit on the same day (at any time), the app warns you before adding another,
@@ -279,7 +283,7 @@ alphabetically, ignoring letter case.
 </box>
 
 Examples:
-* `add n/John Doe dob/15/6/1990 bt/A+ all/Penicillin; latex alc/Occasional drinking smk/former p/98765432 a/John street, block 123, #01-01 vd/18/9/2026 1000 e/JohnDoe@gmail.com note/Review blood pressure`
+* `add n/Siti Rahman dob/2/3/1948 bt/O+ all/Sulfa drugs alc/Does not drink smk/never p/91112222 a/Blk 456 Hougang Ave 8, #05-12 vd/19/9/2026 1000 e/siti.rahman@example.com note/Review diabetic foot wound`
 * `add n/John Tan p/91234567 a/123 Clementi Road vd/22/10/2026 1000 ec/Mary Tan, 98765432`
 * `add n/Mei Chen p/87654321 a/45 Bedok North Road vd/1/10/2026 1430 t/followup`
 
@@ -440,9 +444,11 @@ Clearing allergies does not record `No known allergies`; clearing smoking status
 * When editing tags, all of the patient's existing tags are removed; adding tags is not cumulative.
 * To remove all of a patient's tags, enter `t/` without a tag after it.
 * An edit that would give a patient the same normalized name and phone number as another patient is rejected.
-* When an edit changes the patient's name to one already used by another patient with a different phone number, the
-  app warns that the name is already used and asks
+* When an edit changes the patient's normalized name to one already used by another patient with a different phone
+  number, the app warns that the name is already used and asks
   `Apply this edit to NAME anyway? Type y to confirm. Any other input cancels.`
+  If multiple patients have that name, the warning states the number of matches and that only one is shown in the
+  patient details panel.
 * Type `y` and press <kbd>Enter</kbd> to apply the edit. Surrounding spaces and letter case are ignored. Any other input cancels
   the edit and is not run as a command. Editing other details of a patient whose name is already shared does not ask
   for confirmation again. A confirmed name-duplicate edit rechecks that its requested visit slot is still available.
@@ -462,7 +468,7 @@ Examples:
 * `edit 1 note/` Clears the notes, keeping all other details unchanged.
 * `edit 1 e/ note/` Clears both email and notes, keeping the visit and other details unchanged.
 * `edit 1 vd/8/10/2026 1000 e/new@example.com note/Review medication` Updates the visit, email, and notes.
-* `edit 2 n/Priya Devi Nair t/` Updates Priya Nair's name and clears all existing tags, keeping the visit unchanged.
+* `edit 2 n/Benjamin Wei Lim t/` Updates Benjamin Lim's name and clears all existing tags, keeping the visit unchanged.
 
 ### Scheduling the next visit: `next`
 
@@ -496,6 +502,7 @@ Filtering and sorting are preserved. If saving fails, Doc reports the error and 
 Examples (follow the visit-date rules above):
 
 * `next 1 1/12/2026 0930` schedules the first displayed patient's following visit for 1 December 2026 at 09:30.
+* `find n/Amelia`, then `next 1 1/12/2026 1430`, schedules Amelia Tan and keeps the matching search results displayed.
 * To record a follow-up late: if the current visit date and time is `1/10/2026 0900` and today is 2 November 2026,
   `next 1 15/10/2026 1000`, then `y`, changes it to `15/10/2026 1000` and retains
   `1/10/2026 0900` in **Visit history**.
@@ -540,43 +547,44 @@ Finds patients by name, phone number, address, tag, visit date or notes.
 
 Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`
 
-* Give at least one field. Every keyword must follow a prefix; for example, use `find n/george`, not `find george`.
+* Give at least one field. Every keyword must follow a prefix; for example, use `find n/amelia`, not `find amelia`.
 * How each field matches (all case-insensitive):
-  * `n/`: the start of any word in the name, first name or surname. For example, `n/m` matches `George Miller`,
-    `Marcus Lim`, and `Mei Lin Tan`, but `n/ans` does not match `Hans`.
+  * `n/`: the start of any word in the name, first name or surname. For example, `n/l` matches `Benjamin Lim`, both
+    patients named `Jordan Lee`, and `Lucas Chen`, but `n/uc` does not match `Lucas Chen`.
   * `p/`: any part of the phone number, so the last few digits are enough. For example, `p/8901` matches `85678901`.
     Only digits are compared, so spaces, `+`, and `-` in either the saved number or the keyword are ignored:
     `p/91234567` matches `9123 4567` and `+65 9123-4567`. Phone keywords may contain digits, `+`, and `-`, and must
     include a digit. Type a number without spaces, since a space starts another keyword.
-  * `a/`: the start of any word in the address. For example, `a/tamp` matches `46 Tampines Street 21, #08-03`.
+  * `a/`: the start of any word in the address. For example, `a/tamp` matches `18 Tampines Street 21, #04-12`.
   * `t/`: the start of any tag. For example, `t/morn` matches a patient tagged `morning`.
   * `vd/`: patients whose current visit is on that day, at any time. Give the date without a time in the format
     `d/M/yyyy`, e.g. `vd/15/10/2026`. Previous visit dates are not searched. An impossible date, another format,
     or a time such as `vd/15/10/2026 0900` is rejected with `"VALUE" is not a valid visit date.` and the format.
   * `note/`: the start of any word in the patient's notes. For example, `note/gluc` matches
-    `Discuss glucose readings`, but `note/cose` does not. Patients with no notes never match.
+    `Review insulin dosage and glucose readings`, but `note/cose` does not. Patients with no notes never match.
 * Several keywords for one field find patients matching **any** of them (an `OR` search); for example,
-  `n/george priya` returns `George Miller` and `Priya Nair`.
-* Different fields must **all** match (an `AND` search); for example, `n/m t/morning` returns only patients with a
-  name word starting with `m` who are tagged `morning`.
+  `n/amelia farah` returns `Amelia Tan` and `Farah Aziz`.
+* Different fields must **all** match (an `AND` search); for example, `n/l t/afternoon` returns only patients with a
+  name word starting with `l` who are tagged `afternoon`.
 * Fields can be given in any order, but each prefix can appear only once. Put several keywords after one prefix
-  instead, e.g. `n/george priya` rather than `n/george n/priya`.
-* Spaces, tabs or line breaks can separate fields; for example, `n/george` and `p/8876` separated by a tab are still
+  instead, e.g. `n/amelia farah` rather than `n/amelia n/farah`.
+* Spaces, tabs or line breaks can separate fields; for example, `n/amelia` and `p/8123` separated by a tab are still
   two separate fields.
 * The app shows how many patients were found, e.g. `3 patients found.` If none match, it lists every search prefix:
   `No patients found. Search with n/ for names, p/ for phone numbers, a/ for addresses, t/ for tags, vd/ for visit dates, or note/ for notes.`
 
 Examples:
-* `find n/m` returns `George Miller`, `Marcus Lim`, and `Mei Lin Tan`
-* `find n/george priya` returns `George Miller` and `Priya Nair`
-* `find p/8901` returns `Noor Aziz`, whose number ends in `8901`
-* `find a/tampines` returns `Marcus Lim`
-* `find vd/15/10/2026` returns `Priya Nair`, whose visit is at 09:00 that day. Follow it with `sort date` to list
+* `find n/l` returns `Benjamin Lim`, both patients named `Jordan Lee`, and `Lucas Chen`
+* `find n/amelia farah` returns `Amelia Tan` and `Farah Aziz`
+* `find p/8123` returns `Amelia Tan`, whose number `81234567` contains `8123`
+* `find a/tampines` returns `Amelia Tan`
+* `find vd/20/10/2026` returns `Amelia Tan`, whose visit is at 09:00 that day. Follow it with `sort date` to list
   that day's visits by time when planning your route.
-* `find vd/14/10/2026 15/10/2026` returns `Priya Nair` and `Mei Lin Tan`
-* `find note/review` returns `George Miller` and `Marcus Lim`, whose notes start with `Review`
-* `find n/m t/morning` returns `Mei Lin Tan`; `George Miller` and `Marcus Lim` also match `n/m` but are not tagged
-  `morning`
+* `find vd/20/10/2026 22/10/2026` returns `Amelia Tan` and `Benjamin Lim`
+* `find note/review` returns `Amelia Tan`, `Benjamin Lim`, `Farah Aziz`, and `Grace Wong`, whose notes contain a word
+  starting with `Review`
+* `find n/l t/afternoon` returns `Lucas Chen`; `Benjamin Lim` and both patients named `Jordan Lee` also match `n/l`
+  but are not tagged `afternoon`
 
 ### Deleting a patient: `delete`
 
@@ -598,7 +606,7 @@ Format: `delete INDEX`
 
 Examples:
 * `list` followed by `delete 2`, then `y`, deletes the 2nd patient in Doc.
-* `find n/George` followed by `delete 1`, then `y`, deletes George Miller as the 1st patient in the search results.
+* `find n/Amelia` followed by `delete 1`, then `y`, deletes Amelia Tan as the 1st patient in the search results.
 
 ### Clearing all entries: `clear`
 
@@ -697,12 +705,12 @@ Doc home folder.
 
 Action     | Format, Examples
 -----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-**Add**    | `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1000 e/jamesho@example.com t/friend t/colleague`
+**Add**    | `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1130 e/jamesho@example.com t/friend t/colleague`
 **Agenda** | `agenda START_DATE [DAYS]`<br> e.g., `agenda 27/10/2026 7`
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
 **Edit**   | `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
-**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`<br> e.g., `find n/George a/maple`, `find vd/15/10/2026`, `find note/mobility`
+**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`<br> e.g., `find n/Amelia a/tampines`, `find vd/20/10/2026`, `find note/mobility`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/12/2026 0930`
 **Prev**   | `prev INDEX`<br> e.g., `prev 1`

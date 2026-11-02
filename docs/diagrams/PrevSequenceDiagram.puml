@@ -40,10 +40,16 @@ activate Model
 Model --> PrevCommand : displayedPersons
 deactivate Model
 
+create InputRequest
+PrevCommand -> InputRequest : createConfirmation(prompt,\ncancellation, restore)
+activate InputRequest
+InputRequest --> PrevCommand : request
+deactivate InputRequest
+
 note right of PrevCommand
-  Capture the displayed patient.
-  Return a result containing
-  its confirmation request.
+  restore captures the displayed
+  patient. Return a result
+  containing request.
   No mutation or saving.
 end note
 
