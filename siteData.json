@@ -41,6 +41,7 @@
       "title": "Developer Guide",
       "headings": {
         "doc-developer-guide": "Doc Developer Guide",
+        "ai-assistance": "AI assistance",
         "acknowledgements": "Acknowledgements",
         "setting-up-getting-started": "Setting up, getting started",
         "design": "Design",
@@ -53,6 +54,8 @@
         "implementation": "Implementation",
         "main-window-keyboard-navigation": "Main-window keyboard navigation",
         "help-window": "Help window",
+        "viewing-patient-details": "Viewing patient details",
+        "shared-optional-patient-field-behavior": "Shared optional-patient-field behavior",
         "optional-emergency-contacts": "Optional emergency contacts",
         "visit-record-model": "Visit record model",
         "duplicate-patient-identity-visit-dates-and-name-confirmation": "Duplicate patient identity, visit dates, and name confirmation",
