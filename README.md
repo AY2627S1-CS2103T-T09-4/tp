@@ -12,14 +12,14 @@ Doc is optimised for users who are fast typists: most interactions happen throug
 
 ## Features
 
-Doc is under active development. The features below describe the intended final product.
+Doc v1.6 supports the following features:
 
-* Keep one record per patient, holding their address, phone number and ongoing medical conditions.
-* Filter and group patients by medical condition or by when they were last visited.
-
-* Sort patients by their next visit date, so the more severe cases surface first.
-* Prevent two patients from being scheduled for the exact same date and time.
-* See the week's visits at a glance, and who is due in the next session.
+* Keep patient contact details, medical information, tags and notes in one record.
+* Find patients by name, phone number, address, tag, current visit date or notes.
+* Sort the displayed patients by current visit date and time around today or a chosen start date.
+* View an agenda of current visits over a chosen date range.
+* Schedule the next visit while retaining previous visit dates, and restore the latest previous visit when needed.
+* Prevent patients from being assigned the same current or previous visit date and time.
 
 Doc is a record-keeping and planning tool. It does not handle communicating with patients.
 
@@ -33,4 +33,4 @@ Doc is a record-keeping and planning tool. It does not handle communicating with
 
 This project is based on the AddressBook-Level3 project created by the [SE-EDU initiative](https://se-education.org).
 
-Libraries used: [JavaFX](https://openjfx.io/), [Jackson](https://github.com/FasterXML/jackson), [JUnit5](https://github.com/junit-team/junit5).
+Libraries used: [JavaFX](https://openjfx.io/), [Jackson](https://github.com/FasterXML/jackson), [JUnit 5](https://github.com/junit-team/junit-framework).
