@@ -105,6 +105,10 @@ Choose the command according to what you want to change:
 | Restore the most recent previous visit date and time. | [prev](#restoring-the-previous-visit-prev) `INDEX` | Remove the most recent entry from Previous visit dates and make it current; discard the visit date and time it replaces. |
 | Leave a final visit recorded without planning another. | No command needed. | Keep the current visit date and time recorded, even after it is marked `Past`. |
 
+For example, this is how `next` and `prev` change the visit record of the first sample patient, Amelia Tan:
+
+<puml src="diagrams/VisitHistoryWorkflow.puml" alt="next moves the current visit into the visit history; prev with y restores it and discards the newer visit." />
+
 Successful `edit`, `next`, and `prev` commands preserve the current filtering and sorting. The updated patient may
 move within the list or disappear if the changed details no longer match those rules. The details panel automatically
 shows the updated patient and refreshes the record and its calendar label. Run `list` to return to the full list.
@@ -330,6 +334,10 @@ Examples:
 * `agenda 27/10/2026` shows visits from 27 October through 2 November 2026.
 * `agenda 27/10/2026 14` shows visits from 27 October through 9 November 2026.
 
+With the sample patients, `agenda 27/10/2026` shows the following:
+
+<img src="images/agendaResult.png" alt="Response panel and patient list after agenda 27/10/2026, with visits listed earliest first." width="700" style="max-width: 100%; height: auto;">
+
 ### Sorting visits by date: `sort date [START_DATE]`
 
 Sorts the currently displayed patients by visit date and time around an optional cutoff date. Visits on or after the
@@ -372,6 +380,10 @@ which remains visible even when no tags are recorded.
 | Contact information | Phone, emergency contact, email, and address. A named emergency contact appears as `Emergency Contact: 98765432 (Mary Tan)`. |
 | Additional notes | The patient's note and tags. |
 | Visit history | All previous visit dates, newest first, or `No previous visit dates`. |
+
+For example, `view 1` with the sample patients shows Amelia Tan's record:
+
+<img src="images/patientDetailsPanel.png" alt="Details panel for Amelia Tan showing Visit details, Medical profile, Contact information, Additional notes, and Visit history." width="403" style="max-width: 100%; height: auto;">
 
 Date of birth and blood type also appear in the left-hand patient list. Age is calculated in completed years;
 a February 29 birthday increases in age on March 1 in non-leap years. Explicit entries such as
