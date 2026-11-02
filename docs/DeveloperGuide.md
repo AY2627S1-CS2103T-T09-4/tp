@@ -11,22 +11,6 @@
 
 --------------------------------------------------------------------------------------------------------------------
 
-## **AI assistance**
-
-* Tee Ming Shun (`mingshun2005`) used OpenAI Codex for code review, bug investigation, implementation of fixes,
-  regression-test generation, documentation updates, and drafting issues and pull requests. For example,
-  [PR #279](https://github.com/AY2627S1-CS2103T-T09-4/tp/pull/279) contains Codex-generated null-entry validation,
-  storage/startup tests, and related documentation. Codex also assisted with rewriting the User Guide in
-  [PR #282](https://github.com/AY2627S1-CS2103T-T09-4/tp/pull/282) and the patient-feature documentation below.
-  Ming Shun also used Anthropic Claude Code to assist with project development. This acknowledgement describes
-  Ming Shun's use of these tools, not other team members' AI use.
-* Hoong Ken (`hhkennn`), Twisha Mehta (`ahsiwt101`), Chan Tze Yuon (`tzeyuon`), and Kean Lai (`JamesLee5182`)
-  used OpenAI Codex to assist with feature implementation, code refactoring, writing and updating tests, and
-  refining project documentation. Codex also assisted with reviewing code for potential bugs and checking
-  adherence to the project's Java coding and code-quality standards.
-
---------------------------------------------------------------------------------------------------------------------
-
 ## **Acknowledgements**
 
 * Doc is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-level3), created by the
@@ -39,6 +23,20 @@
   [JUnit 5](https://junit.org/junit5/).
 * The documentation is built with [MarkBind](https://markbind.org/) and uses
   [PlantUML](https://plantuml.com/) for diagrams.
+
+### AI assistance
+
+* Tee Ming Shun (`mingshun2005`) used OpenAI Codex for code review, bug investigation, implementation of fixes,
+  regression-test generation, documentation updates, and drafting issues and pull requests. For example,
+  [PR #279](https://github.com/AY2627S1-CS2103T-T09-4/tp/pull/279) contains Codex-generated null-entry validation,
+  storage/startup tests, and related documentation. Codex also assisted with rewriting the User Guide in
+  [PR #282](https://github.com/AY2627S1-CS2103T-T09-4/tp/pull/282) and the patient-feature documentation below.
+  Ming Shun also used Anthropic Claude Code to assist with project development. This acknowledgement describes
+  Ming Shun's use of these tools, not other team members' AI use.
+* Hoong Ken (`hhkennn`), Twisha Mehta (`ahsiwt101`), Chan Tze Yuon (`tzeyuon`), and Kean Lai (`JamesLee5182`)
+  used OpenAI Codex to assist with feature implementation, code refactoring, writing and updating tests, and
+  refining project documentation. Codex also assisted with reviewing code for potential bugs and checking
+  adherence to the project's Java coding and code-quality standards.
 
 --------------------------------------------------------------------------------------------------------------------
 
