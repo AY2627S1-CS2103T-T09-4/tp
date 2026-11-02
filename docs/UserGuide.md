@@ -74,6 +74,10 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
   For example, `edit INDEX ...` starts with the index, and `next INDEX DATETIME` requires the index before the date
   and time.
 
+* `INDEX` is the number shown beside a patient in the currently displayed patient list. Commands such as `find`,
+  `agenda`, and `sort` can change which patients are displayed or their order, so use the index shown after running
+  those commands.
+
 * Commands that take an `INDEX` (`view`, `edit`, `delete`, `next`, and `prev`) explain an invalid index the same way.
   These messages are followed by the command's usage: `Invalid command format!` for a missing index,
   `Index must be a positive integer.` for an index that is zero, negative, or not a whole number, and
@@ -87,6 +91,26 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 
 * If you are using a PDF version of this document, be careful when copying and pasting commands that span multiple lines as space characters surrounding line-breaks may be omitted when copied over to the application.
 </box>
+
+### Which command should I use?
+
+Choose a command based on what you want to do. Select the command name to jump to its full instructions.
+
+| Goal | Command |
+| --- | --- |
+| Learn how to use Doc or open the command reference. | [`help`](#viewing-help-help) |
+| Add a patient record. | [`add`](#adding-a-patient-add) |
+| Show every patient. | [`list`](#listing-all-patients-list) |
+| Find patients using details such as their name, phone number, address, tag, visit date, or notes. | [`find`](#locating-patients-find) |
+| View one patient's complete record. | [`view`](#viewing-a-patient-s-details-view) |
+| Update a patient's details or reschedule the current visit. | [`edit`](#editing-a-patient-edit) |
+| Show visits within a range of calendar days. | [`agenda`](#viewing-visits-as-an-agenda-agenda-start-date-days) |
+| Arrange the displayed patients around a chosen visit date. | [`sort`](#sorting-visits-by-date-sort-date-start-date) |
+| Schedule or record the visit after the current visit. | [`next`](#scheduling-the-next-visit-next) |
+| Restore the most recent visit from the patient's visit history. | [`prev`](#restoring-the-previous-visit-prev) |
+| Delete one patient record. | [`delete`](#deleting-a-patient-delete) |
+| Delete every patient record. | [`clear`](#clearing-all-patient-records-clear) |
+| Close Doc. | [`exit`](#exiting-the-program-exit) |
 
 ### Visit records
 
@@ -472,15 +496,13 @@ Clearing allergies does not record `No known allergies`; clearing smoking status
 * The visit-time conflict limitations described under `add` also apply to edits.
 
 Examples:
-* `edit 1 vd/8/10/2026 1000` Changes the 1st patient's visit to 8 October 2026 at 10:00.
-* `edit 1 p/91234567 vd/8/10/2026 1000 e/johndoe@example.com` Updates the visit, phone number, and email.
-* `edit 1 p/91234567 e/johndoe@example.com` Updates the phone number and email, keeping the visit unchanged.
-* `edit 1 e/` Clears the email, keeping the visit and other details unchanged.
-* `edit 1 note/Patient requests a morning visit` Replaces the notes, keeping all other details unchanged.
-* `edit 1 note/` Clears the notes, keeping all other details unchanged.
-* `edit 1 e/ note/` Clears both email and notes, keeping the visit and other details unchanged.
-* `edit 1 vd/8/10/2026 1000 e/new@example.com note/Review medication` Updates the visit, email, and notes.
-* `edit 2 n/Benjamin Wei Lim t/` Updates Benjamin Lim's name and clears all existing tags, keeping the visit unchanged.
+
+| Goal | Command | Result |
+| --- | --- | --- |
+| Update contact details. | `edit 1 p/91234567 e/johndoe@example.com` | Replaces the phone number and email; keeps all other details unchanged. |
+| Reschedule the current visit. | `edit 1 vd/8/10/2026 1000` | Changes the visit to 8 October 2026 at 10:00; keeps the visit history unchanged. |
+| Clear optional text fields. | `edit 1 e/ note/` | Clears both the email and notes; keeps all other details unchanged. |
+| Change the name and remove all tags. | `edit 2 n/Benjamin Wei Lim t/` | Updates the name and clears every existing tag; keeps all other details unchanged. |
 
 ### Scheduling the next visit: `next`
 
@@ -586,17 +608,15 @@ Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t
   `No patients found. Search with n/ for names, p/ for phone numbers, a/ for addresses, t/ for tags, vd/ for visit dates, or note/ for notes.`
 
 Examples:
-* `find n/l` returns `Benjamin Lim`, both patients named `Jordan Lee`, and `Lucas Chen`
-* `find n/amelia farah` returns `Amelia Tan` and `Farah Aziz`
-* `find p/8123` returns `Amelia Tan`, whose number `81234567` contains `8123`
-* `find a/tampines` returns `Amelia Tan`
-* `find vd/20/10/2026` returns `Amelia Tan`, whose visit is at 09:00 that day. Follow it with `sort date` to list
-  that day's visits by time when planning your route.
-* `find vd/20/10/2026 22/10/2026` returns `Amelia Tan` and `Benjamin Lim`
-* `find note/review` returns `Amelia Tan`, `Benjamin Lim`, `Farah Aziz`, and `Grace Wong`, whose notes contain a word
-  starting with `Review`
-* `find n/l t/afternoon` returns `Lucas Chen`; `Benjamin Lim` and both patients named `Jordan Lee` also match `n/l`
-  but are not tagged `afternoon`
+
+| Search goal | Command | Result |
+| --- | --- | --- |
+| Match either of two names. | `find n/amelia farah` | Returns `Amelia Tan` and `Farah Aziz`. |
+| Match part of a phone number. | `find p/8123` | Returns `Amelia Tan`, whose phone number `81234567` contains `8123`. |
+| Match a word in an address. | `find a/tampines` | Returns `Amelia Tan`. |
+| Match a current visit date. | `find vd/20/10/2026` | Returns `Amelia Tan`, whose visit is at 09:00 that day. Follow with `sort date` to arrange that day's results by time. |
+| Match a word in notes. | `find note/review` | Returns `Amelia Tan`, `Benjamin Lim`, `Farah Aziz`, and `Grace Wong`. |
+| Require both a name and tag match. | `find n/l t/afternoon` | Returns only `Lucas Chen`; the other patients whose names match `n/l` do not have the `afternoon` tag. |
 
 ### Deleting a patient: `delete`
 
@@ -715,18 +735,18 @@ Doc home folder.
 
 ## Command summary
 
-Action     | Format, Examples
------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-**Add**    | `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...` <br> e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1130 e/jamesho@example.com t/friend t/colleague`
-**Agenda** | `agenda START_DATE [DAYS]`<br> e.g., `agenda 27/10/2026 7`
-**Clear**  | `clear`
-**Delete** | `delete INDEX`<br> e.g., `delete 3`
-**Edit**   | `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
-**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`<br> e.g., `find n/Amelia a/tampines`, `find vd/20/10/2026`, `find note/mobility`
-**List**   | `list`
-**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/12/2026 0930`
-**Prev**   | `prev INDEX`<br> e.g., `prev 1`
-**Sort**   | `sort date [START_DATE]`<br> e.g., `sort date 18/9/2026`
-**View**   | `view INDEX`<br> e.g., `view 1` (refreshes details and the calendar label)
-**Help**   | `help`
-**Exit**   | `exit`
+Command | Purpose | Format and example
+--- | --- | ---
+[`add`](#adding-a-patient-add) | Add a patient record. | `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...`<br>e.g., `add n/James Ho p/22224444 a/123, Clementi Rd, 1234665 vd/18/9/2026 1130 e/jamesho@example.com t/friend t/colleague`
+[`agenda`](#viewing-visits-as-an-agenda-agenda-start-date-days) | Show visits within a date range. | `agenda START_DATE [DAYS]`<br>e.g., `agenda 27/10/2026 7`
+[`clear`](#clearing-all-patient-records-clear) | Delete every patient record. | `clear`
+[`delete`](#deleting-a-patient-delete) | Delete one patient record. | `delete INDEX`<br>e.g., `delete 3`
+[`edit`](#editing-a-patient-edit) | Update a patient record. | `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...`<br>e.g., `edit 2 note/Review medication`
+[`find`](#locating-patients-find) | Find patients matching the supplied fields. | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`<br>e.g., `find n/Amelia a/tampines`
+[`list`](#listing-all-patients-list) | Show every patient. | `list`
+[`next`](#scheduling-the-next-visit-next) | Schedule or record the following visit. | `next INDEX DATETIME`<br>e.g., `next 1 1/12/2026 0930`
+[`prev`](#restoring-the-previous-visit-prev) | Restore the latest previous visit. | `prev INDEX`<br>e.g., `prev 1`
+[`sort`](#sorting-visits-by-date-sort-date-start-date) | Arrange displayed patients by visit date. | `sort date [START_DATE]`<br>e.g., `sort date 18/9/2026`
+[`view`](#viewing-a-patient-s-details-view) | Show one patient's complete record. | `view INDEX`<br>e.g., `view 1`
+[`help`](#viewing-help-help) | Open the command reference. | `help`
+[`exit`](#exiting-the-program-exit) | Close Doc. | `exit`
