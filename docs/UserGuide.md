@@ -24,6 +24,9 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 
 1. Copy the file to the folder you want to use as the _home folder_ for Doc.
 
+   The folder must be writable. Doc creates and updates its patient data, preferences, and log files in this folder.
+   If Doc is placed in a write-protected folder, it may be unable to save changes or start correctly.
+
 1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar addressbook.jar`.<br>
    A GUI similar to the one below should appear in a few seconds. When no saved data file exists, Doc starts with
    seven sample patient records: George Miller, Priya Nair, Aisha Rahman, Marcus Lim, Mei Lin Tan, Daniel Wong, and
