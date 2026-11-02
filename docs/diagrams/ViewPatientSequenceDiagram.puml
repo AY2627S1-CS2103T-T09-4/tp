@@ -1,0 +1,47 @@
+@startuml
+!include style.puml
+skinparam ArrowFontStyle plain
+participant ":MainWindow" as Window UI_COLOR
+participant ":LogicManager" as Logic LOGIC_COLOR
+participant ":AddressBookParser" as Parser LOGIC_COLOR
+participant ":ViewCommandParser" as ViewParser LOGIC_COLOR
+participant "v:ViewCommand" as View LOGIC_COLOR
+participant "m:Model" as Model MODEL_COLOR
+participant ":PatientDetailsPanel" as Panel UI_COLOR
+
+[-> Window : executeCommand("view 1")
+activate Window
+Window -> Logic : execute("view 1")
+activate Logic
+Logic -> Parser : parseCommand("view 1")
+activate Parser
+create ViewParser
+Parser -> ViewParser
+Parser -> ViewParser : parse("1")
+activate ViewParser
+create View
+ViewParser -> View : ViewCommand(index)
+ViewParser --> Parser : v
+deactivate ViewParser
+Parser --> Logic : v
+deactivate Parser
+Logic -> View : execute(m)
+activate View
+View -> Model : getFilteredPersonList()
+Model --> View : displayedPatients
+note right of View
+Select p using the displayed index.
+Return CommandResult.viewPerson(feedback, p).
+end note
+View --> Logic : result (SHOW p, save=false)
+deactivate View
+note right of Logic : No patient-data save for view.
+Logic --> Window : result
+deactivate Logic
+Window -> Panel : setPerson(p)
+activate Panel
+Panel --> Window
+deactivate Panel
+[<-- Window : result
+deactivate Window
+@enduml

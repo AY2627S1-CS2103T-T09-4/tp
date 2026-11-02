@@ -11,6 +11,18 @@
 
 --------------------------------------------------------------------------------------------------------------------
 
+## **AI assistance**
+
+* Tee Ming Shun (`mingshun2005`) used OpenAI Codex for code review, bug investigation, implementation of fixes,
+  regression-test generation, documentation updates, and drafting issues and pull requests. For example,
+  [PR #279](https://github.com/AY2627S1-CS2103T-T09-4/tp/pull/279) contains Codex-generated null-entry validation,
+  storage/startup tests, and related documentation. Codex also assisted with rewriting the User Guide in
+  [PR #282](https://github.com/AY2627S1-CS2103T-T09-4/tp/pull/282) and the patient-feature documentation below.
+  Ming Shun also used Anthropic Claude Code to assist with project development. This acknowledgement describes
+  Ming Shun's use of these tools, not other team members' AI use.
+
+--------------------------------------------------------------------------------------------------------------------
+
 ## **Acknowledgements**
 
 * Doc is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-level3), created by the
@@ -289,6 +301,73 @@ Clipboard success requires `Clipboard.setContent` to return `true`. Detectable f
 without hiding the URL or disabling the controls. `HelpWindowActionsTest` checks failure feedback, fallback actions,
 and retries. The [manual checks](#help-window-lifecycle) cover native window behaviour and real browser/clipboard integration.
 
+### Viewing patient details
+
+With no follow-up input pending, `AddressBookParser` dispatches `view INDEX` to `ViewCommandParser`.
+The parser uses `ParserUtil#parseIndex` to require exactly one positive index. `ViewCommand#execute` resolves
+that index against `Model#getFilteredPersonList`, so it selects from the displayed filtered/sorted list rather
+than the full address book. An out-of-range index raises `CommandException`.
+
+For a valid index, `CommandResult.viewPerson(feedback, person)` carries the selected `Person`, the `SHOW`
+details-panel action, and a false save flag. `LogicManager` therefore returns without writing patient data.
+`MainWindow#executeCommand` displays the feedback and routes the result to `PatientDetailsPanel#setPerson`.
+The diagram shows the successful route; model snapshots, feedback rendering, and private routing helpers are
+omitted for clarity. If a confirmation is pending, input goes to that request instead of the view parser.
+
+<puml src="diagrams/ViewPatientSequenceDiagram.puml" alt="Successful view command from parsing to patient-details rendering" />
+
+Viewing does not change patient data, filtering, or sorting. A malformed or out-of-range view request displays
+an error without replacing the previously displayed details. Rendering a valid record resets the panel's scroll
+position and updates its labels; see [Displaying visit records](#displaying-visit-records).
+
+**Design choice:** Commands return a `CommandResult` rather than calling JavaFX controls directly. This keeps
+command tests independent of UI controls and lets `MainWindow` handle `KEEP`, `SHOW`, `CLEAR`, and
+`CLEAR_IF_SHOWING` consistently. The latter clears details only when they belong to the deleted patient.
+Optional value labels are hidden and unmanaged when their values are unrecorded, preventing empty gaps.
+Switching patients updates these labels so stale values do not remain visible. The `Tags:` row remains visible
+and managed even when no tags are recorded. When all medical fields are unrecorded, the panel displays
+`No medical information recorded`.
+
+### Shared optional-patient-field behavior
+
+This section applies to date of birth, blood type, allergies, alcohol history, smoking status, and emergency
+contact. The individual sections below describe each field's validation and storage representation.
+
+| Input or operation | Result |
+| --- | --- |
+| Prefix omitted from `add` | Create an unrecorded model value. |
+| Prefix supplied with a blank value in `add` | Reject the command. |
+| Prefix omitted from `edit` | Leave the descriptor field unset and preserve the existing value. |
+| Empty or whitespace-only value in `edit` | Supply an explicit unrecorded replacement, clearing the field even if already empty. |
+| Repeated prefix in `add` or `edit` | Reject the command, including identical or blank values. |
+| Missing or JSON-null property in an older saved record | Load an unrecorded value. |
+| Invalid recorded value | Reject it at parsing or storage validation; free-text fields accept arbitrary text. |
+
+`Person` holds non-null values. An unset field in `EditPersonDescriptor` means "do not change", while an explicit
+empty value means "clear". This distinction prevents an unrelated edit from erasing health information.
+`BloodType.UNKNOWN` represents an unrecorded blood type. In contrast, `SmokingStatus.UNKNOWN` records explicit
+uncertainty; `SmokingStatus.UNRECORDED` represents no entry. Empty `Allergies` and `AlcoholHistory` values do not
+assert `No known allergies` or `Does not drink`. These values preserve what was entered without inferring a finding.
+
+#### Automated test map
+
+The following existing tests provide entry points for maintaining these features. A listed test suite is not a
+claim that every possible input is covered.
+
+| Feature | Model/command tests |
+| --- | --- |
+| Date of birth | [DateOfBirthTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/model/person/DateOfBirthTest.java), [DateOfBirthCommandIntegrationTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/logic/commands/DateOfBirthCommandIntegrationTest.java) |
+| Blood type | [BloodTypeTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/model/person/BloodTypeTest.java), [BloodTypeCommandIntegrationTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/logic/commands/BloodTypeCommandIntegrationTest.java) |
+| Allergies | [AllergiesTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/model/person/AllergiesTest.java), [AllergiesCommandIntegrationTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/logic/commands/AllergiesCommandIntegrationTest.java) |
+| Alcohol history | [AlcoholHistoryTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/model/person/AlcoholHistoryTest.java), [AlcoholHistoryCommandIntegrationTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/logic/commands/AlcoholHistoryCommandIntegrationTest.java) |
+| Smoking status | [SmokingStatusTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/model/person/SmokingStatusTest.java), [SmokingStatusCommandIntegrationTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/logic/commands/SmokingStatusCommandIntegrationTest.java) |
+| Emergency contact | [EmergencyContactTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/model/person/EmergencyContactTest.java), [EmergencyContactIntegrationTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/logic/commands/EmergencyContactIntegrationTest.java) |
+| Viewing | [ViewCommandParserTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/logic/parser/ViewCommandParserTest.java), [ViewCommandTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/logic/commands/ViewCommandTest.java) |
+
+[PatientDetailsPanelTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/ui/PatientDetailsPanelTest.java) checks rendering, field visibility, stale-value
+removal, empty profiles, and scrolling. [JsonAdaptedPersonTest](https://github.com/AY2627S1-CS2103T-T09-4/tp/blob/master/src/test/java/seedu/address/storage/JsonAdaptedPersonTest.java) checks
+conversion of saved fields. Integration suites exercise commands and persistence; UI tests separately check display.
+
 ### Optional emergency contacts
 
 `Person` stores an immutable `EmergencyContact` value. Its empty string represents an absent contact, so
@@ -542,6 +621,17 @@ Add and edit accept `dob/`; omitted values preserve existing data, while an empt
 Storage defaults missing or null `dateOfBirth` fields to an unrecorded value for older files.
 Patient cards show the recorded date and completed age below the name, before blood type. The details panel shows
 it in **Medical profile**, after blood type and before smoking status.
+
+`DateOfBirth` uses strict `LocalDate` parsing with `d/M/uuuu` after checking for a four-digit year.
+Nonempty values must be real dates from year 0001 and no later than the computer's current local date.
+`ParserUtil#parseDateOfBirth` rejects blank add values; an empty edit creates an unrecorded `DateOfBirth` instead.
+The model normalizes leading zeroes when formatting the date.
+
+Age is derived from the stored DOB, not persisted separately. `getAge(currentDate)` uses `Period.between` to
+return completed years, so a February 29 birthday advances on March 1 in a non-leap year. `toDisplayString`
+uses the computer's local date when rendered; there is no midnight timer to refresh an existing label.
+`DateOfBirthTest` checks validation and age boundaries, while `DateOfBirthCommandIntegrationTest` checks adding,
+editing, clearing, preservation, and persistence (see the [test map](#automated-test-map)).
 
 ### Optional blood type
 
