@@ -317,8 +317,10 @@ position and updates its labels; see [Displaying visit records](#displaying-visi
 **Design choice:** Commands return a `CommandResult` rather than calling JavaFX controls directly. This keeps
 command tests independent of UI controls and lets `MainWindow` handle `KEEP`, `SHOW`, `CLEAR`, and
 `CLEAR_IF_SHOWING` consistently. The latter clears details only when they belong to the deleted patient.
-Unrecorded fields are both hidden and unmanaged, preventing empty gaps; switching records sets every optional
-field again so stale values do not remain visible. An empty medical profile shows `No medical information recorded`.
+Optional value labels are hidden and unmanaged when their values are unrecorded, preventing empty gaps.
+Switching patients updates these labels so stale values do not remain visible. The `Tags:` row remains visible
+and managed even when no tags are recorded. When all medical fields are unrecorded, the panel displays
+`No medical information recorded`.
 
 ### Shared optional-patient-field behavior
 
