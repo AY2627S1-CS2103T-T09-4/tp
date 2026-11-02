@@ -1732,7 +1732,7 @@ the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Pa
 
    ```text
    add n/Alpha Patient p/90000001 a/1 Alpha Road vd/1/12/2099 0900
-   add n/Beta Patient p/90000002 a/2 Beta Road vd/2/12/2099 0900 note/This deliberately long clinical note records medication tolerance, home blood-pressure observations, mobility changes, caregiver updates, hydration reminders, and follow-up instructions for the next house call. Repeat the details panel checks after viewing this record so the note extends beyond the visible viewport and requires vertical scrolling.
+   add n/Beta Patient p/90000002 a/2 Beta Road vd/2/12/2099 0900 note/This deliberately long clinical note records medication tolerance, home blood-pressure observations, mobility changes, caregiver updates, hydration reminders, and follow-up instructions for the next house call. Repeat the patient details panel checks after viewing this record so the note extends beyond the visible viewport and requires vertical scrolling.
    ```
 
    Each successful `add` may display the newly added patient. Run `view 2` before the scrolling checks so the long

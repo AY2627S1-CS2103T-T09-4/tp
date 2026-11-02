@@ -257,7 +257,7 @@ Duplicate detection has these limitations:
 * Phone numbers are compared by their digits, so `8123 4567`, `8123-4567`, and `81234567` are the same number.
   Forms with and without a country code, such as `+65 8123 4567` and `81234567`, are not recognized as equal.
 * Two different patients with the same normalized name and phone number cannot both be added. Include a distinguishing
-  name component, such as a middle name or suffix, or use a different contact number.
+  name component, such as a middle name or suffix, or use a different phone number.
 * Patients whose intentional name difference consists only of capitalization or spacing will trigger duplicate
   handling.
 
@@ -651,7 +651,7 @@ patient data remains available.
 
 Each patient has a required `visitDate` and a `previousVisitDates` array of datetime strings in `d/M/yyyy HHmm`
 format, with years from `1900` to `2099`. Previous dates must be strictly increasing, oldest first, and earlier than
-the current date. All current and previous datetimes must be unique across patients. Missing or `null`
+the current visit date and time. All current and previous datetimes must be unique across patients. Missing or `null`
 previous-date arrays in older files load as empty arrays. Invalid records are rejected without sorting,
 deduplicating, or dropping entries.
 
