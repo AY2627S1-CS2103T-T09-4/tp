@@ -3,6 +3,9 @@
 skinparam arrowThickness 1.1
 skinparam arrowColor MODEL_COLOR_T4
 skinparam classAttributeIconSize 0
+skinparam classAttributeFontColor #FFFFFF
+' style.puml hides all members; show the ones defined below
+show members
 hide empty members
 
 package Logic as LogicPackage <<Rectangle>> {
@@ -11,7 +14,7 @@ Class FindCommand LOGIC_COLOR
 }
 
 package Model as ModelPackage <<Rectangle>> {
-Class "<<interface>>\nPredicate<Person>" as Predicate MODEL_COLOR
+Class "<<interface>>\nPredicate" as Predicate MODEL_COLOR
 Class MatchesAllCriteriaPredicate MODEL_COLOR
 Class "{abstract}\nFieldContainsKeywordsPredicate" as FieldPredicate MODEL_COLOR {
   - keywords : List<String>
@@ -27,18 +30,19 @@ Class VisitDateOnDaysPredicate MODEL_COLOR {
 }
 }
 
-FindCommandParser ..> FindCommand : creates >
-FindCommandParser ..> MatchesAllCriteriaPredicate : creates >
+FindCommandParser .right.> FindCommand : <<create>>
+FindCommandParser ..> MatchesAllCriteriaPredicate : <<create>>
 FindCommand --> "1" Predicate : predicate
 
-MatchesAllCriteriaPredicate ..|> Predicate
+MatchesAllCriteriaPredicate .up.|> Predicate
 MatchesAllCriteriaPredicate --> "1..*" Predicate : criteria
-FieldPredicate ..|> Predicate
-VisitDateOnDaysPredicate ..|> Predicate
+FieldPredicate .up.|> Predicate
+VisitDateOnDaysPredicate .up.|> Predicate
 
+' Two rows of subclasses keep the diagram narrow enough to read in the DG
 NameContainsKeywordsPredicate -up-|> FieldPredicate
 PhoneContainsKeywordsPredicate -up-|> FieldPredicate
 AddressContainsKeywordsPredicate -up-|> FieldPredicate
-TagContainsKeywordsPredicate -up-|> FieldPredicate
-NoteContainsKeywordsPredicate -up-|> FieldPredicate
+TagContainsKeywordsPredicate -up--|> FieldPredicate
+NoteContainsKeywordsPredicate -up--|> FieldPredicate
 @enduml
