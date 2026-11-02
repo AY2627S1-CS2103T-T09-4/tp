@@ -31,6 +31,7 @@ import seedu.address.model.tag.Tag;
 class JsonAdaptedPerson {
 
     public static final String MISSING_FIELD_MESSAGE_FORMAT = "Patient's %s field is missing!";
+    public static final String MESSAGE_NULL_TAG = "Patient's tags contain a null tag entry.";
 
     private final String name;
     private final String dateOfBirth;
@@ -139,6 +140,9 @@ class JsonAdaptedPerson {
     private Set<Tag> parseTags() throws IllegalValueException {
         Set<Tag> modelTags = new HashSet<>();
         for (JsonAdaptedTag tag : tags) {
+            if (tag == null) {
+                throw new IllegalValueException(MESSAGE_NULL_TAG);
+            }
             modelTags.add(tag.toModelType());
         }
         return modelTags;

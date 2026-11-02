@@ -1,5 +1,6 @@
 @startuml
 !include style.puml
+skinparam style strictuml
 skinparam ArrowFontStyle plain
 
 skinparam ParticipantPadding 6
@@ -40,6 +41,7 @@ Model --> NextCommand : displayedPersons
 deactivate Model
 
 note right of NextCommand
+  Build updatedPerson; model is unchanged.
   Append current datetime to history.
   Set requested datetime as current.
   Preserve all other patient fields.
@@ -53,7 +55,7 @@ deactivate Model
 NextCommand --> LogicManager : result
 deactivate NextCommand
 
-LogicManager -> LogicManager : saveAddressBook()
+LogicManager -> LogicManager : saveAddressBook(modelState)
 activate LogicManager
 LogicManager -> Model : getAddressBook()
 activate Model
