@@ -11,7 +11,7 @@
 
 --------------------------------------------------------------------------------------------------------------------
 
-## **Acknowledgements**
+## **AI assistance**
 
 * Tee Ming Shun (`mingshun2005`) used OpenAI Codex for code review, bug investigation, implementation of fixes,
   regression-test generation, documentation updates, and drafting issues and pull requests. For example,
@@ -21,7 +21,20 @@
   Ming Shun also used Anthropic Claude Code to assist with project development. This acknowledgement describes
   Ming Shun's use of these tools, not other team members' AI use.
 
-* _{List the sources of reused or adapted ideas, code, documentation, and third-party libraries here, with links to the originals.}_
+--------------------------------------------------------------------------------------------------------------------
+
+## **Acknowledgements**
+
+* Doc is based on [AddressBook-Level3](https://github.com/se-edu/addressbook-level3), created by the
+  [SE-EDU initiative](https://se-education.org). Its application architecture, codebase, and documentation structure
+  were adapted for this project.
+* The user and developer documentation reuse and adapt guidance and examples from the
+  [AddressBook-Level3 documentation](https://se-education.org/addressbook-level3/).
+* Doc uses [JavaFX](https://openjfx.io/) for its desktop interface and
+  [Jackson](https://github.com/FasterXML/jackson) for JSON data persistence. Automated tests use
+  [JUnit 5](https://junit.org/junit5/).
+* The documentation is built with [MarkBind](https://markbind.org/) and uses
+  [PlantUML](https://plantuml.com/) for diagrams.
 
 --------------------------------------------------------------------------------------------------------------------
 
