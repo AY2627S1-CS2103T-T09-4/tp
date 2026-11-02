@@ -87,12 +87,12 @@ The `UI` component,
 `ResultDisplay` is hosted in a fixed-height response panel. Its feedback text wraps within the available width, and the
 text area can be scrolled vertically when a message exceeds the panel height. The panel does not grow when the main
 window is resized; extra vertical space remains available to the patient list and patient-details panel instead.
-`ResultDisplay` intercepts unmodified Up and Down key presses before JavaFX performs caret navigation, scrolling the
+`ResultDisplay` intercepts unmodified <kbd>Up</kbd> and <kbd>Down</kbd> key presses before JavaFX performs caret navigation, scrolling the
 text area immediately while preserving modified arrow-key behavior for text selection and navigation. Each movement
 is clamped to the TextArea's vertical scrollbar bounds so repeated presses at an edge do not accumulate hidden scroll.
 
 `CommandBox` owns a session-scoped `CommandHistory`. It records ordinary command submissions and uses it to replace
-the command box text when the user presses the Up or Down arrow key.
+the command box text when the user presses the <kbd>Up</kbd> or <kbd>Down</kbd> arrow key.
 
 `MainWindow` coordinates keyboard focus between four main sections; see
 [Main-window keyboard navigation](#main-window-keyboard-navigation) for event routing and scrolling boundaries.
@@ -210,8 +210,8 @@ This section describes some noteworthy details on how certain features are imple
 
 ### Main-window keyboard navigation
 
-`MainWindow` installs a scene-level key-event filter that routes Tab through the command box, response panel,
-patient list, and patient-details `ScrollPane`, then back to the command box. Shift+Tab reverses this cycle.
+`MainWindow` installs a scene-level key-event filter that routes <kbd>Tab</kbd> through the command box, response panel,
+patient list, and patient-details `ScrollPane`, then back to the command box. <kbd>Shift</kbd>+<kbd>Tab</kbd> reverses this cycle.
 The handler identifies the section containing the focus owner, requests focus on the next section's target, and
 consumes the event. Focus outside these sections is left to normal JavaFX traversal; the menu bar is outside this cycle.
 
@@ -219,7 +219,8 @@ Explicit section targets keep the empty details panel reachable and prevent desc
 controls from becoming additional stops. A focus-owner listener updates the section's light-gray, 2-pixel outline.
 Every section reserves the same border space when unfocused, keeping the layout stable as focus moves.
 
-`PatientDetailsPanel` handles Up, Down, Page Up, Page Down, Home, and End locally and clamps scrolling to its bounds.
+`PatientDetailsPanel` handles <kbd>Up</kbd>, <kbd>Down</kbd>, <kbd>Page Up</kbd>, <kbd>Page Down</kbd>, <kbd>Home</kbd>,
+and <kbd>End</kbd> locally and clamps scrolling to its bounds.
 Command-history and patient-list arrow-key handling remain scoped to their own controls. The patient list scrolls
 only as needed to keep the selected card fully visible. These boundaries are checked in
 [Main-window keyboard navigation and details scrolling](#main-window-keyboard-navigation-and-details-scrolling).
@@ -232,15 +233,15 @@ See [Viewing help](UserGuide.md#viewing-help-help) for user instructions.
 
 #### Lifecycle and focus
 
-`MainWindow` retains one `HelpWindow` and reuses it for command, F1, and menu requests. The window is non-modal,
+`MainWindow` retains one `HelpWindow` and reuses it for command, <kbd>F1</kbd>, and menu requests. The window is non-modal,
 so the main window remains usable. Opening a hidden window calls `HelpWindow.show()` and focuses the command list.
 Requesting Help while it is already visible calls `focus()` instead, restoring a minimized window and bringing it
-forward without resetting its size, position, or command-list scroll position. The command list is a Tab stop so users
+forward without resetting its size, position, or command-list scroll position. The command list is a <kbd>Tab</kbd> stop so users
 can return from the guide buttons.
 
 Before opening or focusing Help, `MainWindow` saves the command-box caret and selection. When Help is hidden,
 it returns focus to `CommandBox` and restores that selection if the main window is still showing.
-F1 and the menu call the UI directly, leaving a pending input request intact. Typed `help` goes through `LogicManager`
+<kbd>F1</kbd> and the menu call the UI directly, leaving a pending input request intact. Typed `help` goes through `LogicManager`
 and is consumed as the response when a request is pending; it does not open Help in that case.
 
 #### Layout and content
@@ -901,12 +902,12 @@ execution remain available. Before recording, `CommandBox` checks whether `Logic
 `CommandInputRequest`; follow-up responses are excluded from command history because they are input for an existing
 command rather than new commands.
 
-The history position starts immediately after the newest entry. On the first Up arrow press, `CommandHistory` saves
-the current command box text as a draft and returns the newest command. Further Up presses move towards older
-commands and stop at the oldest entry. Down presses move towards newer commands; moving past the newest entry restores
+The history position starts immediately after the newest entry. On the first <kbd>Up</kbd> arrow press, `CommandHistory` saves
+the current command box text as a draft and returns the newest command. Further <kbd>Up</kbd> presses move towards older
+commands and stop at the oldest entry. <kbd>Down</kbd> presses move towards newer commands; moving past the newest entry restores
 the saved draft. A new ordinary submission resets the position to immediately after the newest entry.
 
-`CommandBox` handles JavaFX key-pressed events for the Up and Down arrow keys, replaces the text, positions the caret
+`CommandBox` handles JavaFX key-pressed events for the <kbd>Up</kbd> and <kbd>Down</kbd> arrow keys, replaces the text, positions the caret
 after the recalled text, and consumes the event so the key does not also move the caret. Other keys retain the usual
 `TextField` behavior. The history belongs only to the current `CommandBox`, so it is discarded when the application
 closes.
@@ -1566,9 +1567,9 @@ the first launch loads the sample data. The route below deliberately clears it b
 the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Patient` at index 2.
 
 1. **Reach an empty details panel:** Run `clear`, then submit `y` at the confirmation prompt.<br>
-   Expected: The patient list is empty and the patient-details panel is blank. Click the command box and press Tab four
+   Expected: The patient list is empty and the patient-details panel is blank. Click the command box and press <kbd>Tab</kbd> four
    times. Focus should move through command box, response panel, patient list, and patient details, then wrap to the
-   command box. From the command box, press Shift+Tab four times and confirm the reverse cycle. The empty details panel
+   command box. From the command box, press <kbd>Shift</kbd>+<kbd>Tab</kbd> four times and confirm the reverse cycle. The empty details panel
    remains reachable and has a visible outline.
 1. **Create repeatable records:** Submit these commands in order:
 
@@ -1580,22 +1581,22 @@ the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Pa
    Each successful `add` may display the newly added patient. Run `view 2` before the scrolling checks so the long
    `Beta Patient` record is definitely displayed and the list indices are known. Reduce the window height until its
    details overflow and the vertical scrollbar appears before testing scrolling.
-1. **Details scrolling and focus outline:** Use Tab or Shift+Tab to focus patient details. Confirm that the outline
+1. **Details scrolling and focus outline:** Use <kbd>Tab</kbd> or <kbd>Shift</kbd>+<kbd>Tab</kbd> to focus patient details. Confirm that the outline
    surrounds the whole panel rather than an individual label or scrollbar. Press <kbd>Up</kbd>, <kbd>Down</kbd>,
    <kbd>Page Up</kbd>, <kbd>Page Down</kbd>, <kbd>Home</kbd>, and <kbd>End</kbd> separately.<br>
-   Expected: Up and Down move a small amount, Page Up and Page Down move about one viewport, and Home and End reach the
+   Expected: <kbd>Up</kbd> and <kbd>Down</kbd> move a small amount, <kbd>Page Up</kbd> and <kbd>Page Down</kbd> move about one viewport, and <kbd>Home</kbd> and <kbd>End</kbd> reach the
    top and bottom without overscrolling. Mouse-wheel scrolling still works.
 1. **Fitting content:** Run `view 1`, then enlarge the window vertically until Alpha Patient's details fit without a
    scrollbar. Focus patient details and press each of the six scrolling keys.<br>
    Expected: The details remain unchanged because there is no content to scroll.
-1. **View reset and command focus:** Run `view 2`, focus patient details, and press End. Return to the command box and
+1. **View reset and command focus:** Run `view 2`, focus patient details, and press <kbd>End</kbd>. Return to the command box and
    run `view 2` again. Repeat after running `view 1`, then run `view 2` once more.<br>
    Expected: Every successful view starts Beta Patient or Alpha Patient at the top, including the repeated same-patient
    view and the switch between long and short records. After each command entered in the command box, focus remains in
    the command box.
-1. **Empty-panel behavior after clearing:** Run `clear`, submit `y`, and focus the blank details panel through the Tab
+1. **Empty-panel behavior after clearing:** Run `clear`, submit `y`, and focus the blank details panel through the <kbd>Tab</kbd>
    cycle. Press each scrolling key separately.<br>
-   Expected: No key changes the blank panel, and Tab/Shift+Tab still move between all four sections.
+   Expected: No key changes the blank panel, and <kbd>Tab</kbd>/<kbd>Shift</kbd>+<kbd>Tab</kbd> still move between all four sections.
 1. **Existing shortcuts:** The preceding step cleared the list. Refill it with these disposable records:
 
    ```text
@@ -1609,9 +1610,9 @@ the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Pa
    <kbd>Up</kbd> and <kbd>Down</kbd> still recall command
    history. Focus the patient list and move the selection down through at least four patients, then back up. Confirm
    that each selected patient card remains fully visible and the list does not jump when the selected card is already
-   visible. Leave unfinished text in the command box, traverse with Tab and Shift+Tab, and confirm the text and
+   visible. Leave unfinished text in the command box, traverse with <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd>, and confirm the text and
    displayed patient do not change. Check mouse scrolling in the list and details panel, then follow the
-   [Help lifecycle checks](#help-window-lifecycle) for F1 and Help regressions.
+   [Help lifecycle checks](#help-window-lifecycle) for <kbd>F1</kbd> and Help regressions.
 
 ### Dates of birth
 
@@ -1730,7 +1731,7 @@ Use a disposable data file. Start with no patients and use available visit slots
 
 #### Content and layout checks
 
-1. **Offline access:** Open Help with F1 while disconnected from the Internet.<br>
+1. **Offline access:** Open Help with <kbd>F1</kbd> while disconnected from the Internet.<br>
    Expected: The command directory remains available, and no browser opens automatically.
 
 1. **Command directory:** Open Help at its default size.<br>
@@ -1740,7 +1741,7 @@ Use a disposable data file. Start with no patients and use available visit slots
    available navigation controls.
 
 1. **Navigation hint:** Inspect the hint at the top of the command list.<br>
-   Expected: The Up, Down, Tab, Shift, and Escape key labels are visible as non-interactive visual keycaps. They do
+   Expected: The <kbd>Up</kbd>, <kbd>Down</kbd>, <kbd>Tab</kbd>, <kbd>Shift</kbd>, and <kbd>Escape</kbd> key labels are visible as non-interactive visual keycaps. They do
    not receive focus or activate an action when clicked.
 
 1. **Small window:** Resize Help to its minimum size and scroll through the list. Repeat after a guide action
@@ -1748,14 +1749,14 @@ Use a disposable data file. Start with no patients and use available visit slots
    Expected: Several command entries remain readable, all groups can be reached by scrolling, and text wraps
    without horizontal clipping. The URL, feedback, and buttons remain visible below the list.
 
-1. **Keyboard scrolling:** Close Help, focus the result display, and press F1. Resize Help to its minimum size. Use Down and
-   End to reach the later commands, then Home and Up to return towards the top.<br>
+1. **Keyboard scrolling:** Close Help, focus the result display, and press <kbd>F1</kbd>. Resize Help to its minimum size. Use <kbd>Down</kbd> and
+   <kbd>End</kbd> to reach the later commands, then <kbd>Home</kbd> and <kbd>Up</kbd> to return towards the top.<br>
    Expected: Help opens with focus on the command list, and the keys allow every group to be reached.
 
-1. **Button navigation:** Open Help. Press Tab until **Open User Guide** is focused, then press Shift+Tab to return
-   to the command list. Press Tab through **Open User Guide** and **Copy URL** until **Close** is focused, then press
-   Space.<br>
-   Expected: Focus moves between the list and buttons, focused buttons have a visible outline, and Space activates Close.
+1. **Button navigation:** Open Help. Press <kbd>Tab</kbd> until **Open User Guide** is focused, then press <kbd>Shift</kbd>+<kbd>Tab</kbd> to return
+   to the command list. Press <kbd>Tab</kbd> through **Open User Guide** and **Copy URL** until **Close** is focused, then press
+   <kbd>Space</kbd>.<br>
+   Expected: Focus moves between the list and buttons, focused buttons have a visible outline, and <kbd>Space</kbd> activates Close.
 
 1. **Display scaling:** Repeat the layout and keyboard checks at 1920×1080 with 100% and 125% OS scaling, and at
    1280×720 with 150% OS scaling.<br>
@@ -1768,13 +1769,13 @@ Use a disposable data file. Start with no patients and use available visit slots
    then enter `help add` and `help 123` in the main window.<br>
    Expected: Each request focuses the same window without changing its size or position. Extra arguments are ignored.
 
-1. **Minimize and restore:** Minimize Help using its native control. Request it again using `help`, F1, and
+1. **Minimize and restore:** Minimize Help using its native control. Request it again using `help`, <kbd>F1</kbd>, and
    **Help → Help**, minimizing it before each attempt.<br>
    Expected: Help minimizes independently, the main window stays usable, and each request restores and focuses the
    existing window.
 
-1. **Draft preservation:** Type `find n/Be` without submitting it, select part of the text, and press F1. Close Help
-   using **Close**, **Escape**, and the native close control, reopening it for each attempt.<br>
+1. **Draft preservation:** Type `find n/Be` without submitting it, select part of the text, and press <kbd>F1</kbd>. Close Help
+   using **Close**, <kbd>Escape</kbd>, and the native close control, reopening it for each attempt.<br>
    Expected: Focus returns to the command box with the draft unsubmitted and its caret and selection restored.
 
 1. **Shutdown:** Open Help and exit Doc using `exit`, **File → Exit**, and the main window's native close control,
@@ -1785,7 +1786,7 @@ Use a disposable data file. Start with no patients and use available visit slots
 
 1. **Help during confirmation:** Launch Doc with disposable patient data containing at least one patient.
 
-   1. Enter `delete 1`, then type `y` without submitting it. Open and dismiss Help using F1 and the Help menu.<br>
+   1. Enter `delete 1`, then type `y` without submitting it. Open and dismiss Help using <kbd>F1</kbd> and the Help menu.<br>
       Expected: The confirmation prompt and draft remain unchanged, with no deletion or data-file write.<br>
       Cleanup: Replace the draft with `n` and submit it to cancel.
 
@@ -1798,7 +1799,7 @@ Use a disposable data file. Start with no patients and use available visit slots
 Open Help for these checks.
 
 1. **Open the guide:** With an Internet connection and a default browser configured, choose **Open User Guide**.
-   Repeat using Tab and Space, then Enter on Windows and Linux.<br>
+   Repeat using <kbd>Tab</kbd> and <kbd>Space</kbd>, then <kbd>Enter</kbd> on Windows and Linux.<br>
    Expected: The browser opens the displayed URL. Doc reports a launch request, not confirmation that the page loaded.
 
 1. **Copy the address:** Choose **Copy URL** (replacing the current clipboard contents), then paste into a scratch
@@ -1847,7 +1848,7 @@ Start with the seven sample patients by launching Doc from an empty folder. Run 
 
    Expected: Each rejected command leaves the displayed list unchanged.
 
-1. Paste `find n/george`, a tab character, and `p/0000` into the command box as one command, then press Enter.<br>
+1. Paste `find n/george`, a tab character, and `p/0000` into the command box as one command, then press <kbd>Enter</kbd>.<br>
    Expected: `No patients found.`, because the tab separates two fields and George Miller's phone does not match.
 
 ### Sorting visits by date
@@ -2312,37 +2313,37 @@ when midnight passes; another `view` recalculates it.
    1. Restart the application. Enter `list`, then enter `find n/George`.<br>
       Expected: Both commands run normally.
 
-   1. Press the Up arrow key once, then again.<br>
-      Expected: The command box shows `find n/George`, then `list`. The caret is after the recalled text. Further Up arrow
+   1. Press the <kbd>Up</kbd> arrow key once, then again.<br>
+      Expected: The command box shows `find n/George`, then `list`. The caret is after the recalled text. Further <kbd>Up</kbd> arrow
       presses leave `list` displayed.
 
-   1. Press the Down arrow key twice.<br>
-      Expected: The command box shows `find n/George`, then becomes empty. Further Down arrow presses leave it empty.
+   1. Press the <kbd>Down</kbd> arrow key twice.<br>
+      Expected: The command box shows `find n/George`, then becomes empty. Further <kbd>Down</kbd> arrow presses leave it empty.
 
 1. Restoring unfinished text
 
-   1. Type `find n/Geo` without pressing Enter, press the Up arrow key, then press the Down arrow key.<br>
+   1. Type `find n/Geo` without pressing <kbd>Enter</kbd>, press the <kbd>Up</kbd> arrow key, then press the <kbd>Down</kbd> arrow key.<br>
       Expected: A previous command is recalled, then the unfinished text `find n/Geo` is restored exactly.
 
 1. Recording command text
 
-   1. Submit an invalid command containing leading or trailing spaces, then press the Up arrow key.<br>
+   1. Submit an invalid command containing leading or trailing spaces, then press the <kbd>Up</kbd> arrow key.<br>
       Expected: The invalid command is recalled with its original spaces.
 
-   1. Restart the application. Submit `list`, then submit `find n/George` twice. Press the Up arrow key twice.<br>
+   1. Restart the application. Submit `list`, then submit `find n/George` twice. Press the <kbd>Up</kbd> arrow key twice.<br>
       Expected: The command box shows `find n/George`, then `list`. The consecutive duplicate occupies one history
       position.
 
-   1. Restart the application. Submit `list`, `find n/George`, then `list`. Press the Up arrow key three times.<br>
+   1. Restart the application. Submit `list`, `find n/George`, then `list`. Press the <kbd>Up</kbd> arrow key three times.<br>
       Expected: The command box shows `list`, `find n/George`, then `list`. Identical commands separated by another
       command occupy separate history positions.
 
 1. Excluding follow-up responses
 
-   1. Enter `delete 1`, then `n`. Press the Up arrow key once.<br>
+   1. Enter `delete 1`, then `n`. Press the <kbd>Up</kbd> arrow key once.<br>
       Expected: `delete 1` is recalled. The confirmation response `n` is not recalled.
 
-   1. Restart the application and press the Up arrow key before entering any command.<br>
+   1. Restart the application and press the <kbd>Up</kbd> arrow key before entering any command.<br>
       Expected: The command box remains unchanged because command history is not persisted.
 
 ### Deleting a patient
@@ -2365,7 +2366,7 @@ when midnight passes; another `view` recalculates it.
       Expected: No patient is deleted and `list` is consumed as the confirmation response. The result display shows
       `Deletion cancelled.` Entering `list` again lists all patients normally.
 
-   1. Test case: `delete 1`, followed by pressing Enter with an empty command box<br>
+   1. Test case: `delete 1`, followed by pressing <kbd>Enter</kbd> with an empty command box<br>
       Expected: No patient is deleted. The result display shows `Deletion cancelled.`
 
    1. Test case: `delete 0`<br>
