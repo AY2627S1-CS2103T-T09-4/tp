@@ -173,6 +173,16 @@ public class MainAppTest {
     }
 
     @Test
+    public void loadInitialData_nullPatient_backsUpFileAndWarns() throws Exception {
+        assertInvalidFileBackedUp("nullPatientAddressBook.json", "Patient list contains a null patient entry.");
+    }
+
+    @Test
+    public void loadInitialData_nullTag_backsUpFileAndWarns() throws Exception {
+        assertInvalidFileBackedUp("nullTagAddressBook.json", "Patient's tags contain a null tag entry.");
+    }
+
+    @Test
     public void loadInitialData_backupFails_warnsUserToKeepFileSafe() throws Exception {
         Path dataFile = dataFile();
         Files.copy(TEST_DATA_FOLDER.resolve("invalidPersonAddressBook.json"), dataFile);

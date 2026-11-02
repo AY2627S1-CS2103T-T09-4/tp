@@ -73,7 +73,7 @@ The **API** of this component is specified in [`Ui.java`](https://github.com/AY2
 
 <puml src="diagrams/UiClassDiagram.puml" alt="Structure of the UI Component"/>
 
-The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `PersonListPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
+The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `PersonListPanel`, `PatientDetailsPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
 
 The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/java/seedu/address/ui/MainWindow.java).
 
@@ -87,20 +87,15 @@ The `UI` component,
 `ResultDisplay` is hosted in a fixed-height response panel. Its feedback text wraps within the available width, and the
 text area can be scrolled vertically when a message exceeds the panel height. The panel does not grow when the main
 window is resized; extra vertical space remains available to the patient list and patient-details panel instead.
-`ResultDisplay` intercepts unmodified Up and Down key presses before JavaFX performs caret navigation, scrolling the
+`ResultDisplay` intercepts unmodified <kbd>Up</kbd> and <kbd>Down</kbd> key presses before JavaFX performs caret navigation, scrolling the
 text area immediately while preserving modified arrow-key behavior for text selection and navigation. Each movement
 is clamped to the TextArea's vertical scrollbar bounds so repeated presses at an edge do not accumulate hidden scroll.
 
 `CommandBox` owns a session-scoped `CommandHistory`. It records ordinary command submissions and uses it to replace
-the command box text when the user presses the Up or Down arrow key.
+the command box text when the user presses the <kbd>Up</kbd> or <kbd>Down</kbd> arrow key.
 
-`MainWindow` installs a scene-level key-event filter for Tab navigation. It treats the command box, result display,
-patient list, and patient-details `ScrollPane` as four focus sections, routing both Tab directions explicitly so that
-the empty details panel remains reachable and descendants such as details labels or scrollbar controls do not become
-additional stops. The currently focused section receives a light-gray, 2-pixel outline; every section reserves the same
-border space even when unfocused. The menu bar is not part of this cycle. The details panel handles its six scrolling
-keys locally, so command-history and patient-list arrow-key behavior remains scoped to those controls. The patient list
-scrolls only as needed to keep the selected patient card fully visible.
+`MainWindow` coordinates keyboard focus between four main sections; see
+[Main-window keyboard navigation](#main-window-keyboard-navigation) for event routing and scrolling boundaries.
 
 `MainWindow` manages a separate `HelpWindow` for offline command discovery and access to the full User Guide.
 See [Help window](#help-window) for its layout, lifecycle, and external-action boundaries.
@@ -203,6 +198,10 @@ together with a warning that gives the first line of the load error and the back
 fails, tells the user to copy the file before entering any command. `MainApp#start` passes the warning to
 `Ui#showStartupWarning`, which shows it in a dialog once the main window is open.
 
+Null entries inside the patient or tag arrays are rejected during storage conversion with an
+`IllegalValueException`, which storage wraps in a `DataLoadingException`. They follow the same backup-and-warning
+recovery path rather than being skipped or causing an uncaught null-pointer exception. Empty tag arrays remain valid.
+
 ### Common classes
 
 Classes used by multiple components are in the `seedu.address.commons` package.
@@ -213,36 +212,53 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 
 This section describes some noteworthy details on how certain features are implemented.
 
+### Main-window keyboard navigation
+
+`MainWindow` installs a scene-level key-event filter that routes <kbd>Tab</kbd> through the command box, response panel,
+patient list, and patient-details `ScrollPane`, then back to the command box. <kbd>Shift</kbd>+<kbd>Tab</kbd> reverses this cycle.
+The handler identifies the section containing the focus owner, requests focus on the next section's target, and
+consumes the event. Focus outside these sections is left to normal JavaFX traversal; the menu bar is outside this cycle.
+
+Explicit section targets keep the empty details panel reachable and prevent descendants such as labels or scrollbar
+controls from becoming additional stops. A focus-owner listener updates the section's light-gray, 2-pixel outline.
+Every section reserves the same border space when unfocused, keeping the layout stable as focus moves.
+
+`PatientDetailsPanel` handles <kbd>Up</kbd>, <kbd>Down</kbd>, <kbd>Page Up</kbd>, <kbd>Page Down</kbd>, <kbd>Home</kbd>,
+and <kbd>End</kbd> locally and clamps scrolling to its bounds.
+Command-history and patient-list arrow-key handling remain scoped to their own controls. The patient list scrolls
+only as needed to keep the selected card fully visible. These boundaries are checked in
+[Main-window keyboard navigation and details scrolling](#main-window-keyboard-navigation-and-details-scrolling).
+
 ### Help window
 
 Help is an offline command directory with short descriptions and syntax templates for all supported commands,
 with access to the full User Guide for validation rules and examples.
 See [Viewing help](UserGuide.md#viewing-help-help) for user instructions.
 
-`MainWindow` retains one `HelpWindow` and reuses it for command, F1, and menu requests. The window is non-modal,
-so the main window remains usable. Closing Help returns focus to `CommandBox`, which restores the saved caret
-and selection. F1 and the menu call the UI directly; unlike typed `help`, they do not answer a pending input request.
+#### Lifecycle and focus
+
+`MainWindow` retains one `HelpWindow` and reuses it for command, <kbd>F1</kbd>, and menu requests. The window is non-modal,
+so the main window remains usable. Opening a hidden window calls `HelpWindow.show()` and focuses the command list.
+Requesting Help while it is already visible calls `focus()` instead, restoring a minimized window and bringing it
+forward without resetting its size, position, or command-list scroll position. The command list is a <kbd>Tab</kbd> stop so users
+can return from the guide buttons.
+
+Before opening or focusing Help, `MainWindow` saves the command-box caret and selection. When Help is hidden,
+it returns focus to `CommandBox` and restores that selection if the main window is still showing.
+<kbd>F1</kbd> and the menu call the UI directly, leaving a pending input request intact. Typed `help` goes through `LogicManager`
+and is consumed as the response when a request is pending; it does not open Help in that case.
 
 #### Layout and content
 
 `HelpWindow.fxml` places the command groups in one column inside a `ScrollPane`, in the centre of a `BorderPane`.
-The groups are **Manage patients and visits** (`add`, `edit`, `next`, `prev`, `delete`, `clear`),
-**Find and view patients** (`list`, `find`, `view`, `sort`, `agenda`), and **Application controls** (`help`, `exit`).
 Each command entry contains its description, a syntax template, and any optional-field continuation row. The
 default window may require vertical scrolling as the templates make the directory longer. A fixed footer holds
 the URL, buttons, and feedback so these controls remain accessible while the command list scrolls.
 `HelpWindow.css` supplies the presentation styles.
 
-The complete user-facing syntax reference is maintained in the [User Guide command summary](UserGuide.md#command-summary).
-This section focuses on the Help window's implementation boundary instead of duplicating every command template. The
-`edit` and `find` descriptions state that at least one field is required. The legend is
-`UPPERCASE: replace with your values · [ ]: optional · ...: repeatable`. `INDEX` uses the displayed patient
-list number; date and emergency-contact meanings follow the detailed User Guide.
-
-`HelpWindow.show()` focuses the command list, which is a Tab stop so users can return from the guide buttons.
-A muted keyboard hint and the notation legend `UPPERCASE: replace with your values · [ ]: optional · ...: repeatable`
-introduce scrolling and the syntax placeholders. They belong to the scrolling content, not the fixed footer, to
-preserve command space in small windows.
+A keyboard hint and a shared syntax legend precede the command groups inside the scrolling content, preserving
+command space in small windows. The complete syntax reference is maintained in the
+[User Guide command summary](UserGuide.md#command-summary).
 
 Static labels keep the directory independent of parser implementation; the FXML entries must still be maintained
 when command syntax changes. When `AddressBookParser` gains, loses, or renames a command, or when a command's
@@ -325,15 +341,25 @@ The current datetime is always required, even when no further visit is planned. 
 attendance or completion, and notes remain patient-level. See the [User Guide](UserGuide.md#visit-records) for the
 user-facing distinction between advancing and rescheduling.
 
+**Visit-record roadmap:** `Person` owns the current and immutable previous-date state;
+[NextCommand](#scheduling-the-next-visit) appends the old current datetime before replacing it;
+[PrevCommand](#restoring-the-previous-visit) restores the latest previous datetime and discards the old current one.
+The [shared save flow](#saving-and-displaying-visit-changes) persists successful changes before the UI displays them.
+
 Each immutable `Person` has one required current `VisitDate` and a non-null `List<VisitDate>` named
 `previousVisitDates`. The previous dates are strictly increasing, oldest first, and each must be strictly earlier
-than the current date. Comparisons use parsed `LocalDateTime` values, including the time: leading-zero variants
-of the same datetime are equal, while different times on one day are allowed. These invariants do not depend on
-the clock, so the passage of time does not invalidate a record.
+than the patient's current visit datetime. Comparisons use parsed `LocalDateTime` values, including the time:
+leading-zero variants of the same datetime are equal, while different times on one day are allowed. The latest
+previous visit is the last history entry (the greatest stored datetime), regardless of today's date. These invariants
+do not depend on the clock, so the passage of time does not invalidate a record.
 
 The constructor takes an immutable defensive copy and rejects null entries or invalid chronology rather than
 sorting or repairing the input. The constructor without previous dates creates an empty list. Equality and hashing
 include previous dates; patient identity still uses the normalized name and phone number.
+
+`Person` enforces chronology within one record. `UniquePersonList` separately enforces visit-time uniqueness across
+patients, including all current and previous datetimes; see the
+[shared uniqueness rule](#duplicate-patient-identity-visit-dates-and-name-confirmation).
 
 Editing a patient or copying it with `PersonBuilder` preserves previous dates. The command-specific transitions
 are described under [Scheduling the next visit](#scheduling-the-next-visit) and
@@ -346,15 +372,14 @@ No entries are sorted, deduplicated, or dropped to repair an invalid file.
 
 #### Displaying visit records
 
-`PatientDetailsPanel` shows `Previous visit dates:` below the current visit and above the note, with one datetime
-per line or `No previous visit dates` for an empty record. It reverses the dates only for display, placing recent
-visits first while preserving oldest-first storage. The existing `ScrollPane` accommodates long records without
-imposing a limit on the number of retained dates.
+`PatientDetailsPanel` puts the current datetime in **Visit details** near the top and previous dates in
+**Visit history** at the bottom, after **Additional notes**. Under the `Previous visit dates` heading, it shows one
+datetime per line or `No previous visit dates` for an empty record. This keeps a long history from pushing medical
+and contact information out of reach. It reverses the dates only for display, placing recent visits first while
+preserving oldest-first storage. The `ScrollPane` accommodates long records without imposing a history limit.
 
 The details `ScrollPane` resets its vertical value immediately when a record is rendered and once more after JavaFX
-lays out the updated content. This handles records of different lengths and repeated views of the same patient. Each
-main-window section reserves a fixed-width border whose color changes only for the focused section, keeping the panel
-geometry stable while making the focus stop visible.
+lays out the updated content. This handles records of different lengths and repeated views of the same patient.
 
 The current datetime includes a calendar-day label in parentheses: `Past`, `Today`, or `Upcoming`.
 `PatientDetailsPanel` uses an injected `Clock` (the system's local clock in production) and reads its current
@@ -363,11 +388,6 @@ The current datetime includes a calendar-day label in parentheses: `Past`, `Toda
 details recomputes it; there is no automatic midnight refresh. Fixed-clock tests cover day and time-zone boundaries
 without changing the system clock. See [Calendar labels for current visits](#calendar-labels-for-current-visits)
 for manual checks.
-
-**Visit-record roadmap:** `Person` owns the current and immutable previous-date state; `NextCommand` appends the old
-current datetime before replacing it; `PrevCommand` pops the latest previous datetime and discards the old current one;
-`LogicManager` saves successful mutations and the UI renders the resulting record. The sections below follow this same
-model → command → persistence and display path.
 
 ### Duplicate patient identity, visit dates, and name confirmation
 
@@ -614,8 +634,9 @@ Validation errors and cancelled confirmations leave patient data, saved data, an
 Duplicate-related errors and name-confirmation prompts can display an existing patient in the details panel;
 other rejected inputs do not change that panel.
 If storage reports an I/O or permission failure, `LogicManager` restores the patient data, active filter, and sort
-captured before command execution. The command reports the save error, while the data file and displayed model remain
-consistent with the last successful save.
+captured before command execution. The success result never reaches `MainWindow`, so its details panel keeps the
+previously displayed record. `FileUtil` saves through a temporary file and atomic replacement to protect the previous
+saved data.
 
 ### Sorting displayed visits by date
 
@@ -669,7 +690,7 @@ Each field is searched by its own `Predicate<Person>` class in the Model compone
 `MatchesAllCriteriaPredicate` combines them. `FindCommand` stores this single combined predicate, so it does not need
 to know which fields were searched.
 
-<puml src="diagrams/FindPredicateClassDiagram.puml" alt="Classes used to represent find search criteria" width="650" />
+<puml src="diagrams/FindPredicateClassDiagram.puml" alt="Classes used to represent find search criteria" />
 
 * `FieldContainsKeywordsPredicate` holds a field's keywords and implements `test` as "any keyword matches".
   It also implements `equals`, `hashCode`, and `toString`, comparing exact classes so that, for example, a name
@@ -700,7 +721,9 @@ evaluates the predicate for each stored patient whenever the displayed list is r
 1. It rejects text before the first prefix with `MESSAGE_KEYWORDS_NEED_PREFIX` and
    repeated prefixes with the shared duplicate-prefix error.
 1. For each prefix that is present, it splits the value into keywords and creates that field's predicate.
-   An empty prefix such as `n/` is rejected. Phone keywords must be digits. Visit dates are parsed strictly with
+   An empty prefix such as `n/` is rejected. Phone keywords may contain only digits, `+`, and `-`, and must include
+   at least one digit. Phone matching compares only digits: for example, `find p/9123-4567` searches for `91234567`
+   within the stored phone number's digits. Visit dates are parsed strictly with
    `VisitDate#DAY_INPUT_FORMATTER` (`d/M/yyyy`), so impossible dates and dates followed by a time are rejected and the
    error names the invalid value.
 1. If no prefix was given, it shows the usage message; otherwise it wraps the predicates in a
@@ -738,76 +761,106 @@ advice also suits phone, address, tag, visit date, and note searches.
 preserving all other patient fields. This separates advancement from `edit`, which corrects the current datetime
 without adding history. The [User Guide](UserGuide.md#scheduling-the-next-visit-next) provides syntax and errors.
 
-Eligibility requires `current <= now` and `current < requested`. The requested visit may be in the past, which
-supports entering follow-up visits retrospectively without inventing a temporary future appointment. Combined
-with the existing record chronology, this preserves `history < old current < requested`. An unchanged datetime
-keeps its specific error; an earlier datetime reports that it must be later than the current recorded visit.
+For visit datetimes `A < B < C`, the transition is:
 
-The parser passes an injected clock to the command. Each eligibility check reads it once in the local time zone.
-Comparisons retain seconds and nanoseconds. An appointment at or before now requires confirmation; a future
-appointment does not require the time warning. Fixed clocks make boundary tests deterministic.
+| Operation | Before | After |
+| --- | --- | --- |
+| `next INDEX C` | History `[A]`, current `B` | History `[A, B]`, current `C` |
 
-Before replacement, the command rejects an unchanged datetime and checks the complete candidate record against
-all other stored patients, including hidden patients and excluding the original record. The shared
-[visit-date uniqueness rule](#duplicate-patient-identity-visit-dates-and-name-confirmation) applies.
+Here, `C` represents the full requested datetime, not a literal command argument.
 
-If the requested visit is at or before now, or moves to a different day with `Model.MAX_VISITS_PER_DAY` (7) or more
-current visits, the command combines all applicable warnings in one `CommandInputRequest` before mutating.
-A later visit on the same day skips only the capacity warning, because it replaces that day's visit.
-On confirmation, the command rechecks eligibility using a fresh clock reading, verifies that the original record
-is unchanged, and repeats the conflict check before replacing the patient. If a future appointment reaches or passes
-now while a capacity prompt is open, it returns a new prompt including the time warning; only a subsequent `y`
-applies that operation. Prompts and cancellation do not mutate, save, or refresh the details panel.
+**Validation.** The command resolves the displayed index and requires `current <= now` and `current < requested`.
+An unchanged datetime has a specific error. The requested visit may be in the past, supporting retrospective entry.
+Together with the existing chronology, these checks keep every history entry earlier than the new current datetime.
+The complete candidate record is checked against all other stored patients, including hidden patients and excluding
+its original record, using the shared
+[visit-date uniqueness rule](#duplicate-patient-identity-visit-dates-and-name-confirmation).
 
-The following sequence diagram focuses on command execution, model updates, and saving through `Storage` for `next`
-when no confirmation is required. Command parsing and object construction are omitted; see the
-[Logic overview](#logic-component) for parser routing and lifecycles. Validation, conflict checking, and the optional
-confirmation branch are also omitted.
+**Warnings and confirmation.** A requested visit at or before now, or a move to a different day with
+`Model.MAX_VISITS_PER_DAY` (7) or more current visits, produces a `CommandInputRequest` combining all applicable
+warnings. Moving later on the same day skips only the capacity warning because it replaces that day's visit.
+The parser supplies an injected clock; each eligibility check reads it once, using the clock's time zone and retaining
+seconds and nanoseconds. Production uses the local time zone; fixed clocks make boundary tests deterministic.
+
+On confirmation, the command reads the clock again, rechecks eligibility, verifies that the captured patient is
+unchanged, and repeats the conflict check. If the requested visit has newly reached or passed now while a capacity
+prompt was open, it requests confirmation again with the time warning included. Only a subsequent `y` applies the
+change. See [follow-up input handling](#follow-up-command-line-input-and-confirmation) for response handling.
+
+**Replacement and persistence.** Successful execution replaces the captured patient and returns a
+`CommandResult` selecting the replacement. Saving, details refresh, preservation of the active filter and sort,
+and recovery from save failures follow the [shared visit-change flow](#saving-and-displaying-visit-changes).
+Prompts and cancellation do not mutate, save, or refresh details. A visit-time conflict instead supplies the conflicting
+patient through `CommandException` for display, without changing the list.
+
+The activity diagram summarizes the warning decision. It starts after parsing and initial validation; the sequence
+diagram that follows shows the successful save path.
+
+<puml src="diagrams/NextConfirmationActivityDiagram.puml" alt="Next visit warnings, cancellation, and time-sensitive reconfirmation" width="800" />
+
+The sequence diagram shows successful `next` execution without confirmation. Parsing, object construction,
+validation, and warning branches are omitted; see the [Logic overview](#logic-component) for parser routing.
+
+In both visit sequence diagrams, `modelState` denotes the snapshot captured by `LogicManager` before executing
+that input. Snapshot creation and private routing helpers inside `LogicManager` are omitted. `Model` and `Storage`
+lifelines represent objects through their interfaces; their internal calls are outside the diagrams' scope.
 
 <puml src="diagrams/NextSequenceDiagram.puml" alt="Successful execution of next when no confirmation is required" width="800" />
 
-A visit-time conflict supplies the conflicting patient through `CommandException` so `MainWindow` displays that
-record without changing the displayed list. If no further visit is planned, the current datetime remains stored
-after it becomes past; no attendance or completion state is updated.
 Manual cases appear under [Testing the next command](#testing-the-next-command).
 
 ### Restoring the previous visit
 
 `PrevCommand` discards the current datetime and replaces it with the latest previous datetime, removing the
-restored datetime from the previous-date list. There is no redo. It copies all other fields from the selected
-patient's latest record, preserving intervening edits.
+restored datetime from the previous-date list. There is no redo. It copies all other fields from the record captured
+when `prev` is submitted, preserving edits made before that request. Changes made while confirmation is pending
+invalidate the captured record instead of being silently overwritten.
 The [User Guide](UserGuide.md#restoring-the-previous-visit-prev) includes syntax, feedback, and a running example.
 
-There is no clock eligibility check: rollback must allow immediate correction of mistaken advancement, even while
-the current or restored datetime is still in the future. Every valid rollback first returns a
-`CommandInputRequest` containing the selected patient's current name and phone, the restored and discarded
-datetimes, and the confirmation instruction. The initial execution does not mutate, reset, refresh, or save anything.
+Using the same `A < B < C` notation:
 
-The shared [follow-up input handling](#follow-up-command-line-input-and-confirmation) trims the response and
-compares it to `y` case-insensitively; other responses are consumed as cancellation. The shared
-[visit-change persistence flow](#saving-and-displaying-visit-changes) describes when the confirmed mutation is
-saved. For this feature, the request captures the immutable selected `Person` and invokes a private rollback helper
-only after confirmation. The helper checks the stored person list with full `Person.equals` semantics before creating
-the replacement. If an intervening edit or deletion changed the record, it throws the stale-selection error without
-changing the replacement record or displayed list. Otherwise it calls `createUpdatedPerson` and replaces the captured
-patient while retaining the active filter and sort comparator.
+| Operation | Before | After |
+| --- | --- | --- |
+| `prev INDEX`, then `y` | History `[A, B]`, current `C` | History `[A]`, current `B`; discard `C` |
 
-Empty previous dates produce a `CommandException` before the private rollback helper runs. The helper's assertion
-documents that internal precondition, while user-input validation remains effective with assertions disabled.
-The replacement contains only dates from the original record, so it cannot introduce a new cross-patient datetime
-conflict. The model still enforces chronology and uniqueness on replacement.
+**Selection and confirmation.** The command resolves the displayed index and rejects empty history with a
+`CommandException`. Otherwise it captures the immutable selected `Person` and returns a `CommandInputRequest`
+showing the patient's name and phone, the datetime to restore, and the datetime to discard. No clock restriction
+applies: immediate correction must remain possible even when either datetime is in the future.
 
-The following sequence diagram focuses on confirmation and successful execution of `prev` for a patient with visit
-history. The first command returns a confirmation request without changing or saving patient data. The second input,
-`y`, invokes the rollback on the same captured patient, then saves through `Storage`. Command parsing and object
-construction are omitted; see the [Logic overview](#logic-component) for parser routing and lifecycles. Error and
-cancellation paths are also omitted. `capturedPatient`
-denotes the selected `Person` retained by the request; `updatedPerson` is its replacement after rollback.
+The initial request does not mutate, save, or refresh details. The shared
+[follow-up input handling](#follow-up-command-line-input-and-confirmation) accepts trimmed, case-insensitive `y`;
+other responses are consumed as cancellation.
+
+**Confirmed restoration.** The private `restorePreviousVisit` helper checks the stored person list using full
+`Person.equals` semantics. An intervening edit or deletion causes a stale-selection error, preventing an older
+captured record from overwriting newer data. Otherwise, `createUpdatedPerson` moves the last history entry into the
+current field, removes it from history, and preserves all other fields through `Person.copyWithVisitDates`.
+
+The assertion in `createUpdatedPerson` documents the nonempty-history precondition; user-input validation in
+`execute` remains effective with assertions disabled. Restoration uses only datetimes from the original record,
+so it introduces no new cross-patient conflict. The model still enforces chronology and uniqueness on replacement.
+Saving, details refresh, preservation of the active filter and sort, and save-failure recovery follow the
+[shared visit-change flow](#saving-and-displaying-visit-changes).
+
+The sequence diagram shows the initial request followed by confirmed restoration and saving. Parsing, construction,
+errors, and cancellation are omitted. Snapshot and interface notation follow the `next` sequence diagram above.
+`capturedPatient` is the selected `Person`; `updatedPerson` is its replacement. The arrow from
+`CommandInputRequest` to `PrevCommand` abbreviates delegation through the response handler and confirmed-action
+lambdas to the private helper on the original command object.
 
 <puml src="diagrams/PrevSequenceDiagram.puml" alt="Two-stage successful execution of prev with confirmation and persistence" width="800" />
 
 Manual checks for repeated rollback, subsequent advancement, and persistence appear under
 [Testing the prev command](#testing-the-prev-command).
+
+#### Visit-change design decisions
+
+| Decision | Reason and trade-off |
+| --- | --- |
+| Capture an immutable patient for confirmation, rather than resolving the displayed index again. | Filtering or sorting must not redirect an approved change to another patient. Comparing the complete captured record also prevents overwriting newer edits, at the cost of requiring a fresh request after any change to that patient. |
+| Store previous datetimes on the patient, rather than storing whole patient snapshots. | `prev` rolls back visit dates while preserving edits to contact and medical fields. This keeps history small, but intentionally provides neither general undo nor per-visit notes. |
+| Use an injected clock for `next` and calendar labels. | Production uses local time; tests can exercise exact boundaries without waiting or changing the machine clock. Calendar labels use dates, while scheduling eligibility uses full datetimes. |
 
 ### Follow-up command-line input and confirmation
 
@@ -853,12 +906,12 @@ execution remain available. Before recording, `CommandBox` checks whether `Logic
 `CommandInputRequest`; follow-up responses are excluded from command history because they are input for an existing
 command rather than new commands.
 
-The history position starts immediately after the newest entry. On the first Up arrow press, `CommandHistory` saves
-the current command box text as a draft and returns the newest command. Further Up presses move towards older
-commands and stop at the oldest entry. Down presses move towards newer commands; moving past the newest entry restores
+The history position starts immediately after the newest entry. On the first <kbd>Up</kbd> arrow press, `CommandHistory` saves
+the current command box text as a draft and returns the newest command. Further <kbd>Up</kbd> presses move towards older
+commands and stop at the oldest entry. <kbd>Down</kbd> presses move towards newer commands; moving past the newest entry restores
 the saved draft. A new ordinary submission resets the position to immediately after the newest entry.
 
-`CommandBox` handles JavaFX key-pressed events for the Up and Down arrow keys, replaces the text, positions the caret
+`CommandBox` handles JavaFX key-pressed events for the <kbd>Up</kbd> and <kbd>Down</kbd> arrow keys, replaces the text, positions the caret
 after the recalled text, and consumes the event so the key does not also move the caret. Other keys retain the usual
 `TextField` behavior. The history belongs only to the current `CommandBox`, so it is discarded when the application
 closes.
@@ -1018,6 +1071,9 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* * *`  | doctor                  | schedule a patient's following visit                                     | plan their follow-up care                                                             |
 | `* * *`  | doctor                  | find patients whose next visit date is today                              | be reminded who is due for a visit                                                      |
 | `* *`    | doctor                  | restore the latest previous visit datetime                               | correct a visit-date advancement while keeping changes to the patient's other details |
+| `* *`    | doctor                  | record a follow-up visit whose scheduled time has already passed         | enter visit records late without inventing a future appointment |
+| `* *`    | keyboard user           | move between the main panels and scroll patient details using keys       | review long records without switching to the mouse |
+| `* *`    | new user                | consult a command reference while keeping my unfinished input            | check syntax without losing what I have typed |
 | `* *`    | doctor                  | add or update notes about a patient's medical conditions                  | prepare for future visits                                                               |
 | `* *`    | doctor                  | assign a priority level to a patient                                      | tell at a glance which patients need closer attention                                   |
 | `* *`    | doctor                  | sort my patients by their next visit date                                 | plan upcoming visits while retaining past schedules for reference                       |
@@ -1269,7 +1325,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
 * 1d. The requested datetime is at or before now, or is on a different day with at least seven current appointments.
 
-    * 1d1. Doc combines all applicable time and busy-day warnings and asks for confirmation once.
+    * 1d1. Doc combines all applicable time and busy-day warnings into one confirmation prompt.
     * 1d2. The doctor confirms the warning.
     * 1d3. Doc rechecks eligibility, the unchanged patient, and the unoccupied slot, then resumes step 2.
 
@@ -1292,6 +1348,19 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
         * 1d3b1. Doc identifies the conflict and rejects the request.
 
           Use case resumes at step 1.
+
+    * 1d3c. The selected patient's record changed or was removed before approval.
+
+        * 1d3c1. Doc rejects the stale request and asks the doctor to run `next` again.
+
+          Use case resumes at step 1.
+
+* 2a. Saving fails.
+
+    * 2a1. Doc restores the in-memory record and list context, retains the previously displayed details, and reports
+      the storage error. The doctor resolves the storage problem before submitting a new request.
+
+      Use case ends.
 
 **Use case: UC07 - Restore the previous visit datetime**
 
@@ -1339,6 +1408,13 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 * 4a. The captured patient changed or no longer exists before confirmation.
 
     * 4a1. Doc reports the stale-selection error without changing the replacement record or displayed list.
+
+      Use case ends.
+
+* 5a. Saving fails.
+
+    * 5a1. Doc restores the in-memory state from before confirmation and reports the storage error. The doctor
+      resolves the storage problem, then starts a new `prev` request; the previous confirmation has been consumed.
 
       Use case ends.
 
@@ -1427,16 +1503,16 @@ for an execution on 26 October 2026 is:
 | `F3` | `29/10/2026 0900` | Nextbeta's initial current datetime. |
 | `F4` | `30/10/2026 0900` | Intervening-edit datetime for rollback. |
 
-The required ordering is `P0 < P1 < P2 < actual now < F1 < F2 < F3 < F4`. `P1`, `P2`, `P3`, and `P4` must be on
+The required ordering is `P0 < P1 < P2 < P3 < P4 < actual now < F1 < F2 < F3 < F4`. All `P` values must be on
 calendar dates before today; `F1` through `F4` must be on dates after today. The example uses yesterday for the past
 values and successive future dates; on another execution date, replace every symbol with a complete unused
 `d/M/yyyy HHmm` value that preserves the same ordering and local-date relationship. `D` below means a calendar date
 only, so replace `D 1700` with a full value such as `2/11/2026 1700` before submitting it. Symbols are explanatory
 labels, not executable command arguments.
 
-The continuous `next` route and the rollback route deliberately share the sentinel and Nextalpha/Nextbeta fixture. The
-JSON, capacity, calendar, and Help checks are independent cases; preserve other patients and omitted optional fields when a
-case does not say to reset them. Successful `edit`, `next`, and `prev` commands preserve the active filter and sort
+The `next` and `prev` routes use the same sentinel and Nextalpha/Nextbeta fixture; the `prev` section also provides
+a standalone setup. JSON, capacity, calendar, and Help checks are independent cases; preserve other patients and
+omitted optional fields when a case does not say to reset them. Successful `edit`, `next`, and `prev` commands preserve the active filter and sort
 comparator, although the updated patient may move or disappear when those rules are reevaluated. Their patient card
 and details panel refresh to the replacement record.
 
@@ -1465,15 +1541,24 @@ Use a disposable copy of Doc with disposable patient data. Do not modify the per
 
 1. Clear the disposable list with `clear`, then `y`. Add a patient with
    `add n/Alpha p/90000001 a/1 Alpha Road vd/1/1/2000 0900`, then run `view 1`.
-1. While Doc stays open, make its `data/doc.json` read-only (on Windows, use the file's Properties dialog).
+1. While Doc stays open, rename the disposable `data/doc.json` file to `saved-doc.json`, then create an empty
+   directory named `doc.json` in the same `data` folder. This blocks replacement of the data-file path.
    Run `next 1 1/1/2099 1000`, using a later supported future datetime if necessary.
    Expected: A save error remains in the response panel. The patient card and details continue to show the original
-   appointment, and the saved JSON still contains the original visit.
-1. Restore write access. Run `delete 1`, then `y`.
+   appointment, and `saved-doc.json` still contains the original visit.
+1. Remove only the empty `doc.json` directory and rename `saved-doc.json` back to `doc.json`.
+   Run `delete 1`, then `y`.
    Expected: Deletion succeeds, both the list and details panel are empty, and the saved JSON has no patients.
-1. Repeat the setup, make the file read-only, then run `delete 1` and `y`.
-   Expected: A save error appears, and the patient remains in both the list and details panel. Restore write access
-   before continuing.
+1. Add the patient again with `add n/Alpha p/90000001 a/1 Alpha Road vd/1/1/2000 0900`, then run `view 1`.
+   While Doc stays open, rename `data/doc.json` to `saved-doc.json` and create an empty directory named `doc.json`
+   in the same `data` folder. Run `delete 1`, then `y`.
+   Expected: A save error appears, the patient remains in both the list and details panel, and `saved-doc.json`
+   still contains the original patient record.
+1. Remove only the empty `doc.json` directory and rename `saved-doc.json` back to `doc.json` before continuing or
+   closing Doc.
+
+Both failure cases use the blocked-path setup because saving uses atomic replacement: a read-only file alone may
+still permit replacement through the parent directory. Never change permissions on real records.
 
 `MainWindowSaveFailureTest` automates the command-entry, display, and persistence assertions with injected
 permission and I/O failures, including `add`, `edit`, confirmed `prev`, deletion, clearing, and unchanged details
@@ -1486,9 +1571,9 @@ the first launch loads the sample data. The route below deliberately clears it b
 the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Patient` at index 2.
 
 1. **Reach an empty details panel:** Run `clear`, then submit `y` at the confirmation prompt.<br>
-   Expected: The patient list is empty and the patient-details panel is blank. Click the command box and press Tab four
+   Expected: The patient list is empty and the patient-details panel is blank. Click the command box and press <kbd>Tab</kbd> four
    times. Focus should move through command box, response panel, patient list, and patient details, then wrap to the
-   command box. From the command box, press Shift+Tab four times and confirm the reverse cycle. The empty details panel
+   command box. From the command box, press <kbd>Shift</kbd>+<kbd>Tab</kbd> four times and confirm the reverse cycle. The empty details panel
    remains reachable and has a visible outline.
 1. **Create repeatable records:** Submit these commands in order:
 
@@ -1498,29 +1583,40 @@ the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Pa
    ```
 
    Each successful `add` may display the newly added patient. Run `view 2` before the scrolling checks so the long
-   `Beta Patient` record is definitely displayed and the list indices are known.
-1. **Details scrolling and focus outline:** Use Tab or Shift+Tab to focus patient details. Confirm that the outline
+   `Beta Patient` record is definitely displayed and the list indices are known. Reduce the window height until its
+   details overflow and the vertical scrollbar appears before testing scrolling.
+1. **Details scrolling and focus outline:** Use <kbd>Tab</kbd> or <kbd>Shift</kbd>+<kbd>Tab</kbd> to focus patient details. Confirm that the outline
    surrounds the whole panel rather than an individual label or scrollbar. Press <kbd>Up</kbd>, <kbd>Down</kbd>,
    <kbd>Page Up</kbd>, <kbd>Page Down</kbd>, <kbd>Home</kbd>, and <kbd>End</kbd> separately.<br>
-   Expected: Up and Down move a small amount, Page Up and Page Down move about one viewport, and Home and End reach the
+   Expected: <kbd>Up</kbd> and <kbd>Down</kbd> move a small amount, <kbd>Page Up</kbd> and <kbd>Page Down</kbd> move about one viewport, and <kbd>Home</kbd> and <kbd>End</kbd> reach the
    top and bottom without overscrolling. Mouse-wheel scrolling still works.
 1. **Fitting content:** Run `view 1`, then enlarge the window vertically until Alpha Patient's details fit without a
    scrollbar. Focus patient details and press each of the six scrolling keys.<br>
    Expected: The details remain unchanged because there is no content to scroll.
-1. **View reset and command focus:** Run `view 2`, focus patient details, and press End. Return to the command box and
+1. **View reset and command focus:** Run `view 2`, focus patient details, and press <kbd>End</kbd>. Return to the command box and
    run `view 2` again. Repeat after running `view 1`, then run `view 2` once more.<br>
    Expected: Every successful view starts Beta Patient or Alpha Patient at the top, including the repeated same-patient
    view and the switch between long and short records. After each command entered in the command box, focus remains in
    the command box.
-1. **Empty-panel behavior after clearing:** Run `clear`, submit `y`, and focus the blank details panel through the Tab
+1. **Empty-panel behavior after clearing:** Run `clear`, submit `y`, and focus the blank details panel through the <kbd>Tab</kbd>
    cycle. Press each scrolling key separately.<br>
-   Expected: No key changes the blank panel, and Tab/Shift+Tab still move between all four sections.
-1. **Existing shortcuts:** Focus the command box and confirm <kbd>Up</kbd> and <kbd>Down</kbd> still recall command
+   Expected: No key changes the blank panel, and <kbd>Tab</kbd>/<kbd>Shift</kbd>+<kbd>Tab</kbd> still move between all four sections.
+1. **Existing shortcuts:** The preceding step cleared the list. Refill it with these disposable records:
+
+   ```text
+   add n/Keyboard Alpha p/90000001 a/1 Test Road vd/1/12/2099 0900
+   add n/Keyboard Beta p/90000002 a/2 Test Road vd/2/12/2099 0900
+   add n/Keyboard Gamma p/90000003 a/3 Test Road vd/3/12/2099 0900
+   add n/Keyboard Delta p/90000004 a/4 Test Road vd/4/12/2099 0900
+   ```
+
+   Focus the command box and confirm
+   <kbd>Up</kbd> and <kbd>Down</kbd> still recall command
    history. Focus the patient list and move the selection down through at least four patients, then back up. Confirm
    that each selected patient card remains fully visible and the list does not jump when the selected card is already
-   visible. Leave unfinished text in the command box, traverse with Tab and Shift+Tab, and confirm the text and
-   displayed patient do not change. Repeat F1, Help, and mouse-scrolling checks; their existing behavior should be
-   unchanged.
+   visible. Leave unfinished text in the command box, traverse with <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd>, and confirm the text and
+   displayed patient do not change. Check mouse scrolling in the list and details panel, then follow the
+   [Help lifecycle checks](#help-window-lifecycle) for <kbd>F1</kbd> and Help regressions.
 
 ### Dates of birth
 
@@ -1637,16 +1733,19 @@ Use a disposable data file. Start with no patients and use available visit slots
 
 ### Help window lifecycle
 
-1. **Offline access:** Open Help with F1 while disconnected from the Internet.<br>
+#### Content and layout checks
+
+1. **Offline access:** Open Help with <kbd>F1</kbd> while disconnected from the Internet.<br>
    Expected: The command directory remains available, and no browser opens automatically.
 
 1. **Command directory:** Open Help at its default size.<br>
    Expected: **Manage patients and visits**, **Find and view patients**, and **Application controls** each appear once
-   in the documented order. Every command has its short description, syntax template, optional-field rows where
-   applicable, and notation legend. The complete directory is reachable using the available navigation controls.
+   in the documented order. Every command has its short description, syntax template, and optional-field rows where
+   applicable. One shared notation legend appears before the groups. The complete directory is reachable using the
+   available navigation controls.
 
 1. **Navigation hint:** Inspect the hint at the top of the command list.<br>
-   Expected: The Up, Down, Tab, Shift, and Escape key labels are visible as non-interactive visual keycaps. They do
+   Expected: The <kbd>Up</kbd>, <kbd>Down</kbd>, <kbd>Tab</kbd>, <kbd>Shift</kbd>, and <kbd>Escape</kbd> key labels are visible as non-interactive visual keycaps. They do
    not receive focus or activate an action when clicked.
 
 1. **Small window:** Resize Help to its minimum size and scroll through the list. Repeat after a guide action
@@ -1654,31 +1753,44 @@ Use a disposable data file. Start with no patients and use available visit slots
    Expected: Several command entries remain readable, all groups can be reached by scrolling, and text wraps
    without horizontal clipping. The URL, feedback, and buttons remain visible below the list.
 
+1. **Keyboard scrolling:** Close Help, focus the result display, and press <kbd>F1</kbd>. Resize Help to its minimum size. Use <kbd>Down</kbd> and
+   <kbd>End</kbd> to reach the later commands, then <kbd>Home</kbd> and <kbd>Up</kbd> to return towards the top.<br>
+   Expected: Help opens with focus on the command list, and the keys allow every group to be reached.
+
+1. **Button navigation:** Open Help. Press <kbd>Tab</kbd> until **Open User Guide** is focused, then press <kbd>Shift</kbd>+<kbd>Tab</kbd> to return
+   to the command list. Press <kbd>Tab</kbd> through **Open User Guide** and **Copy URL** until **Close** is focused, then press
+   <kbd>Space</kbd>.<br>
+   Expected: Focus moves between the list and buttons, focused buttons have a visible outline, and <kbd>Space</kbd> activates Close.
+
+1. **Display scaling:** Repeat the layout and keyboard checks at 1920×1080 with 100% and 125% OS scaling, and at
+   1280×720 with 150% OS scaling.<br>
+   Expected: Text and controls remain readable and accessible after resizing. Scene-layout tests do not replace
+   these OS-level checks.
+
+#### Window and focus checks
+
 1. **Window reuse:** With no confirmation or follow-up prompt pending, enter `help`. Move and resize Help,
    then enter `help add` and `help 123` in the main window.<br>
    Expected: Each request focuses the same window without changing its size or position. Extra arguments are ignored.
 
-1. **Minimize and restore:** Minimize Help using its native control. Request it again using `help`, F1, and
+1. **Minimize and restore:** Minimize Help using its native control. Request it again using `help`, <kbd>F1</kbd>, and
    **Help → Help**, minimizing it before each attempt.<br>
    Expected: Help minimizes independently, the main window stays usable, and each request restores and focuses the
    existing window.
 
-1. **Draft preservation:** Type `find Be` without submitting it, select part of the text, and press F1. Close Help
-   using **Close**, **Escape**, and the native close control, reopening it for each attempt.<br>
+1. **Draft preservation:** Type `find n/Be` without submitting it, select part of the text, and press <kbd>F1</kbd>. Close Help
+   using **Close**, <kbd>Escape</kbd>, and the native close control, reopening it for each attempt.<br>
    Expected: Focus returns to the command box with the draft unsubmitted and its caret and selection restored.
 
-1. **Keyboard scrolling:** Focus the result display and press F1. Resize Help to its minimum size. Use Down and
-   End to reach the later commands, then Home and Up to return towards the top.<br>
-   Expected: Help opens with focus on the command list, and the keys allow every group to be reached.
+1. **Shutdown:** Open Help and exit Doc using `exit`, **File → Exit**, and the main window's native close control,
+   restarting between attempts. Repeat with Help minimized.<br>
+   Expected: Both windows close; no Help window remains.
 
-1. **Button navigation:** Open Help. Press Tab until **Open User Guide** is focused, then press Shift+Tab to return
-   to the command list. Press Tab through **Open User Guide** and **Copy URL** until **Close** is focused, then press
-   Space.<br>
-   Expected: Focus moves between the list and buttons, focused buttons have a visible outline, and Space activates Close.
+#### Pending-confirmation checks
 
-1. **Help during confirmation:** Use disposable patient data with at least one patient.
+1. **Help during confirmation:** Launch Doc with disposable patient data containing at least one patient.
 
-   1. Enter `delete 1`, then type `y` without submitting it. Open and dismiss Help using F1 and the Help menu.<br>
+   1. Enter `delete 1`, then type `y` without submitting it. Open and dismiss Help using <kbd>F1</kbd> and the Help menu.<br>
       Expected: The confirmation prompt and draft remain unchanged, with no deletion or data-file write.<br>
       Cleanup: Replace the draft with `n` and submit it to cancel.
 
@@ -1686,21 +1798,12 @@ Use a disposable data file. Start with no patients and use available visit slots
       Expected: Deletion is cancelled without opening Help or changing patient data. The typed input is treated
       as the confirmation response.
 
-1. **Shutdown:** Open Help and exit Doc using `exit`, **File → Exit**, and the main window's native close control,
-   restarting between attempts. Repeat with Help minimized.<br>
-   Expected: Both windows close; no Help window remains.
-
-1. **Display scaling:** Repeat the layout and keyboard checks at 1920×1080 with 100% and 125% OS scaling, and at
-   1280×720 with 150% OS scaling.<br>
-   Expected: Text and controls remain readable and accessible after resizing. Scene-layout tests do not replace
-   these OS-level checks.
-
 ### User Guide actions
 
 Open Help for these checks.
 
 1. **Open the guide:** With an Internet connection and a default browser configured, choose **Open User Guide**.
-   Repeat using Tab and Space, then Enter on Windows and Linux.<br>
+   Repeat using <kbd>Tab</kbd> and <kbd>Space</kbd>, then <kbd>Enter</kbd> on Windows and Linux.<br>
    Expected: The browser opens the displayed URL. Doc reports a launch request, not confirmation that the page loaded.
 
 1. **Copy the address:** Choose **Copy URL** (replacing the current clipboard contents), then paste into a scratch
@@ -1743,13 +1846,13 @@ Start with the seven sample patients by launching Doc from an empty folder. Run 
    | `find george` | A reminder to put a prefix before keywords, with find usage. |
    | `find n/` | `Give at least one keyword after n/.` |
    | `find n/george n/priya` | The duplicate-prefix error for `n/`. |
-   | `find p/9123abc` | `Phone keywords should only contain digits.` |
+   | `find p/9123abc` | `Phone keywords may contain only digits, '+', and '-', and must include at least one digit.` |
    | `find vd/31/2/2026` | `"31/2/2026" is not a valid visit date.` with the date format. |
    | `find vd/15/10/2026 0900` | `"0900" is not a valid visit date.` with the date format. |
 
    Expected: Each rejected command leaves the displayed list unchanged.
 
-1. Paste `find n/george`, a tab character, and `p/0000` into the command box as one command, then press Enter.<br>
+1. Paste `find n/george`, a tab character, and `p/0000` into the command box as one command, then press <kbd>Enter</kbd>.<br>
    Expected: `No patients found.`, because the tab separates two fields and George Miller's phone does not match.
 
 ### Sorting visits by date
@@ -1787,17 +1890,20 @@ displayed order, preserving the usual behavior of `list` and `find`.
 1. Run `agenda 27/10/2026`.<br>
    Expected: Visits from 27 October through 2 November 2026 appear chronologically.
 1. Run `agenda 27/10/2026 1`.<br>
-   Expected: Only visits on 27 October appear, including visits at 0000 and 2359.
+   Expected: Only the two visits on 27 October appear, at 0900 and then 1800.
 1. Run `find` for a patient outside the agenda range, then run `agenda 27/10/2026 7`.<br>
    Expected: The previous search is replaced with every visit in the agenda range.
 1. Run `list`.<br>
    Expected: All patients reappear in stored order.
 1. Run `agenda`, `agenda 31/2/2026`, `agenda 27/10/2026 0`, `agenda 27/10/2026 366`, and
    `agenda 27/10/2026 7 extra`.<br>
-   Expected: Each command shows the agenda usage message and leaves the displayed list unchanged.
-1. Run `agenda 31/12/9999 1`, then `agenda 31/12/9999 2`.<br>
-   Expected: The first shows visits on 31 December 9999; the second reports that the date range must end on or before
-   31/12/9999 and leaves the displayed list unchanged.
+   Expected: Each command shows its reason (`Invalid command format!`, `"31/2/2026" is not a valid start date.`,
+   `Days must be between 1 and 365.` twice, then `Give only a start date and an optional number of days.`)
+   followed by the agenda usage, and leaves the displayed list unchanged.
+1. Run `agenda 31/12/2099 1`, then `agenda 31/12/2099 2`.<br>
+   Expected: The first is accepted and shows any visits on 31 December 2099 (`No visits scheduled from 31/12/2099 to
+   31/12/2099.` if there are none); the second reports that the agenda date range must end on or before 31/12/2099
+   and leaves the displayed list unchanged.
 
 ### Distinguishing past visits in the patient list
 
@@ -1834,8 +1940,8 @@ Use a disposable data file and close Doc before editing it. For the first patien
 `10/10/2026 1000` and add `"previousVisitDates": ["1/10/2026 1000", "2/10/2026 1000"]`.
 Give every other patient's current and previous dates different datetimes.
 
-1. Reopen Doc and run `edit 1 note/Review medication`, then `view 1`. Expect `Previous visit dates:` below the current
-   datetime, with `2/10/2026 1000` above `1/10/2026 1000`, followed by the updated note. Close Doc and inspect the
+1. Reopen Doc and run `edit 1 note/Review medication`, then `view 1`. Expect the updated note in **Additional notes**
+   and, below it, **Visit history** with `2/10/2026 1000` above `1/10/2026 1000`. Close Doc and inspect the
    file. Expect the same dates in their original oldest-first order and the updated note.
 1. Reopen Doc and try `edit 1 vd/2/10/2026 1000`, then `edit 1 vd/1/10/2026 1000`. Expect a chronology error with
    `2/10/2026 1000` identified as the latest previous visit. The record, saved file, and displayed list stay unchanged.
@@ -1848,8 +1954,9 @@ Give every other patient's current and previous dates different datetimes.
    after each separate edit. Expect each form to load with empty previous dates.
 1. With Doc closed, test a non-array value, a null array entry, a malformed datetime, reversed dates, equivalent
    duplicate datetimes, a previous date equal to the current date, and a datetime shared by two patients.
-   Expect the existing invalid-data handling for each file. Do not run saving commands after a load failure:
-   the existing startup fallback can overwrite the file with an empty list. Restore the disposable fixture
+   Expect a startup warning and an empty list. Check the backup location reported in the warning; if backup failed,
+   preserve a copy manually. Do not run saving commands after a load failure, as they can overwrite the active file
+   with an empty list. Restore the disposable fixture
    between cases. Removing or nulling the required `visitDate` remains invalid even with populated previous dates.
 
 ### Adding patients with duplicate names
@@ -1938,12 +2045,19 @@ nonempty notes, and record the selected patient's existing details before editin
 
 ### Testing the next command
 
-This is the continuous `next`-command route. Use a new disposable data folder and the common fixture from
-[Manual-testing conventions and disposable fixtures](#manual-testing-conventions-and-disposable-fixtures). In the
-illustration, use the concrete values in the commands below; on another execution date, replace every datetime with a
-full unused `d/M/yyyy HHmm` value that preserves `P0 < P1 < P2 < actual now < F1 < F2 < F3 < F4`.
+Use a new disposable data folder and the common fixture from
+[Manual-testing conventions and disposable fixtures](#manual-testing-conventions-and-disposable-fixtures).
+The concrete commands assume an execution on **26 October 2026**. Before testing on another date, choose replacements
+for the table's past and future datetimes and use them consistently in commands and expected results. Do not change
+the operating-system clock.
 
-1. Launch Doc from the disposable folder, run `clear`, and enter `y`. Expect an empty patient list before continuing.
+#### Main next route
+
+Follow these steps in order. For each rejection, check that patient data, the saved JSON, and the displayed list
+remain unchanged. A conflict may display the conflicting patient in the details panel.
+
+1. Launch Doc from the disposable folder, run `clear`, and enter `y` if confirmation is requested.
+   Expect an empty patient list before continuing.
 
 1. Add the three patients in this order:
 
@@ -1973,20 +2087,19 @@ full unused `d/M/yyyy HHmm` value that preserves `P0 < P1 < P2 < actual now < F1
    | Command | Expected feedback |
    | --- | --- |
    | `next` | Next usage. |
-   | `next 1` | Missing arguments and usage. |
+   | `next 1` | `Provide an index, date, and time in that order.` with next usage. |
    | `next 0 27/10/2026 0900` | Invalid index syntax and usage. |
-   | `next 2147483648 27/10/2026 0900` | Oversized index error and usage. |
+   | `next 2147483648 27/10/2026 0900` | Index-too-large error with guidance and next usage. |
    | `next 2 27/10/2026 0900` | Index outside the displayed list. |
    | `next 1 25/10/2026 0900` | Unchanged appointment. |
    | `next 1 25/10/2026 0859` | Appointment before the current recorded visit. |
    | `next 1 31/2/2027 0930` | Invalid date. |
    | `next 1 1/11/2026 2400` | Invalid time. |
-   | `next 1 vd/27/10/2026 0900` | Prefix misuse and usage. |
-   | `next 1 27/10/2026 0900 extra` | Extra arguments and usage. |
+   | `next 1 vd/27/10/2026 0900` | `Use next INDEX DATETIME without the vd/ prefix.` with next usage. |
+   | `next 1 27/10/2026 0900 extra` | `Unexpected arguments after the visit time.` with next usage. |
 
-   Each rejection must preserve records, file contents, and the displayed list. Also test today's current local
-   minute, provided it is later than the recorded visit; expect a time warning and cancel with `n`.
-   Repeat the unchanged-date test with equivalent leading zeros when applicable.
+   Also request today's current local minute, provided it is later than the recorded visit; expect a time warning
+   and cancel with `n`.
 
 1. Run `find n/Nextalpha Nextbeta`, then `sort date` again. Run `view 2`, followed by
    `next 2 27/10/2026 0900` (the illustration's `next 2 F1`). Expect Nextalpha's current datetime to become
@@ -2009,13 +2122,19 @@ full unused `d/M/yyyy HHmm` value that preserves `P0 < P1 < P2 < actual now < F1
 1. **Rollback starting state:** Close and reopen the application. Find and view each test patient.<br>
    Expect Nextalpha at `28/10/2026 0900` with saved previous dates `[25/10/2026 0900, 25/10/2026 1000]`, with the
    latter displayed above the former. Expect Nextbeta at `27/10/2026 0900` with previous dates
-   `[25/10/2026 1100]` and every other field preserved. Check the previous-date section below the current datetime
+   `[25/10/2026 1100]` and every other field preserved. Check **Visit history** at the bottom of the details panel
    and the persisted JSON. Re-find the intended patient after every successful mutation. Close Doc, then copy this
    scratch folder's `data/doc.json` into a separate backup folder as `rollback-start-doc.json`.
    Keep this backup outside the active scratch folder as the rollback starting state before running the independent
    cases below.
 
-1. Repeat the conflict case using another patient's previous datetime, loaded through the disposable-file setup in
+#### Independent next scenarios
+
+Run these separately from the main route, using disposable data. Preserve the main route's backup if continuing to
+`prev`. For save-error recovery, use the existing [save-failure tests](#save-failures-and-patient-details).
+
+1. **Hidden history conflict:** repeat the conflict case using another patient's previous datetime, loaded through
+   the disposable-file setup in
    [Loading and validating previous visit dates](#loading-and-validating-previous-visit-dates). Choose a future
    previous datetime and a later current datetime for that other patient, and an eligible current datetime for the
    selected patient. Expect rejection without mutation or saving, including when the other patient is hidden.
@@ -2048,39 +2167,60 @@ reliably reproducible by typing against the system clock.
 
 ### Testing the prev command
 
-Restore the preserved **rollback starting state** from the persistence checkpoint in
-[Testing the next command](#testing-the-next-command) before testing `prev`:
+Choose either setup below. Both produce the same starting state; do not continue from the independent `next`
+scenarios. Use the [common fixture](#manual-testing-conventions-and-disposable-fixtures) date substitutions when
+not testing on **26 October 2026**.
 
-1. Close Doc if it is running.
-1. Copy the preserved `rollback-start-doc.json` over the disposable scratch folder's `data/doc.json`,
-   replacing the active file and retaining the filename `doc.json`.
-1. Relaunch Doc from the same scratch folder. Find and view Nextalpha and Nextbeta to verify the starting records.
+* **Continue from `next`:** with Doc closed, copy the preserved `rollback-start-doc.json` over the disposable
+  folder's `data/doc.json`, then relaunch Doc.
+* **Start independently:** launch Doc in a new writable scratch folder and submit each line below separately.
+  First run `clear` and enter `y` if confirmation is requested. Then submit the following commands; `y` confirms
+  recording the past visit.
 
-Do not continue from either independent capacity case. The restored state should have Nextalpha
-at `28/10/2026 0900` (`F2`) with history `[25/10/2026 0900, 25/10/2026 1000]` (`[P1, P2]`), and Nextbeta at
-`27/10/2026 0900` (`F1`) with history `[25/10/2026 1100]` (`[P3]`). Restore this state before repeating an
-independent rollback variation. On another execution date, substitute the full datetime values from the common fixture
-table. Choose another globally unused future datetime for `F4`.
+  ```text
+  add n/Sentinel Patient p/80234567 a/1 Sentinel Road vd/25/10/2026 0800
+  add n/Nextalpha Patient p/81234567 a/10 Test Road vd/25/10/2026 0900 e/alpha@example.com note/Keep this note t/priority
+  find n/Nextalpha
+  next 1 25/10/2026 1000
+  y
+  next 1 28/10/2026 0900
+  add n/Nextbeta Patient p/82345678 a/20 Test Road vd/25/10/2026 1100
+  find n/Nextbeta
+  next 1 27/10/2026 0900
+  ```
+
+Find and view both patients to verify the starting state:
+
+| Patient | Current | History in stored order |
+| --- | --- | --- |
+| Nextalpha | `28/10/2026 0900` (`F2`) | `[25/10/2026 0900, 25/10/2026 1000]` (`[P1, P2]`) |
+| Nextbeta | `27/10/2026 0900` (`F1`) | `[25/10/2026 1100]` (`[P3]`) |
+
+`F4` below is `30/10/2026 0900` in the illustration; choose a globally unused future replacement when substituting.
+To repeat the full route, restore the backup or repeat the standalone setup. To repeat an individual step,
+first reproduce that step's stated starting state. Cancellation variations can run consecutively from their shared
+checkpoint because they leave it unchanged.
+
+#### Main prev route
+
+Follow the numbered steps in order. For every valid request, verify that prompting leaves the record, saved JSON,
+displayed context, and details unchanged. Confirm with `y` (also try `Y` with surrounding spaces on a repetition).
+For each rejection or cancellation, verify the same state remains unchanged.
 Keep using the preserved filtered or sorted context after each successful mutation, accounting for any natural move
 or disappearance caused by the updated visit date.
-Record `all/Penicillin; latex alc/Does not drink smk/former` before rollback and check that all three fields
-remain unchanged after each `prev`, including after restarting Doc.
-For every valid `prev`, verify that the first command only shows the confirmation prompt and leaves the record,
-saved JSON, displayed context, and details panel unchanged. Enter `y` (or `Y` with surrounding spaces) to complete
-the rollback; enter any other response to cancel. A cancellation response is consumed and must not execute as a
-command.
 
-1. Run `find n/Nextalpha`, then `view 1`. Try `prev`, `prev 0`, `prev 2147483648`, `prev 1 extra`, and `prev 2`.<br>
-   Expect `Invalid command format!` with usage for `prev`, `Index must be a positive integer.` with usage for
-   `prev 0` and `prev 1 extra`, `Index is too large.` with guidance and usage for `prev 2147483648`,
-   and the invalid-index error for `prev 2`. Verify that patient data, the saved JSON, filtered list, and
-   displayed details remain unchanged.
+1. Run `find n/Nextalpha`, then `view 1`. Try `prev`, `prev 0`, and `prev 2`.<br>
+   Expect usage feedback, a positive-index error with usage, and an index-out-of-range error respectively.
+   Also try `prev 2147483648`; expect the index-too-large error with guidance and prev usage.
+   Try `prev 1 extra`; expect `Unexpected arguments after the index.` with prev usage.
 1. Run `edit 1 vd/30/10/2026 0900 p/84567890 e/updated@example.com a/30 Updated Road all/Penicillin; latex alc/Does not drink smk/former note/Updated before rollback t/followup dob/15/6/1990 bt/A+ ec/Mary Tan, 91234567`,
    then `prev 1` and `y` without finding Nextalpha again.<br>
-   Expect the prompt before confirmation and success even though the replacement datetime is in the future. Verify that feedback identifies `P2` as restored and the replacement datetime
+   Expect the prompt before confirmation and success even though the discarded datetime `F4` is in the future.
+   Verify that feedback identifies `P2` as restored and `F4`
    as discarded, including the time for both. Find and view the patient again: current is `P2`, previous
    dates are `[P1]`, and the updated phone, email, address, note, tags, date of birth, blood type, and emergency
-   contact remain. The replaced current datetime `F4` is discarded rather than restored or appended to previous dates.
+   contact remain, along with allergies, alcohol history, and smoking status. Check these fields after every later
+   restoration, including after restarting. The replaced `F4` is discarded rather than added to history.
    Close and reopen Doc; verify that this state was saved.
 1. Run `find n/Nextalpha`, then `next 1 28/10/2026 0900` (the illustration's `F2`).<br>
    Expect current `F2` and previous dates `[P1, P2]`. Rollback did not retain either discarded future datetime.
@@ -2092,7 +2232,8 @@ command.
    Find and view Nextbeta separately: its record remains unchanged at `F1` with previous dates `[P3]`.
    Run `find n/Nextalpha` and `view 1` before continuing.
 1. With Nextalpha at `P2` and previous dates `[P1]`, run `find n/Nextalpha`, then start a fresh `prev 1` request
-   and respond separately with `n`, an empty response, and `yes` in independent repetitions.<br>
+   and enter `n`. Repeat from the same checkpoint with blank input and `yes`, starting a fresh `prev 1` request
+   for each response.<br>
    Expect `Visit restoration cancelled.` each time, with no model, saved-file, filter, sort, or details change. The
    response is consumed and must not execute as a command.
 1. Repeat the cancellation case with `prev 1` followed by `list`. The `list` response is consumed; submit `list`
@@ -2105,6 +2246,11 @@ command.
    Expect `Patient Nextalpha Patient has no previous visit dates to restore.` Verify that the record, saved file,
    filtered list, sorted order, and details are unchanged. There is no redo command.
 
+For a restoration save-error check, prepare a patient with history using either setup above. Apply the blocked-path
+setup from [Save failures and patient details](#save-failures-and-patient-details), then run `prev INDEX` and confirm.
+Expect a save error with the current visit, history, list context, and displayed details unchanged. Restore the
+data-file path as instructed there before continuing.
+
 ### Viewing one patient
 
 1. Run `list`, followed by `view 1`. Expect the full list to remain on the left and the first patient's complete
@@ -2113,15 +2259,16 @@ command.
    first patient's complete details to appear on the right.
 1. Run `sort date`, followed by `view 1`. Expect the sorted list to remain on the left and the first patient's complete
    details to appear on the right.
-1. View a newly added patient with no previous dates. Expect `Previous visit dates:` immediately below `Visit date`,
-   followed by `No previous visit dates`, with the note below the previous-date section.
+1. View a newly added patient with no previous dates. Expect the current datetime under **Visit details** near the
+   top. Scroll to **Visit history** at the bottom, after **Additional notes**; expect `Previous visit dates`
+   followed by `No previous visit dates`.
 1. View the patient from [Testing the next command](#testing-the-next-command) with previous dates `[P1, P2]`.
    Expect one full datetime per line, with `P2` above `P1` and the time included for both. View the empty-record
    patient again; expect the empty-state text to replace the other patient's dates.
 1. With Doc closed, extend a disposable patient's JSON `previousVisitDates` array with hundreds of globally unused
    datetimes in strictly increasing order, all earlier than that patient's current datetime. Reopen and view the
    patient. Expect the newest previous date at the top. Scroll the details panel to the bottom; expect every entry
-   to be accessible, including the oldest date and the note and tags below it. Repeat with a long note and a narrower
+   to be accessible, including the oldest date. Verify that notes and tags appear before history. Repeat with a long note and a narrower
    window to check wrapping and scrolling.
 1. Record the data file contents, run `view` repeatedly for patients with empty and populated previous dates, and
    close Doc. Expect both the saved dates and their order to remain unchanged.
@@ -2173,37 +2320,37 @@ when midnight passes; another `view` recalculates it.
    1. Restart the application. Enter `list`, then enter `find n/George`.<br>
       Expected: Both commands run normally.
 
-   1. Press the Up arrow key once, then again.<br>
-      Expected: The command box shows `find n/George`, then `list`. The caret is after the recalled text. Further Up arrow
+   1. Press the <kbd>Up</kbd> arrow key once, then again.<br>
+      Expected: The command box shows `find n/George`, then `list`. The caret is after the recalled text. Further <kbd>Up</kbd> arrow
       presses leave `list` displayed.
 
-   1. Press the Down arrow key twice.<br>
-      Expected: The command box shows `find n/George`, then becomes empty. Further Down arrow presses leave it empty.
+   1. Press the <kbd>Down</kbd> arrow key twice.<br>
+      Expected: The command box shows `find n/George`, then becomes empty. Further <kbd>Down</kbd> arrow presses leave it empty.
 
 1. Restoring unfinished text
 
-   1. Type `find n/Geo` without pressing Enter, press the Up arrow key, then press the Down arrow key.<br>
+   1. Type `find n/Geo` without pressing <kbd>Enter</kbd>, press the <kbd>Up</kbd> arrow key, then press the <kbd>Down</kbd> arrow key.<br>
       Expected: A previous command is recalled, then the unfinished text `find n/Geo` is restored exactly.
 
 1. Recording command text
 
-   1. Submit an invalid command containing leading or trailing spaces, then press the Up arrow key.<br>
+   1. Submit an invalid command containing leading or trailing spaces, then press the <kbd>Up</kbd> arrow key.<br>
       Expected: The invalid command is recalled with its original spaces.
 
-   1. Restart the application. Submit `list`, then submit `find n/George` twice. Press the Up arrow key twice.<br>
+   1. Restart the application. Submit `list`, then submit `find n/George` twice. Press the <kbd>Up</kbd> arrow key twice.<br>
       Expected: The command box shows `find n/George`, then `list`. The consecutive duplicate occupies one history
       position.
 
-   1. Restart the application. Submit `list`, `find n/George`, then `list`. Press the Up arrow key three times.<br>
+   1. Restart the application. Submit `list`, `find n/George`, then `list`. Press the <kbd>Up</kbd> arrow key three times.<br>
       Expected: The command box shows `list`, `find n/George`, then `list`. Identical commands separated by another
       command occupy separate history positions.
 
 1. Excluding follow-up responses
 
-   1. Enter `delete 1`, then `n`. Press the Up arrow key once.<br>
+   1. Enter `delete 1`, then `n`. Press the <kbd>Up</kbd> arrow key once.<br>
       Expected: `delete 1` is recalled. The confirmation response `n` is not recalled.
 
-   1. Restart the application and press the Up arrow key before entering any command.<br>
+   1. Restart the application and press the <kbd>Up</kbd> arrow key before entering any command.<br>
       Expected: The command box remains unchanged because command history is not persisted.
 
 ### Deleting a patient
@@ -2226,7 +2373,7 @@ when midnight passes; another `view` recalculates it.
       Expected: No patient is deleted and `list` is consumed as the confirmation response. The result display shows
       `Deletion cancelled.` Entering `list` again lists all patients normally.
 
-   1. Test case: `delete 1`, followed by pressing Enter with an empty command box<br>
+   1. Test case: `delete 1`, followed by pressing <kbd>Enter</kbd> with an empty command box<br>
       Expected: No patient is deleted. The result display shows `Deletion cancelled.`
 
    1. Test case: `delete 0`<br>
@@ -2277,5 +2424,20 @@ when midnight passes; another `view` recalculates it.
 
    1. Restore the backup, assign distinct visit dates and times, and relaunch Doc.<br>
       Expected: Every patient record loads normally.
+
+1. Null patient or tag entries
+
+   1. Use a disposable copy of Doc and close it before editing `data/doc.json`.
+
+   1. Replace the file contents with `{"persons": [null]}`, then relaunch Doc.<br>
+      Expected: Doc opens with an empty patient list and a warning containing
+      `Patient list contains a null patient entry.` The warning names a timestamped backup containing the original
+      file contents. The invalid `doc.json` remains unchanged until a command saves data.
+
+   1. Close Doc and restore a valid patient file. Replace one patient's tags with `"tags": [null]`, then relaunch.<br>
+      Expected: The same recovery occurs, with `Patient's tags contain a null tag entry.` in the warning.
+
+   1. Close Doc, replace that value with `"tags": []`, and relaunch.<br>
+      Expected: The patient loads without a data warning and has no tags.
 
 1. _{ more test cases … }_
