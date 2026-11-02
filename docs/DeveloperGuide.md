@@ -700,7 +700,9 @@ evaluates the predicate for each stored patient whenever the displayed list is r
 1. It rejects text before the first prefix with `MESSAGE_KEYWORDS_NEED_PREFIX` and
    repeated prefixes with the shared duplicate-prefix error.
 1. For each prefix that is present, it splits the value into keywords and creates that field's predicate.
-   An empty prefix such as `n/` is rejected. Phone keywords must be digits. Visit dates are parsed strictly with
+   An empty prefix such as `n/` is rejected. Phone keywords may contain only digits, `+`, and `-`, and must include
+   at least one digit. Phone matching compares only digits: for example, `find p/9123-4567` searches for `91234567`
+   within the stored phone number's digits. Visit dates are parsed strictly with
    `VisitDate#DAY_INPUT_FORMATTER` (`d/M/yyyy`), so impossible dates and dates followed by a time are rejected and the
    error names the invalid value.
 1. If no prefix was given, it shows the usage message; otherwise it wraps the predicates in a
@@ -1743,7 +1745,7 @@ Start with the seven sample patients by launching Doc from an empty folder. Run 
    | `find george` | A reminder to put a prefix before keywords, with find usage. |
    | `find n/` | `Give at least one keyword after n/.` |
    | `find n/george n/priya` | The duplicate-prefix error for `n/`. |
-   | `find p/9123abc` | `Phone keywords should only contain digits.` |
+   | `find p/9123abc` | `Phone keywords may contain only digits, '+', and '-', and must include at least one digit.` |
    | `find vd/31/2/2026` | `"31/2/2026" is not a valid visit date.` with the date format. |
    | `find vd/15/10/2026 0900` | `"0900" is not a valid visit date.` with the date format. |
 
