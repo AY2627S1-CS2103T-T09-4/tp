@@ -24,18 +24,19 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
 
 1. Copy the file to the folder you want to use as the _home folder_ for Doc.
 
-1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar addressbook.jar`.<br>
+1. Open a terminal, `cd` to the folder containing the JAR file, and run `java -jar doc.jar`.<br>
+   If your downloaded JAR has a different filename, replace `doc.jar` with that filename.<br>
    A GUI similar to the one below should appear in a few seconds. When no saved data file exists, Doc starts with
-   seven sample patient records: George Miller, Priya Nair, Aisha Rahman, Marcus Lim, Mei Lin Tan, Daniel Wong, and
-   Noor Aziz.<br>
+   ten sample patient records: Amelia Tan, Benjamin Lim, Chloe Ng, David Koh, Farah Aziz, Grace Wong, two patients
+   named Jordan Lee, Kavita Rao, and Lucas Chen.<br>
    ![Ui](images/Ui.png)
 
-1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
+1. Type a command in the command box and press <kbd>Enter</kbd> to execute it. For example, type **`help`** and press <kbd>Enter</kbd> to open the help window.<br>
    Some example commands you can try:
 
    * `list` : Lists all patients.
 
-   * `add n/John Doe dob/15/6/1990 bt/A+ all/Penicillin; latex alc/Occasional drinking smk/former p/98765432 e/johnd@example.com a/John street, block 123, #01-01 vd/18/9/2026 1000` : Adds a patient named `John Doe` to Doc.
+   * `add n/John Doe p/98765432 a/123 Clementi Road vd/18/9/2026 1000` : Adds a patient named `John Doe` to Doc.
 
    * `delete 3` : Asks for confirmation before deleting the 3rd patient shown in the current list.
 
@@ -113,19 +114,23 @@ a later time on the same day does not trigger this warning.
 
 ### Navigating the main window by keyboard
 
+<img src="images/UiKeyboardNavigation.png" alt="Annotated Doc main window showing the four sections in the Tab cycle." width="842" style="max-width: 100%; height: auto;">
+
+**1** Command box · **2** Response panel · **3** Patient list · **4** Patient-details panel
+
 When the main window is active, press <kbd>Tab</kbd> to move through the four main sections in this order: command box,
 response panel, patient list, and patient-details panel. Pressing <kbd>Tab</kbd> from the patient-details panel returns
 to the command box. Press <kbd>Shift</kbd>+<kbd>Tab</kbd> to move in reverse order, returning from the command box to
 the patient-details panel. A visible light-gray outline surrounds the section that currently contains keyboard focus: command box,
 response panel, patient list, or patient-details panel. The outline remains visible for empty sections; labels and the
-patient-details scrollbar are not separate Tab destinations. The menu bar is outside this four-section cycle.
+patient-details scrollbar are not separate <kbd>Tab</kbd> destinations. The menu bar is outside this four-section cycle.
 
 With the patient-details panel focused, use <kbd>Up</kbd> and <kbd>Down</kbd> to scroll by a small increment,
 <kbd>Page Up</kbd> and <kbd>Page Down</kbd> to scroll by approximately one screenful of details, and <kbd>Home</kbd> and
 <kbd>End</kbd> to move to the top and bottom. These scrolling keys have no effect when the panel is empty or all
 details already fit. <kbd>Up</kbd> and <kbd>Down</kbd> keep their existing command-history behavior in the command box
 and patient-list navigation behavior in the patient list.
-In the patient list, Up and Down move the selection and scroll only as needed to keep the selected patient card fully
+In the patient list, <kbd>Up</kbd> and <kbd>Down</kbd> move the selection and scroll only as needed to keep the selected patient card fully
 visible.
 
 ### Reading command responses
@@ -162,25 +167,25 @@ commands. Detailed validation rules and examples remain in the command sections 
 
 Format: `help`
 
-You can also press **F1** or choose **Help → Help (F1)**. Repeating a help request brings the existing
+You can also press <kbd>F1</kbd> or choose **Help → Help** (<kbd>F1</kbd>). Repeating a help request brings the existing
 window to the front, restoring it if minimized. You can resize Help and continue using the main window.
 
-* **Browse commands:** The command list receives keyboard focus when Help opens. Use **Up** and **Down** to scroll through the
-  command reference, or **Home** and **End** to reach the top and bottom. The User Guide URL and buttons stay below the list.
+* **Browse commands:** The command list receives keyboard focus when Help opens. Use <kbd>Up</kbd> and <kbd>Down</kbd> to scroll through the
+  command reference, or <kbd>Home</kbd> and <kbd>End</kbd> to reach the top and bottom. The User Guide URL and buttons stay below the list.
 * **Read the full guide:** Choose **Open User Guide** to open it in your default browser. This requires
   an Internet connection. Doc's browser-opening message does not guarantee that the page loaded. If nothing opens,
   choose **Copy URL** and paste the address into your browser. If copying fails, retry or enter the displayed URL manually.
-* **Close Help:** Choose **Close**, press **Escape**, or use the window's close control. Focus returns to the
-  command box with your unfinished input unchanged. For example, type `find n/Be`, press F1, then close Help
+* **Close Help:** Choose **Close**, press <kbd>Escape</kbd>, or use the window's close control. Focus returns to the
+  command box with your unfinished input unchanged. For example, type `find n/Be`, press <kbd>F1</kbd>, then close Help
   to continue editing the same draft.
 
-Use **Tab** and **Shift+Tab** to move between the command list and buttons. Press **Space** to activate a focused
-button. On Windows and Linux, you can also press **Enter**.
+Use <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd> to move between the command list and buttons. Press <kbd>Space</kbd> to activate a focused
+button. On Windows and Linux, you can also press <kbd>Enter</kbd>.
 
 <box type="warning" seamless>
 
-While a confirmation or follow-up prompt is pending, open Help with **F1** or **Help → Help (F1)**.
-Typing `help` and pressing Enter answers that prompt instead of opening Help.
+While a confirmation or follow-up prompt is pending, open Help with <kbd>F1</kbd> or **Help → Help** (<kbd>F1</kbd>).
+Typing `help` and pressing <kbd>Enter</kbd> answers that prompt instead of opening Help.
 </box>
 
 ![Help window](images/helpWindow.png)
@@ -202,50 +207,38 @@ Format: `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NU
 * Use `p/PHONE` to record the patient's phone number. It must contain at least 3 digits and be at most 30
   characters long. It may start with `+` and may use single spaces or dashes between groups of digits, e.g.
   `p/+65 9123-4567`. Values such as `------123` or `123+456` are rejected. Surrounding whitespace is trimmed.
-* Use `ec/[NAME, ]PHONE_NUMBER` to record one emergency contact, e.g. `ec/Mary Tan, 98765432`.
-  The phone number is required; the name is optional. Use `ec/98765432` when the name is unknown.
-  When supplying a name, include exactly one comma between the name and phone number.
-  Names follow the patient-name rules (letters, numbers, spaces, and `.` `'` `-` `/`, not blank) and cannot
-  contain `p/`, which is reserved for the phone field. Phone numbers contain at least 3 digits and are at most 30
-  characters long. They may start with `+` and may use single spaces or dashes between groups of digits, e.g.
-  `+65 9123-4567`; `------123` and `123+456` are rejected. Surrounding whitespace is trimmed from both details.
-  An empty `ec/`, missing phone number, invalid detail, or repeated `ec/` is rejected.
-* Use `dob/DATE` to record the date of birth in `d/M/yyyy` format, e.g. `dob/15/6/1990`.
-  The year must have four digits, from `0001` onwards. The date must exist and must not be in the future;
-  today's date is allowed. An empty or repeated `dob/` is rejected. Surrounding whitespace is trimmed.
-  Leading zeroes in the day and month are accepted and removed when displaying or saving.
-  Omitting `dob/` leaves the date of birth unrecorded. Existing saved records without this field still load.
-  It does not change how duplicate patients are identified.
-* Use `bt/BLOOD_TYPE` after the name, e.g. `bt/A+`. Prefixes can appear in any order.
-  Accepted blood types are `A+`, `A-`, `B+`, `B-`, `AB+`, `AB-`, `O+`, and `O-`.
-  Letter case is ignored and surrounding whitespace is trimmed; `bt/ab-` is stored as `AB-`.
-  Omitting `bt/` leaves blood type unrecorded. An empty or repeated `bt/` is rejected when adding a patient.
-  Blood type does not affect duplicate-patient detection. Older saved records without blood type still load.
-* Use `all/ALLERGIES` to record free-text allergy information, e.g. `all/Penicillin; latex`.
-  Surrounding whitespace is removed; internal spacing, punctuation, and letter case are preserved.
-  Omitting `all/` leaves allergy information unrecorded. An empty, whitespace-only, or repeated `all/` is rejected on add.
-  An unrecorded field does not mean no known allergies. Record `all/No known allergies` explicitly when appropriate.
-  The examples place `all/` before `alc/` and `smk/`; prefixes can still appear in any order.
-* Use `alc/ALCOHOL_HISTORY` to record free-text alcohol history, e.g. `alc/Occasional drinking`.
-  Surrounding whitespace is removed; internal spacing, punctuation, and letter case are preserved.
-  Omitting `alc/` leaves the history unrecorded. An empty, whitespace-only, or repeated `alc/` is rejected on add.
-  An unrecorded history is distinct from an explicit `alc/Does not drink`.
-  The examples place `alc/` immediately after `all/`; prefixes can still appear in any order.
-* Use `smk/STATUS` to record smoking status: `never`, `former`, `current`, or `unknown`.
-  Letter case is ignored and surrounding whitespace is trimmed; `smk/ FORMER ` is stored as `former`.
-  Omitting `smk/` leaves the status unrecorded. Explicit `smk/unknown` records that the status is unknown;
-  it is distinct from having no record. Blank values, unsupported statuses, and repeated `smk/` are rejected on add.
-  The examples place `smk/` immediately after `alc/`; prefixes can still appear in any order.
+* The optional health and emergency-contact fields below can appear in any order. Omit a field if it is unrecorded.
+  If supplied in `add`, its value must not be blank, and its prefix must appear only once.
+  Surrounding whitespace is trimmed.
+
+| Field | Example | Accepted values |
+| --- | --- | --- |
+| Date of birth | `dob/15/6/1990` | A real date in `d/M/yyyy`, with a four-digit year from `0001`, no later than today. Leading zeroes in the day and month are accepted. |
+| Blood type | `bt/A+` | `A+`, `A-`, `B+`, `B-`, `AB+`, `AB-`, `O+`, or `O-`; letter case is ignored. |
+| Allergies | `all/Penicillin; latex` | Free text; internal spacing, punctuation, and letter case are preserved. |
+| Alcohol history | `alc/Occasional drinking` | Free text; internal spacing, punctuation, and letter case are preserved. |
+| Smoking status | `smk/former` | `never`, `former`, `current`, or `unknown`; letter case is ignored. |
+| Emergency contact | `ec/Mary Tan, 98765432` | A phone number, optionally preceded by a name and exactly one comma. The phone follows the patient-phone rules above. |
+
+An unrecorded field does not mean a negative finding. Use `all/No known allergies` or `alc/Does not drink`
+explicitly when appropriate. Likewise, `smk/unknown` records an unknown status; omitting `smk/` leaves it unrecorded.
+
+Emergency-contact names follow the patient-name rules: letters, numbers, spaces, and `.` `'` `-` `/`, with at least
+one nonblank character. They cannot contain `p/`. Use `ec/98765432` when the name is unknown.
+See [Emergency contact examples](#emergency-contact-examples) for accepted and rejected inputs.
+
 * On success, the app shows `Added patient` followed by the patient's recorded details: name, phone number, email,
   address, visit date, any recorded health details and note, and tags. Details that were not given are left out.
   The new patient appears in the list and its full record appears in the patient details panel. For example:<br>
   `Added patient John Tan; Phone: 91234567; Address: 123 Clementi Road; Visit date: 22/10/2026 1000; Emergency contact: 98765432 (Mary Tan)`
 * On failure, the app shows `The patient is not added due to: ` followed by the reason, and no patient is added.
 * A patient with the same normalized name and phone number as an existing patient is a duplicate and cannot be added.
-* If only the name matches an existing patient, the app shows the matching patient in the patient details panel and
-  asks `A patient named NAME already exists. The matching patient is shown in the patient details panel. Add NAME
-  anyway? Type y to confirm. Any other input cancels.`
-* Type `y` and press Enter to add the patient. Surrounding spaces and letter case are ignored. Any other input cancels
+* If the normalized name matches one existing patient but the phone number differs, the app shows that patient in
+  the patient details panel and asks `A patient named NAME already exists. The matching patient is shown in the
+  patient details panel. Add NAME anyway? Type y to confirm. Any other input cancels.`
+  If the name matches multiple patients, as with the two sample records named Jordan Lee, the warning instead states
+  the number of matches and that only one is shown. The same `Add NAME anyway?` confirmation follows.
+* Type `y` and press <kbd>Enter</kbd> to add the patient. Surrounding spaces and letter case are ignored. Any other input cancels
   the addition and is not run as a command. Confirmation rechecks that the visit date and time are still available.
 * If 7 or more patients already have a visit on the same day (at any time), the app warns you before adding another,
   e.g. `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Add Jane Tan anyway? Type y to confirm. Any other
@@ -282,9 +275,9 @@ alphabetically, ignoring letter case.
 </box>
 
 Examples:
-* `add n/John Doe dob/15/6/1990 bt/A+ all/Penicillin; latex alc/Occasional drinking smk/former p/98765432 a/John street, block 123, #01-01 vd/18/9/2026 1000 e/JohnDoe@gmail.com note/This man is sick`
+* `add n/John Doe dob/15/6/1990 bt/A+ all/Penicillin; latex alc/Occasional drinking smk/former p/98765432 a/John street, block 123, #01-01 vd/18/9/2026 1000 e/JohnDoe@gmail.com note/Review blood pressure`
 * `add n/John Tan p/91234567 a/123 Clementi Road vd/22/10/2026 1000 ec/Mary Tan, 98765432`
-* `add n/Betsy Crowe t/friend a/Newgate Prison p/1234567 vd/1/10/2026 1430 t/criminal`
+* `add n/Mei Chen p/87654321 a/45 Bedok North Road vd/1/10/2026 1430 t/followup`
 
 #### Emergency contact examples
 
@@ -300,12 +293,8 @@ share the same emergency contact. Enter the contact inside the existing `add` or
 | `ec/Mary Tan, abc` | Rejects the contact because the phone number contains letters. |
 | `ec/` | Rejects the field in `add`; clears the emergency contact in `edit`. |
 
-To update an existing patient's contact, run `edit 2 ec/David Tan, 87654321`, replacing `2` with the patient's
-current displayed index. Run `view 2` afterwards to see `Emergency Contact: 87654321 (David Tan)` below the
-patient's phone number. Use `edit 2 ec/87654321` to store just the number; the display becomes
-`Emergency Contact: 87654321` without parentheses. Editing only the contact keeps other patient details unchanged.
-Changes to other fields, including scheduling a visit with `next`, keep the emergency contact unchanged.
-To remove the contact, run `edit 2 ec/`. Run `view 2` again; the emergency contact row will be hidden.
+To change or remove a contact, use the [optional-field editing examples](#editing-a-patient-edit).
+The details panel refreshes automatically after a successful edit.
 
 ### Listing all patients: `list`
 
@@ -369,51 +358,31 @@ Displays the selected patient's full record in the details panel on the right.
 
 Format: `view INDEX`
 
-* The right-hand panel groups the record into `Visit details`, `Medical profile`, `Contact information`,
-  `Additional notes`, and `Visit history`. The patient's name and current appointment appear first for quick
-  reference.
-* If recorded, the date of birth appears in `Medical profile` and in the left-hand patient list as
-  `Date of birth: 15/6/1990 (N years old)`. Age is calculated in completed years using the computer's local
-  date when the record is viewed. For a February 29 birthday, age increases on March 1 in non-leap years.
-  The row is hidden when no date of birth is recorded.
-* Displays the patient at the specified `INDEX`.
-* The index refers to the index number shown in the currently displayed patient list.
-* The index **must be a positive integer** 1, 2, 3, ...
-* The command works on lists produced by commands such as `find` and `sort date`.
-* The currently displayed patient list remains visible on the left.
-* The current visit date and time remain visible as `Visit date` in `Visit details`. `Visit history` lists retained
-  datetimes in `d/M/yyyy HHmm` format, newest first and oldest last. Keeping history last prevents a long record from
-  pushing current medical and care information out of view.
-* A label beside the current datetime compares its calendar date with your computer's local date:
-  `Past` means before today, `Today` means today (including earlier or later times today), and `Upcoming` means
-  after today. For example, `Visit date: 21/10/2026 0900 (Today)` when viewed on 21 October 2026.
-* These labels do not indicate attendance or completion and do not change the time-based rules for `next`.
-  They update when you run `view`; run it again after midnight or a date change to refresh the details.
-  A visit later today shows `Today`; `next` still rejects it while its datetime is in the future.
-* A patient with no previous dates shows `No previous visit dates`. Scroll the details panel to read long records;
-  all previous dates are included. See [Navigating the main window by keyboard](#navigating-the-main-window-by-keyboard)
-  for keyboard scrolling and focus navigation.
-* Viewing a patient does not change their stored details.
-* Recorded allergies appear first in `Medical profile` as `Allergies: Penicillin; latex`, so safety-critical
-  information is easy to find. The row is hidden when allergy information is unrecorded.
-  An explicit `No known allergies` entry remains visible.
-* Recorded blood type appears after allergies as `Blood type: A+` in both the left-hand patient list and the
-  right-hand details panel. The row is hidden without reserving space when blood type is unrecorded.
-* Recorded smoking status and alcohol history appear after date of birth in `Medical profile`.
-  Smoking status is displayed as `Smoking status: former`; an explicit `unknown` status remains visible.
-* Alcohol history is displayed as `Alcohol history: Occasional drinking`.
-  The alcohol history row is hidden without reserving space when unrecorded; the left-hand patient cards stay compact.
-  The smoking status row is also hidden without reserving space when unrecorded.
-* `Contact information` groups the phone number, emergency contact, email, and address. `Additional notes` keeps the
-  patient's note and tags together before the potentially long visit history.
-* After editing a patient, run `view INDEX` again to refresh the selected patient's details.
+Use a positive index from the currently displayed list, including `find` or `sort date` results.
+For example, `view 1` displays the first patient's full record without changing the list or saved data.
 
-* If an emergency contact is recorded, it appears directly below the patient's phone number as
-  `Emergency Contact: 98765432 (Mary Tan)`, or `Emergency Contact: 98765432` when the name is omitted.
-  The emergency contact row is hidden when no contact is recorded.
+The details panel groups information as follows. Unrecorded optional fields are hidden, except for the `Tags:` row,
+which remains visible even when no tags are recorded.
 
-Example:
-* `view 1` displays the first patient's full record in the details panel.
+| Section | What it shows |
+| --- | --- |
+| Visit details | The current visit date and time, with a `Past`, `Today`, or `Upcoming` label. |
+| Medical profile | Allergies first, then blood type, date of birth and age, smoking status, and alcohol history. If all are unrecorded, it shows `No medical information recorded`. |
+| Contact information | Phone, emergency contact, email, and address. A named emergency contact appears as `Emergency Contact: 98765432 (Mary Tan)`. |
+| Additional notes | The patient's note and tags. |
+| Visit history | All previous visit dates, newest first, or `No previous visit dates`. |
+
+Date of birth and blood type also appear in the left-hand patient list. Age is calculated in completed years;
+a February 29 birthday increases in age on March 1 in non-leap years. Explicit entries such as
+`No known allergies` and smoking status `unknown` remain visible.
+
+Visit labels compare calendar dates with your computer's local date: `Past` is before today, `Today` includes
+all times today, and `Upcoming` is after today. These labels do not indicate attendance or completion.
+A visit later today shows `Today`, but `next` still rejects it until its time has arrived.
+Run `view` again after midnight or a date change to refresh the details.
+
+After a successful edit, the details panel automatically shows the updated patient. Scroll to read long records;
+see [keyboard navigation](#navigating-the-main-window-by-keyboard) for scrolling shortcuts.
 
 ### Editing a patient: `edit`
 
@@ -426,33 +395,21 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[
 * All editable fields are optional, but at least one must be provided.
 * Use `p/PHONE` to replace the patient's phone number, e.g. `edit 1 p/+65 9123-4567`. The same phone-number
   restrictions as `add` apply. Omitting `p/` preserves the current phone number.
-* Use `dob/DATE` to add or replace the date of birth, e.g. `edit 1 n/John Doe dob/15/6/1990`.
-  The same date rules as `add` apply to nonempty values. Omitting `dob/` preserves the current value.
-  Use an empty `dob/`, e.g. `edit 1 dob/`, to clear the date of birth. Whitespace-only values also clear it.
-  Clearing an already empty date of birth is allowed. The patient details panel refreshes automatically.
-  Repeated `dob/` prefixes are rejected, including when one or both values are empty.
-* Use `bt/BLOOD_TYPE` to add or replace blood type, e.g. `edit 1 bt/O-`. The same valid values and normalization
-  rules as `add` apply. Omitted `bt/` preserves the current blood type.
-  Use an empty `bt/`, e.g. `edit 1 bt/`, to clear it; whitespace-only values also clear it.
-  Repeated `bt/` prefixes are rejected, including identical or empty values.
+* For the optional fields below, a supplied value replaces the existing value and follows the
+  [rules under add](#adding-a-patient-add). An omitted prefix preserves the existing value.
+  An empty or whitespace-only value clears it, even if already unrecorded. Other fields remain unchanged.
 
-* Use `all/ALLERGIES` to add or replace allergy information, e.g. `edit 1 all/Penicillin; latex alc/Does not drink`.
-  Omitting `all/` preserves existing information. Use `edit 1 all/` to clear it; whitespace-only values also clear it.
-  Clearing an already unrecorded field succeeds. Repeated `all/` prefixes are rejected, including blank values.
-  Clearing allergies does not record `No known allergies`. Other patient details and visit history are preserved.
-* Use `alc/ALCOHOL_HISTORY` to add or replace alcohol history, e.g. `edit 1 bt/A+ alc/Does not drink`.
-  Omitting `alc/` preserves the current history. Use `edit 1 alc/` to clear it; whitespace-only values also clear it.
-  Clearing an already unrecorded value succeeds. Repeated `alc/` prefixes are rejected, including empty values.
-  Other patient details and visit history are preserved.
-* Use `smk/STATUS` to add or replace smoking status, e.g. `edit 1 alc/Does not drink smk/never`.
-  The same supported values and normalization as `add` apply. Omitting `smk/` preserves the current status.
-  Use `edit 1 smk/` to clear it; whitespace-only values also clear it, including an already unrecorded status.
-  Unsupported statuses and repeated `smk/` prefixes are rejected. Other patient details and visit history are preserved.
-* Use `ec/[NAME, ]PHONE_NUMBER` to add or replace the emergency contact, e.g. `edit 1 ec/Mary Tan, 98765432`.
-  Use `edit 1 ec/98765432` when no contact name is known. Nonempty values follow the same validation rules as `add`.
-  Omitting `ec/` preserves the existing contact.
-  Use an empty `ec/` to clear the contact, e.g. `edit 1 ec/`. Whitespace-only values also clear it.
-  Clearing an already-empty contact succeeds; repeated `ec/` prefixes are rejected.
+| Field | Set or replace | Clear |
+| --- | --- | --- |
+| Date of birth | `edit 1 dob/15/6/1990` | `edit 1 dob/` |
+| Blood type | `edit 1 bt/O-` | `edit 1 bt/` |
+| Allergies | `edit 1 all/Penicillin` | `edit 1 all/` |
+| Alcohol history | `edit 1 alc/Does not drink` | `edit 1 alc/` |
+| Smoking status | `edit 1 smk/former` | `edit 1 smk/` |
+| Emergency contact | `edit 1 ec/Mary Tan, 98765432` or `edit 1 ec/98765432` | `edit 1 ec/` |
+
+Clearing allergies does not record `No known allergies`; clearing smoking status does not record `unknown`.
+
 * To update the visit date and time, use `vd/` with the format `d/M/yyyy HHmm`
   (e.g., `8/10/2026 1000`). A valid date and time in the past is accepted. The year must be from `1900` to `2099`,
   as for `add`. As with `add` and `next`, extra spaces or tabs between the date and the time are accepted.
@@ -472,7 +429,7 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[
 * Prefixes can appear in any order. Repeated single-valued prefixes, including `note/`, are rejected,
   even when their values are identical or empty. Multiple `t/TAG` prefixes are allowed.
 * Editing replaces the stored visit date and time; it does not append a visit-history entry.
-  Use `edit ... vd/` to correct a missed or rescheduled appointment, or
+  Use `edit INDEX vd/DATETIME` to correct a missed or rescheduled appointment, or
   [next](#scheduling-the-next-visit-next) to schedule the following visit.
 * On success, the app shows `Edited patient:` followed by the patient's updated details in the same form as `add`,
   including the visit date and any recorded health details, so you can check the change.
@@ -480,10 +437,12 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[
 * When editing tags, all of the patient's existing tags are removed; adding tags is not cumulative.
 * To remove all of a patient's tags, enter `t/` without a tag after it.
 * An edit that would give a patient the same normalized name and phone number as another patient is rejected.
-* When an edit changes the patient's name to one already used by another patient with a different phone number, the
-  app warns that the name is already used and asks
+* When an edit changes the patient's normalized name to one already used by another patient with a different phone
+  number, the app warns that the name is already used and asks
   `Apply this edit to NAME anyway? Type y to confirm. Any other input cancels.`
-* Type `y` and press Enter to apply the edit. Surrounding spaces and letter case are ignored. Any other input cancels
+  If multiple patients have that name, the warning states the number of matches and that only one is shown in the
+  patient details panel.
+* Type `y` and press <kbd>Enter</kbd> to apply the edit. Surrounding spaces and letter case are ignored. Any other input cancels
   the edit and is not run as a command. Editing other details of a patient whose name is already shared does not ask
   for confirmation again. A confirmed name-duplicate edit rechecks that its requested visit slot is still available.
 * When an edit moves a patient's visit to a different day that already has 7 or more visits, the app asks, e.g.
@@ -497,20 +456,17 @@ Examples:
 * `edit 1 vd/8/10/2026 1000` Changes the 1st patient's visit to 8 October 2026 at 10:00.
 * `edit 1 p/91234567 vd/8/10/2026 1000 e/johndoe@example.com` Updates the visit, phone number, and email.
 * `edit 1 p/91234567 e/johndoe@example.com` Updates the phone number and email, keeping the visit unchanged.
-* `edit 1 ec/Mary Tan, 98765432` Adds or replaces the emergency contact, keeping other details unchanged.
-* `edit 1 ec/98765432` Records only the emergency contact's phone number.
-* `edit 1 ec/` Clears the emergency contact, keeping other details unchanged.
 * `edit 1 e/` Clears the email, keeping the visit and other details unchanged.
 * `edit 1 note/Patient requests a morning visit` Replaces the notes, keeping all other details unchanged.
 * `edit 1 note/` Clears the notes, keeping all other details unchanged.
 * `edit 1 e/ note/` Clears both email and notes, keeping the visit and other details unchanged.
 * `edit 1 vd/8/10/2026 1000 e/new@example.com note/Review medication` Updates the visit, email, and notes.
-* `edit 2 n/Priya Devi Nair t/` Updates Priya Nair's name and clears all existing tags, keeping the visit unchanged.
+* `edit 2 n/Benjamin Wei Lim t/` Updates Benjamin Lim's name and clears all existing tags, keeping the visit unchanged.
 
 ### Scheduling the next visit: `next`
 
 Schedules or records a patient's following appointment, moving the current visit date and time into **Visit history**.
-Use `edit ... vd/` instead to correct or reschedule the current appointment without adding a history entry.
+Use `edit INDEX vd/DATETIME` instead to correct or reschedule the current appointment without adding a history entry.
 
 Format: `next INDEX DATETIME`
 
@@ -528,7 +484,7 @@ Doc asks for confirmation when the new visit:
 * Moves to a different day that already has seven or more current appointments. Hidden patients count; visit history
   does not. Moving within the same day does not trigger this warning.
 
-Type `y` and press Enter to proceed despite the warning. Any other input cancels without changing the record
+Type `y` and press <kbd>Enter</kbd> to proceed despite the warning. Any other input cancels without changing the record
 and is not run as a command.
 
 On success, Doc shows `Next visit scheduled for patient NAME: DATETIME` and refreshes the patient's details.
@@ -539,6 +495,7 @@ Filtering and sorting are preserved. If saving fails, Doc reports the error and 
 Examples (follow the visit-date rules above):
 
 * `next 1 1/12/2026 0930` schedules the first displayed patient's following visit for 1 December 2026 at 09:30.
+* `find n/Amelia`, then `next 1 1/12/2026 1430`, schedules Amelia Tan and keeps the matching search results displayed.
 * To record a follow-up late: if the current visit date and time is `1/10/2026 0900` and today is 2 November 2026,
   `next 1 15/10/2026 1000`, then `y`, changes it to `15/10/2026 1000` and retains
   `1/10/2026 0900` in **Visit history**.
@@ -561,7 +518,7 @@ Format: `prev INDEX`
 * Unlike `next`, `prev` allows the current visit date and time to be in the future.
 
 Before making changes, Doc shows the patient's name and phone number, the visit to restore, and the visit to discard.
-Check these details, then type `y` and press Enter to confirm. Any other input cancels without changing the record
+Check these details, then type `y` and press <kbd>Enter</kbd> to confirm. Any other input cancels without changing the record
 and is not run as a command.
 
 On success, Doc reports the restored and discarded dates and times, saves the change, and refreshes the patient's
@@ -583,43 +540,44 @@ Finds patients by name, phone number, address, tag, visit date or notes.
 
 Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`
 
-* Give at least one field. Every keyword must follow a prefix; for example, use `find n/george`, not `find george`.
+* Give at least one field. Every keyword must follow a prefix; for example, use `find n/amelia`, not `find amelia`.
 * How each field matches (all case-insensitive):
-  * `n/`: the start of any word in the name, first name or surname. For example, `n/m` matches `George Miller`,
-    `Marcus Lim`, and `Mei Lin Tan`, but `n/ans` does not match `Hans`.
+  * `n/`: the start of any word in the name, first name or surname. For example, `n/l` matches `Benjamin Lim`, both
+    patients named `Jordan Lee`, and `Lucas Chen`, but `n/uc` does not match `Lucas Chen`.
   * `p/`: any part of the phone number, so the last few digits are enough. For example, `p/8901` matches `85678901`.
     Only digits are compared, so spaces, `+`, and `-` in either the saved number or the keyword are ignored:
     `p/91234567` matches `9123 4567` and `+65 9123-4567`. Phone keywords may contain digits, `+`, and `-`, and must
     include a digit. Type a number without spaces, since a space starts another keyword.
-  * `a/`: the start of any word in the address. For example, `a/tamp` matches `46 Tampines Street 21, #08-03`.
+  * `a/`: the start of any word in the address. For example, `a/tamp` matches `18 Tampines Street 21, #04-12`.
   * `t/`: the start of any tag. For example, `t/morn` matches a patient tagged `morning`.
   * `vd/`: patients whose current visit is on that day, at any time. Give the date without a time in the format
     `d/M/yyyy`, e.g. `vd/15/10/2026`. Previous visit dates are not searched. An impossible date, another format,
     or a time such as `vd/15/10/2026 0900` is rejected with `"VALUE" is not a valid visit date.` and the format.
   * `note/`: the start of any word in the patient's notes. For example, `note/gluc` matches
-    `Discuss glucose readings`, but `note/cose` does not. Patients with no notes never match.
+    `Review insulin dosage and glucose readings`, but `note/cose` does not. Patients with no notes never match.
 * Several keywords for one field find patients matching **any** of them (an `OR` search); for example,
-  `n/george priya` returns `George Miller` and `Priya Nair`.
-* Different fields must **all** match (an `AND` search); for example, `n/m t/morning` returns only patients with a
-  name word starting with `m` who are tagged `morning`.
+  `n/amelia farah` returns `Amelia Tan` and `Farah Aziz`.
+* Different fields must **all** match (an `AND` search); for example, `n/l t/afternoon` returns only patients with a
+  name word starting with `l` who are tagged `afternoon`.
 * Fields can be given in any order, but each prefix can appear only once. Put several keywords after one prefix
-  instead, e.g. `n/george priya` rather than `n/george n/priya`.
-* Spaces, tabs or line breaks can separate fields; for example, `n/george` and `p/8876` separated by a tab are still
+  instead, e.g. `n/amelia farah` rather than `n/amelia n/farah`.
+* Spaces, tabs or line breaks can separate fields; for example, `n/amelia` and `p/8123` separated by a tab are still
   two separate fields.
 * The app shows how many patients were found, e.g. `3 patients found.` If none match, it lists every search prefix:
   `No patients found. Search with n/ for names, p/ for phone numbers, a/ for addresses, t/ for tags, vd/ for visit dates, or note/ for notes.`
 
 Examples:
-* `find n/m` returns `George Miller`, `Marcus Lim`, and `Mei Lin Tan`
-* `find n/george priya` returns `George Miller` and `Priya Nair`
-* `find p/8901` returns `Noor Aziz`, whose number ends in `8901`
-* `find a/tampines` returns `Marcus Lim`
-* `find vd/15/10/2026` returns `Priya Nair`, whose visit is at 09:00 that day. Follow it with `sort date` to list
+* `find n/l` returns `Benjamin Lim`, both patients named `Jordan Lee`, and `Lucas Chen`
+* `find n/amelia farah` returns `Amelia Tan` and `Farah Aziz`
+* `find p/8901` returns `Farah Aziz`, whose number ends in `8901`
+* `find a/tampines` returns `Amelia Tan`
+* `find vd/20/10/2026` returns `Amelia Tan`, whose visit is at 09:00 that day. Follow it with `sort date` to list
   that day's visits by time when planning your route.
-* `find vd/14/10/2026 15/10/2026` returns `Priya Nair` and `Mei Lin Tan`
-* `find note/review` returns `George Miller` and `Marcus Lim`, whose notes start with `Review`
-* `find n/m t/morning` returns `Mei Lin Tan`; `George Miller` and `Marcus Lim` also match `n/m` but are not tagged
-  `morning`
+* `find vd/20/10/2026 22/10/2026` returns `Amelia Tan` and `Benjamin Lim`
+* `find note/review` returns `Amelia Tan`, `Benjamin Lim`, `Farah Aziz`, and `Grace Wong`, whose notes contain a word
+  starting with `Review`
+* `find n/l t/afternoon` returns `Lucas Chen`; `Benjamin Lim` and both patients named `Jordan Lee` also match `n/l`
+  but are not tagged `afternoon`
 
 ### Deleting a patient: `delete`
 
@@ -632,7 +590,7 @@ Format: `delete INDEX`
 * The index **must be a positive integer** 1, 2, 3, ...
 * A valid command displays `Delete NAME? Type y to confirm. Any other input cancels.` without deleting the patient.
   After `y`, the app shows `Deleted patient:` followed by the deleted patient's details in the same form as `add`.
-* Type `y` and press Enter to confirm. Surrounding spaces and letter case are ignored.
+* Type `y` and press <kbd>Enter</kbd> to confirm. Surrounding spaces and letter case are ignored.
 * Any other input, including an empty response or another valid command, cancels the deletion and is not run as a
   command. The result display then shows `Deletion cancelled.`
 * Invalid `delete` commands show the shared index errors and do not ask for confirmation.
@@ -641,7 +599,7 @@ Format: `delete INDEX`
 
 Examples:
 * `list` followed by `delete 2`, then `y`, deletes the 2nd patient in Doc.
-* `find n/George` followed by `delete 1`, then `y`, deletes George Miller as the 1st patient in the search results.
+* `find n/Amelia` followed by `delete 1`, then `y`, deletes Amelia Tan as the 1st patient in the search results.
 
 ### Clearing all entries: `clear`
 
@@ -651,7 +609,7 @@ Format: `clear`
 
 * When Doc contains patient records, the result display asks for confirmation and shows the number of entries
   that will be cleared.
-* Type `y` and press Enter to confirm. Surrounding spaces and letter case are ignored.
+* Type `y` and press <kbd>Enter</kbd> to confirm. Surrounding spaces and letter case are ignored.
 * Any other input, including an empty response or another valid command, cancels the clear operation and is not run as
   a command. The result display then shows `Clear cancelled.`
 * If Doc has no patient records, no confirmation is requested and the result display shows
@@ -749,7 +707,7 @@ Action     | Format, Examples
 **Clear**  | `clear`
 **Delete** | `delete INDEX`<br> e.g., `delete 3`
 **Edit**   | `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
-**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`<br> e.g., `find n/George a/maple`, `find vd/15/10/2026`, `find note/mobility`
+**Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`<br> e.g., `find n/Amelia a/tampines`, `find vd/20/10/2026`, `find note/mobility`
 **List**   | `list`
 **Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/12/2026 0930`
 **Prev**   | `prev INDEX`<br> e.g., `prev 1`
