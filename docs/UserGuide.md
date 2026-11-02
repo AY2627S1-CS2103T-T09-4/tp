@@ -188,7 +188,7 @@ While a confirmation or follow-up prompt is pending, open Help with <kbd>F1</kbd
 Typing `help` and pressing <kbd>Enter</kbd> answers that prompt instead of opening Help.
 </box>
 
-![Help window](images/helpWindow.png)
+<img src="images/helpWindow.png" alt="Help window" width="700" style="max-width: 100%; height: auto;">
 
 
 ### Adding a patient: `add`
