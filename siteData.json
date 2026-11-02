@@ -3,11 +3,11 @@
   "pages": [
     {
       "src": "AboutUs.md",
+      "title": "About Us",
       "headings": {
-        "layout-default-md-title-and-quot-about-us-and-quot": "layout: default.md\ntitle: &quot;About Us&quot;",
         "about-us": "About Us",
         "project-team": "Project team",
-        "tee-ming-shun": "TEE MING SHUN",
+        "tee-ming-shun": "Tee Ming Shun",
         "hoong-ken": "Hoong Ken",
         "twisha-mehta": "Twisha Mehta",
         "chan-tze-yuon": "Chan Tze Yuon",
@@ -192,14 +192,6 @@
         "doc": "Doc",
         "documentation": "Documentation",
         "acknowledgements": "Acknowledgements"
-      },
-      "headingKeywords": {}
-    },
-    {
-      "src": "team/tzeyuon.md",
-      "title": "John Doe's Project Portfolio Page",
-      "headings": {
-        "project-addressbook-level-3": "Project: AddressBook Level 3"
       },
       "headingKeywords": {}
     }
