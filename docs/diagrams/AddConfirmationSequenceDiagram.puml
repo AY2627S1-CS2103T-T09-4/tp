@@ -6,6 +6,7 @@ box Logic LOGIC_COLOR_T1
 participant ":LogicManager" as LogicManager LOGIC_COLOR
 participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
 participant "a:AddCommand" as AddCommand LOGIC_COLOR
+participant "<<class>>\nDuplicatePersonFinder" as DuplicatePersonFinder LOGIC_COLOR
 participant "q:CommandInputRequest" as CommandInputRequest LOGIC_COLOR
 participant ":CommandResult" as CommandResult LOGIC_COLOR
 end box
@@ -48,8 +49,13 @@ deactivate AddCommand
 
 AddCommand -> Model : getAddressBook()
 activate Model
-Model --> AddCommand : name duplicates found
+Model --> AddCommand : addressBook
 deactivate Model
+
+AddCommand -> DuplicatePersonFinder : findNameDuplicates(addressBook, p)
+activate DuplicatePersonFinder
+DuplicatePersonFinder --> AddCommand : nameDuplicates
+deactivate DuplicatePersonFinder
 
 AddCommand -> Model : countPersonsWithSameVisitDay(p)
 activate Model

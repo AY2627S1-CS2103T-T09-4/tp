@@ -570,7 +570,7 @@ Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t
 Examples:
 * `find n/l` returns `Benjamin Lim`, both patients named `Jordan Lee`, and `Lucas Chen`
 * `find n/amelia farah` returns `Amelia Tan` and `Farah Aziz`
-* `find p/8901` returns `Farah Aziz`, whose number ends in `8901`
+* `find p/8123` returns `Amelia Tan`, whose number `81234567` contains `8123`
 * `find a/tampines` returns `Amelia Tan`
 * `find vd/20/10/2026` returns `Amelia Tan`, whose visit is at 09:00 that day. Follow it with `sort date` to list
   that day's visits by time when planning your route.
