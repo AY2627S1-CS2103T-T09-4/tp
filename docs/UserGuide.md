@@ -98,10 +98,10 @@ Choose the command according to what you want to change:
 
 | Goal | Command | Effect on the visit record |
 | --- | --- | --- |
-| Correct or reschedule the current appointment. | [edit](#editing-a-patient-edit) `INDEX vd/DATETIME` | Replace the current datetime; keep previous dates unchanged. |
-| Plan or record the following visit after the current visit time has arrived. | [next](#scheduling-the-next-visit-next) `INDEX DATETIME` | Retain the old current datetime and set an unused later datetime; confirm if it is not in the future. |
-| Restore the latest previous datetime. | [prev](#restoring-the-previous-visit-prev) `INDEX` | Remove the latest previous datetime from the list and use it to replace the current datetime; discard the replaced datetime. |
-| Leave a final visit recorded without planning another. | No command needed. | Keep the current datetime, including after it becomes past. |
+| Correct or reschedule the current appointment. | [edit](#editing-a-patient-edit) `INDEX vd/DATETIME` | Set the current visit date and time to `DATETIME`; leave Previous visit dates unchanged. |
+| Plan or record the following visit after the current visit time has arrived. | [next](#scheduling-the-next-visit-next) `INDEX DATETIME` | Move the current visit date and time to Previous visit dates, then set an unused later date and time as current; confirm if the new visit time is now or has passed. |
+| Restore the most recent previous visit date and time. | [prev](#restoring-the-previous-visit-prev) `INDEX` | Remove the most recent entry from Previous visit dates and make it current; discard the visit date and time it replaces. |
+| Leave a final visit recorded without planning another. | No command needed. | Keep the current visit date and time recorded, even after it is marked `Past`. |
 
 Successful `edit`, `next`, and `prev` commands preserve the current filtering and sorting. The updated patient may
 move within the list or disappear if the changed details no longer match those rules. The details panel automatically
@@ -114,13 +114,14 @@ a later time on the same day does not trigger this warning.
 ### Navigating the main window by keyboard
 
 When the main window is active, press <kbd>Tab</kbd> to move through the four main sections in this order: command box,
-response panel, patient list, and patient-details panel. Press <kbd>Shift</kbd>+<kbd>Tab</kbd> to move in reverse order. Both directions
-wrap around. A visible light-gray outline surrounds the section that currently contains keyboard focus: command box,
+response panel, patient list, and patient-details panel. Pressing <kbd>Tab</kbd> from the patient-details panel returns
+to the command box. Press <kbd>Shift</kbd>+<kbd>Tab</kbd> to move in reverse order, returning from the command box to
+the patient-details panel. A visible light-gray outline surrounds the section that currently contains keyboard focus: command box,
 response panel, patient list, or patient-details panel. The outline remains visible for empty sections; labels and the
-patient-details scrollbar are not separate Tab destinations.
+patient-details scrollbar are not separate Tab destinations. The menu bar is outside this four-section cycle.
 
 With the patient-details panel focused, use <kbd>Up</kbd> and <kbd>Down</kbd> to scroll by a small increment,
-<kbd>Page Up</kbd> and <kbd>Page Down</kbd> to scroll by approximately one viewport, and <kbd>Home</kbd> and
+<kbd>Page Up</kbd> and <kbd>Page Down</kbd> to scroll by approximately one screenful of details, and <kbd>Home</kbd> and
 <kbd>End</kbd> to move to the top and bottom. These scrolling keys have no effect when the panel is empty or all
 details already fit. <kbd>Up</kbd> and <kbd>Down</kbd> keep their existing command-history behavior in the command box
 and patient-list navigation behavior in the patient list.
@@ -161,16 +162,16 @@ commands. Detailed validation rules and examples remain in the command sections 
 
 Format: `help`
 
-You can also press **F1** or choose **Help → Help**. Repeating a help request brings the existing
+You can also press **F1** or choose **Help → Help (F1)**. Repeating a help request brings the existing
 window to the front, restoring it if minimized. You can resize Help and continue using the main window.
 
-* **Browse commands:** The command list receives keyboard focus when Help opens. Use **Up** and **Down** to browse,
-  or **Home** and **End** to reach the top and bottom. The User Guide URL and buttons stay below the list.
+* **Browse commands:** The command list receives keyboard focus when Help opens. Use **Up** and **Down** to scroll through the
+  command reference, or **Home** and **End** to reach the top and bottom. The User Guide URL and buttons stay below the list.
 * **Read the full guide:** Choose **Open User Guide** to open it in your default browser. This requires
-  an Internet connection. The launch message does not guarantee that the page loaded. If nothing opens,
+  an Internet connection. Doc's browser-opening message does not guarantee that the page loaded. If nothing opens,
   choose **Copy URL** and paste the address into your browser. If copying fails, retry or enter the displayed URL manually.
 * **Close Help:** Choose **Close**, press **Escape**, or use the window's close control. Focus returns to the
-  command box with your unfinished input unchanged. For example, type `find Be`, press F1, then close Help
+  command box with your unfinished input unchanged. For example, type `find n/Be`, press F1, then close Help
   to continue editing the same draft.
 
 Use **Tab** and **Shift+Tab** to move between the command list and buttons. Press **Space** to activate a focused
@@ -178,7 +179,7 @@ button. On Windows and Linux, you can also press **Enter**.
 
 <box type="warning" seamless>
 
-While a confirmation or follow-up prompt is pending, open Help with **F1** or **Help → Help**.
+While a confirmation or follow-up prompt is pending, open Help with **F1** or **Help → Help (F1)**.
 Typing `help` and pressing Enter answers that prompt instead of opening Help.
 </box>
 
@@ -508,123 +509,73 @@ Examples:
 
 ### Scheduling the next visit: `next`
 
-Schedules or records a patient's following appointment and retains the current visit date and time in their visit
-record. Use `next` after handling the current visit, including when entering follow-up visits late. Retained dates
-do not verify attendance or completion. Use `edit ... vd/` to correct or reschedule an existing appointment without
-adding a previous date.
+Schedules or records a patient's following appointment, moving the current visit date and time into **Visit history**.
+Use `edit ... vd/` instead to correct or reschedule the current appointment without adding a history entry.
 
 Format: `next INDEX DATETIME`
 
-* Use a positive `INDEX` from the currently displayed list, including results of `find` or `sort date`.
-  `view` keeps that list and its indices unchanged.
-* Enter `DATETIME` as `d/M/yyyy HHmm`, with a four-digit 24-hour time and a year from `1900` to `2099`. Spaces or tabs
-  separate the arguments; repeated and outer whitespace are accepted. Do not use `vd/`, quotation marks, or extra
-  arguments.
-* The current visit must be at or before your computer's current local time at execution. If it is still in the
-  future, use `edit ... vd/` to reschedule it.
-* The requested appointment must be strictly later than the current recorded visit. This keeps every previous visit
-  earlier than the new current visit. An unchanged or earlier datetime is rejected.
-* An appointment at or before the computer's current local time is allowed after confirmation. Doc warns,
-  `This appointment is not in the future: DATETIME. Record it as the next visit for NAME anyway? Type y to confirm.
-  Any other input cancels.` This includes an appointment exactly at now or at the start of the current minute.
-* The requested appointment must differ from every other patient's current and previous visit dates and times,
-  including hidden patients. Leading-zero dates compare equally: `1/11/2026 0930` and `01/11/2026 0930` are the same time.
-* Conflict detection covers identical start times, not visit duration, travel time, or partial overlaps.
-  The [visit-time conflict limitations under add](#adding-a-patient-add) also apply.
-* When the requested appointment is on a different day that already has 7 or more visits, the app asks, e.g.
-  `Heads up: you already have 7 visits on Mon, 2 Nov 2026. Schedule Jane Tan's next visit on that day anyway? Type y
-  to confirm. Any other input cancels.` Type `y` and press Enter to schedule it; surrounding spaces and letter case
-  are ignored. Any other input shows `Scheduling cancelled.`, keeps the data unchanged, and is not run as a command.
-  When both the time and full-day warnings apply, Doc combines them into one prompt with one confirmation.
-  If a future appointment reaches or passes now while a full-day prompt is open, Doc asks again with the new
-  time warning before applying the change. If another patient takes the slot, or the selected record changes,
-  the request is rejected. Confirmation rechecks that the current visit has arrived and the new visit is later.
-  Moving later on the same day skips the full-day warning, since that day's visit count does not grow;
-  a non-future appointment still requires confirmation.
-* Prompts and cancellation preserve patient data, visit history, the displayed list, and the details panel.
-* Success appends the old current date and time to the previous dates, then sets the new current date and time.
-  All other details, including empty optional fields, are preserved. Previous dates are saved in order in the
-  JSON data file and appear below the current visit date in the automatically refreshed patient details panel.
-* If no further visit is planned, leave the current date and time unchanged, even after it passes.
-* Success shows `Next visit scheduled for patient NAME: DATETIME`, saves the record, and automatically shows the
-  updated patient in the details panel.
-* Validation errors preserve data and the displayed list. A save failure reports a storage error and restores the
-  patient data and displayed list to their state before the command.
+* Use the patient's `INDEX` from the currently displayed list.
+* Enter `DATETIME` as `d/M/yyyy HHmm`, using a four-digit 24-hour time and a year from `1900` to `2099`.
+  Do not include `vd/`.
+* The current visit date and time must be at or before now. The new visit must be scheduled strictly later
+  than the current one.
+* Choose a time that is not used by another patient's current or previous visits, including patients hidden by filters.
+  Doc checks identical start times only; see the [visit-time conflict limitations](#adding-a-patient-add).
 
-Common errors:
+Doc asks for confirmation when the new visit:
 
-| Input problem | Feedback |
-| --- | --- |
-| Current visit still in the future | `Patient NAME has a current visit at DATETIME that is still in the future. Use edit to reschedule it.` |
-| Time before the current recorded visit | `The next visit must be later than the current recorded visit (DATETIME). Choose a later date and time.` |
-| Unchanged appointment | `Patient NAME already has an appointment at DATETIME.` |
-| Another patient's current or previous visit | `Patient NAME already has a current or previous visit at DATETIME and is shown in the patient details panel. Choose a different date and time.` |
+* Is at or before the current date and time.
+* Moves to a different day that already has seven or more current appointments. Hidden patients count; visit history
+  does not. Moving within the same day does not trigger this warning.
 
-Bare `next` shows usage. Missing or extra arguments, `vd/` syntax, and incorrect index syntax show a reason and usage.
-Invalid dates show the required format; an index outside the displayed list shows the existing invalid-index error.
-Datetimes in feedback use `d/M/yyyy HHmm`; comparisons with the clock still use its full precision.
+Type `y` and press Enter to proceed despite the warning. Any other input cancels without changing the record
+and is not run as a command.
 
-Examples (the selected patient's current visit must have arrived or passed; choose an unused datetime later than it):
+On success, Doc shows `Next visit scheduled for patient NAME: DATETIME` and refreshes the patient's details.
+**Visit history** shows previous visits newest first; other patient details stay unchanged.
+Filtering and sorting are preserved. If saving fails, Doc reports the error and restores the data; see
+[Saving the data](#saving-the-data).
 
-* `next 1 1/11/2026 0930` schedules the first displayed patient's next appointment for 1 November 2026 at 09:30.
-* `find n/Priya`, then `next 1 2/11/2026 1430`, schedules Priya Nair and keeps the matching search results displayed.
-* On 29 October 2026, if the current visit is `1/10/2026 0900`, `next 1 15/10/2026 1000` asks for confirmation.
-  Entering `y` retains October 1 in history and records October 15 as current. No temporary future appointment is needed.
+Examples (follow the visit-date rules above):
+
+* `next 1 1/12/2026 0930` schedules the first displayed patient's following visit for 1 December 2026 at 09:30.
+* To record a follow-up late: if the current visit date and time is `1/10/2026 0900` and today is 2 November 2026,
+  `next 1 15/10/2026 1000`, then `y`, changes it to `15/10/2026 1000` and retains
+  `1/10/2026 0900` in **Visit history**.
+
+If no further visit is planned, leave the current visit date and time unchanged. Recorded dates do not verify attendance
+or completion.
 
 ### Restoring the previous visit: `prev`
 
-Restores the patient's latest previous visit date and time. Use this to roll back visit-date advancement;
-it does not undo changes to the patient's other details.
+Replaces the current visit date and time with the latest entry in the patient's **Visit history**.
+The replaced date and time is permanently discarded.
+This changes only the visit record; other patient details stay unchanged, including edits made since the last `next`.
+**There is no redo.**
 
 Format: `prev INDEX`
 
-* Use a positive `INDEX` from the currently displayed list, including results of `find` or `sort date`.
-  Supply only the index, without a datetime or `vd/` prefix.
-* The current datetime is discarded and replaced with the latest previous datetime.
-  The restored datetime is removed from the previous-date list. There is no redo.
-* Rollback is allowed even when the current or restored datetime is in the future. It does not apply `next`'s
-  clock restrictions. Every valid rollback displays the patient's name, phone number, restored datetime, and discarded
-  datetime, then asks for confirmation:
+* Use the patient's `INDEX` from the currently displayed list. Do not include a datetime or `vd/`.
+* The patient must have a previous visit to restore. Each confirmed `prev` restores one earlier visit and removes it
+  from **Visit history**. When no previous visits remain, Doc reports this without changing the record.
+* Unlike `next`, `prev` allows the current visit date and time to be in the future.
 
-  ```text
-  Restore the previous visit for NAME (phone: PHONE)? Type y to confirm. Any other input cancels.
-  Restore: RESTORED_DATETIME
-  Discard permanently: CURRENT_DATETIME
-  ```
+Before making changes, Doc shows the patient's name and phone number, the visit to restore, and the visit to discard.
+Check these details, then type `y` and press Enter to confirm. Any other input cancels without changing the record
+and is not run as a command.
 
-  Enter `y`, with optional surrounding whitespace and any letter case, to confirm. Every other response cancels and
-  is consumed as the confirmation response, even if it is valid command text. Prompting and cancellation do not
-  change records, filtering, sorting, or saved data.
-* Rollback also works after an intervening `edit`. It preserves the patient's latest name, contact details,
-  address, allergies, alcohol history, smoking status, note, and tags; it restores only visit-date state.
-* Success shows `Visit date restored for NAME: RESTORED_DATETIME` followed by
-  `Discarded visit date and time: DISCARDED_DATETIME` on the next line. Both values include the time.
-  It saves the record and automatically shows the updated patient in the details panel.
-* Repeating `prev` restores one earlier datetime each time. When none remain, it reports
-  `Patient NAME has no previous visit dates to restore.` without changing data or the displayed list.
-* A missing index shows usage. Invalid indices, including additional arguments, show the shared
-  [index errors](#features) followed by usage. Rejected commands do not save changes.
-* A later `next` uses the restored state and still requires the current visit to have arrived or passed and the
-  requested datetime to be later than the restored visit, with confirmation if it is not in the future.
-  A save failure reports a storage error and restores the record to its state before the command.
+On success, Doc reports the restored and discarded dates and times, saves the change, and refreshes the patient's
+details. Filtering and sorting are preserved. If saving fails, Doc reports the error and restores the data;
+see [Saving the data](#saving-the-data).
 
-Example: suppose the clock reads `21/10/2026 1200`. Use globally unused replacement datetimes and George Miller's
-currently displayed `INDEX` for each command. Each row continues from the previous row:
+Example: the first displayed patient's current visit date and time is `1/12/2026 0930`, and the latest entry in
+**Visit history** is `5/10/2026 1530`. Run `prev 1`, check the confirmation prompt, then enter `y`:
 
-| Operation | Current datetime | Previous datetimes (stored oldest first) |
-| --- | --- | --- |
-| Initial sample record | `5/10/2026 1530` | `[]` |
-| `next INDEX 30/10/2026 1000` | `30/10/2026 1000` | `[5/10/2026 1530]` |
-| `edit INDEX vd/1/11/2026 0930 note/Review medication` | `1/11/2026 0930` | `[5/10/2026 1530]` |
-| `prev INDEX`, then `y` | `5/10/2026 1530` | `[]` |
-| `next INDEX 2/11/2026 0930` | `2/11/2026 0930` | `[5/10/2026 1530]` |
-| `prev INDEX`, then `y` | `5/10/2026 1530` | `[]` |
-| `prev INDEX` again | Unchanged; no previous dates to restore. | `[]` |
+* `5/10/2026 1530` becomes the current visit date and time and is removed from **Visit history**.
+* `1/12/2026 0930` is permanently discarded.
 
-After the edit, the note remains `Review medication` through all later steps. The first rollback discards
-`1/11/2026 0930`; it does not restore the `30/10/2026 1000` replaced by the edit. The later `next` schedules a new
-appointment under its normal rules and does not act as redo. Repeated rollback eventually reports that the
-previous-date list is already empty.
+If you edit the current visit date and time and then use `prev`, the edited value is discarded and the latest entry
+in **Visit history** is restored. Other patient details stay unchanged.
 
 ### Locating patients: `find`
 
@@ -800,8 +751,8 @@ Action     | Format, Examples
 **Edit**   | `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[NAME, ]PHONE_NUMBER] [dob/DATE] [bt/BLOOD_TYPE] [all/ALLERGIES] [alc/ALCOHOL_HISTORY] [smk/STATUS] [note/NOTES] [t/TAG]...`<br> e.g., `edit 2 note/Review medication`
 **Find**   | `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t/TAG_KEYWORD...] [vd/DATE...] [note/NOTE_KEYWORD...]`<br> e.g., `find n/George a/maple`, `find vd/15/10/2026`, `find note/mobility`
 **List**   | `list`
-**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/11/2026 0930` (current visit must have arrived; choose an available later appointment; confirm if not in the future)
-**Prev**   | `prev INDEX`<br> e.g., `prev 1` (requires a previous datetime and `y` confirmation; replaces and discards the current datetime; no redo)
+**Next**   | `next INDEX DATETIME`<br> e.g., `next 1 1/12/2026 0930`
+**Prev**   | `prev INDEX`<br> e.g., `prev 1`
 **Sort**   | `sort date [START_DATE]`<br> e.g., `sort date 18/9/2026`
 **View**   | `view INDEX`<br> e.g., `view 1` (refreshes details and the calendar label)
 **Help**   | `help`
