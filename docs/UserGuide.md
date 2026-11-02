@@ -114,6 +114,10 @@ a later time on the same day does not trigger this warning.
 
 ### Navigating the main window by keyboard
 
+<img src="images/UiKeyboardNavigation.png" alt="Annotated Doc main window showing the four sections in the Tab cycle." width="842" style="max-width: 100%; height: auto;">
+
+**1** Command box · **2** Response panel · **3** Patient list · **4** Patient-details panel
+
 When the main window is active, press <kbd>Tab</kbd> to move through the four main sections in this order: command box,
 response panel, patient list, and patient-details panel. Pressing <kbd>Tab</kbd> from the patient-details panel returns
 to the command box. Press <kbd>Shift</kbd>+<kbd>Tab</kbd> to move in reverse order, returning from the command box to
