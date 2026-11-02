@@ -1,0 +1,21 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam rectangle {
+  BackgroundColor #F4F8FB
+  BorderColor #3E7B91
+  RoundCorner 12
+}
+skinparam ArrowColor #3E7B91
+skinparam ArrowFontSize 14
+skinparam ArrowThickness 1.5
+skinparam ranksep 160
+skinparam padding 4
+
+rectangle "<b>Before</b>\n----\n<b>Visit date:</b> 20/10/2026 0900\n\n<b>Visit history:</b>\n15/9/2026 0930\n1/9/2026 0900" as Before
+rectangle "<b>After next</b>\n----\n<b>Visit date:</b> 1/12/2026 0930\n\n<b>Visit history:</b>\n<color:#C0392B>20/10/2026 0900</color>\n15/9/2026 0930\n1/9/2026 0900" as After
+
+Before -right-> After : <b>next 1 1/12/2026 0930</b>\nThe old visit moves into history.\n
+After -left-> Before : \n<b>prev 1</b>, then <b>y</b>\nThe latest history entry returns.\n1/12/2026 0930 is discarded.
+@enduml
