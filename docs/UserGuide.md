@@ -545,58 +545,33 @@ or completion.
 
 ### Restoring the previous visit: `prev`
 
-Restores the patient's latest previous visit date and time. Use this to roll back visit-date advancement;
-it does not undo changes to the patient's other details.
+Restores the patient's most recent previous visit date and time, permanently discarding the current one.
+This changes only the visit record; other patient details stay unchanged, including edits made since the last `next`.
+**There is no redo.**
 
 Format: `prev INDEX`
 
-* Use a positive `INDEX` from the currently displayed list, including results of `find` or `sort date`.
-  Supply only the index, without a datetime or `vd/` prefix.
-* The current datetime is discarded and replaced with the latest previous datetime.
-  The restored datetime is removed from the previous-date list. There is no redo.
-* Rollback is allowed even when the current or restored datetime is in the future. It does not apply `next`'s
-  clock restrictions. Every valid rollback displays the patient's name, phone number, restored datetime, and discarded
-  datetime, then asks for confirmation:
+* Use the patient's `INDEX` from the currently displayed list. Do not include a datetime or `vd/`.
+* The patient must have a previous visit to restore. Each confirmed `prev` restores one earlier visit and removes it
+  from **Visit history**. When no previous visits remain, Doc reports this without changing the record.
+* Unlike `next`, `prev` does not require the current visit time to have arrived.
 
-  ```text
-  Restore the previous visit for NAME (phone: PHONE)? Type y to confirm. Any other input cancels.
-  Restore: RESTORED_DATETIME
-  Discard permanently: CURRENT_DATETIME
-  ```
+Before making changes, Doc shows the patient's name and phone number, the visit to restore, and the visit to discard.
+Check these details, then type `y` and press Enter to confirm. Any other input cancels without changing the record
+and is not run as a command.
 
-  Enter `y`, with optional surrounding whitespace and any letter case, to confirm. Every other response cancels and
-  is consumed as the confirmation response, even if it is valid command text. Cancellation shows
-  `Visit restoration cancelled.` Prompting and cancellation do not change records, filtering, sorting, or saved data.
-* Rollback also works after an intervening `edit`. It preserves the patient's latest name, contact details,
-  address, allergies, alcohol history, smoking status, note, and tags; it restores only visit-date state.
-* Success shows `Visit date restored for NAME: RESTORED_DATETIME` followed by
-  `Discarded visit date and time: DISCARDED_DATETIME` on the next line. Both values include the time.
-  It saves the record and automatically shows the updated patient in the details panel.
-* Repeating `prev` restores one earlier datetime each time. When none remain, it reports
-  `Patient NAME has no previous visit dates to restore.` without changing data or the displayed list.
-* A missing index shows usage. Invalid indices, including additional arguments, show the shared
-  [index errors](#features) followed by usage. Rejected commands do not save changes.
-* A later `next` uses the restored state and still requires the current visit to have arrived or passed and the
-  requested datetime to be later than the restored visit, with confirmation if it is not in the future.
-  A save failure reports a storage error and restores the record to its state before the command.
+On success, Doc reports the restored and discarded dates and times, saves the change, and refreshes the patient's
+details. Filtering and sorting are preserved. If saving fails, Doc reports the error and restores the data;
+see [Saving the data](#saving-the-data).
 
-Example: suppose the clock reads `21/10/2026 1200`. Use globally unused replacement datetimes and George Miller's
-currently displayed `INDEX` for each command. Each row continues from the previous row:
+Example: the first displayed patient's current visit is `1/12/2026 0930`, and their latest previous visit is
+`5/10/2026 1530`. Run `prev 1`, check the confirmation prompt, then enter `y`:
 
-| Operation | Current datetime | Previous datetimes (stored oldest first) |
-| --- | --- | --- |
-| Initial sample record | `5/10/2026 1530` | `[]` |
-| `next INDEX 30/10/2026 1000` | `30/10/2026 1000` | `[5/10/2026 1530]` |
-| `edit INDEX vd/1/11/2026 0930 note/Review medication` | `1/11/2026 0930` | `[5/10/2026 1530]` |
-| `prev INDEX`, then `y` | `5/10/2026 1530` | `[]` |
-| `next INDEX 2/11/2026 0930` | `2/11/2026 0930` | `[5/10/2026 1530]` |
-| `prev INDEX`, then `y` | `5/10/2026 1530` | `[]` |
-| `prev INDEX` again | Unchanged; no previous dates to restore. | `[]` |
+* The current visit becomes `5/10/2026 1530`, which is removed from **Visit history**.
+* `1/12/2026 0930` is permanently discarded.
 
-After the edit, the note remains `Review medication` through all later steps. The first rollback discards
-`1/11/2026 0930`; it does not restore the `30/10/2026 1000` replaced by the edit. The later `next` schedules a new
-appointment under its normal rules and does not act as redo. Repeated rollback eventually reports that the
-previous-date list is already empty.
+If you edit the current appointment and then use `prev`, the edited datetime is discarded and the latest previous
+visit is restored. Other patient details stay unchanged.
 
 ### Locating patients: `find`
 
