@@ -94,13 +94,8 @@ is clamped to the TextArea's vertical scrollbar bounds so repeated presses at an
 `CommandBox` owns a session-scoped `CommandHistory`. It records ordinary command submissions and uses it to replace
 the command box text when the user presses the Up or Down arrow key.
 
-`MainWindow` installs a scene-level key-event filter for Tab navigation. It treats the command box, result display,
-patient list, and patient-details `ScrollPane` as four focus sections, routing both Tab directions explicitly so that
-the empty details panel remains reachable and descendants such as details labels or scrollbar controls do not become
-additional stops. The currently focused section receives a light-gray, 2-pixel outline; every section reserves the same
-border space even when unfocused, keeping the layout stable as focus moves. The menu bar is not part of this cycle. The details panel handles its six scrolling
-keys locally, so command-history and patient-list arrow-key behavior remains scoped to those controls. The patient list
-scrolls only as needed to keep the selected patient card fully visible.
+`MainWindow` coordinates keyboard focus between four main sections; see
+[Main-window keyboard navigation](#main-window-keyboard-navigation) for event routing and scrolling boundaries.
 
 `MainWindow` manages a separate `HelpWindow` for offline command discovery and access to the full User Guide.
 See [Help window](#help-window) for its layout, lifecycle, and external-action boundaries.
@@ -213,38 +208,52 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 
 This section describes some noteworthy details on how certain features are implemented.
 
+### Main-window keyboard navigation
+
+`MainWindow` installs a scene-level key-event filter that routes Tab through the command box, response panel,
+patient list, and patient-details `ScrollPane`, then back to the command box. Shift+Tab reverses this cycle.
+The handler identifies the section containing the focus owner, requests focus on the next section's target, and
+consumes the event. Focus outside these sections is left to normal JavaFX traversal; the menu bar is outside this cycle.
+
+Explicit section targets keep the empty details panel reachable and prevent descendants such as labels or scrollbar
+controls from becoming additional stops. A focus-owner listener updates the section's light-gray, 2-pixel outline.
+Every section reserves the same border space when unfocused, keeping the layout stable as focus moves.
+
+`PatientDetailsPanel` handles Up, Down, Page Up, Page Down, Home, and End locally and clamps scrolling to its bounds.
+Command-history and patient-list arrow-key handling remain scoped to their own controls. The patient list scrolls
+only as needed to keep the selected card fully visible. These boundaries are checked in
+[Main-window keyboard navigation and details scrolling](#main-window-keyboard-navigation-and-details-scrolling).
+
 ### Help window
 
 Help is an offline command directory with short descriptions and syntax templates for all supported commands,
 with access to the full User Guide for validation rules and examples.
 See [Viewing help](UserGuide.md#viewing-help-help) for user instructions.
 
+#### Lifecycle and focus
+
 `MainWindow` retains one `HelpWindow` and reuses it for command, F1, and menu requests. The window is non-modal,
-so the main window remains usable. Closing Help returns focus to `CommandBox`, which restores the saved caret
-and selection. F1 and the menu call the UI directly; unlike typed `help`, they do not answer a pending input request.
+so the main window remains usable. Opening a hidden window calls `HelpWindow.show()` and focuses the command list.
+Requesting Help while it is already visible calls `focus()` instead, restoring a minimized window and bringing it
+forward without resetting its size, position, or command-list scroll position. The command list is a Tab stop so users
+can return from the guide buttons.
+
+Before opening or focusing Help, `MainWindow` saves the command-box caret and selection. When Help is hidden,
+it returns focus to `CommandBox` and restores that selection if the main window is still showing.
+F1 and the menu call the UI directly, leaving a pending input request intact. Typed `help` goes through `LogicManager`
+and is consumed as the response when a request is pending; it does not open Help in that case.
 
 #### Layout and content
 
 `HelpWindow.fxml` places the command groups in one column inside a `ScrollPane`, in the centre of a `BorderPane`.
-The groups are **Manage patients and visits** (`add`, `edit`, `next`, `prev`, `delete`, `clear`),
-**Find and view patients** (`list`, `find`, `view`, `sort`, `agenda`), and **Application controls** (`help`, `exit`).
 Each command entry contains its description, a syntax template, and any optional-field continuation row. The
 default window may require vertical scrolling as the templates make the directory longer. A fixed footer holds
 the URL, buttons, and feedback so these controls remain accessible while the command list scrolls.
 `HelpWindow.css` supplies the presentation styles.
 
-The complete user-facing syntax reference is maintained in the [User Guide command summary](UserGuide.md#command-summary).
-This section focuses on the Help window's implementation boundary instead of duplicating every command template. The
-`edit` and `find` descriptions state that at least one field is required. The legend is
-`UPPERCASE: replace with your values · [ ]: optional · ...: repeatable`. `INDEX` uses the displayed patient
-list number; date and emergency-contact meanings follow the detailed User Guide.
-
-Opening a hidden Help window calls `HelpWindow.show()` and focuses the command list, which is a Tab stop so users
-can return from the guide buttons. Requesting Help while it is already visible calls `focus()` instead: this restores
-a minimized window and brings it forward without resetting its size, position, or command-list scroll position.
-A muted keyboard hint and the notation legend `UPPERCASE: replace with your values · [ ]: optional · ...: repeatable`
-introduce scrolling and the syntax placeholders. They belong to the scrolling content, not the fixed footer, to
-preserve command space in small windows.
+A keyboard hint and a shared syntax legend precede the command groups inside the scrolling content, preserving
+command space in small windows. The complete syntax reference is maintained in the
+[User Guide command summary](UserGuide.md#command-summary).
 
 Static labels keep the directory independent of parser implementation; the FXML entries must still be maintained
 when command syntax changes. When `AddressBookParser` gains, loses, or renames a command, or when a command's
@@ -1567,7 +1576,8 @@ the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Pa
    ```
 
    Each successful `add` may display the newly added patient. Run `view 2` before the scrolling checks so the long
-   `Beta Patient` record is definitely displayed and the list indices are known.
+   `Beta Patient` record is definitely displayed and the list indices are known. Reduce the window height until its
+   details overflow and the vertical scrollbar appears before testing scrolling.
 1. **Details scrolling and focus outline:** Use Tab or Shift+Tab to focus patient details. Confirm that the outline
    surrounds the whole panel rather than an individual label or scrollbar. Press <kbd>Up</kbd>, <kbd>Down</kbd>,
    <kbd>Page Up</kbd>, <kbd>Page Down</kbd>, <kbd>Home</kbd>, and <kbd>End</kbd> separately.<br>
@@ -1598,8 +1608,8 @@ the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Pa
    history. Focus the patient list and move the selection down through at least four patients, then back up. Confirm
    that each selected patient card remains fully visible and the list does not jump when the selected card is already
    visible. Leave unfinished text in the command box, traverse with Tab and Shift+Tab, and confirm the text and
-   displayed patient do not change. Repeat F1, Help, and mouse-scrolling checks; their existing behavior should be
-   unchanged.
+   displayed patient do not change. Check mouse scrolling in the list and details panel, then follow the
+   [Help lifecycle checks](#help-window-lifecycle) for F1 and Help regressions.
 
 ### Dates of birth
 
@@ -1716,13 +1726,16 @@ Use a disposable data file. Start with no patients and use available visit slots
 
 ### Help window lifecycle
 
+#### Content and layout checks
+
 1. **Offline access:** Open Help with F1 while disconnected from the Internet.<br>
    Expected: The command directory remains available, and no browser opens automatically.
 
 1. **Command directory:** Open Help at its default size.<br>
    Expected: **Manage patients and visits**, **Find and view patients**, and **Application controls** each appear once
-   in the documented order. Every command has its short description, syntax template, optional-field rows where
-   applicable, and notation legend. The complete directory is reachable using the available navigation controls.
+   in the documented order. Every command has its short description, syntax template, and optional-field rows where
+   applicable. One shared notation legend appears before the groups. The complete directory is reachable using the
+   available navigation controls.
 
 1. **Navigation hint:** Inspect the hint at the top of the command list.<br>
    Expected: The Up, Down, Tab, Shift, and Escape key labels are visible as non-interactive visual keycaps. They do
@@ -1732,6 +1745,22 @@ Use a disposable data file. Start with no patients and use available visit slots
    shows feedback.<br>
    Expected: Several command entries remain readable, all groups can be reached by scrolling, and text wraps
    without horizontal clipping. The URL, feedback, and buttons remain visible below the list.
+
+1. **Keyboard scrolling:** Close Help, focus the result display, and press F1. Resize Help to its minimum size. Use Down and
+   End to reach the later commands, then Home and Up to return towards the top.<br>
+   Expected: Help opens with focus on the command list, and the keys allow every group to be reached.
+
+1. **Button navigation:** Open Help. Press Tab until **Open User Guide** is focused, then press Shift+Tab to return
+   to the command list. Press Tab through **Open User Guide** and **Copy URL** until **Close** is focused, then press
+   Space.<br>
+   Expected: Focus moves between the list and buttons, focused buttons have a visible outline, and Space activates Close.
+
+1. **Display scaling:** Repeat the layout and keyboard checks at 1920×1080 with 100% and 125% OS scaling, and at
+   1280×720 with 150% OS scaling.<br>
+   Expected: Text and controls remain readable and accessible after resizing. Scene-layout tests do not replace
+   these OS-level checks.
+
+#### Window and focus checks
 
 1. **Window reuse:** With no confirmation or follow-up prompt pending, enter `help`. Move and resize Help,
    then enter `help add` and `help 123` in the main window.<br>
@@ -1746,16 +1775,13 @@ Use a disposable data file. Start with no patients and use available visit slots
    using **Close**, **Escape**, and the native close control, reopening it for each attempt.<br>
    Expected: Focus returns to the command box with the draft unsubmitted and its caret and selection restored.
 
-1. **Keyboard scrolling:** Focus the result display and press F1. Resize Help to its minimum size. Use Down and
-   End to reach the later commands, then Home and Up to return towards the top.<br>
-   Expected: Help opens with focus on the command list, and the keys allow every group to be reached.
+1. **Shutdown:** Open Help and exit Doc using `exit`, **File → Exit**, and the main window's native close control,
+   restarting between attempts. Repeat with Help minimized.<br>
+   Expected: Both windows close; no Help window remains.
 
-1. **Button navigation:** Open Help. Press Tab until **Open User Guide** is focused, then press Shift+Tab to return
-   to the command list. Press Tab through **Open User Guide** and **Copy URL** until **Close** is focused, then press
-   Space.<br>
-   Expected: Focus moves between the list and buttons, focused buttons have a visible outline, and Space activates Close.
+#### Pending-confirmation checks
 
-1. **Help during confirmation:** Use disposable patient data with at least one patient.
+1. **Help during confirmation:** Launch Doc with disposable patient data containing at least one patient.
 
    1. Enter `delete 1`, then type `y` without submitting it. Open and dismiss Help using F1 and the Help menu.<br>
       Expected: The confirmation prompt and draft remain unchanged, with no deletion or data-file write.<br>
@@ -1764,15 +1790,6 @@ Use a disposable data file. Start with no patients and use available visit slots
    1. Enter `delete 1`, then submit `help`.<br>
       Expected: Deletion is cancelled without opening Help or changing patient data. The typed input is treated
       as the confirmation response.
-
-1. **Shutdown:** Open Help and exit Doc using `exit`, **File → Exit**, and the main window's native close control,
-   restarting between attempts. Repeat with Help minimized.<br>
-   Expected: Both windows close; no Help window remains.
-
-1. **Display scaling:** Repeat the layout and keyboard checks at 1920×1080 with 100% and 125% OS scaling, and at
-   1280×720 with 150% OS scaling.<br>
-   Expected: Text and controls remain readable and accessible after resizing. Scene-layout tests do not replace
-   these OS-level checks.
 
 ### User Guide actions
 
