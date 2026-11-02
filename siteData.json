@@ -41,8 +41,8 @@
       "title": "Developer Guide",
       "headings": {
         "doc-developer-guide": "Doc Developer Guide",
-        "ai-assistance": "AI assistance",
         "acknowledgements": "Acknowledgements",
+        "ai-assistance": "AI assistance",
         "setting-up-getting-started": "Setting up, getting started",
         "design": "Design",
         "architecture": "Architecture",
