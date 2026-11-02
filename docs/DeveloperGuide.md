@@ -173,7 +173,7 @@ dependency, not a startup timestamp: eligibility checks read the clock during co
 ### Model component
 **API** : [`Model.java`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/java/seedu/address/model/Model.java)
 
-<puml src="diagrams/ModelClassDiagram.puml" width="450" />
+<puml src="diagrams/ModelClassDiagram.puml" width="700" />
 
 
 The `Model` component,
@@ -1020,14 +1020,6 @@ the saved draft. A new ordinary submission resets the position to immediately af
 after the recalled text, and consumes the event so the key does not also move the caret. Other keys retain the usual
 `TextField` behavior. The history belongs only to the current `CommandBox`, so it is discarded when the application
 closes.
-
-### \[Proposed\] Data archiving
-
-Data archiving is a planned feature and is not available in the current version. A future implementation may keep
-inactive patient records outside the active caseload while retaining their visit history for later reference.
-
-
---------------------------------------------------------------------------------------------------------------------
 
 ## **Documentation, logging, testing, dev-ops**
 

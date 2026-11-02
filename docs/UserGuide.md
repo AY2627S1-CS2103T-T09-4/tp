@@ -96,6 +96,9 @@ Previous dates are stored oldest first and displayed newest first by [view](#vie
 Notes belong to the patient; separate notes are not stored for each visit. Retained datetimes do not verify
 attendance, cancellation, or completion.
 
+All visit dates and times use the computer's local time zone. Doc does not store a separate time zone for each
+patient, so dates and times from other time zones must be converted before they are entered.
+
 Choose the command according to what you want to change:
 
 | Goal | Command | Effect on the visit record |
@@ -212,6 +215,9 @@ Format: `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NU
 * The optional health and emergency-contact fields below can appear in any order. Omit a field if it is unrecorded.
   If supplied in `add`, its value must not be blank, and its prefix must appear only once.
   Surrounding whitespace is trimmed.
+* A recognized prefix preceded by whitespace starts another field, even when it appears inside `note/NOTES`.
+  For example, `note/Allergic to t/penicillin` stores `Allergic to` as the note and `penicillin` as a tag. Doc does
+  not support quoting or escaping prefix-like text inside notes.
 
 | Field | Example | Accepted values |
 | --- | --- | --- |
@@ -266,7 +272,7 @@ Visit-time conflict detection has these limitations:
 
 * It compares the parsed date and time exactly to the minute. It does not account for appointment duration, travel
   time, preparation time, or partially overlapping visits.
-* It does not manage doctor availability, time zones, recurring visits, or separate schedules for multiple doctors.
+* It does not manage doctor availability, recurring visits, or separate schedules for multiple doctors.
 * Past datetimes are subject to the same uniqueness rule, including dates retained as previous visits.
 
 <box type="tip" seamless>
@@ -425,9 +431,8 @@ Clearing allergies does not record `No known allergies`; clearing smoking status
 * Use `note/NOTES` to replace the entire stored note. Use an empty `note/` to clear it; notes can be edited
   without `vd/`. An explicitly empty note counts as a supplied field, even when the note is already empty.
 * Leading and trailing whitespace in notes is trimmed; internal whitespace is preserved. An empty value after
-  trimming clears the note. A recognized prefix preceded by whitespace starts another field, even inside notes
-  (e.g., `note/Review medication e/new@example.com` edits both notes and email). There is no quoting or escaping
-  for literal prefix text, so prefix-looking text separated by whitespace cannot be stored as part of a note.
+  trimming clears the note. The [prefix behavior described for `add`](#adding-a-patient-add) also applies when
+  editing notes, so prefix-like text preceded by whitespace cannot be stored as part of a note.
 * Prefixes can appear in any order. Repeated single-valued prefixes, including `note/`, are rejected,
   even when their values are identical or empty. Multiple `t/TAG` prefixes are allowed.
 * Editing replaces the stored visit date and time; it does not append a visit-history entry.
@@ -669,10 +674,6 @@ acceptable range). Therefore, edit the data file only if you are confident that 
 Files created by older versions can also be invalid if two patient records use the same visit date and time. Assign a
 different visit slot to each record before opening such a file with this version.
 </box>
-
-### Archiving data files `[coming in v2.0]`
-
-_Details coming soon ..._
 
 --------------------------------------------------------------------------------------------------------------------
 
