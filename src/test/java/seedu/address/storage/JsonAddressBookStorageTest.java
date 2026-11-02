@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import seedu.address.commons.exceptions.DataLoadingException;
+import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.AddressBook;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.person.Person;
@@ -157,6 +158,32 @@ public class JsonAddressBookStorageTest {
     @Test
     public void readAddressBook_invalidAndValidPersonAddressBook_throwDataLoadingException() {
         assertThrows(DataLoadingException.class, () -> readAddressBook("invalidAndValidPersonAddressBook.json"));
+    }
+
+    @Test
+    public void readAddressBook_nullPatient_throwsDataLoadingExceptionWithoutChangingFile() throws Exception {
+        assertInvalidEntryRejected("nullPatientAddressBook.json", "Patient list contains a null patient entry.");
+    }
+
+    @Test
+    public void readAddressBook_nullTag_throwsDataLoadingExceptionWithoutChangingFile() throws Exception {
+        assertInvalidEntryRejected("nullTagAddressBook.json", "Patient's tags contain a null tag entry.");
+    }
+
+    /**
+     * Checks that invalid entries produce a recoverable loading error without modifying the saved file.
+     */
+    private void assertInvalidEntryRejected(String fixtureName, String expectedReason) throws Exception {
+        Path filePath = testFolder.resolve("doc.json");
+        Files.copy(TEST_DATA_FOLDER.resolve(fixtureName), filePath);
+        byte[] originalBytes = Files.readAllBytes(filePath);
+        JsonAddressBookStorage storage = new JsonAddressBookStorage(filePath);
+
+        DataLoadingException exception = assertThrows(DataLoadingException.class, storage::readAddressBook);
+
+        assertTrue(exception.getCause() instanceof IllegalValueException);
+        assertEquals(expectedReason, exception.getCause().getMessage());
+        assertArrayEquals(originalBytes, Files.readAllBytes(filePath));
     }
 
     @Test
