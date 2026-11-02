@@ -508,68 +508,40 @@ Examples:
 
 ### Scheduling the next visit: `next`
 
-Schedules or records a patient's following appointment and retains the current visit date and time in their visit
-record. Use `next` after handling the current visit, including when entering follow-up visits late. Retained dates
-do not verify attendance or completion. Use `edit ... vd/` to correct or reschedule an existing appointment without
-adding a previous date.
+Schedules or records a patient's following appointment, moving the current visit date and time into **Visit history**.
+Use `edit ... vd/` instead to correct or reschedule the current appointment without adding a history entry.
 
 Format: `next INDEX DATETIME`
 
-* Use a positive `INDEX` from the currently displayed list, including results of `find` or `sort date`.
-  `view` keeps that list and its indices unchanged.
-* Enter `DATETIME` as `d/M/yyyy HHmm`, with a four-digit 24-hour time and a year from `1900` to `2099`. Spaces or tabs
-  separate the arguments; repeated and outer whitespace are accepted. Do not use `vd/`, quotation marks, or extra
-  arguments.
-* The current visit must be at or before your computer's current local time at execution. If it is still in the
-  future, use `edit ... vd/` to reschedule it.
-* The requested appointment must be strictly later than the current recorded visit. This keeps every previous visit
-  earlier than the new current visit. An unchanged or earlier datetime is rejected.
-* An appointment at or before the computer's current local time is allowed after confirmation. Doc warns,
-  `This appointment is not in the future: DATETIME. Record it as the next visit for NAME anyway? Type y to confirm.
-  Any other input cancels.` This includes an appointment exactly at now or at the start of the current minute.
-* The requested appointment must differ from every other patient's current and previous visit dates and times,
-  including hidden patients. Leading-zero dates compare equally: `1/11/2026 0930` and `01/11/2026 0930` are the same time.
-* Conflict detection covers identical start times, not visit duration, travel time, or partial overlaps.
-  The [visit-time conflict limitations under add](#adding-a-patient-add) also apply.
-* When the requested appointment is on a different day that already has 7 or more visits, the app asks, e.g.
-  `Heads up: you already have 7 visits on Mon, 2 Nov 2026. Schedule Jane Tan's next visit on that day anyway? Type y
-  to confirm. Any other input cancels.` Type `y` and press Enter to schedule it; surrounding spaces and letter case
-  are ignored. Any other input shows `Scheduling cancelled.`, keeps the data unchanged, and is not run as a command.
-  When both the time and full-day warnings apply, Doc combines them into one prompt with one confirmation.
-  If a future appointment reaches or passes now while a full-day prompt is open, Doc asks again with the new
-  time warning before applying the change. If another patient takes the slot, or the selected record changes,
-  the request is rejected. Confirmation rechecks that the current visit has arrived and the new visit is later.
-  Moving later on the same day skips the full-day warning, since that day's visit count does not grow;
-  a non-future appointment still requires confirmation.
-* Prompts and cancellation preserve patient data, visit history, the displayed list, and the details panel.
-* Success appends the old current date and time to the previous dates, then sets the new current date and time.
-  All other details, including empty optional fields, are preserved. Previous dates are saved in order in the
-  JSON data file and appear newest first under **Visit history**, at the bottom of the refreshed patient-details panel.
-* If no further visit is planned, leave the current date and time unchanged, even after it passes.
-* Success shows `Next visit scheduled for patient NAME: DATETIME`, saves the record, and automatically shows the
-  updated patient in the details panel.
-* Validation errors preserve data and the displayed list. A save failure reports a storage error and restores the
-  patient data and displayed list to their state before the command.
+* Use the patient's `INDEX` from the currently displayed list.
+* Enter `DATETIME` as `d/M/yyyy HHmm`, using a four-digit 24-hour time and a year from `1900` to `2099`.
+  Do not include `vd/`.
+* The current visit must have arrived or passed, and the new visit must be strictly later than it.
+* Choose a time that is not used by another patient's current or previous visits, including patients hidden by filters.
+  Doc checks identical start times only; see the [visit-time conflict limitations](#adding-a-patient-add).
 
-Common errors:
+Doc asks for confirmation when the new visit:
 
-| Input problem | Feedback |
-| --- | --- |
-| Current visit still in the future | `Patient NAME has a current visit at DATETIME that is still in the future. Use edit to reschedule it.` |
-| Time before the current recorded visit | `The next visit must be later than the current recorded visit (DATETIME). Choose a later date and time.` |
-| Unchanged appointment | `Patient NAME already has an appointment at DATETIME.` |
-| Another patient's current or previous visit | `Patient NAME already has a current or previous visit at DATETIME and is shown in the patient details panel. Choose a different date and time.` |
+* Is at or before the current date and time.
+* Moves to a different day that already has seven or more current appointments. Hidden patients count; visit history
+  does not. Moving within the same day does not trigger this warning.
 
-Bare `next` shows usage. Missing or extra arguments, `vd/` syntax, and incorrect index syntax show a reason and usage.
-Invalid dates show the required format; an index outside the displayed list shows the existing invalid-index error.
-Datetimes in feedback use `d/M/yyyy HHmm`; comparisons with the clock still use its full precision.
+Type `y` and press Enter to proceed despite the warning. Any other input cancels without changing the record
+and is not run as a command.
 
-Examples (the selected patient's current visit must have arrived or passed; choose an unused datetime later than it):
+On success, Doc shows `Next visit scheduled for patient NAME: DATETIME` and refreshes the patient's details.
+**Visit history** shows previous visits newest first; other patient details stay unchanged.
+Filtering and sorting are preserved. If saving fails, Doc reports the error and restores the data; see
+[Saving the data](#saving-the-data).
 
-* `next 1 1/11/2026 0930` schedules the first displayed patient's next appointment for 1 November 2026 at 09:30.
-* `find n/Priya`, then `next 1 2/11/2026 1430`, schedules Priya Nair and keeps the matching search results displayed.
-* On 29 October 2026, if the current visit is `1/10/2026 0900`, `next 1 15/10/2026 1000` asks for confirmation.
-  Entering `y` retains October 1 in history and records October 15 as current. No temporary future appointment is needed.
+Examples (use an unused time later than the selected patient's current visit, which must have arrived or passed):
+
+* `next 1 1/12/2026 0930` schedules the first displayed patient's following visit for 1 December 2026 at 09:30.
+* To record a follow-up late: if the current visit is `1/10/2026 0900` and today is 2 November 2026,
+  `next 1 15/10/2026 1000`, then `y`, records 15 October as current and retains 1 October in history.
+
+If no further visit is planned, leave the current date and time unchanged. Recorded dates do not verify attendance
+or completion.
 
 ### Restoring the previous visit: `prev`
 
