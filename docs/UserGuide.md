@@ -191,6 +191,7 @@ Typing `help` and pressing <kbd>Enter</kbd> answers that prompt instead of openi
 
 <img src="images/helpWindow.png" alt="Help window" width="700" style="max-width: 100%; height: auto;">
 
+<br>
 
 ### Adding a patient: `add`
 

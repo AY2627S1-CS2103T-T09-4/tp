@@ -20,6 +20,10 @@
   [PR #282](https://github.com/AY2627S1-CS2103T-T09-4/tp/pull/282) and the patient-feature documentation below.
   Ming Shun also used Anthropic Claude Code to assist with project development. This acknowledgement describes
   Ming Shun's use of these tools, not other team members' AI use.
+* Hoong Ken (`hhkennn`), Twisha Mehta (`ahsiwt101`), Chan Tze Yuon (`tzeyuon`), and Kean Lai (`JamesLee5182`)
+  used OpenAI Codex to assist with feature implementation, code refactoring, writing and updating tests, and
+  refining project documentation. Codex also assisted with reviewing code for potential bugs and checking
+  adherence to the project's Java coding and code-quality standards.
 
 --------------------------------------------------------------------------------------------------------------------
 
