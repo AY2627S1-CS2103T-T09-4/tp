@@ -185,10 +185,11 @@ The `Storage` component,
 both files exist, the preferred file takes precedence and the legacy file is left unchanged. A failed move falls back
 to the legacy path for that run and contributes a warning shown after the main window opens.
 
-When the patient data file does not exist, `MainApp` initializes the model with the seven records returned by
-`SampleDataUtil#getSampleAddressBook`. The sample patients are George Miller, Priya Nair, Aisha Rahman, Marcus Lim,
-Mei Lin Tan, Daniel Wong, and Noor Aziz. If an existing data file can be loaded successfully, including one with no
-records, its contents take precedence over these samples. If an existing data file cannot be loaded—for example,
+When the patient data file does not exist, `MainApp` initializes the model with the ten records returned by
+`SampleDataUtil#getSampleAddressBook`: Amelia Tan, Benjamin Lim, Chloe Ng, David Koh, Farah Aziz, Grace Wong, two
+patients named Jordan Lee, Kavita Rao, and Lucas Chen. If an existing data file can be loaded successfully,
+including one with no records, its contents take precedence over these samples. If an existing data file cannot be
+loaded—for example,
 because it is malformed or contains conflicting records—`MainApp` starts with an empty address book.
 
 Because almost every command saves the address book, the next command would overwrite the unreadable file.
@@ -392,7 +393,8 @@ retained for display and storage, and `Name#equals` remains an exact value compa
 
 Doc distinguishes a **true duplicate** from a **name duplicate**:
 
-* A true duplicate has the same normalized name and exact phone number as an existing patient.
+* A true duplicate has the same normalized name and the same phone number, compared by digits only, as an existing
+  patient.
   `Person#isSamePerson` implements this identity rule. `UniquePersonList` rejects true duplicates, so the same
   invariant applies to commands, model replacement, and data loaded from JSON. A true duplicate is rejected without
   offering confirmation.
@@ -503,9 +505,9 @@ new duplicate rules:
 * A file accepted by an older version can become invalid when two records have the same phone number and names that
   differ only in letter case or repeated spacing. The normalized names now make those records true duplicates.
 * A file accepted by an older version can also become invalid when two records use the same visit date and time.
-* For either conflict, Doc reports the loading problem and starts with an empty patient list. The conflicting file is
-  not backed up automatically, and a command that triggers saving, such as `list`, can replace it with the empty
-  patient list. Users must back up the file and resolve the conflicts manually before migration.
+* For either conflict, Doc starts with an empty patient list and shows a start-up warning. It first copies the
+  conflicting file to `doc-invalid-<yyyyMMdd-HHmmss>.json` (see [Storage component](#storage-component)), so later
+  saves cannot lose it. Users must resolve the conflicts manually in that copy, then use it to replace `doc.json`.
 
 #### Visit-time conflict limitations
 
@@ -524,7 +526,8 @@ The visit-date rule prevents only exact scheduling collisions:
 `Person` retains an optional `DateOfBirth` alongside blood type, emergency contact, and visit history.
 Add and edit accept `dob/`; omitted values preserve existing data, while an empty value clears it during edit.
 Storage defaults missing or null `dateOfBirth` fields to an unrecorded value for older files.
-Patient cards and details show the recorded date and completed age below the name, before blood type.
+Patient cards show the recorded date and completed age below the name, before blood type. The details panel shows
+it in **Medical profile**, after blood type and before smoking status.
 
 ### Optional blood type
 
@@ -535,9 +538,9 @@ edit maps an explicitly empty value to `UNKNOWN`. Other edits and visit reschedu
 
 `JsonAdaptedPerson` stores the display value (e.g. `A+`) in the `bloodType` property. Missing or null properties
 from older files load as `UNKNOWN`; an empty string represents a cleared value. Invalid stored values are rejected.
-Both patient cards and the details panel show recorded blood type below the date of birth (or the name when
-DOB is absent), hiding and unmanaging the row
-when it is unrecorded. Patient identity continues to use name and phone number.
+Patient cards show recorded blood type below the date of birth (or the name when DOB is absent). The details panel
+shows it in **Medical profile**, after allergies and before the date of birth. Both hide and unmanage the row when it
+is unrecorded. Patient identity continues to use name and phone number.
 
 ### Optional allergies
 
@@ -548,9 +551,9 @@ written in one value, such as `Penicillin; latex`; the field does not interpret,
 reject repeated prefixes. Unrelated edits, `next`, and `prev` preserve the field along with other patient details.
 
 `JsonAdaptedPerson` stores the `allergies` string and treats missing or null fields in older files as unrecorded.
-The right-hand details panel displays recorded allergies after blood type, before alcohol history and smoking
-status. Long values wrap within the scrollable panel. Unrecorded values hide the row without implying no allergies.
-Add/edit help follows the same field order; patient list cards and patient identity remain unchanged.
+The right-hand details panel displays recorded allergies first in **Medical profile**, before blood type, so this
+safety-critical information is easy to find. Long values wrap within the scrollable panel. Unrecorded values hide the
+row without implying no allergies. Patient list cards and patient identity remain unchanged.
 
 ### Optional alcohol history
 
@@ -560,8 +563,8 @@ removed; empty text represents unrecorded history and remains distinct from the 
 history. Both parsers reject repeated `alc/` prefixes. Unrelated edits, `next`, and `prev` preserve the history.
 
 `JsonAdaptedPerson` saves the `alcoholHistory` string and treats missing or null fields in older files as unrecorded.
-The right-hand details panel displays recorded alcohol history immediately after allergies, wraps long text, and
-hides the row when unrecorded. Patient list cards and duplicate-patient identity remain unchanged.
+The right-hand details panel displays recorded alcohol history last in **Medical profile**, after smoking status,
+wraps long text, and hides the row when unrecorded. Patient list cards and duplicate-patient identity remain unchanged.
 
 ### Optional smoking status
 
@@ -573,7 +576,8 @@ hides the row when unrecorded. Patient list cards and duplicate-patient identity
 
 `JsonAdaptedPerson` stores the normalized lowercase status, or an empty string for unrecorded values.
 Missing or null `smokingStatus` fields in older files load as `UNRECORDED`; unsupported saved values are rejected.
-The right-hand details panel displays smoking status immediately after alcohol history. Patient list cards and
+The right-hand details panel displays smoking status in **Medical profile**, after the date of birth and before
+alcohol history. Patient list cards and
 patient identity remain unchanged. Add/edit help places `[smk/STATUS]` after `[alc/ALCOHOL_HISTORY]`.
 
 ### Editing patient details
@@ -1132,6 +1136,21 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 
       Use case resumes at step 1.
 
+* 1e. The requested visit day already has 7 or more current visits.
+
+    * 1e1. Doc asks the doctor to confirm adding the patient on that day. If 1c also applies, both warnings appear
+      in one prompt.
+    * 1e2. The doctor confirms the addition.
+    * 1e3. Doc adds the patient to the caseload and shows the newly added patient record.
+
+      Use case ends.
+
+    * 1e2a. The doctor does not confirm the addition.
+
+        * 1e2a1. Doc cancels the addition without changing the caseload.
+
+          Use case ends.
+
 **Use case: UC02 - Edit a patient's details**
 
 **Guarantees**
@@ -1197,6 +1216,20 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
     * 3f1. Doc shows an error asking the doctor to choose a different date and time.
 
       Use case resumes at step 3.
+
+* 3g. The requested changes move the visit to a different day that already has 7 or more current visits.
+
+    * 3g1. Doc asks the doctor to confirm the edit. If 3e also applies, both warnings appear in one prompt.
+    * 3g2. The doctor confirms the changes.
+    * 3g3. Doc updates the patient's details and shows the updated record.
+
+      Use case ends.
+
+    * 3g2a. The doctor does not confirm the changes.
+
+        * 3g2a1. Doc cancels the edit without changing the patient record.
+
+          Use case ends.
 
 **Use case: UC03 - Prepare for the day's visits**
 
@@ -1613,11 +1646,11 @@ the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Pa
 
 ### Dates of birth
 
-Use a disposable data file and available visit slots.
+Use a disposable data file, starting with no patients and available visit slots.
 
 1. Run `add n/Dob Patient dob/15/6/1990 p/81234567 a/10 Test Road vd/22/10/2026 1000`, then `view 1`.
-   Expect `Date of birth: 15/6/1990 (N years old)` immediately below the name in both the left-hand patient
-   card and the right-hand details panel, with the age in completed years
+   Expect `Date of birth: 15/6/1990 (N years old)` immediately below the name in the left-hand patient card and
+   in **Medical profile** in the right-hand details panel, with the age in completed years
    on the computer's current local date. A leap-day birthday advances on March 1 in non-leap years.
 1. Run `edit 1 n/Dob Patient dob/20/7/1985`, then `view 1`; expect the replacement date and recalculated age.
 1. Edit another field, then run `edit 1 vd/1/1/2000 1000` so the current visit has passed.
@@ -1639,7 +1672,8 @@ Use a disposable data file and available visit slots.
 Use a disposable data file, starting with no patients and available visit slots.
 
 1. Run `add n/Allergy Test bt/A+ all/Penicillin; latex alc/Does not drink smk/former p/81234567 a/10 Test Road vd/1/1/2000 1000`.
-   Run `view 1`; expect allergies below blood type and above alcohol history and smoking status on the right.
+   Run `view 1`; expect allergies first in **Medical profile** on the right, above blood type, smoking status, and
+   alcohol history.
 1. Run `edit 1 all/No known allergies`, then `view 1`; expect the explicit entry to remain visible.
 1. Edit alcohol history or smoking status, then run `next 1 1/1/2099 1000`; expect allergies unchanged and the previous
    visit retained. Restart and view the patient; expect all recorded details to remain.
@@ -1654,8 +1688,9 @@ Use a disposable data file, starting with no patients and available visit slots.
 Use a disposable data file, starting with no patients and available visit slots.
 
 1. Run `add n/Smoking Test alc/Does not drink smk/FORMER p/81234567 a/10 Test Road vd/1/1/2000 1000`.
-   Run `view 1`; expect `Smoking status: former` immediately below alcohol history on the right.
-1. Run `edit 1 alc/Occasional drinking smk/current`, then `view 1`; expect both replacements in that order.
+   Run `view 1`; expect `Smoking status: former` immediately above alcohol history on the right.
+1. Run `edit 1 alc/Occasional drinking smk/current`, then `view 1`; expect both replacements, with smoking status
+   above alcohol history.
    Repeat with `never`, `former`, and `unknown`, including mixed case and surrounding whitespace.
 1. Edit another field, then run `next 1 1/1/2099 1000`; expect smoking status unchanged and the previous visit retained.
    Restart the application and view the patient; expect the status and visit history to remain.
@@ -1687,7 +1722,8 @@ Use a disposable data file, starting with no patients and available visit slots.
 Use a disposable data file, starting with no patients, and available visit slots.
 
 1. Run `add n/Blood Test bt/a+ p/81234567 a/10 Test Road vd/1/12/2099 1000`, then `view 1`.
-   Expect `Blood type: A+` directly below the name in the patient list and the details panel.
+   Expect `Blood type: A+` directly below the name in the patient list, and in **Medical profile** in the details
+   panel.
 1. Run `edit 1 bt/ab-`, then `view 1`; expect `Blood type: AB-` in both panels.
 1. Edit a different field, then run `edit 1 vd/1/1/2000 1000` so the current visit has passed.
    Run `next 1 2/12/2099 1000`; expect the blood type unchanged and `1/1/2000 1000` in the visit history.
@@ -1964,30 +2000,6 @@ Use a disposable copy of the data file for these tests. Start with a patient nam
 1. Try to add another patient named `ALEX  TAN` with phone number `91234567`. Expect the true-duplicate error without
    a confirmation prompt, even if the remaining fields differ.
 1. Close and reopen the application after confirming a name duplicate. Expect both same-name patients to load.
-
-### Optional alcohol history
-
-`Person` stores an immutable `AlcoholHistory` alongside blood type. It holds free text with surrounding whitespace
-removed; empty text represents unrecorded history and remains distinct from the explicit text `Does not drink`.
-`ParserUtil#parseAlcoholHistory` rejects blank add values, while edit maps an explicitly blank `alc/` to an empty
-history. Both parsers reject repeated `alc/` prefixes. Unrelated edits, `next`, and `prev` preserve the history.
-
-`JsonAdaptedPerson` saves the `alcoholHistory` string and treats missing or null fields in older files as unrecorded.
-The right-hand details panel displays recorded alcohol history immediately after allergies, wraps long text, and
-hides the row when unrecorded. Patient list cards and duplicate-patient identity remain unchanged.
-
-### Optional smoking status
-
-`Person` stores a `SmokingStatus` enum with `NEVER`, `FORMER`, `CURRENT`, `UNKNOWN`, and `UNRECORDED`.
-`UNKNOWN` represents explicitly recorded uncertainty; only `UNRECORDED` hides the row in the details panel.
-`SmokingStatus#fromString` trims surrounding whitespace and normalizes letter case using `Locale.ROOT`.
-`ParserUtil#parseSmokingStatus` rejects blank or unsupported recorded values, while edit maps blank `smk/` to
-`UNRECORDED`. Both parsers reject repeated `smk/` prefixes. Other edits, `next`, and `prev` preserve smoking status.
-
-`JsonAdaptedPerson` stores the normalized lowercase status, or an empty string for unrecorded values.
-Missing or null `smokingStatus` fields in older files load as `UNRECORDED`; unsupported saved values are rejected.
-The right-hand details panel displays smoking status immediately after alcohol history. Patient list cards and
-patient identity remain unchanged. Add/edit help places `[smk/STATUS]` after `[alc/ALCOHOL_HISTORY]`.
 
 ### Editing patient details
 
