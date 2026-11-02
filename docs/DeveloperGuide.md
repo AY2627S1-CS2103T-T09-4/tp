@@ -2077,15 +2077,19 @@ remain unchanged. A conflict may display the conflicting patient in the details 
    | Command | Expected feedback |
    | --- | --- |
    | `next` | Next usage. |
+   | `next 1` | `Provide an index, date, and time in that order.` with next usage. |
    | `next 0 27/10/2026 0900` | Invalid index syntax and usage. |
+   | `next 2147483648 27/10/2026 0900` | Index-too-large error with guidance and next usage. |
    | `next 2 27/10/2026 0900` | Index outside the displayed list. |
    | `next 1 25/10/2026 0900` | Unchanged appointment. |
    | `next 1 25/10/2026 0859` | Appointment before the current recorded visit. |
    | `next 1 31/2/2027 0930` | Invalid date. |
    | `next 1 1/11/2026 2400` | Invalid time. |
+   | `next 1 vd/27/10/2026 0900` | `Use next INDEX DATETIME without the vd/ prefix.` with next usage. |
+   | `next 1 27/10/2026 0900 extra` | `Unexpected arguments after the visit time.` with next usage. |
 
    Also request today's current local minute, provided it is later than the recorded visit; expect a time warning
-   and cancel with `n`. Other syntax variations can be explored using the usage message.
+   and cancel with `n`.
 
 1. Run `find n/Nextalpha Nextbeta`, then `sort date` again. Run `view 2`, followed by
    `next 2 27/10/2026 0900` (the illustration's `next 2 F1`). Expect Nextalpha's current datetime to become
@@ -2197,6 +2201,8 @@ or disappearance caused by the updated visit date.
 
 1. Run `find n/Nextalpha`, then `view 1`. Try `prev`, `prev 0`, and `prev 2`.<br>
    Expect usage feedback, a positive-index error with usage, and an index-out-of-range error respectively.
+   Also try `prev 2147483648`; expect the index-too-large error with guidance and prev usage.
+   Try `prev 1 extra`; expect `Unexpected arguments after the index.` with prev usage.
 1. Run `edit 1 vd/30/10/2026 0900 p/84567890 e/updated@example.com a/30 Updated Road all/Penicillin; latex alc/Does not drink smk/former note/Updated before rollback t/followup dob/15/6/1990 bt/A+ ec/Mary Tan, 91234567`,
    then `prev 1` and `y` without finding Nextalpha again.<br>
    Expect the prompt before confirmation and success even though the discarded datetime `F4` is in the future.
