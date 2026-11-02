@@ -109,7 +109,7 @@ The `UI` component,
 
 `ResultDisplay` is hosted in a fixed-height response panel. Its feedback text wraps within the available width, and the
 text area can be scrolled vertically when a message exceeds the panel height. The panel does not grow when the main
-window is resized; extra vertical space remains available to the patient list and patient-details panel instead.
+window is resized; extra vertical space remains available to the patient list and patient details panel instead.
 `ResultDisplay` intercepts unmodified <kbd>Up</kbd> and <kbd>Down</kbd> key presses before JavaFX performs caret navigation, scrolling the
 text area immediately while preserving modified arrow-key behavior for text selection and navigation. Each movement
 is clamped to the TextArea's vertical scrollbar bounds so repeated presses at an edge do not accumulate hidden scroll.
@@ -239,11 +239,11 @@ This section describes some noteworthy details on how certain features are imple
 ### Main-window keyboard navigation
 
 `MainWindow` installs a scene-level key-event filter that routes <kbd>Tab</kbd> through the command box, response panel,
-patient list, and patient-details `ScrollPane`, then back to the command box. <kbd>Shift</kbd>+<kbd>Tab</kbd> reverses this cycle.
+patient list, and the patient details panel's `ScrollPane`, then back to the command box. <kbd>Shift</kbd>+<kbd>Tab</kbd> reverses this cycle.
 The handler identifies the section containing the focus owner, requests focus on the next section's target, and
 consumes the event. Focus outside these sections is left to normal JavaFX traversal; the menu bar is outside this cycle.
 
-Explicit section targets keep the empty details panel reachable and prevent descendants such as labels or scrollbar
+Explicit section targets keep the empty patient details panel reachable and prevent descendants such as labels or scrollbar
 controls from becoming additional stops. A focus-owner listener updates the section's light-gray, 2-pixel outline.
 Every section reserves the same border space when unfocused, keeping the layout stable as focus moves.
 
@@ -546,7 +546,7 @@ confirms or cancels.
 1. **Rejection rules.** `AddCommand#execute` calls `validateNoConflicts`, which uses `DuplicatePersonFinder` to look
    for a true duplicate (same normalized name and phone) and then for a stored patient using the same current or
    previous visit time. Either case throws a `CommandException` that carries the matching patient, so `MainWindow`
-   shows that patient in the details panel. These rules are never overridable.
+   shows that patient in the patient details panel. These rules are never overridable.
 1. **Warnings.** `collectWarnings` gathers every warning that applies: a name duplicate, and a visit day that already
    has `Model.MAX_VISITS_PER_DAY` (7) or more current visits. With no warnings, the patient is added immediately.
    Otherwise, the warnings are joined into **one** prompt ending with `Add NAME anyway?`, so the doctor confirms once
@@ -580,7 +580,7 @@ saved. Only the confirmed result asks `LogicManager` to save, so a cancelled add
 Duplicate detection is a heuristic because Doc does not assign a permanent patient identifier:
 
 * Two different patients with the same normalized name and phone number cannot both be stored, such as family members
-  who share a name and contact number. A distinguishing name component or different contact number is required.
+  who share a name and phone number. A distinguishing name component or different phone number is required.
 * A returning patient with both a changed name and changed phone number is not detected as a possible duplicate.
 * Normalization does not understand nicknames, reordered names, misspellings, transliterations, or equivalent accented
   forms. It performs no fuzzy or culture-specific matching.
@@ -621,7 +621,7 @@ The visit-date rule prevents only exact scheduling collisions:
 `Person` retains an optional `DateOfBirth` alongside blood type, emergency contact, and visit history.
 Add and edit accept `dob/`; omitted values preserve existing data, while an empty value clears it during edit.
 Storage defaults missing or null `dateOfBirth` fields to an unrecorded value for older files.
-Patient cards show the recorded date and completed age below the name, before blood type. The details panel shows
+Patient cards show the recorded date and completed age below the name, before blood type. The patient details panel shows
 it in **Medical profile**, after blood type and before smoking status.
 
 `DateOfBirth` uses strict `LocalDate` parsing with `d/M/uuuu` after checking for a four-digit year.
@@ -644,7 +644,7 @@ edit maps an explicitly empty value to `UNKNOWN`. Other edits and visit reschedu
 
 `JsonAdaptedPerson` stores the display value (e.g. `A+`) in the `bloodType` property. Missing or null properties
 from older files load as `UNKNOWN`; an empty string represents a cleared value. Invalid stored values are rejected.
-Patient cards show recorded blood type below the date of birth (or the name when DOB is absent). The details panel
+Patient cards show recorded blood type below the date of birth (or the name when DOB is absent). The patient details panel
 shows it in **Medical profile**, after allergies and before the date of birth. Both hide and unmanage the row when it
 is unrecorded. Patient identity continues to use name and phone number.
 
@@ -657,7 +657,7 @@ written in one value, such as `Penicillin; latex`; the field does not interpret,
 reject repeated prefixes. Unrelated edits, `next`, and `prev` preserve the field along with other patient details.
 
 `JsonAdaptedPerson` stores the `allergies` string and treats missing or null fields in older files as unrecorded.
-The right-hand details panel displays recorded allergies first in **Medical profile**, before blood type, so this
+The patient details panel displays recorded allergies first in **Medical profile**, before blood type, so this
 safety-critical information is easy to find. Long values wrap within the scrollable panel. Unrecorded values hide the
 row without implying no allergies. Patient list cards and patient identity remain unchanged.
 
@@ -669,20 +669,20 @@ removed; empty text represents unrecorded history and remains distinct from the 
 history. Both parsers reject repeated `alc/` prefixes. Unrelated edits, `next`, and `prev` preserve the history.
 
 `JsonAdaptedPerson` saves the `alcoholHistory` string and treats missing or null fields in older files as unrecorded.
-The right-hand details panel displays recorded alcohol history last in **Medical profile**, after smoking status,
+The patient details panel displays recorded alcohol history last in **Medical profile**, after smoking status,
 wraps long text, and hides the row when unrecorded. Patient list cards and duplicate-patient identity remain unchanged.
 
 ### Optional smoking status
 
 `Person` stores a `SmokingStatus` enum with `NEVER`, `FORMER`, `CURRENT`, `UNKNOWN`, and `UNRECORDED`.
-`UNKNOWN` represents explicitly recorded uncertainty; only `UNRECORDED` hides the row in the details panel.
+`UNKNOWN` represents explicitly recorded uncertainty; only `UNRECORDED` hides the row in the patient details panel.
 `SmokingStatus#fromString` trims surrounding whitespace and normalizes letter case using `Locale.ROOT`.
 `ParserUtil#parseSmokingStatus` rejects blank or unsupported recorded values, while edit maps blank `smk/` to
 `UNRECORDED`. Both parsers reject repeated `smk/` prefixes. Other edits, `next`, and `prev` preserve smoking status.
 
 `JsonAdaptedPerson` stores the normalized lowercase status, or an empty string for unrecorded values.
 Missing or null `smokingStatus` fields in older files load as `UNRECORDED`; unsupported saved values are rejected.
-The right-hand details panel displays smoking status in **Medical profile**, after the date of birth and before
+The patient details panel displays smoking status in **Medical profile**, after the date of birth and before
 alcohol history. Patient list cards and
 patient identity remain unchanged. Add/edit help places `[smk/STATUS]` after `[alc/ALCOHOL_HISTORY]`.
 
@@ -702,7 +702,7 @@ email, note, emergency contact, or tag field clears its existing value and count
 
 Before replacement, `EditCommand` requires the current datetime to remain strictly later than the latest previous
 datetime. A valid past datetime is still allowed, and history is preserved unchanged. It permits an unchanged current
-date but rejects a value already used by another patient's current or previous dates, including hidden patients.
+visit date and time but rejects a value already used by another patient's current or previous visits, including hidden patients.
 The conflict check is repeated after confirmation so a slot taken while the prompt was pending cannot be introduced
 into the model. Chronology failures produce a command error explaining that the current datetime must be later
 than the latest previous visit and showing that previous datetime. This check occurs before constructing the
@@ -731,15 +731,15 @@ commands preserve the active filter and sort comparator, allowing the replacemen
 those rules are reevaluated, and return feedback with a `CommandResult` that requests saving. `LogicManager` saves
 through storage before returning the result to the UI.
 
-These results select the replacement patient for the details panel, refreshing the record and calendar label even if
+These results select the replacement patient for the patient details panel, refreshing the record and calendar label even if
 the patient moves or disappears from the displayed list. `view` can still select any displayed patient without
 requesting a save.
 
 Validation errors and cancelled confirmations leave patient data, saved data, and list context unchanged.
-Duplicate-related errors and name-confirmation prompts can display an existing patient in the details panel;
+Duplicate-related errors and name-confirmation prompts can display an existing patient in the patient details panel;
 other rejected inputs do not change that panel.
 If storage reports an I/O or permission failure, `LogicManager` restores the patient data, active filter, and sort
-captured before command execution. The success result never reaches `MainWindow`, so its details panel keeps the
+captured before command execution. The success result never reaches `MainWindow`, so its patient details panel keeps the
 previously displayed record. `FileUtil` saves through a temporary file and atomic replacement to protect the previous
 saved data.
 
@@ -970,7 +970,7 @@ Manual checks for repeated rollback, subsequent advancement, and persistence app
 ### Follow-up command-line input and confirmation
 
 `CommandInputRequest` lets any command collect an additional command-line input through the existing command box and
-result display. It contains the prompt and a response handler. The handler receives the raw next input and the
+response panel. It contains the prompt and a response handler. The handler receives the raw next input and the
 `Model`, then returns a `CommandResult`. That result can complete the interaction or contain another
 `CommandInputRequest`, so future commands can implement multi-step input without adding command-specific state to the
 UI or parser.
@@ -1045,7 +1045,7 @@ inactive patient records outside the active caseload while retaining their visit
 * is a house call doctor who treats patients in their homes rather than at a clinic
 * sees the same patients repeatedly for routine checkups, and makes 4-10 house visits on a typical working day
 * looks after patients who often have multiple ongoing medical conditions
-* needs a patient's address, contact number and medical history on hand before and during a visit
+* needs a patient's address, phone number and medical history on hand before and during a visit
 * plans each day's visits around patient severity, visit due dates and travel between homes
 * prefers desktop apps over other types of applications
 * can type fast and prefers typing to mouse interactions
@@ -1266,7 +1266,7 @@ Use cases marked **Future** describe planned functionality that is not available
 1.  Doctor requests the list of patients due to be visited today.
 2.  Doc shows those patients ordered by visit date and time.
 3.  Doctor requests to see the full record of a patient identified by their displayed index.
-4.  Doc shows the patient's address, contact number, patient-level medical notes and previous scheduled visit
+4.  Doc shows the patient's address, phone number, patient-level medical notes and previous scheduled visit
     datetimes.
 
     Steps 3 and 4 are repeated for each patient the doctor wants to prepare for.
@@ -1501,14 +1501,15 @@ Use cases marked **Future** describe planned functionality that is not available
 * **Calendar label**: `Past`, `Today`, or `Upcoming` beside the current datetime, based on its calendar date relative
   to the local date when details are rendered. It does not indicate attendance or completion.
 * **Caseload**: The collection of active patient records currently managed by a doctor.
-* **Current visit date**: The required date and time stored in `visitDate`. It can be past, present, or future and
-  remains stored until changed using `edit`, `next`, or `prev`. It must differ from every other current or previous
-  datetime.
+* **Current visit date and time**: The required date and time stored in `visitDate`. It can be in the past, present,
+  or future and remains stored until changed using `edit`, `next`, or `prev`. It must differ from every other
+  current or previous visit date and time.
 * **House call**: A medical consultation carried out at the patient's home rather than at a clinic.
 * **House-call doctor**: A doctor who travels to patients' homes to provide medical consultations and follow-up care.
 * **Medical condition**: An ongoing health issue recorded in a patient's notes to help the doctor prepare for future visits.
 * **MSS**: Main Success Scenario; the sequence of steps in a use case when nothing goes wrong.
-* **Next visit date**: The current visit datetime used for planning. The field remains required after its time passes.
+* **Next visit date**: Another term for the current visit date and time when planning visits. It refers to the same
+  `visitDate` field, which remains required even after its scheduled time has passed.
 * **Overdue visit**: A planning term for a current visit datetime that has passed. Doc does not determine whether the
   visit took place.
 * **Patient record**: The information Doc stores for one patient, including their contact details, medical notes,
@@ -1568,7 +1569,7 @@ The `next` and `prev` routes use the same sentinel and Nextalpha/Nextbeta fixtur
 a standalone setup. JSON, capacity, calendar, and Help checks are independent cases; preserve other patients and
 omitted optional fields when a case does not say to reset them. Successful `edit`, `next`, and `prev` commands preserve the active filter and sort
 comparator, although the updated patient may move or disappear when those rules are reevaluated. Their patient card
-and details panel refresh to the replacement record.
+and patient details panel refresh to the replacement record.
 
 ### Launch and shutdown
 
@@ -1602,15 +1603,15 @@ Use a disposable copy of Doc with disposable patient data. Do not modify the per
 1. While Doc stays open, rename the disposable `data/doc.json` file to `saved-doc.json`, then create an empty
    directory named `doc.json` in the same `data` folder. This blocks replacement of the data-file path.
    Run `next 1 1/1/2099 1000`, using a later supported future datetime if necessary.
-   Expected: A save error remains in the response panel. The patient card and details continue to show the original
+   Expected: A save error remains in the response panel. The patient card and patient details panel continue to show the original
    appointment, and `saved-doc.json` still contains the original visit.
 1. Remove only the empty `doc.json` directory and rename `saved-doc.json` back to `doc.json`.
    Run `delete 1`, then `y`.
-   Expected: Deletion succeeds, both the list and details panel are empty, and the saved JSON has no patients.
+   Expected: Deletion succeeds, both the patient list and patient details panel are empty, and the saved JSON has no patients.
 1. Add the patient again with `add n/Alpha p/90000001 a/1 Alpha Road vd/1/1/2000 0900`, then run `view 1`.
    While Doc stays open, rename `data/doc.json` to `saved-doc.json` and create an empty directory named `doc.json`
    in the same `data` folder. Run `delete 1`, then `y`.
-   Expected: A save error appears, the patient remains in both the list and details panel, and `saved-doc.json`
+   Expected: A save error appears, the patient remains in both the patient list and patient details panel, and `saved-doc.json`
    still contains the original patient record.
 1. Remove only the empty `doc.json` directory and rename `saved-doc.json` back to `doc.json` before continuing or
    closing Doc.
@@ -1628,35 +1629,35 @@ Use a new writable folder containing only a copy of `doc.jar`, so no normal pati
 the first launch loads the sample data. The route below deliberately clears it before adding two known records, so
 the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Patient` at index 2.
 
-1. **Reach an empty details panel:** Run `clear`, then submit `y` at the confirmation prompt.<br>
-   Expected: The patient list is empty and the patient-details panel is blank. Click the command box and press <kbd>Tab</kbd> four
-   times. Focus should move through command box, response panel, patient list, and patient details, then wrap to the
-   command box. From the command box, press <kbd>Shift</kbd>+<kbd>Tab</kbd> four times and confirm the reverse cycle. The empty details panel
+1. **Reach an empty patient details panel:** Run `clear`, then submit `y` at the confirmation prompt.<br>
+   Expected: The patient list is empty and the patient details panel is blank. Click the command box and press <kbd>Tab</kbd> four
+   times. Focus should move through command box, response panel, patient list, and patient details panel, then wrap to the
+   command box. From the command box, press <kbd>Shift</kbd>+<kbd>Tab</kbd> four times and confirm the reverse cycle. The empty patient details panel
    remains reachable and has a visible outline.
 1. **Create repeatable records:** Submit these commands in order:
 
    ```text
    add n/Alpha Patient p/90000001 a/1 Alpha Road vd/1/12/2099 0900
-   add n/Beta Patient p/90000002 a/2 Beta Road vd/2/12/2099 0900 note/This deliberately long clinical note records medication tolerance, home blood-pressure observations, mobility changes, caregiver updates, hydration reminders, and follow-up instructions for the next house call. Repeat the details panel checks after viewing this record so the note extends beyond the visible viewport and requires vertical scrolling.
+   add n/Beta Patient p/90000002 a/2 Beta Road vd/2/12/2099 0900 note/This deliberately long clinical note records medication tolerance, home blood-pressure observations, mobility changes, caregiver updates, hydration reminders, and follow-up instructions for the next house call. Repeat the patient details panel checks after viewing this record so the note extends beyond the visible viewport and requires vertical scrolling.
    ```
 
    Each successful `add` may display the newly added patient. Run `view 2` before the scrolling checks so the long
    `Beta Patient` record is definitely displayed and the list indices are known. Reduce the window height until its
    details overflow and the vertical scrollbar appears before testing scrolling.
-1. **Details scrolling and focus outline:** Use <kbd>Tab</kbd> or <kbd>Shift</kbd>+<kbd>Tab</kbd> to focus patient details. Confirm that the outline
+1. **Details scrolling and focus outline:** Use <kbd>Tab</kbd> or <kbd>Shift</kbd>+<kbd>Tab</kbd> to focus the patient details panel. Confirm that the outline
    surrounds the whole panel rather than an individual label or scrollbar. Press <kbd>Up</kbd>, <kbd>Down</kbd>,
    <kbd>Page Up</kbd>, <kbd>Page Down</kbd>, <kbd>Home</kbd>, and <kbd>End</kbd> separately.<br>
    Expected: <kbd>Up</kbd> and <kbd>Down</kbd> move a small amount, <kbd>Page Up</kbd> and <kbd>Page Down</kbd> move about one viewport, and <kbd>Home</kbd> and <kbd>End</kbd> reach the
    top and bottom without overscrolling. Mouse-wheel scrolling still works.
 1. **Fitting content:** Run `view 1`, then enlarge the window vertically until Alpha Patient's details fit without a
-   scrollbar. Focus patient details and press each of the six scrolling keys.<br>
+   scrollbar. Focus the patient details panel and press each of the six scrolling keys.<br>
    Expected: The details remain unchanged because there is no content to scroll.
-1. **View reset and command focus:** Run `view 2`, focus patient details, and press <kbd>End</kbd>. Return to the command box and
+1. **View reset and command focus:** Run `view 2`, focus the patient details panel, and press <kbd>End</kbd>. Return to the command box and
    run `view 2` again. Repeat after running `view 1`, then run `view 2` once more.<br>
    Expected: Every successful view starts Beta Patient or Alpha Patient at the top, including the repeated same-patient
    view and the switch between long and short records. After each command entered in the command box, focus remains in
    the command box.
-1. **Empty-panel behavior after clearing:** Run `clear`, submit `y`, and focus the blank details panel through the <kbd>Tab</kbd>
+1. **Empty-panel behavior after clearing:** Run `clear`, submit `y`, and focus the blank patient details panel through the <kbd>Tab</kbd>
    cycle. Press each scrolling key separately.<br>
    Expected: No key changes the blank panel, and <kbd>Tab</kbd>/<kbd>Shift</kbd>+<kbd>Tab</kbd> still move between all four sections.
 1. **Existing shortcuts:** The preceding step cleared the list. Refill it with these disposable records:
@@ -1673,7 +1674,7 @@ the patient list is in stored order with `Alpha Patient` at index 1 and `Beta Pa
    history. Focus the patient list and move the selection down through at least four patients, then back up. Confirm
    that each selected patient card remains fully visible and the list does not jump when the selected card is already
    visible. Leave unfinished text in the command box, traverse with <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd>, and confirm the text and
-   displayed patient do not change. Check mouse scrolling in the list and details panel, then follow the
+   displayed patient do not change. Check mouse scrolling in the patient list and patient details panel, then follow the
    [Help lifecycle checks](#help-window-lifecycle) for <kbd>F1</kbd> and Help regressions.
 
 ### Dates of birth
@@ -1682,7 +1683,7 @@ Use a disposable data file, starting with no patients and available visit slots.
 
 1. Run `add n/Dob Patient dob/15/6/1990 p/81234567 a/10 Test Road vd/22/10/2026 1000`, then `view 1`.
    Expect `Date of birth: 15/6/1990 (N years old)` immediately below the name in the left-hand patient card and
-   in **Medical profile** in the right-hand details panel, with the age in completed years
+   in **Medical profile** in the patient details panel, with the age in completed years
    on the computer's current local date. A leap-day birthday advances on March 1 in non-leap years.
 1. Run `edit 1 n/Dob Patient dob/20/7/1985`, then `view 1`; expect the replacement date and recalculated age.
 1. Edit another field, then run `edit 1 vd/1/1/2000 1000` so the current visit has passed.
@@ -1814,7 +1815,7 @@ Use a disposable data file. Start with no patients and use available visit slots
    Expected: Several command entries remain readable, all groups can be reached by scrolling, and text wraps
    without horizontal clipping. The URL, feedback, and buttons remain visible below the list.
 
-1. **Keyboard scrolling:** Close Help, focus the result display, and press <kbd>F1</kbd>. Resize Help to its minimum size. Use <kbd>Down</kbd> and
+1. **Keyboard scrolling:** Close Help, focus the response panel, and press <kbd>F1</kbd>. Resize Help to its minimum size. Use <kbd>Down</kbd> and
    <kbd>End</kbd> to reach the later commands, then <kbd>Home</kbd> and <kbd>Up</kbd> to return towards the top.<br>
    Expected: Help opens with focus on the command list, and the keys allow every group to be reached.
 
@@ -1977,8 +1978,9 @@ the styling belongs to the card rather than `SortCommand`, it applies to every p
 1. Run `list`. Expect only yesterday's patient card to have a darker background with muted text and tags. Expect
    alternating rows to remain visually distinct.
 1. Run `find` for the patient with yesterday's visit. Expect the matching card to remain muted.
-1. Run `sort date`. Expect all past patient cards to remain muted and to appear after today's and future visits.
-1. Select a muted card. Expect its selection border and background to remain visible, and expect the details panel
+1. Run `sort date`. Expect cards for patients whose visits are before today to remain muted and to appear after
+   cards for patients whose visits are today or later.
+1. Select a muted card. Expect its selection border and background to remain visible, and expect the patient details panel
    on the right to remain fully readable.
 1. Edit the past visit to tomorrow's date. Expect the updated card to return to the normal styling.
 
@@ -2014,7 +2016,8 @@ Give every other patient's current and previous dates different datetimes.
 1. With Doc closed, try removing `previousVisitDates`, setting it to `null`, then setting it to `[]`, reopening
    after each separate edit. Expect each form to load with empty previous dates.
 1. With Doc closed, test a non-array value, a null array entry, a malformed datetime, reversed dates, equivalent
-   duplicate datetimes, a previous date equal to the current date, and a datetime shared by two patients.
+   duplicate datetimes, a previous visit date and time equal to the current visit date and time, and a datetime
+   shared by two patients.
    Expect a startup warning and an empty list. Check the backup location reported in the warning; if backup failed,
    preserve a copy manually. Do not run saving commands after a load failure, as they can overwrite the active file
    with an empty list. Restore the disposable fixture
@@ -2091,7 +2094,7 @@ the operating-system clock.
 #### Main next route
 
 Follow these steps in order. For each rejection, check that patient data, the saved JSON, and the displayed list
-remain unchanged. A conflict may display the conflicting patient in the details panel.
+remain unchanged. A conflict may display the conflicting patient in the patient details panel.
 
 1. Launch Doc from the disposable folder, run `clear`, and enter `y` if confirmation is requested.
    Expect an empty patient list before continuing.
@@ -2159,7 +2162,7 @@ remain unchanged. A conflict may display the conflicting patient in the details 
 1. **Rollback starting state:** Close and reopen the application. Find and view each test patient.<br>
    Expect Nextalpha at `28/10/2026 0900` with saved previous dates `[25/10/2026 0900, 25/10/2026 1000]`, with the
    latter displayed above the former. Expect Nextbeta at `27/10/2026 0900` with previous dates
-   `[25/10/2026 1100]` and every other field preserved. Check **Visit history** at the bottom of the details panel
+   `[25/10/2026 1100]` and every other field preserved. Check **Visit history** at the bottom of the patient details panel
    and the persisted JSON. Re-find the intended patient after every successful mutation. Close Doc, then copy this
    scratch folder's `data/doc.json` into a separate backup folder as `rollback-start-doc.json`.
    Keep this backup outside the active scratch folder as the rollback starting state before running the independent
@@ -2264,7 +2267,7 @@ or disappearance caused by the updated visit date.
 1. Run `find n/Nextalpha Nextbeta`, then `sort date 1/1/2000`.<br>
    Expect Nextbeta at `F1` to be index 1 and Nextalpha at `F2` to be index 2. Run `view 2`, then `prev 2`, and `y`.
    Expect the prompt to identify Nextalpha and then the patient to move to index 1 as the preserved date sort
-   reevaluates its restored `P2` visit. The right-hand details refresh automatically: current is `P2`, previous dates
+   reevaluates its restored `P2` visit. The patient details panel refreshes automatically: current is `P2`, previous dates
    are `[P1]`.
    Find and view Nextbeta separately: its record remains unchanged at `F1` with previous dates `[P3]`.
    Run `find n/Nextalpha` and `view 1` before continuing.
@@ -2304,7 +2307,7 @@ data-file path as instructed there before continuing.
    patient again; expect the empty-state text to replace the other patient's dates.
 1. With Doc closed, extend a disposable patient's JSON `previousVisitDates` array with hundreds of globally unused
    datetimes in strictly increasing order, all earlier than that patient's current datetime. Reopen and view the
-   patient. Expect the newest previous date at the top. Scroll the details panel to the bottom; expect every entry
+   patient. Expect the newest previous date at the top. Scroll the patient details panel to the bottom; expect every entry
    to be accessible, including the oldest date. Verify that notes and tags appear before history. Repeat with a long note and a narrower
    window to check wrapping and scrolling.
 1. Record the data file contents, run `view` repeatedly for patients with empty and populated previous dates, and
@@ -2397,24 +2400,24 @@ when midnight passes; another `view` recalculates it.
    1. Prerequisites: List all patients using the `list` command, with multiple patients in the list.
 
    1. Test case: `delete 1`<br>
-      Expected: No patient is deleted. The result display shows
+      Expected: No patient is deleted. The response panel shows
       `Delete NAME? Type y to confirm. Any other input cancels.` using the first patient's name.
 
    1. Test case: `y` immediately after the previous test case<br>
-      Expected: The first patient is deleted from the list. The result display shows the deleted patient's details.
+      Expected: The first patient is deleted from the list. The response panel shows the deleted patient's details.
 
    1. Test case: `delete 1`, followed by `n`<br>
-      Expected: No patient is deleted. The result display shows `Deletion cancelled.`
+      Expected: No patient is deleted. The response panel shows `Deletion cancelled.`
 
    1. Test case: `delete 1`, followed by `list`<br>
-      Expected: No patient is deleted and `list` is consumed as the confirmation response. The result display shows
+      Expected: No patient is deleted and `list` is consumed as the confirmation response. The response panel shows
       `Deletion cancelled.` Entering `list` again lists all patients normally.
 
    1. Test case: `delete 1`, followed by pressing <kbd>Enter</kbd> with an empty command box<br>
-      Expected: No patient is deleted. The result display shows `Deletion cancelled.`
+      Expected: No patient is deleted. The response panel shows `Deletion cancelled.`
 
    1. Test case: `delete 0`<br>
-      Expected: No patient is deleted. The status message shows `Index must be a positive integer.` with usage.
+      Expected: No patient is deleted. The response panel shows `Index must be a positive integer.` with usage.
 
    1. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
       Expected: The matching index error is shown and no confirmation is requested.
@@ -2426,18 +2429,18 @@ when midnight passes; another `view` recalculates it.
    1. Prerequisites: Doc contains multiple patient records.
 
    1. Test case: `clear`<br>
-      Expected: No patient record is deleted. The result display shows
+      Expected: No patient record is deleted. The response panel shows
       `Clear COUNT entries? Type y to confirm. Any other input cancels.` with the current count.
 
    1. Test case: `Y` immediately after the previous test case<br>
-      Expected: All patient records are deleted and the result display shows `Patient list has been cleared!`.
+      Expected: All patient records are deleted and the response panel shows `Patient list has been cleared!`.
 
 1. Cancelling a clear operation
 
    1. Prerequisites: Doc contains at least one patient record.
 
    1. Test case: `clear`, followed by any input other than `y`, such as `list`<br>
-      Expected: No patient record is deleted, the second input is not executed as a command, and the result display shows
+      Expected: No patient record is deleted, the second input is not executed as a command, and the response panel shows
       `Clear cancelled.`
 
 1. Clearing an empty patient list
@@ -2445,7 +2448,7 @@ when midnight passes; another `view` recalculates it.
    1. Prerequisites: Doc contains no patient records.
 
    1. Test case: `clear`<br>
-      Expected: No confirmation is requested and the result display shows `Patient list is already empty.`
+      Expected: No confirmation is requested and the response panel shows `Patient list is already empty.`
 
 ### Saving data
 
