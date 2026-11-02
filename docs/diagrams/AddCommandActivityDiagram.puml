@@ -19,7 +19,8 @@ if () then ([same name and phone as a stored patient])
     :Reject the patient and show
     the existing patient;
     stop
-elseif () then ([visit time used by a stored patient])
+else ([else])
+if () then ([visit time used by a stored patient])
     :Reject the patient and show
     the patient using that time;
     stop
