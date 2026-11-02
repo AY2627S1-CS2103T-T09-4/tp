@@ -73,7 +73,7 @@ The **API** of this component is specified in [`Ui.java`](https://github.com/AY2
 
 <puml src="diagrams/UiClassDiagram.puml" alt="Structure of the UI Component"/>
 
-The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `PersonListPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
+The UI consists of a `MainWindow` and its parts, such as `CommandBox`, `ResultDisplay`, `PersonListPanel`, `PatientDetailsPanel`, and `StatusBarFooter`. All of these, including `MainWindow`, inherit from the abstract `UiPart` class, which captures common behavior among classes that represent visible GUI parts.
 
 The `UI` component uses the JavaFX UI framework. The layouts of these UI parts are defined in matching `.fxml` files in `src/main/resources/view`. For example, [`MainWindow.fxml`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/resources/view/MainWindow.fxml) specifies the layout of [`MainWindow`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/java/seedu/address/ui/MainWindow.java).
 
@@ -690,7 +690,7 @@ Each field is searched by its own `Predicate<Person>` class in the Model compone
 `MatchesAllCriteriaPredicate` combines them. `FindCommand` stores this single combined predicate, so it does not need
 to know which fields were searched.
 
-<puml src="diagrams/FindPredicateClassDiagram.puml" alt="Classes used to represent find search criteria" width="650" />
+<puml src="diagrams/FindPredicateClassDiagram.puml" alt="Classes used to represent find search criteria" />
 
 * `FieldContainsKeywordsPredicate` holds a field's keywords and implements `test` as "any keyword matches".
   It also implements `equals`, `hashCode`, and `toString`, comparing exact classes so that, for example, a name
@@ -1890,17 +1890,20 @@ displayed order, preserving the usual behavior of `list` and `find`.
 1. Run `agenda 27/10/2026`.<br>
    Expected: Visits from 27 October through 2 November 2026 appear chronologically.
 1. Run `agenda 27/10/2026 1`.<br>
-   Expected: Only visits on 27 October appear, including visits at 0000 and 2359.
+   Expected: Only the two visits on 27 October appear, at 0900 and then 1800.
 1. Run `find` for a patient outside the agenda range, then run `agenda 27/10/2026 7`.<br>
    Expected: The previous search is replaced with every visit in the agenda range.
 1. Run `list`.<br>
    Expected: All patients reappear in stored order.
 1. Run `agenda`, `agenda 31/2/2026`, `agenda 27/10/2026 0`, `agenda 27/10/2026 366`, and
    `agenda 27/10/2026 7 extra`.<br>
-   Expected: Each command shows the agenda usage message and leaves the displayed list unchanged.
-1. Run `agenda 31/12/9999 1`, then `agenda 31/12/9999 2`.<br>
-   Expected: The first shows visits on 31 December 9999; the second reports that the date range must end on or before
-   31/12/9999 and leaves the displayed list unchanged.
+   Expected: Each command shows its reason (`Invalid command format!`, `"31/2/2026" is not a valid start date.`,
+   `Days must be between 1 and 365.` twice, then `Give only a start date and an optional number of days.`)
+   followed by the agenda usage, and leaves the displayed list unchanged.
+1. Run `agenda 31/12/2099 1`, then `agenda 31/12/2099 2`.<br>
+   Expected: The first is accepted and shows any visits on 31 December 2099 (`No visits scheduled from 31/12/2099 to
+   31/12/2099.` if there are none); the second reports that the agenda date range must end on or before 31/12/2099
+   and leaves the displayed list unchanged.
 
 ### Distinguishing past visits in the patient list
 
