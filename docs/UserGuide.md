@@ -106,7 +106,7 @@ Choose the command according to what you want to change:
 | Leave a final visit recorded without planning another. | No command needed. | Keep the current visit date and time recorded, even after it is marked `Past`. |
 
 Successful `edit`, `next`, and `prev` commands preserve the current filtering and sorting. The updated patient may
-move within the list or disappear if the changed details no longer match those rules. The details panel automatically
+move within the list or disappear if the changed details no longer match those rules. The patient details panel automatically
 shows the updated patient and refreshes the record and its calendar label. Run `list` to return to the full list.
 
 When `next` moves an appointment to a different day that already has seven or more current appointments, Doc asks for
@@ -117,16 +117,16 @@ a later time on the same day does not trigger this warning.
 
 <img src="images/UiKeyboardNavigation.png" alt="Annotated Doc main window showing the four sections in the Tab cycle." width="842" style="max-width: 100%; height: auto;">
 
-**1** Command box · **2** Response panel · **3** Patient list · **4** Patient-details panel
+**1** Command box · **2** Response panel · **3** Patient list · **4** Patient details panel
 
 When the main window is active, press <kbd>Tab</kbd> to move through the four main sections in this order: command box,
-response panel, patient list, and patient-details panel. Pressing <kbd>Tab</kbd> from the patient-details panel returns
+response panel, patient list, and patient details panel. Pressing <kbd>Tab</kbd> from the patient details panel returns
 to the command box. Press <kbd>Shift</kbd>+<kbd>Tab</kbd> to move in reverse order, returning from the command box to
-the patient-details panel. A visible light-gray outline surrounds the section that currently contains keyboard focus: command box,
-response panel, patient list, or patient-details panel. The outline remains visible for empty sections; labels and the
-patient-details scrollbar are not separate <kbd>Tab</kbd> destinations. The menu bar is outside this four-section cycle.
+the patient details panel. A visible light-gray outline surrounds the section that currently contains keyboard focus: command box,
+response panel, patient list, or patient details panel. The outline remains visible for empty sections; labels and the
+patient details panel's scrollbar are not separate <kbd>Tab</kbd> destinations. The menu bar is outside this four-section cycle.
 
-With the patient-details panel focused, use <kbd>Up</kbd> and <kbd>Down</kbd> to scroll by a small increment,
+With the patient details panel focused, use <kbd>Up</kbd> and <kbd>Down</kbd> to scroll by a small increment,
 <kbd>Page Up</kbd> and <kbd>Page Down</kbd> to scroll by approximately one screenful of details, and <kbd>Home</kbd> and
 <kbd>End</kbd> to move to the top and bottom. These scrolling keys have no effect when the panel is empty or all
 details already fit. <kbd>Up</kbd> and <kbd>Down</kbd> keep their existing command-history behavior in the command box
@@ -140,7 +140,7 @@ The response panel has a fixed height, so resizing the application window does n
 feedback. Long success and error messages wrap within the panel. If a message is taller than the panel, use its
 vertical scroll bar or focus the panel and press <kbd>Up</kbd> and <kbd>Down</kbd> to read the remaining text.
 
-After every successful `view INDEX`, the patient-details panel returns to the top, including when viewing another
+After every successful `view INDEX`, the patient details panel returns to the top, including when viewing another
 patient or viewing the same patient again. Entering `view INDEX` in the command box leaves the cursor in the command box.
 
 ### Navigating command history
@@ -295,7 +295,7 @@ share the same emergency contact. Enter the contact inside the existing `add` or
 | `ec/` | Rejects the field in `add`; clears the emergency contact in `edit`. |
 
 To change or remove a contact, use the [optional-field editing examples](#editing-a-patient-edit).
-The details panel refreshes automatically after a successful edit.
+The patient details panel refreshes automatically after a successful edit.
 
 ### Listing all patients: `list`
 
@@ -304,8 +304,8 @@ Shows all patient records in Doc.
 Format: `list`
 
 Patients with a visit date before today are shown using darker backgrounds and muted text. This visual distinction
-also appears in patient lists produced by commands such as `find` and `sort date`. Past patients remain selectable,
-and their complete details remain readable in the details panel.
+also appears in patient lists produced by commands such as `find` and `sort date`. Patients whose visits are before
+today remain selectable, and their complete details remain readable in the patient details panel.
 
 ### Viewing visits as an agenda: `agenda START_DATE [DAYS]`
 
@@ -355,14 +355,14 @@ Examples:
 
 ### Viewing a patient's details: `view`
 
-Displays the selected patient's full record in the details panel on the right.
+Displays the selected patient's full record in the patient details panel on the right.
 
 Format: `view INDEX`
 
 Use a positive index from the currently displayed list, including `find` or `sort date` results.
 For example, `view 1` displays the first patient's full record without changing the list or saved data.
 
-The details panel groups information as follows. Unrecorded optional fields are hidden, except for the `Tags:` row,
+The patient details panel groups information as follows. Unrecorded optional fields are hidden, except for the `Tags:` row,
 which remains visible even when no tags are recorded.
 
 | Section | What it shows |
@@ -382,7 +382,7 @@ all times today, and `Upcoming` is after today. These labels do not indicate att
 A visit later today shows `Today`, but `next` still rejects it until its time has arrived.
 Run `view` again after midnight or a date change to refresh the details.
 
-After a successful edit, the details panel automatically shows the updated patient. Scroll to read long records;
+After a successful edit, the patient details panel automatically shows the updated patient. Scroll to read long records;
 see [keyboard navigation](#navigating-the-main-window-by-keyboard) for scrolling shortcuts.
 
 ### Editing a patient: `edit`
@@ -593,31 +593,31 @@ Format: `delete INDEX`
   After `y`, the app shows `Deleted patient:` followed by the deleted patient's details in the same form as `add`.
 * Type `y` and press <kbd>Enter</kbd> to confirm. Surrounding spaces and letter case are ignored.
 * Any other input, including an empty response or another valid command, cancels the deletion and is not run as a
-  command. The result display then shows `Deletion cancelled.`
+  command. The response panel then shows `Deletion cancelled.`
 * Invalid `delete` commands show the shared index errors and do not ask for confirmation.
-* After a successful deletion, the details panel is cleared only if it was showing the deleted patient. Details for
+* After a successful deletion, the patient details panel is cleared only if it was showing the deleted patient. Details for
   another patient remain visible.
 
 Examples:
 * `list` followed by `delete 2`, then `y`, deletes the 2nd patient in Doc.
 * `find n/Amelia` followed by `delete 1`, then `y`, deletes Amelia Tan as the 1st patient in the search results.
 
-### Clearing all entries: `clear`
+### Clearing all patient records: `clear`
 
 Clears all patient records from Doc.
 
 Format: `clear`
 
-* When Doc contains patient records, the result display asks for confirmation and shows the number of entries
+* When Doc contains patient records, the response panel asks for confirmation and shows the number of patient records
   that will be cleared.
 * Type `y` and press <kbd>Enter</kbd> to confirm. Surrounding spaces and letter case are ignored.
 * Any other input, including an empty response or another valid command, cancels the clear operation and is not run as
-  a command. The result display then shows `Clear cancelled.`
-* If Doc has no patient records, no confirmation is requested and the result display shows
+  a command. The response panel then shows `Clear cancelled.`
+* If Doc has no patient records, no confirmation is requested and the response panel shows
   `Patient list is already empty.`
 * After a successful clear, the patient details panel is also cleared.
 
-Example: `clear` followed by `y` clears every entry.
+Example: `clear` followed by `y` clears all patient records.
 
 ### Exiting the program: `exit`
 
