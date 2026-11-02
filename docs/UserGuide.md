@@ -571,7 +571,7 @@ Datetimes in feedback use `d/M/yyyy HHmm`; comparisons with the clock still use 
 Examples (the selected patient's current visit must have arrived or passed; choose an unused datetime later than it):
 
 * `next 1 1/11/2026 0930` schedules the first displayed patient's next appointment for 1 November 2026 at 09:30.
-* `find n/Amelia`, then `next 1 2/11/2026 1430`, schedules Amelia Tan and keeps the matching search results displayed.
+* `find n/Amelia`, then `next 1 8/11/2026 1430`, schedules Amelia Tan and keeps the matching search results displayed.
 * On 29 October 2026, if the current visit is `1/10/2026 0900`, `next 1 15/10/2026 1000` asks for confirmation.
   Entering `y` retains October 1 in history and records October 15 as current. No temporary future appointment is needed.
 
