@@ -30,7 +30,7 @@ optimized for use through a Command Line Interface (CLI) while retaining the ben
    Noor Aziz.<br>
    ![Ui](images/Ui.png)
 
-1. Type a command in the command box and press Enter to execute it. For example, type **`help`** and press Enter to open the help window.<br>
+1. Type a command in the command box and press <kbd>Enter</kbd> to execute it. For example, type **`help`** and press <kbd>Enter</kbd> to open the help window.<br>
    Some example commands you can try:
 
    * `list` : Lists all patients.
@@ -118,14 +118,14 @@ response panel, patient list, and patient-details panel. Pressing <kbd>Tab</kbd>
 to the command box. Press <kbd>Shift</kbd>+<kbd>Tab</kbd> to move in reverse order, returning from the command box to
 the patient-details panel. A visible light-gray outline surrounds the section that currently contains keyboard focus: command box,
 response panel, patient list, or patient-details panel. The outline remains visible for empty sections; labels and the
-patient-details scrollbar are not separate Tab destinations. The menu bar is outside this four-section cycle.
+patient-details scrollbar are not separate <kbd>Tab</kbd> destinations. The menu bar is outside this four-section cycle.
 
 With the patient-details panel focused, use <kbd>Up</kbd> and <kbd>Down</kbd> to scroll by a small increment,
 <kbd>Page Up</kbd> and <kbd>Page Down</kbd> to scroll by approximately one screenful of details, and <kbd>Home</kbd> and
 <kbd>End</kbd> to move to the top and bottom. These scrolling keys have no effect when the panel is empty or all
 details already fit. <kbd>Up</kbd> and <kbd>Down</kbd> keep their existing command-history behavior in the command box
 and patient-list navigation behavior in the patient list.
-In the patient list, Up and Down move the selection and scroll only as needed to keep the selected patient card fully
+In the patient list, <kbd>Up</kbd> and <kbd>Down</kbd> move the selection and scroll only as needed to keep the selected patient card fully
 visible.
 
 ### Reading command responses
@@ -162,25 +162,25 @@ commands. Detailed validation rules and examples remain in the command sections 
 
 Format: `help`
 
-You can also press **F1** or choose **Help → Help (F1)**. Repeating a help request brings the existing
+You can also press <kbd>F1</kbd> or choose **Help → Help** (<kbd>F1</kbd>). Repeating a help request brings the existing
 window to the front, restoring it if minimized. You can resize Help and continue using the main window.
 
-* **Browse commands:** The command list receives keyboard focus when Help opens. Use **Up** and **Down** to scroll through the
-  command reference, or **Home** and **End** to reach the top and bottom. The User Guide URL and buttons stay below the list.
+* **Browse commands:** The command list receives keyboard focus when Help opens. Use <kbd>Up</kbd> and <kbd>Down</kbd> to scroll through the
+  command reference, or <kbd>Home</kbd> and <kbd>End</kbd> to reach the top and bottom. The User Guide URL and buttons stay below the list.
 * **Read the full guide:** Choose **Open User Guide** to open it in your default browser. This requires
   an Internet connection. Doc's browser-opening message does not guarantee that the page loaded. If nothing opens,
   choose **Copy URL** and paste the address into your browser. If copying fails, retry or enter the displayed URL manually.
-* **Close Help:** Choose **Close**, press **Escape**, or use the window's close control. Focus returns to the
-  command box with your unfinished input unchanged. For example, type `find n/Be`, press F1, then close Help
+* **Close Help:** Choose **Close**, press <kbd>Escape</kbd>, or use the window's close control. Focus returns to the
+  command box with your unfinished input unchanged. For example, type `find n/Be`, press <kbd>F1</kbd>, then close Help
   to continue editing the same draft.
 
-Use **Tab** and **Shift+Tab** to move between the command list and buttons. Press **Space** to activate a focused
-button. On Windows and Linux, you can also press **Enter**.
+Use <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd> to move between the command list and buttons. Press <kbd>Space</kbd> to activate a focused
+button. On Windows and Linux, you can also press <kbd>Enter</kbd>.
 
 <box type="warning" seamless>
 
-While a confirmation or follow-up prompt is pending, open Help with **F1** or **Help → Help (F1)**.
-Typing `help` and pressing Enter answers that prompt instead of opening Help.
+While a confirmation or follow-up prompt is pending, open Help with <kbd>F1</kbd> or **Help → Help** (<kbd>F1</kbd>).
+Typing `help` and pressing <kbd>Enter</kbd> answers that prompt instead of opening Help.
 </box>
 
 ![Help window](images/helpWindow.png)
@@ -245,7 +245,7 @@ Format: `add n/NAME p/PHONE a/ADDRESS vd/DATETIME [e/EMAIL] [ec/[NAME, ]PHONE_NU
 * If only the name matches an existing patient, the app shows the matching patient in the patient details panel and
   asks `A patient named NAME already exists. The matching patient is shown in the patient details panel. Add NAME
   anyway? Type y to confirm. Any other input cancels.`
-* Type `y` and press Enter to add the patient. Surrounding spaces and letter case are ignored. Any other input cancels
+* Type `y` and press <kbd>Enter</kbd> to add the patient. Surrounding spaces and letter case are ignored. Any other input cancels
   the addition and is not run as a command. Confirmation rechecks that the visit date and time are still available.
 * If 7 or more patients already have a visit on the same day (at any time), the app warns you before adding another,
   e.g. `Heads up: you already have 7 visits on Fri, 18 Sep 2026. Add Jane Tan anyway? Type y to confirm. Any other
@@ -483,7 +483,7 @@ Format: `edit INDEX [n/NAME] [p/PHONE] [a/ADDRESS] [vd/DATETIME] [e/EMAIL] [ec/[
 * When an edit changes the patient's name to one already used by another patient with a different phone number, the
   app warns that the name is already used and asks
   `Apply this edit to NAME anyway? Type y to confirm. Any other input cancels.`
-* Type `y` and press Enter to apply the edit. Surrounding spaces and letter case are ignored. Any other input cancels
+* Type `y` and press <kbd>Enter</kbd> to apply the edit. Surrounding spaces and letter case are ignored. Any other input cancels
   the edit and is not run as a command. Editing other details of a patient whose name is already shared does not ask
   for confirmation again. A confirmed name-duplicate edit rechecks that its requested visit slot is still available.
 * When an edit moves a patient's visit to a different day that already has 7 or more visits, the app asks, e.g.
@@ -528,7 +528,7 @@ Doc asks for confirmation when the new visit:
 * Moves to a different day that already has seven or more current appointments. Hidden patients count; visit history
   does not. Moving within the same day does not trigger this warning.
 
-Type `y` and press Enter to proceed despite the warning. Any other input cancels without changing the record
+Type `y` and press <kbd>Enter</kbd> to proceed despite the warning. Any other input cancels without changing the record
 and is not run as a command.
 
 On success, Doc shows `Next visit scheduled for patient NAME: DATETIME` and refreshes the patient's details.
@@ -561,7 +561,7 @@ Format: `prev INDEX`
 * Unlike `next`, `prev` allows the current visit date and time to be in the future.
 
 Before making changes, Doc shows the patient's name and phone number, the visit to restore, and the visit to discard.
-Check these details, then type `y` and press Enter to confirm. Any other input cancels without changing the record
+Check these details, then type `y` and press <kbd>Enter</kbd> to confirm. Any other input cancels without changing the record
 and is not run as a command.
 
 On success, Doc reports the restored and discarded dates and times, saves the change, and refreshes the patient's
@@ -632,7 +632,7 @@ Format: `delete INDEX`
 * The index **must be a positive integer** 1, 2, 3, ...
 * A valid command displays `Delete NAME? Type y to confirm. Any other input cancels.` without deleting the patient.
   After `y`, the app shows `Deleted patient:` followed by the deleted patient's details in the same form as `add`.
-* Type `y` and press Enter to confirm. Surrounding spaces and letter case are ignored.
+* Type `y` and press <kbd>Enter</kbd> to confirm. Surrounding spaces and letter case are ignored.
 * Any other input, including an empty response or another valid command, cancels the deletion and is not run as a
   command. The result display then shows `Deletion cancelled.`
 * Invalid `delete` commands show the shared index errors and do not ask for confirmation.
@@ -651,7 +651,7 @@ Format: `clear`
 
 * When Doc contains patient records, the result display asks for confirmation and shows the number of entries
   that will be cleared.
-* Type `y` and press Enter to confirm. Surrounding spaces and letter case are ignored.
+* Type `y` and press <kbd>Enter</kbd> to confirm. Surrounding spaces and letter case are ignored.
 * Any other input, including an empty response or another valid command, cancels the clear operation and is not run as
   a command. The result display then shows `Clear cancelled.`
 * If Doc has no patient records, no confirmation is requested and the result display shows
