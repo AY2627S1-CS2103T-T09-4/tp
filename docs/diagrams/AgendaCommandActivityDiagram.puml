@@ -4,9 +4,9 @@
 start
 :User executes `agenda START_DATE [DAYS]`;
 :Use supplied start date;
-if (Duration supplied?) then (yes)
+if () then ([DAYS supplied])
   :Use supplied number of days;
-else (no)
+else ([else])
   :Use seven days;
 endif
 :Filter current visits into the date range;
