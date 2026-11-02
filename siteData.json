@@ -51,6 +51,7 @@
         "storage-component": "Storage component",
         "common-classes": "Common classes",
         "implementation": "Implementation",
+        "main-window-keyboard-navigation": "Main-window keyboard navigation",
         "help-window": "Help window",
         "optional-emergency-contacts": "Optional emergency contacts",
         "visit-record-model": "Visit record model",
