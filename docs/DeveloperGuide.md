@@ -1019,107 +1019,6 @@ after the recalled text, and consumes the event so the key does not also move th
 `TextField` behavior. The history belongs only to the current `CommandBox`, so it is discarded when the application
 closes.
 
-### \[Proposed\] Undo/redo feature
-
-#### Proposed Implementation
-
-The proposed undo/redo mechanism is facilitated by `VersionedAddressBook`. It extends `AddressBook` with an undo/redo history, stored internally as an `addressBookStateList` and `currentStatePointer`. Additionally, it implements the following operations:
-
-* `VersionedAddressBook#commit()` -- Saves the current patient-record state in its history.
-* `VersionedAddressBook#undo()` -- Restores the previous patient-record state from its history.
-* `VersionedAddressBook#redo()` -- Restores a previously undone patient-record state from its history.
-
-These operations are exposed in the `Model` interface as `Model#commitAddressBook()`, `Model#undoAddressBook()` and `Model#redoAddressBook()` respectively.
-
-Given below is an example usage scenario and how the undo/redo mechanism behaves at each step.
-
-Step 1. The user launches the application for the first time. The `VersionedAddressBook` will be initialized with the initial patient-record state, and the `currentStatePointer` pointing to that single state.
-
-<puml src="diagrams/UndoRedoState0.puml" alt="UndoRedoState0" />
-
-Step 2. The user executes `delete 5` to delete the 5th patient in Doc. The `delete` command calls
-`Model#commitAddressBook()`, causing the modified patient-record state to be saved in `addressBookStateList`, and the
-`currentStatePointer` is shifted to the newly inserted state.
-
-<puml src="diagrams/UndoRedoState1.puml" alt="UndoRedoState1" />
-
-Step 3. The user executes `add n/David …​` to add a new patient. The `add` command also calls
-`Model#commitAddressBook()`, causing another modified patient-record state to be saved into `addressBookStateList`.
-
-<puml src="diagrams/UndoRedoState2.puml" alt="UndoRedoState2" />
-
-<box type="info" seamless>
-
-**Note:** If a command fails its execution, it will not call `Model#commitAddressBook()`, so the patient-record state
-will not be saved into `addressBookStateList`.
-</box>
-
-Step 4. The user decides that adding the patient was a mistake and executes `undo`. The command calls
-`Model#undoAddressBook()`, shifts `currentStatePointer` once to the left, and restores the previous patient-record
-state.
-
-<puml src="diagrams/UndoRedoState3.puml" alt="UndoRedoState3" />
-
-
-<box type="info" seamless>
-
-**Note:** If `currentStatePointer` is at index 0, pointing to the initial patient-record state, there are no previous
-states to restore. The `undo` command uses `Model#canUndoAddressBook()` to check if this is the case. If so, it will return an error to the user rather
-than attempting to perform the undo.
-</box>
-
-The following sequence diagram shows how an undo operation goes through the `Logic` component:
-
-<puml src="diagrams/UndoSequenceDiagram-Logic.puml" alt="UndoSequenceDiagram-Logic" />
-
-<box type="info" seamless>
-
-**Note:** The lifeline for `UndoCommand` should end at the destroy marker (X), but due to a limitation of PlantUML, it continues to the end of the diagram.
-</box>
-
-Similarly, how an undo operation goes through the `Model` component is shown below:
-
-<puml src="diagrams/UndoSequenceDiagram-Model.puml" alt="UndoSequenceDiagram-Model" />
-
-The `redo` command does the opposite — it calls `Model#redoAddressBook()`, shifts `currentStatePointer` once to the
-right, and restores the previously undone patient-record state.
-
-<box type="info" seamless>
-
-**Note:** If `currentStatePointer` is at index `addressBookStateList.size() - 1`, pointing to the latest patient-record
-state, there are no undone states to restore. The `redo` command uses `Model#canRedoAddressBook()` to check if this is
-the case. If so, it returns an error instead of attempting the redo.
-</box>
-
-Step 5. The user executes `list`. Commands that do not modify patient data, such as `list`, do not call
-`Model#commitAddressBook()`, `Model#undoAddressBook()` or `Model#redoAddressBook()`. Thus, `addressBookStateList`
-remains unchanged.
-
-<puml src="diagrams/UndoRedoState4.puml" alt="UndoRedoState4" />
-
-Step 6. The user executes `clear`, which calls `Model#commitAddressBook()`. Since `currentStatePointer` is not at the
-end of `addressBookStateList`, all patient-record states after it are purged because redoing `add n/David …` would no
-longer be valid. This is the behavior that most modern desktop applications follow.
-
-<puml src="diagrams/UndoRedoState5.puml" alt="UndoRedoState5" />
-
-The following activity diagram summarizes what happens when a user executes a new command:
-
-<puml src="diagrams/CommitActivityDiagram.puml" width="250" />
-
-#### Design considerations:
-
-**Aspect: How undo & redo execute:**
-
-* **Alternative 1 (current choice):** Saves the entire patient-record state.
-  * Pros: Easy to implement.
-  * Cons: May have performance issues in terms of memory usage.
-
-* **Alternative 2:** Individual command knows how to undo/redo by
-  itself.
-  * Pros: Will use less memory (e.g. for `delete`, just save the person being deleted).
-  * Cons: We must ensure that the implementation of each individual command is correct.
-
 ### \[Proposed\] Data archiving
 
 Data archiving is a planned feature and is not available in the current version. A future implementation may keep
@@ -1186,6 +1085,16 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `* *`    | doctor                  | search patient notes for a medical condition                              | review together all the patients I treat for the same condition                         |
 | `* *`    | doctor                  | see the coming week's visits as a schedule                                | plan my week before it starts                                                           |
 | `* *`    | doctor                  | find patients due within a specified date range                           | plan visits for the coming days                                                        |
+| `* * *`  | doctor                  | find patients by part of their phone number, address or tag               | locate a patient when I remember only some of their details                             |
+| `* *`    | doctor                  | combine search criteria, such as a name and a tag                         | narrow a search to exactly the patients I want                                          |
+| `* *`    | doctor                  | record a patient's emergency contact                                      | know whom to call if something goes wrong during a visit                                |
+| `* *`    | doctor                  | record a patient's date of birth, blood type, allergies, alcohol history and smoking status | check their medical background before treating them                  |
+| `* *`    | doctor                  | tag patients with labels such as their preferred visit time               | group patients with similar needs                                                       |
+| `* * *`  | doctor                  | be stopped from booking two patients at the same visit time               | avoid double-booking myself                                                             |
+| `* *`    | doctor                  | be warned before adding a patient whose name is already in my list         | avoid creating duplicate records by mistake                                             |
+| `* *`    | doctor                  | be warned before booking a visit on a day that already has many visits    | avoid overloading my schedule                                                           |
+| `* * *`  | doctor                  | confirm before a patient or all patient records are deleted               | avoid losing records through a typing mistake                                           |
+| `* *`    | keyboard user           | recall my previous commands                                               | repeat or correct a command without retyping it                                         |
 
 #### Future user stories
 
@@ -1572,20 +1481,17 @@ Use cases marked **Future** describe planned functionality that is not available
     connection. Opening the hosted full User Guide from Help requires internet access.
 4. Should support at least 1,000 patient records, with up to 100 previous visit datetimes and one patient-level note
    per record.
-5. **Target:** Should respond to each valid command within 2 seconds when operating on 1,000 patient records with up
-   to 100 previous visit datetimes and one patient-level note per record. This excludes the time spent entering the
-   command. **Verification:** Not yet verified; a benchmark under this workload remains to be run.
-6. For common tasks such as adding, finding, listing, editing, scheduling, and restoring patient visits, a user who
-   types at above-average speed should be able to complete the task faster through the CLI than by using the mouse.
+5. Should respond to each valid command within 2 seconds when operating on 1,000 patient records with up to 100
+   previous visit datetimes and one patient-level note per record. This excludes the time spent entering the command.
+6. Common tasks such as adding, finding, listing, editing, scheduling, and restoring patient visits should each be
+   possible with a single typed command and no mouse use, so that a user who types at above-average speed can
+   complete them faster than with a mouse-driven contact app.
 7.  A doctor who has not used a CLI application before should be able to add a patient and look up that patient's record within 15 minutes of reading the User Guide.
 8.  Should save every change to the local data file before accepting the next command, so that at most one command's worth of data is lost if the app terminates unexpectedly.
 9.  Should store all patient data only on the user's own machine, so that no patient data leaves the doctor's computer.
 10. Should start up and be ready to accept a command within 5 seconds on a typical modern laptop.
 11. Should not crash or lose existing records if the data file has been manually edited into an invalid state; it should instead report the problem and start with an empty caseload.
 12. Should be delivered as a single JAR file of no more than 100MB, so that it can be copied onto a laptop taken on house visits.
-
-NFR 6 is an unverified usability goal. The team must agree on a concrete mouse-versus-CLI comparison procedure before
-it can be assessed.
 
 ### Glossary
 
@@ -2568,5 +2474,3 @@ when midnight passes; another `view` recalculates it.
 
    1. Close Doc, replace that value with `"tags": []`, and relaunch.<br>
       Expected: The patient loads without a data warning and has no tags.
-
-1. _{ more test cases … }_
