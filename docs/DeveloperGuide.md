@@ -173,7 +173,7 @@ dependency, not a startup timestamp: eligibility checks read the clock during co
 ### Model component
 **API** : [`Model.java`](https://github.com/AY2627S1-CS2103T-T09-4/tp/tree/master/src/main/java/seedu/address/model/Model.java)
 
-<puml src="diagrams/ModelClassDiagram.puml" width="700" />
+<puml src="diagrams/ModelClassDiagram.puml" width="1000" />
 
 
 The `Model` component,
