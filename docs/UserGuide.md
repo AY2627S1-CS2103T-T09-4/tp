@@ -355,7 +355,8 @@ Format: `view INDEX`
 Use a positive index from the currently displayed list, including `find` or `sort date` results.
 For example, `view 1` displays the first patient's full record without changing the list or saved data.
 
-The details panel groups information as follows. Unrecorded optional fields are hidden.
+The details panel groups information as follows. Unrecorded optional fields are hidden, except for the `Tags:` row,
+which remains visible even when no tags are recorded.
 
 | Section | What it shows |
 | --- | --- |
