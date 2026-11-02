@@ -199,10 +199,11 @@ The `Storage` component,
 both files exist, the preferred file takes precedence and the legacy file is left unchanged. A failed move falls back
 to the legacy path for that run and contributes a warning shown after the main window opens.
 
-When the patient data file does not exist, `MainApp` initializes the model with the seven records returned by
-`SampleDataUtil#getSampleAddressBook`. The sample patients are George Miller, Priya Nair, Aisha Rahman, Marcus Lim,
-Mei Lin Tan, Daniel Wong, and Noor Aziz. If an existing data file can be loaded successfully, including one with no
-records, its contents take precedence over these samples. If an existing data file cannot be loaded—for example,
+When the patient data file does not exist, `MainApp` initializes the model with the ten records returned by
+`SampleDataUtil#getSampleAddressBook`. The sample patients are Amelia Tan, Benjamin Lim, Chloe Ng, David Koh,
+Farah Aziz, Grace Wong, two patients named Jordan Lee, Kavita Rao, and Lucas Chen. If an existing data file can be
+loaded successfully, including one with no records, its contents take precedence over these samples. If an existing
+data file cannot be loaded—for example,
 because it is malformed or contains conflicting records—`MainApp` starts with an empty address book.
 
 Because a later successful command that changes patient data could overwrite the unreadable file,
@@ -1477,9 +1478,10 @@ and details panel refresh to the replacement record.
       before continuing.
 
    1. Run `java -jar doc.jar`.<br>
-      Expected: The GUI opens with seven sample patient records in this order: George Miller, Priya Nair, Aisha
-      Rahman, Marcus Lim, Mei Lin Tan, Daniel Wong, and Noor Aziz. The window size may not be optimal. Launching from
-      the terminal also exposes startup errors that can be hidden when a JAR is opened by double-clicking it.
+      Expected: The GUI opens with ten sample patient records in this order: Amelia Tan, Benjamin Lim, Chloe Ng,
+      David Koh, Farah Aziz, Grace Wong, two patients named Jordan Lee, Kavita Rao, and Lucas Chen. The window size
+      may not be optimal. Launching from the terminal also exposes startup errors that can be hidden when a JAR is
+      opened by double-clicking it.
 
 1. Saving window preferences
 
@@ -1744,22 +1746,22 @@ Browser-launch and clipboard rejection cases are simulated by `HelpWindowActions
 
 ### Finding patients
 
-Start with the seven sample patients by launching Doc from an empty folder. Run `list` before each step.
+Start with the ten sample patients by launching Doc from an empty folder. Run `list` before each step.
 
-1. Run `find n/m`.<br>
-   Expected: `3 patients found.` George Miller, Marcus Lim, and Mei Lin Tan are listed.
+1. Run `find n/j`.<br>
+   Expected: `2 patients found.` The two patients named Jordan Lee are listed.
 
-1. Run `find n/george priya`.<br>
-   Expected: George Miller and Priya Nair are listed, because keywords for one field match any of them.
+1. Run `find n/amelia benjamin`.<br>
+   Expected: Amelia Tan and Benjamin Lim are listed, because keywords for one field match any of them.
 
-1. Run `find n/m t/morning`.<br>
-   Expected: `1 patient found.` Only Mei Lin Tan is listed, because different fields must all match.
+1. Run `find n/b t/morning`.<br>
+   Expected: `1 patient found.` Only Benjamin Lim is listed, because different fields must all match.
 
 1. Run `find p/8901`, `find a/tampines`, and `find note/review`.<br>
-   Expected: Noor Aziz; Marcus Lim; then George Miller and Marcus Lim.
+   Expected: Farah Aziz and Kavita Rao; Amelia Tan; then Amelia Tan, Benjamin Lim, Farah Aziz, and Grace Wong.
 
-1. Run `find vd/15/10/2026`, then `find vd/14/10/2026 15/10/2026`, then `sort date`.<br>
-   Expected: Priya Nair; then Mei Lin Tan and Priya Nair, ordered by visit time after `sort date`.
+1. Run `find vd/24/10/2026`, then `find vd/22/10/2026 24/10/2026`, then `sort date`.<br>
+   Expected: Chloe Ng; then Benjamin Lim and Chloe Ng, ordered by visit time after `sort date`.
 
 1. Run `find p/0000`.<br>
    Expected: `No patients found.` followed by a hint listing every search prefix, and an empty list.
@@ -1778,8 +1780,8 @@ Start with the seven sample patients by launching Doc from an empty folder. Run 
 
    Expected: Each rejected command leaves the displayed list unchanged.
 
-1. Paste `find n/george`, a tab character, and `p/0000` into the command box as one command, then press Enter.<br>
-   Expected: `No patients found.`, because the tab separates two fields and George Miller's phone does not match.
+1. Paste `find n/amelia`, a tab character, and `p/0000` into the command box as one command, then press Enter.<br>
+   Expected: `No patients found.`, because the tab separates two fields and Amelia Tan's phone does not match.
 
 ### Sorting visits by date
 
