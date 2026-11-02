@@ -484,15 +484,13 @@ Clearing allergies does not record `No known allergies`; clearing smoking status
 * The visit-time conflict limitations described under `add` also apply to edits.
 
 Examples:
-* `edit 1 vd/8/10/2026 1000` Changes the 1st patient's visit to 8 October 2026 at 10:00.
-* `edit 1 p/91234567 vd/8/10/2026 1000 e/johndoe@example.com` Updates the visit, phone number, and email.
-* `edit 1 p/91234567 e/johndoe@example.com` Updates the phone number and email, keeping the visit unchanged.
-* `edit 1 e/` Clears the email, keeping the visit and other details unchanged.
-* `edit 1 note/Patient requests a morning visit` Replaces the notes, keeping all other details unchanged.
-* `edit 1 note/` Clears the notes, keeping all other details unchanged.
-* `edit 1 e/ note/` Clears both email and notes, keeping the visit and other details unchanged.
-* `edit 1 vd/8/10/2026 1000 e/new@example.com note/Review medication` Updates the visit, email, and notes.
-* `edit 2 n/Benjamin Wei Lim t/` Updates Benjamin Lim's name and clears all existing tags, keeping the visit unchanged.
+
+| Goal | Command | Result |
+| --- | --- | --- |
+| Update contact details. | `edit 1 p/91234567 e/johndoe@example.com` | Replaces the phone number and email; keeps all other details unchanged. |
+| Reschedule the current visit. | `edit 1 vd/8/10/2026 1000` | Changes the visit to 8 October 2026 at 10:00; keeps the visit history unchanged. |
+| Clear optional text fields. | `edit 1 e/ note/` | Clears both the email and notes; keeps all other details unchanged. |
+| Change the name and remove all tags. | `edit 2 n/Benjamin Wei Lim t/` | Updates the name and clears every existing tag; keeps all other details unchanged. |
 
 ### Scheduling the next visit: `next`
 
@@ -598,17 +596,15 @@ Format: `find [n/NAME_KEYWORD...] [p/PHONE_KEYWORD...] [a/ADDRESS_KEYWORD...] [t
   `No patients found. Search with n/ for names, p/ for phone numbers, a/ for addresses, t/ for tags, vd/ for visit dates, or note/ for notes.`
 
 Examples:
-* `find n/l` returns `Benjamin Lim`, both patients named `Jordan Lee`, and `Lucas Chen`
-* `find n/amelia farah` returns `Amelia Tan` and `Farah Aziz`
-* `find p/8123` returns `Amelia Tan`, whose number `81234567` contains `8123`
-* `find a/tampines` returns `Amelia Tan`
-* `find vd/20/10/2026` returns `Amelia Tan`, whose visit is at 09:00 that day. Follow it with `sort date` to list
-  that day's visits by time when planning your route.
-* `find vd/20/10/2026 22/10/2026` returns `Amelia Tan` and `Benjamin Lim`
-* `find note/review` returns `Amelia Tan`, `Benjamin Lim`, `Farah Aziz`, and `Grace Wong`, whose notes contain a word
-  starting with `Review`
-* `find n/l t/afternoon` returns `Lucas Chen`; `Benjamin Lim` and both patients named `Jordan Lee` also match `n/l`
-  but are not tagged `afternoon`
+
+| Search goal | Command | Result |
+| --- | --- | --- |
+| Match either of two names. | `find n/amelia farah` | Returns `Amelia Tan` and `Farah Aziz`. |
+| Match part of a phone number. | `find p/8123` | Returns `Amelia Tan`, whose phone number `81234567` contains `8123`. |
+| Match a word in an address. | `find a/tampines` | Returns `Amelia Tan`. |
+| Match a current visit date. | `find vd/20/10/2026` | Returns `Amelia Tan`, whose visit is at 09:00 that day. Follow with `sort date` to arrange that day's results by time. |
+| Match a word in notes. | `find note/review` | Returns `Amelia Tan`, `Benjamin Lim`, `Farah Aziz`, and `Grace Wong`. |
+| Require both a name and tag match. | `find n/l t/afternoon` | Returns only `Lucas Chen`; the other patients whose names match `n/l` do not have the `afternoon` tag. |
 
 ### Deleting a patient: `delete`
 
